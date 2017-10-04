@@ -1,0 +1,9 @@
+# Build dir
+out
+
+# Qt Creator
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes

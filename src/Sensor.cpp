@@ -22,9 +22,7 @@
 
 namespace wolkabout
 {
-Sensor::Sensor(std::string reference) : ManifestItem(std::move(reference))
-{
-}
+Sensor::Sensor(std::string reference) : ManifestItem(std::move(reference)) {}
 
 Sensor::Sensor(std::string reference, std::string dataDelimiter, unsigned char dataDimensions)
 : ManifestItem(std::move(reference), std::move(dataDelimiter), std::move(dataDimensions))

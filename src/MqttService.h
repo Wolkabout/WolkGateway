@@ -18,7 +18,7 @@
 #define MQTTSERVICE_H
 
 #include "Device.h"
-#include "mqtt/async_client.h"
+#include "async_client.h"
 
 #include <atomic>
 #include <memory>

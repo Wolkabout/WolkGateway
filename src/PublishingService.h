@@ -61,7 +61,7 @@ private:
         ~ReadingPublisherVisitor() = default;
 
         void visit(ActuatorStatus& actuatorStatus) override;
-        void visit(Event& event) override;
+        void visit(Alarm& event) override;
         void visit(SensorReading& sensorReading) override;
 
     private:

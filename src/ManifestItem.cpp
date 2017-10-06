@@ -21,9 +21,7 @@
 
 namespace wolkabout
 {
-ManifestItem::ManifestItem(std::string reference) : ManifestItem(std::move(reference), "", 1)
-{
-}
+ManifestItem::ManifestItem(std::string reference) : ManifestItem(std::move(reference), "", 1) {}
 
 ManifestItem::ManifestItem(std::string reference, std::string dataDelimiter, unsigned char dataDimensions)
 : m_reference(std::move(reference))

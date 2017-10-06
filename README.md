@@ -68,7 +68,7 @@ and publish actuator status.
 
 **Publishing events:**
 ```cpp
-wolk->addEvent("ALARM_REF", "ALARM_MESSAGE_FROM_CONNECTOR");
+wolk->addAlarm("ALARM_REF", "ALARM_MESSAGE_FROM_CONNECTOR");
 ```
 
 Sensor readings, actuator statuses, and events are automatically pushed to WolkAbout IoT platform every 200 milliseconds,

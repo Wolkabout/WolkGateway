@@ -76,23 +76,21 @@ std::unique_ptr<Wolk> WolkBuilder::connect()
     return std::move(m_wolk);
 }
 
-WolkBuilder::WolkBuilder(Device device) : m_wolk(std::unique_ptr<Wolk>(new Wolk(device)))
-{
-}
+WolkBuilder::WolkBuilder(Device device) : m_wolk(std::unique_ptr<Wolk>(new Wolk(device))) {}
 
 WolkBuilder Wolk::connectDevice(Device device)
 {
     return WolkBuilder(device);
 }
 
-void Wolk::addEvent(const std::string& reference, const std::string& value, unsigned long long rtc)
+void Wolk::addAlarm(const std::string& reference, const std::string& value, unsigned long long rtc)
 {
     if (rtc == 0)
     {
         rtc = Wolk::currentRtc();
     }
 
-    std::unique_ptr<Event> event(new Event(value, reference, rtc));
+    std::unique_ptr<Alarm> event(new Alarm(value, reference, rtc));
     m_readingsBuffer->addReading(std::move(event));
 }
 

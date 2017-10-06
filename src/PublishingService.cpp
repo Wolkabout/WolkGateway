@@ -104,7 +104,7 @@ void PublishingService::ReadingPublisherVisitor::visit(ActuatorStatus& actuatorS
     m_mqttService.publish(topic, messagePayload);
 }
 
-void PublishingService::ReadingPublisherVisitor::visit(Event& event)
+void PublishingService::ReadingPublisherVisitor::visit(Alarm& event)
 {
     std::string topic = "events/" + m_devicekey + "/" + event.getReference();
     std::string messagePayload = JsonParser::toJson(event);

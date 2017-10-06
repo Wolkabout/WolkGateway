@@ -54,9 +54,9 @@ int main(int /* argc */, char** /* argv */)
     wolk->addSensorReading("TEMPERATURE_REF", 23.4);
     wolk->addSensorReading("BOOL_SENSOR_REF", true);
 
-    wolk->addEvent("ALARM_REF", "ALARM_MESSAGE_FROM_CONNECTOR");
+    wolk->addAlarm("ALARM_REF", "ALARM_MESSAGE_FROM_CONNECTOR");
 
-    while(1)
+    while(true)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }

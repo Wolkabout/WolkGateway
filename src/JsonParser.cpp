@@ -125,8 +125,8 @@ void JsonParser::fromJson(std::string jsonString, ActuatorStatus& actuatorStatus
 }
 /*** ACTUATOR STATUS ***/
 
-/*** EVENT ***/
-void to_json(json& j, const Event& p)
+/*** ALARM ***/
+void to_json(json& j, const Alarm& p)
 {
     if (p.getRtc() == 0)
     {
@@ -138,17 +138,15 @@ void to_json(json& j, const Event& p)
     }
 }
 
-std::string JsonParser::toJson(Event event)
+std::string JsonParser::toJson(Alarm event)
 {
     json j = event;
     return j.dump();
 }
 
-void from_json(const json& j, Event& p)
-{
-}
+void from_json(const json& j, Alarm& p) {}
 
-void JsonParser::fromJson(std::string jsonString, Event& event)
+void JsonParser::fromJson(std::string jsonString, Alarm& event)
 {
     json j = json::parse(jsonString);
     event = j;
@@ -168,9 +166,7 @@ void to_json(json& j, const SensorReading& p)
     }
 }
 
-void from_json(const json& j, SensorReading& p)
-{
-}
+void from_json(const json& j, SensorReading& p) {}
 
 std::string JsonParser::toJson(SensorReading actutorCommand)
 {

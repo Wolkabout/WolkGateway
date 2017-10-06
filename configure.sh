@@ -21,5 +21,5 @@ pushd dependencies
 popd
 
 pushd out
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+cmake -G "Unix Makefiles" -DOPENSSL_INCLUDE_DIR=../dependencies/build/include .. -DCMAKE_BUILD_TYPE=Release ..
 popd

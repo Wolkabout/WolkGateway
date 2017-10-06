@@ -12,23 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.6)
-project(WolkAboutConnector CXX)
+cmake_minimum_required(VERSION 3.5)
+project(WolkAboutConnector C CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
+# Paho MQTT
+IF (NOT OPENSSL_INCLUDE_DIR)
+    message(FATAL_ERROR
+            "OpenSSL include dir must be specified with: -DOPENSSL_INCLUDE_DIR=...")
+ENDIF (NOT OPENSSL_INCLUDE_DIR)
+
+add_definitions(-DOPENSSL)
+add_subdirectory(mqtt)
+
+# WolkAbout c++ Connector
+include_directories("mqtt")
 include_directories("src")
 file(GLOB_RECURSE HEADER_FILES "src/*.h" "src/*.hpp")
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
 
 link_directories(${PROJECT_SOURCE_DIR}/out)
 
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH "./")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
-
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} paho-mqtt3as paho-mqttpp3 crypto ssl pthread)
+target_link_libraries(${PROJECT_NAME} paho-mqtt pthread)
 
 add_subdirectory(cmake)
 

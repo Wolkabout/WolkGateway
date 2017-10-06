@@ -21,9 +21,7 @@
 
 namespace wolkabout
 {
-ActuatorCommand::ActuatorCommand() : m_type(ActuatorCommand::Type::STATUS), m_value("")
-{
-}
+ActuatorCommand::ActuatorCommand() : m_type(ActuatorCommand::Type::STATUS), m_value("") {}
 
 ActuatorCommand::ActuatorCommand(wolkabout::ActuatorCommand::Type type, std::string value)
 : m_type(std::move(type)), m_value(std::move(value))

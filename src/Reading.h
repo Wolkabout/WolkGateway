@@ -22,7 +22,7 @@
 namespace wolkabout
 {
 class ActuatorStatus;
-class Event;
+class Alarm;
 class SensorReading;
 
 class ReadingVisitor
@@ -32,7 +32,7 @@ public:
     virtual ~ReadingVisitor() = default;
 
     virtual void visit(ActuatorStatus& actuatorStatus) = 0;
-    virtual void visit(Event& actuatorStatus) = 0;
+    virtual void visit(Alarm& actuatorStatus) = 0;
     virtual void visit(SensorReading& sensorReading) = 0;
 };
 

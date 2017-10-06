@@ -19,10 +19,16 @@ BASE_DIR="$(pwd)"
 BUILD_DIR="$BASE_DIR/build"
 LIB_DIR="$BUILD_DIR/lib"
 
+LIB_EXTENSION="so"
+
+if [[ `uname` == "Darwin" ]]; then
+    LIB_EXTENSION="dylib"
+fi
+
 mkdir -pv "$BUILD_DIR"
 
 # libssl
-if [ ! -f "$LIB_DIR/libssl.so" ]; then
+if [ ! -f "$LIB_DIR/libssl.$LIB_EXTENSION" ]; then
     echo "Building libssl"
     pushd libssl
 
@@ -31,58 +37,10 @@ if [ ! -f "$LIB_DIR/libssl.so" ]; then
              enable-shared enable-ssl2 enable-weak-ssl-ciphers enable-zlib     \
              enable-zlib-dynamic --prefix=$BUILD_DIR                           \
 
-    make && make install
+    make -j8 && make install
     popd
 fi
-
-# paho.mqtt.c
-if [ ! -f "$LIB_DIR/libpaho-mqtt3as.so" ]; then
-    echo "Building paho.mqtt.c"
-    pushd paho.mqtt.c
-
-    export CFLAGS="-I$BUILD_DIR/include"
-    export LDFLAGS="-L$LIB_DIR -Wl,-rpath,./ -lcrypto -Wl,-rpath,./ -lssl"
-
-    make
-    mkdir -p $BUILD_DIR/include/mqtt
-    cp src/*.h $BUILD_DIR/include/mqtt
-    cp -d build/output/*.so* $LIB_DIR
-
-    unset CFLAGS
-    unset LDFLAGS
-
-    popd
-fi
-
-# paho.mqtt.cpp
-if [ ! -f "$LIB_DIR/libpaho-mqttpp3.so" ]; then
-    echo "Building libmqttpp"
-    pushd paho.mqtt.cpp
-
-    export LIB_DEP_FLAGS="-Wl,-rpath,./ -lpaho-mqtt3as"
-    export PAHO_C_INC_DIR=$BUILD_DIR/include/mqtt
-    export PAHO_C_LIB_DIR=$LIB_DIR
-    make
-    unset LIB_DEP_FLAGS
-    unset PAHO_C_INC_DIR
-    unset PAHO_C_LIB_DIR
-
-    cp -d lib/*.so* $LIB_DIR
-
-    popd
-fi
-
-# Copy paho.mqtt.c headers
-#mkdir -p $BASE_DIR/../src/mqtt
-cp paho.mqtt.c/src/*.h $BASE_DIR/../src/mqtt
-
-# Copy paho.mqtt.cpp headers
-mkdir -p $BASE_DIR/../src/mqtt
-cp -d paho.mqtt.cpp/src/mqtt/*.h $BASE_DIR/../src/mqtt
 
 # Copy shared libraries
-cp $BUILD_DIR/lib/libcrypto.so* $BASE_DIR/../out
-cp $BUILD_DIR/lib/libssl.so* $BASE_DIR/../out
-cp $BUILD_DIR/lib/libpaho-mqttpp3.so* $BASE_DIR/../out
-cp $BUILD_DIR/lib/libpaho-mqtt3as.so* $BASE_DIR/../out
-
+cp $BUILD_DIR/lib/libcrypto.*$LIB_EXTENSION* $BASE_DIR/../out
+cp $BUILD_DIR/lib/libssl.*$LIB_EXTENSION* $BASE_DIR/../out

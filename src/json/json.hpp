@@ -4647,6 +4647,7 @@ public:
     @since version 1.0.0
     */
     const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
+
 private:
     // forward declaration
     template <typename IteratorType> class iteration_proxy;
@@ -6090,11 +6091,12 @@ public:
     {
         // assertion to check that the iterator range is indeed contiguous,
         // see http://stackoverflow.com/a/35008842/266378 for more discussion
-        assert(std::accumulate(first, last, std::pair<bool, int>(true, 0), [&first](std::pair<bool, int> res,
-                                                                                    decltype(*first) val) {
-                   res.first &= (val == *(std::next(std::addressof(*first), res.second++)));
-                   return res;
-               }).first);
+        assert(std::accumulate(first, last, std::pair<bool, int>(true, 0),
+                               [&first](std::pair<bool, int> res, decltype(*first) val) {
+                                   res.first &= (val == *(std::next(std::addressof(*first), res.second++)));
+                                   return res;
+                               })
+                 .first);
 
         // assertion to check that each element is 1 byte long
         static_assert(sizeof(typename std::iterator_traits<IteratorType>::value_type) == 1,
@@ -7769,34 +7771,33 @@ private:
     */
     static std::size_t extra_space(const string_t& s) noexcept
     {
-        return std::accumulate(s.begin(), s.end(), size_t{},
-                               [](size_t res, typename string_t::value_type c) {
-                                   switch (c)
-                                   {
-                                   case '"':
-                                   case '\\':
-                                   case '\b':
-                                   case '\f':
-                                   case '\n':
-                                   case '\r':
-                                   case '\t':
-                                   {
-                                       // from c (1 byte) to \x (2 bytes)
-                                       return res + 1;
-                                   }
+        return std::accumulate(s.begin(), s.end(), size_t{}, [](size_t res, typename string_t::value_type c) {
+            switch (c)
+            {
+            case '"':
+            case '\\':
+            case '\b':
+            case '\f':
+            case '\n':
+            case '\r':
+            case '\t':
+            {
+                // from c (1 byte) to \x (2 bytes)
+                return res + 1;
+            }
 
-                                   default:
-                                   {
-                                       if (c >= 0x00 and c <= 0x1f)
-                                       {
-                                           // from c (1 byte) to \uxxxx (6 bytes)
-                                           return res + 5;
-                                       }
+            default:
+            {
+                if (c >= 0x00 and c <= 0x1f)
+                {
+                    // from c (1 byte) to \uxxxx (6 bytes)
+                    return res + 5;
+                }
 
-                                       return res;
-                                   }
-                                   }
-                               });
+                return res;
+            }
+            }
+        });
     }
 
     /*!
@@ -7922,6 +7923,7 @@ private:
     public:
         template <typename NumberType> numtostr(NumberType value) { x_write(value, std::is_integral<NumberType>()); }
         const char* c_str() const { return m_buf.data(); }
+
     private:
         /// a (hopefully) large enough character buffer
         std::array<char, 64> m_buf{{}};
@@ -8985,6 +8987,7 @@ public:
         @pre The iterator is initialized; i.e. `m_object != nullptr`.
         */
         reference value() const { return operator*(); }
+
     private:
         /// associated JSON instance
         pointer m_object = nullptr;
@@ -11180,6 +11183,7 @@ public:
 
         /// @copydoc to_string()
         operator std::string() const { return to_string(); }
+
     private:
         /// remove and return last reference pointer
         std::string pop_back()
@@ -11568,7 +11572,7 @@ public:
                  pos != std::string::npos;    // make sure f was found
                  s.replace(pos, f.size(), t),    // replace with t
                  pos = s.find(f, pos + t.size())    // find next occurrence of f
-                 )
+            )
                 ;
         }
 

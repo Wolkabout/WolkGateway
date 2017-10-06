@@ -16,7 +16,7 @@
 
 #include "MqttService.h"
 #include "Device.h"
-#include "mqtt/async_client.h"
+#include "async_client.h"
 
 #include <iostream>
 #include <memory>

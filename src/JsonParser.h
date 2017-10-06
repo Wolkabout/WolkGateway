@@ -19,7 +19,7 @@
 
 #include "ActuatorCommand.h"
 #include "ActuatorStatus.h"
-#include "Event.h"
+#include "Alarm.h"
 #include "SensorReading.h"
 
 #include <string>
@@ -37,8 +37,8 @@ public:
     static std::string toJson(ActuatorStatus actuatorStatus);
     static void fromJson(std::string jsonString, ActuatorStatus& actuatorStatus);
 
-    static std::string toJson(Event event);
-    static void fromJson(std::string jsonString, Event& event);
+    static std::string toJson(Alarm event);
+    static void fromJson(std::string jsonString, Alarm& event);
 
     static std::string toJson(SensorReading sensorReading);
     static void fromJson(std::string jsonString, SensorReading& sensorReading);

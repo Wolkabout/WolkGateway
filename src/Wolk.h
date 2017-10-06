@@ -105,19 +105,19 @@ public:
     /**
      * @brief Publishes sensor reading to WolkAbout IoT Cloud
      * @param reference Sensor reference
-     * @param value Sensor value
-     *              Supported types:
-     *               - bool
-     *               - float
-     *               - double
-     *               - signed int
-     *               - signed long int
-     *               - signed long long int
-     *               - unsigned int
-     *               - unsigned long int
-     *               - unsigned long long int
+     * @param value Sensor value<br>
+     *              Supported types:<br>
+     *               - bool<br>
+     *               - float<br>
+     *               - double<br>
+     *               - signed int<br>
+     *               - signed long int<br>
+     *               - signed long long int<br>
+     *               - unsigned int<br>
+     *               - unsigned long int<br>
+     *               - unsigned long long int<br>
      *               - string
-     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
      *            If omitted current POSIX time is adopted
      */
     template <typename T> void addSensorReading(const std::string& reference, T value, unsigned long long int rtc = 0);
@@ -126,10 +126,10 @@ public:
      * @brief Publishes event to WolkAbout IoT Cloud
      * @param reference Event reference
      * @param value Event value
-     * @param rtc POSIX time at which event occurred - Number of seconds since 01/01/1970
+     * @param rtc POSIX time at which event occurred - Number of seconds since 01/01/1970<br>
      *            If omitted current posix time is adopted
      */
-    void addEvent(const std::string& reference, const std::string& value, unsigned long long int rtc = 0);
+    void addAlarm(const std::string& reference, const std::string& value, unsigned long long int rtc = 0);
 
     /**
      * @brief Invokes ActuatorStatusProvider callback to obtain actuator status

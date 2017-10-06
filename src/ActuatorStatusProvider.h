@@ -28,7 +28,7 @@ class ActuatorStatusProvider
 public:
     /**
      * @brief Actuator status provider callback
-     * @param Actuator reference
+     * @param reference Actuator reference
      * @return ActuatorStatus of requested actuator
      */
     virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;

@@ -26,8 +26,8 @@ class ActuationHandler
 public:
     /**
      * @brief Actuation handler callback
-     * @param Actuator reference
-     * @param Desired actuator value
+     * @param reference Actuator reference
+     * @param value Desired actuator value
      */
     virtual void handleActuation(const std::string& reference, const std::string& value) = 0;
 

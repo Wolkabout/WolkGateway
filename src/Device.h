@@ -30,7 +30,7 @@ public:
 
     /**
      * @brief Sets device key
-     * @param Device key provided by WolkAbout IoT Cloud
+     * @param key Device key provided by WolkAbout IoT Cloud
      * @return Reference to current wolkabout::Device instance (Provides fluent interface)
      */
     Device& setDeviceKey(const std::string& key);
@@ -42,7 +42,7 @@ public:
 
     /**
      * @brief Sets device password
-     * @param Device password provided by WolkAbout IoT Cloud
+     * @param password Device password provided by WolkAbout IoT Cloud
      * @return Reference to current wolkabout::Device instance (Provides fluent interface)
      */
     Device& setPasswordPassword(const std::string& password);
@@ -54,7 +54,7 @@ public:
 
     /**
      * @brief Set actuator references for device
-     * @param Actuator references
+     * @param actuators Actuator references
      * @return Reference to current wolkabout::Device instance (Provides fluent interface)
      */
     Device& setActuatorReferences(const std::vector<std::string>& actuators);

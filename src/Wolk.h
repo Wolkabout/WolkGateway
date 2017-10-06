@@ -42,35 +42,35 @@ public:
 
     /**
      * @brief Allows passing of URI to custom WolkAbout IoT Cloud instance
-     * @param Server URI
+     * @param host Server URI
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& toHost(const std::string& host);
 
     /**
      * @brief Sets actuation handler
-     * @param Lambda that handles actuation requests
+     * @param actuationHandler Lambda that handles actuation requests
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& actuationHandler(
       std::function<void(const std::string& reference, const std::string& value)> actuationHandler);
     /**
      * @brief Sets actuation handler
-     * @param Instance of wolkabout::ActuationHandler
+     * @param actuationHandler Instance of wolkabout::ActuationHandler
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& actuationHandler(std::weak_ptr<ActuationHandler> actuationHandler);
 
     /**
      * @brief Sets actuation status provider
-     * @param Lambda that provides ActuatorStatus by reference of requested actuator
+     * @param actuatorStatusProvider Lambda that provides ActuatorStatus by reference of requested actuator
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& actuatorStatusProvider(
       std::function<ActuatorStatus(const std::string& reference)> actuatorStatusProvider);
     /**
      * @brief Sets actuation status provider
-     * @param Instance of wolkabout::ActuatorStatusProvider
+     * @param actuatorStatusProvider Instance of wolkabout::ActuatorStatusProvider
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& actuatorStatusProvider(std::weak_ptr<ActuatorStatusProvider> actuatorStatusProvider);
@@ -97,37 +97,37 @@ public:
 
     /**
      * @brief Initiates wolkabout::WolkBuilder that connects device to WolkAbout IoT Cloud
-     * @param Device
+     * @param device wolkabout::Device to connect to WolkAbout IoT Platform
      * @return wolkabout::WolkBuilder instance
      */
     static WolkBuilder connectDevice(Device device);
 
     /**
      * @brief Publishes sensor reading to WolkAbout IoT Cloud
-     * @param Sensor reference
-     * @param Sensor value
-     *        Supported types:
-     *         - bool
-     *         - float
-     *         - double
-     *         - signed int
-     *         - signed long int
-     *         - signed long long int
-     *         - unsigned int
-     *         - unsigned long int
-     *         - unsigned long long int
-     *         - string
-     * @param Reading POSIX time - Number of seconds since 01/01/1970
-     *        If omitted current POSIX time is adopted
+     * @param reference Sensor reference
+     * @param value Sensor value
+     *              Supported types:
+     *               - bool
+     *               - float
+     *               - double
+     *               - signed int
+     *               - signed long int
+     *               - signed long long int
+     *               - unsigned int
+     *               - unsigned long int
+     *               - unsigned long long int
+     *               - string
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970
+     *            If omitted current POSIX time is adopted
      */
     template <typename T> void addSensorReading(const std::string& reference, T value, unsigned long long int rtc = 0);
 
     /**
      * @brief Publishes event to WolkAbout IoT Cloud
-     * @param Event reference
-     * @param Event value
-     * @param POSIX time at which event occurred - Number of seconds since 01/01/1970
-     *        If omitted current posix time is adopted
+     * @param reference Event reference
+     * @param value Event value
+     * @param rtc POSIX time at which event occurred - Number of seconds since 01/01/1970
+     *            If omitted current posix time is adopted
      */
     void addEvent(const std::string& reference, const std::string& value, unsigned long long int rtc = 0);
 

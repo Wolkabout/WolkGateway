@@ -41,14 +41,14 @@ const std::string& Device::getDeviceKey()
     return m_deviceKey;
 }
 
-Device& Device::setPasswordPassword(const std::string& password)
+Device& Device::setDevicePassword(const std::string& password)
 {
     m_devicePassword = password;
 
     return *this;
 }
 
-const std::string& Device::getPassword()
+const std::string& Device::getDevicePassword()
 {
     return m_devicePassword;
 }

@@ -28,7 +28,7 @@ int main(int /* argc */, char** /* argv */)
 {
     wolkabout::Device device;
     device.setDeviceKey("DEVICE_KEY")
-      .setPasswordPassword("DEVICE_PASSWORD")
+      .setDevicePassword("DEVICE_PASSWORD")
       .setActuatorReferences({"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO", "ACTUATOR_REFERENCE_THREE"});
 
     std::unique_ptr<wolkabout::Wolk> wolk =

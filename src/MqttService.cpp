@@ -47,7 +47,7 @@ void MqttService::connect()
 
     mqtt::connect_options connectOptions;
     connectOptions.set_user_name(m_device.getDeviceKey());
-    connectOptions.set_password(m_device.getPassword());
+    connectOptions.set_password(m_device.getDevicePassword());
     connectOptions.set_clean_session(false);
     connectOptions.set_keep_alive_interval(MQTT_KEEP_ALIVE_SEC);
 

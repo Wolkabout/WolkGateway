@@ -45,12 +45,12 @@ public:
      * @param password Device password provided by WolkAbout IoT Cloud
      * @return Reference to current wolkabout::Device instance (Provides fluent interface)
      */
-    Device& setPasswordPassword(const std::string& password);
+    Device& setDevicePassword(const std::string& password);
     /**
      * @brief Gets device password
-     * @return
+     * @return Device password
      */
-    const std::string& getPassword();
+    const std::string& getDevicePassword();
 
     /**
      * @brief Set actuator references for device

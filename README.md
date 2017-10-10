@@ -29,28 +29,28 @@ Example Usage
 ```cpp
 wolkabout::Device device;
 device.setDeviceKey("DEVICE_KEY")
-	.setPasswordPassword("DEVICE_PASSWORD")
-	.setActuatorReferences({"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO"});
+    .setDevicePassword("DEVICE_PASSWORD")
+    .setActuatorReferences({"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO"});
 
 std::unique_ptr<wolkabout::Wolk> wolk =
-	wolkabout::Wolk::connectDevice(device)
-		.actuationHandler([](const std::string& reference, const std::string& value) -> void {
-			std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
-		})
+    wolkabout::Wolk::connectDevice(device)
+        .actuationHandler([](const std::string& reference, const std::string& value) -> void {
+            std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
+        })
 
-		.actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
-			if (reference == "NA") {
-				wolkabout::ActuatorStatus actuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
-				return actuatorStatus;
-			} else if (reference == "BA") {
-				wolkabout::ActuatorStatus actuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
-				return actuatorStatus;
-			}
+        .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
+            if (reference == "ACTUATOR_REFERENCE_ONE") {
+                wolkabout::ActuatorStatus actuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
+                return actuatorStatus;
+            } else if (reference == "ACTUATOR_REFERENCE_TWO") {
+                wolkabout::ActuatorStatus actuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
+                return actuatorStatus;
+            }
 
-			wolkabout::ActuatorStatus actuatorStatus("", wolkabout::ActuatorStatus::State::READY);
-			return actuatorStatus;
-		})
-		.connect();
+            wolkabout::ActuatorStatus actuatorStatus("", wolkabout::ActuatorStatus::State::READY);
+            return actuatorStatus;
+        })
+        .connect();
 ```
 
 **Publishing sensor readings:**
@@ -70,6 +70,9 @@ and publish actuator status.
 ```cpp
 wolk->addEvent("ALARM_REF", "ALARM_MESSAGE_FROM_CONNECTOR");
 ```
+
+Sensor readings, actuator statuses, and events are automatically pushed to WolkAbout IoT platform every 200 milliseconds,
+hence no action other than *addSensorReading*, *publishActuatorStatus*, or *addEvent* is required.
 
 **Disconnecting from the platform:**
 ```cpp

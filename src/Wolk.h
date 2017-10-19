@@ -123,11 +123,11 @@ public:
     template <typename T> void addSensorReading(const std::string& reference, T value, unsigned long long int rtc = 0);
 
     /**
-     * @brief Publishes event to WolkAbout IoT Cloud
-     * @param reference Event reference
-     * @param value Event value
+     * @brief Publishes alarm to WolkAbout IoT Cloud
+     * @param reference Alarm reference
+     * @param value Alarm value
      * @param rtc POSIX time at which event occurred - Number of seconds since 01/01/1970<br>
-     *            If omitted current posix time is adopted
+     *            If omitted current POSIX time is adopted
      */
     void addAlarm(const std::string& reference, const std::string& value, unsigned long long int rtc = 0);
 

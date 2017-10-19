@@ -39,15 +39,12 @@ int main(int /* argc */, char** /* argv */)
 
         .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
             if (reference == "ACTUATOR_REFERENCE_ONE") {
-                wolkabout::ActuatorStatus actuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
-                return actuatorStatus;
+                return wolkabout::ActuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
             } else if (reference == "ACTUATOR_REFERENCE_TWO") {
-                wolkabout::ActuatorStatus actuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
-                return actuatorStatus;
+                return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);;
             }
 
-            wolkabout::ActuatorStatus actuatorStatus("", wolkabout::ActuatorStatus::State::READY);
-            return actuatorStatus;
+            return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
         })
         .connect();
 

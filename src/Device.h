@@ -25,15 +25,14 @@ namespace wolkabout
 class Device
 {
 public:
-    Device(std::string deviceKey = "", std::string devicePassword = "",
-           std::vector<std::string> actuatorReferences = {});
-
     /**
-     * @brief Sets device key
-     * @param key Device key provided by WolkAbout IoT Cloud
-     * @return Reference to current wolkabout::Device instance (Provides fluent interface)
+     * @brief
+     * @param key Device key provided by WolkAbout IoT Platform
+     * @param password Device password provided by WolkAbout IoT Platform
+     * @param actuatorReferences List of actuator references
      */
-    Device& setDeviceKey(const std::string& key);
+    Device(std::string key, std::string password, std::vector<std::string> actuatorReferences = {});
+
     /**
      * @brief Gets device key
      * @return Reference to current wolkabout::Device instance (Provides fluent interface)
@@ -41,23 +40,11 @@ public:
     const std::string& getDeviceKey();
 
     /**
-     * @brief Sets device password
-     * @param password Device password provided by WolkAbout IoT Cloud
-     * @return Reference to current wolkabout::Device instance (Provides fluent interface)
-     */
-    Device& setDevicePassword(const std::string& password);
-    /**
      * @brief Gets device password
      * @return Device password
      */
     const std::string& getDevicePassword();
 
-    /**
-     * @brief Set actuator references for device
-     * @param actuators Actuator references
-     * @return Reference to current wolkabout::Device instance (Provides fluent interface)
-     */
-    Device& setActuatorReferences(const std::vector<std::string>& actuators);
     /**
      * @brief Gets actuator references for device
      * @return Actuator references
@@ -67,8 +54,8 @@ public:
     virtual ~Device() = default;
 
 private:
-    std::string m_deviceKey;
-    std::string m_devicePassword;
+    std::string m_key;
+    std::string m_password;
     std::vector<std::string> m_actuatorReferences;
 };
 }

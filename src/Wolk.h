@@ -116,7 +116,9 @@ public:
      *               - unsigned int<br>
      *               - unsigned long int<br>
      *               - unsigned long long int<br>
-     *               - string
+     *               - string<br>
+     *               - char*<br>
+     *               - const char*<br>
      * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
      *            If omitted current POSIX time is adopted
      */

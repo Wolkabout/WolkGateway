@@ -27,10 +27,7 @@ Example Usage
 -------------
 **Establishing connection with WolkAbout IoT platform:**
 ```cpp
-wolkabout::Device device;
-device.setDeviceKey("DEVICE_KEY")
-    .setDevicePassword("DEVICE_PASSWORD")
-    .setActuatorReferences({"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO"});
+wolkabout::Device device("DEVICE_KEY", "DEVICE_PASSWORD", {"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO"});
 
 std::unique_ptr<wolkabout::Wolk> wolk =
     wolkabout::Wolk::connectDevice(device)

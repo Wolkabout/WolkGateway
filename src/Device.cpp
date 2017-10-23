@@ -22,42 +22,19 @@
 
 namespace wolkabout
 {
-Device::Device(std::string deviceKey, std::string devicePassword, std::vector<std::string> actuatorReferences)
-: m_deviceKey(std::move(deviceKey))
-, m_devicePassword(std::move(devicePassword))
-, m_actuatorReferences(std::move(actuatorReferences))
+Device::Device(std::string key, std::string password, std::vector<std::string> actuatorReferences)
+: m_key(std::move(key)), m_password(std::move(password)), m_actuatorReferences(std::move(actuatorReferences))
 {
-}
-
-Device& Device::setDeviceKey(const std::string& key)
-{
-    m_deviceKey = key;
-
-    return *this;
 }
 
 const std::string& Device::getDeviceKey()
 {
-    return m_deviceKey;
-}
-
-Device& Device::setDevicePassword(const std::string& password)
-{
-    m_devicePassword = password;
-
-    return *this;
+    return m_key;
 }
 
 const std::string& Device::getDevicePassword()
 {
-    return m_devicePassword;
-}
-
-Device& Device::setActuatorReferences(const std::vector<std::string>& actuators)
-{
-    m_actuatorReferences = actuators;
-
-    return *this;
+    return m_password;
 }
 
 const std::vector<std::string> Device::getActuatorReferences()

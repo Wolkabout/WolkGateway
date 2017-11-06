@@ -17,7 +17,6 @@
 #include "PublishingService.h"
 #include "ActuatorStatus.h"
 #include "JsonParser.h"
-#include "MqttService.h"
 #include "Reading.h"
 #include "ReadingsBuffer.h"
 #include "SensorReading.h"
@@ -30,15 +29,13 @@
 
 namespace wolkabout
 {
-PublishingService::PublishingService(std::shared_ptr<MqttService> mqttService,
-                                     std::shared_ptr<ReadingBuffer> readingBuffer, std::string deviceKey,
+PublishingService::PublishingService(std::shared_ptr<ConnectivityService> connectivityService,
+                                     std::shared_ptr<ReadingBuffer> readingBuffer,
                                      std::chrono::milliseconds publishInterval)
-: m_mqttService(mqttService)
+: m_connectivityService(connectivityService)
 , m_readingBuffer(readingBuffer)
-, m_deviceKey(std::move(deviceKey))
 , m_publishInterval(std::move(publishInterval))
 , m_isRunning(false)
-, m_shouldWaitForPublish(false)
 {
 }
 
@@ -56,59 +53,45 @@ void PublishingService::stop()
 
 void PublishingService::flush()
 {
-    publishReadings();
+    m_flushReadings.notify_one();
 }
 
 void PublishingService::run()
 {
     while (m_isRunning)
     {
-        if (m_mqttService->isConnected())
+        if (!m_connectivityService->isConnected())
         {
-            publishReadings();
-        }
-        else
-        {
-            m_mqttService->connect();
+            m_connectivityService->connect();
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(m_publishInterval));
+        publishReadings();
+
+        sleepUntilNextPublishCycle();
     }
 }
 
 void PublishingService::publishReadings()
 {
-    if (m_readingBuffer->hasReadings())
+    if (!m_readingBuffer->hasReadings())
     {
-        ReadingPublisherVisitor readingPublisher(*m_mqttService.get(), m_deviceKey);
-        for (const std::unique_ptr<Reading>& reading : m_readingBuffer->getReadings())
-        {
-            reading->acceptVisit(readingPublisher);
-        }
+        return;
     }
+
+    std::vector<std::shared_ptr<Reading>> readings = m_readingBuffer->getReadings();
+    std::for_each(readings.begin(), readings.end(),
+                  [this](std::shared_ptr<Reading> reading) -> void { publishReading(reading); });
 }
 
-void PublishingService::ReadingPublisherVisitor::visit(SensorReading& sensorReading)
+void PublishingService::publishReading(std::shared_ptr<Reading> reading)
 {
-    std::string topic = "readings/" + m_devicekey + "/" + sensorReading.getReference();
-    std::string messagePayload = JsonParser::toJson(sensorReading);
-
-    m_mqttService.publish(topic, messagePayload);
+    m_connectivityService->publish(reading);
 }
 
-void PublishingService::ReadingPublisherVisitor::visit(ActuatorStatus& actuatorStatus)
+void PublishingService::sleepUntilNextPublishCycle()
 {
-    std::string topic = "actuators/status/" + m_devicekey + "/" + actuatorStatus.getReference();
-    std::string messagePayload = JsonParser::toJson(actuatorStatus);
-
-    m_mqttService.publish(topic, messagePayload);
-}
-
-void PublishingService::ReadingPublisherVisitor::visit(Alarm& event)
-{
-    std::string topic = "events/" + m_devicekey + "/" + event.getReference();
-    std::string messagePayload = JsonParser::toJson(event);
-
-    m_mqttService.publish(topic, messagePayload);
+    std::mutex lock;
+    std::unique_lock<std::mutex> unique_lock(lock);
+    m_flushReadings.wait_for(unique_lock, m_publishInterval);
 }
 }

@@ -25,7 +25,8 @@ class ActuationHandler
 {
 public:
     /**
-     * @brief Actuation handler callback
+     * @brief Actuation handler callback<br>
+     *        Must be implemented as non blocking
      * @param reference Actuator reference
      * @param value Desired actuator value
      */

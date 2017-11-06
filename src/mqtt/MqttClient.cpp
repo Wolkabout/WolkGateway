@@ -14,37 +14,12 @@
  * limitations under the License.
  */
 
-#include "ReadingsBuffer.h"
-#include "Reading.h"
-
-#include <memory>
-#include <utility>
-#include <vector>
+#include "MqttClient.h"
 
 namespace wolkabout
 {
-void ReadingBuffer::addReading(std::shared_ptr<Reading> reading)
+void MqttClient::onMessageReceived(MqttClient::OnMessageReceivedCallback onMessageReceived)
 {
-    m_readings.push(reading);
-}
-
-std::vector<std::shared_ptr<Reading>> ReadingBuffer::getReadings()
-{
-    m_readings.swapBuffers();
-
-    std::vector<std::shared_ptr<Reading>> readings;
-
-    std::shared_ptr<Reading> reading;
-    while ((reading = m_readings.pop()) != nullptr)
-    {
-        readings.push_back(reading);
-    }
-
-    return readings;
-}
-
-bool ReadingBuffer::hasReadings()
-{
-    return !m_readings.isEmpty();
+    m_onMessageReceived = onMessageReceived;
 }
 }

@@ -21,7 +21,6 @@
 #include "ActuatorStatusProvider.h"
 #include "Device.h"
 #include "JsonParser.h"
-#include "MqttService.h"
 #include "ReadingsBuffer.h"
 #include "SensorReading.h"
 
@@ -35,54 +34,6 @@
 
 namespace wolkabout
 {
-WolkBuilder& WolkBuilder::toHost(const std::string& host)
-{
-    m_wolk->m_host = host;
-    return *this;
-}
-
-WolkBuilder& WolkBuilder::actuationHandler(std::function<void(const std::string&, const std::string&)> actuationHandler)
-{
-    m_wolk->m_actuationHandlerLambda = actuationHandler;
-    m_wolk->m_actuationHandler.reset();
-    return *this;
-}
-
-WolkBuilder& WolkBuilder::actuationHandler(std::weak_ptr<ActuationHandler> actuationHandler)
-{
-    m_wolk->m_actuationHandler = actuationHandler;
-    m_wolk->m_actuationHandlerLambda = nullptr;
-    return *this;
-}
-
-WolkBuilder& WolkBuilder::actuatorStatusProvider(
-  std::function<ActuatorStatus(const std::string&)> actuatorStatusProvider)
-{
-    m_wolk->m_actuatorStatusProviderLambda = actuatorStatusProvider;
-    m_wolk->m_actuatorStatusProvider.reset();
-    return *this;
-}
-
-WolkBuilder& WolkBuilder::actuatorStatusProvider(std::weak_ptr<ActuatorStatusProvider> actuatorStatusProvider)
-{
-    m_wolk->m_actuatorStatusProvider = actuatorStatusProvider;
-    m_wolk->m_actuatorStatusProviderLambda = nullptr;
-    return *this;
-}
-
-std::unique_ptr<Wolk> WolkBuilder::connect()
-{
-    m_wolk->connect();
-    return std::move(m_wolk);
-}
-
-WolkBuilder::WolkBuilder(Device device) : m_wolk(std::unique_ptr<Wolk>(new Wolk(device))) {}
-
-WolkBuilder Wolk::connectDevice(Device device)
-{
-    return WolkBuilder(device);
-}
-
 void Wolk::addAlarm(const std::string& reference, const std::string& value, unsigned long long rtc)
 {
     if (rtc == 0)
@@ -154,41 +105,30 @@ void Wolk::disconnect()
     {
         m_publishingService->stop();
     }
-
-    if (m_mqttService)
-    {
-        m_mqttService->disconnect();
-    }
 }
 
-Wolk::Wolk(Device device)
+Wolk::Wolk(std::shared_ptr<ConnectivityService> connectivityService, Device device)
 : m_device(std::move(device))
-, m_host(WOLK_DEMO_HOST)
 , m_actuationHandlerLambda(nullptr)
 , m_actuatorStatusProviderLambda(nullptr)
-, m_readingsBuffer(std::shared_ptr<ReadingBuffer>(new ReadingBuffer()))
-, m_mqttService(nullptr)
+, m_connectivityService(connectivityService)
+, m_ConnectivityServiceListener(
+    std::shared_ptr<ConnectivityServiceListenerImpl>(new ConnectivityServiceListenerImpl(*this)))
 , m_publishingService(nullptr)
+, m_readingsBuffer(std::shared_ptr<ReadingBuffer>(new ReadingBuffer()))
 {
+    m_connectivityService->setListener(m_ConnectivityServiceListener);
 }
 
 void Wolk::connect()
 {
-    m_mqttService.reset(new MqttService(m_device, m_host));
-    m_mqttService->setListener(this);
+    m_publishingService.reset(new PublishingService(m_connectivityService, m_readingsBuffer));
+    m_publishingService->start();
 
-    std::vector<std::string> subscriptionList;
     for (const std::string& actuatorReference : m_device.getActuatorReferences())
     {
-        std::stringstream topic("");
-        topic << "actuators/commands/" << m_device.getDeviceKey() << "/" << actuatorReference;
-        subscriptionList.emplace_back(topic.str());
         publishActuatorStatus(actuatorReference);
     }
-    m_mqttService->setSubscriptionList(subscriptionList).connect();
-
-    m_publishingService.reset(new PublishingService(m_mqttService, m_readingsBuffer, m_device.getDeviceKey()));
-    m_publishingService->start();
 }
 
 void Wolk::addActuatorStatus(const std::string& reference, const ActuatorStatus& actuatorStatus)
@@ -230,19 +170,11 @@ unsigned long long Wolk::currentRtc()
     return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
 }
 
-void Wolk::messageArrived(std::string topic, std::string message)
+Wolk::ConnectivityServiceListenerImpl::ConnectivityServiceListenerImpl(Wolk& wolk) : m_wolk(wolk) {}
+
+void Wolk::ConnectivityServiceListenerImpl::actuatorCommandReceived(const ActuatorCommand& actuatorCommand,
+                                                                    const std::string& reference)
 {
-    const size_t referencePosition = topic.find_last_of('/');
-    if (referencePosition == std::string::npos)
-    {
-        return;
-    }
-
-    const std::string reference = topic.substr(referencePosition + 1);
-
-    ActuatorCommand actuatorCommand;
-    JsonParser::fromJson(message, actuatorCommand);
-
-    handleActuatorCommand(std::move(actuatorCommand), reference);
+    m_wolk.handleActuatorCommand(actuatorCommand, reference);
 }
 }

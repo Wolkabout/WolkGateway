@@ -18,13 +18,14 @@
 #define PUBLISHINGSERVICE_H
 
 #include "ActuatorStatus.h"
-#include "MqttService.h"
+#include "ConnectivityService.h"
 #include "Reading.h"
 #include "ReadingsBuffer.h"
 #include "SensorReading.h"
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <memory>
 #include <string>
 #include <thread>
@@ -34,8 +35,7 @@ namespace wolkabout
 class PublishingService
 {
 public:
-    PublishingService(std::shared_ptr<MqttService> mqttService, std::shared_ptr<ReadingBuffer> readingBuffer,
-                      std::string deviceKey,
+    PublishingService(std::shared_ptr<ConnectivityService> connectivityService, std::shared_ptr<ReadingBuffer> readingBuffer,
                       std::chrono::milliseconds publishInterval = std::chrono::milliseconds(200));
 
     virtual ~PublishingService() = default;
@@ -49,35 +49,18 @@ private:
     void run();
 
     void publishReadings();
+    void publishReading(std::shared_ptr<Reading> reading);
 
-    class ReadingPublisherVisitor : public ReadingVisitor
-    {
-    public:
-        ReadingPublisherVisitor(MqttService& mqttService, std::string& deviceKey)
-        : m_mqttService(mqttService), m_devicekey(deviceKey)
-        {
-        }
+    void sleepUntilNextPublishCycle();
 
-        ~ReadingPublisherVisitor() = default;
-
-        void visit(ActuatorStatus& actuatorStatus) override;
-        void visit(Alarm& event) override;
-        void visit(SensorReading& sensorReading) override;
-
-    private:
-        MqttService& m_mqttService;
-        std::string& m_devicekey;
-    };
-
-    std::shared_ptr<MqttService> m_mqttService;
+    std::shared_ptr<ConnectivityService> m_connectivityService;
     std::shared_ptr<ReadingBuffer> m_readingBuffer;
-
-    std::string m_deviceKey;
 
     std::chrono::milliseconds m_publishInterval;
 
     std::atomic_bool m_isRunning;
-    std::atomic_bool m_shouldWaitForPublish;
+    std::condition_variable m_flushReadings;
+
     std::unique_ptr<std::thread> m_worker;
 };
 }

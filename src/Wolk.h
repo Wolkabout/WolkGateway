@@ -20,75 +20,19 @@
 #include "ActuationHandler.h"
 #include "ActuatorCommand.h"
 #include "ActuatorStatusProvider.h"
+#include "ConnectivityService.h"
 #include "Device.h"
-#include "MqttService.h"
 #include "PublishingService.h"
 #include "ReadingsBuffer.h"
+#include "WolkBuilder.h"
 
-#include <exception>
 #include <functional>
 #include <memory>
 #include <string>
 
 namespace wolkabout
 {
-class Wolk;
-class WolkBuilder final
-{
-    friend class Wolk;
-
-public:
-    ~WolkBuilder() = default;
-
-    /**
-     * @brief Allows passing of URI to custom WolkAbout IoT Cloud instance
-     * @param host Server URI
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& toHost(const std::string& host);
-
-    /**
-     * @brief Sets actuation handler
-     * @param actuationHandler Lambda that handles actuation requests
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& actuationHandler(
-      std::function<void(const std::string& reference, const std::string& value)> actuationHandler);
-    /**
-     * @brief Sets actuation handler
-     * @param actuationHandler Instance of wolkabout::ActuationHandler
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& actuationHandler(std::weak_ptr<ActuationHandler> actuationHandler);
-
-    /**
-     * @brief Sets actuation status provider
-     * @param actuatorStatusProvider Lambda that provides ActuatorStatus by reference of requested actuator
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& actuatorStatusProvider(
-      std::function<ActuatorStatus(const std::string& reference)> actuatorStatusProvider);
-    /**
-     * @brief Sets actuation status provider
-     * @param actuatorStatusProvider Instance of wolkabout::ActuatorStatusProvider
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& actuatorStatusProvider(std::weak_ptr<ActuatorStatusProvider> actuatorStatusProvider);
-
-    /**
-     * @brief Connect device to WolkAbout IoT Platform
-     * @return wolkabout::Wolk instance wrapped in std::unique_ptr
-     */
-    std::unique_ptr<Wolk> connect();
-
-private:
-    WolkBuilder(Device device);
-    WolkBuilder(WolkBuilder&&) = default;
-
-    std::unique_ptr<Wolk> m_wolk;
-};
-
-class Wolk : public MqttServiceListener
+class Wolk
 {
     friend class WolkBuilder;
 
@@ -96,11 +40,10 @@ public:
     virtual ~Wolk() = default;
 
     /**
-     * @brief Initiates wolkabout::WolkBuilder that connects device to WolkAbout IoT Cloud
-     * @param device wolkabout::Device to connect to WolkAbout IoT Platform
+     * @brief Initiates wolkabout::WolkBuilder that configures device to connect to WolkAbout IoT Cloud
      * @return wolkabout::WolkBuilder instance
      */
-    static WolkBuilder connectDevice(Device device);
+    static WolkBuilder newBuilder();
 
     /**
      * @brief Publishes sensor reading to WolkAbout IoT Cloud
@@ -139,11 +82,30 @@ public:
      */
     void publishActuatorStatus(const std::string& reference);
 
-private:
-    Wolk(Device device);
-
+    /**
+     * @brief connect Establishes connection with WolkAbout IoT platform
+     */
     void connect();
+
+    /**
+     * @brief disconnect Disconnects from WolkAbout IoT platform
+     */
     void disconnect();
+
+private:
+    class ConnectivityServiceListenerImpl : public ConnectivityServiceListener
+    {
+    public:
+        ConnectivityServiceListenerImpl(Wolk& wolk);
+        virtual ~ConnectivityServiceListenerImpl() = default;
+
+        void actuatorCommandReceived(const ActuatorCommand& actuatorCommand, const std::string& reference) override;
+
+    private:
+        Wolk& m_wolk;
+    };
+
+    Wolk(std::shared_ptr<ConnectivityService> connectivityService, Device device);
 
     void addActuatorStatus(const std::string& reference, const ActuatorStatus& actuatorStatus);
 
@@ -153,10 +115,7 @@ private:
 
     static unsigned long long int currentRtc();
 
-    virtual void messageArrived(std::string topic, std::string message) override;
-
     Device m_device;
-    std::string m_host;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;
     std::weak_ptr<ActuationHandler> m_actuationHandler;
@@ -164,15 +123,12 @@ private:
     std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
     std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
 
-    std::shared_ptr<ReadingBuffer> m_readingsBuffer;
-
-    std::shared_ptr<MqttService> m_mqttService;
+    std::shared_ptr<ConnectivityService> m_connectivityService;
+    std::shared_ptr<ConnectivityServiceListenerImpl> m_ConnectivityServiceListener;
 
     std::unique_ptr<PublishingService> m_publishingService;
 
-    std::unique_ptr<MqttServiceListener> m_mqttServiceListener;
-
-    static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
+    std::shared_ptr<ReadingBuffer> m_readingsBuffer;
 };
 }
 

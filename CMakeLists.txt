@@ -29,6 +29,7 @@ add_subdirectory(mqtt)
 # WolkAbout c++ Connector
 include_directories("mqtt")
 include_directories("src")
+
 file(GLOB_RECURSE HEADER_FILES "src/*.h" "src/*.hpp")
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
 

@@ -26,27 +26,26 @@
 
 int main(int /* argc */, char** /* argv */)
 {
-    wolkabout::Device device;
-    device.setDeviceKey("DEVICE_KEY")
-      .setDevicePassword("DEVICE_PASSWORD")
-      .setActuatorReferences({"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO", "ACTUATOR_REFERENCE_THREE"});
+    wolkabout::Device device("DEVICE_KEY", "DEVICE_PASSWORD", {"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO", "ACTUATOR_REFERENCE_THREE"});
 
     std::unique_ptr<wolkabout::Wolk> wolk =
-      wolkabout::Wolk::connectDevice(device)
+      wolkabout::Wolk::newBuilder()
+        .device(device)
         .actuationHandler([](const std::string& reference, const std::string& value) -> void {
             std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
         })
-
         .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
             if (reference == "ACTUATOR_REFERENCE_ONE") {
                 return wolkabout::ActuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
             } else if (reference == "ACTUATOR_REFERENCE_TWO") {
-                return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);;
+                return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
             }
 
             return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
         })
-        .connect();
+        .build();
+
+    wolk->connect();
 
     wolk->addSensorReading("TEMPERATURE_REF", 23.4);
     wolk->addSensorReading("BOOL_SENSOR_REF", true);

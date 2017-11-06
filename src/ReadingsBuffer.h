@@ -31,14 +31,14 @@ public:
     ReadingBuffer() = default;
     virtual ~ReadingBuffer() = default;
 
-    void addReading(std::unique_ptr<Reading> reading);
+    void addReading(std::shared_ptr<Reading> reading);
 
-    std::vector<std::unique_ptr<Reading>> getReadings();
+    std::vector<std::shared_ptr<Reading>> getReadings();
 
     bool hasReadings();
 
 private:
-    Buffer<std::unique_ptr<Reading>> m_readings;
+    Buffer<std::shared_ptr<Reading>> m_readings;
 };
 }
 

@@ -27,7 +27,8 @@ class ActuatorStatusProvider
 {
 public:
     /**
-     * @brief Actuator status provider callback
+     * @brief Actuator status provider callback<br>
+     *        Must be implemented as non blocking
      * @param reference Actuator reference
      * @return ActuatorStatus of requested actuator
      */

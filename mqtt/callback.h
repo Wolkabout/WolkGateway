@@ -41,37 +41,37 @@ namespace mqtt {
 class callback
 {
 public:
-	/** Smart/shared pointer to an object of this type */
-	using ptr_t = std::shared_ptr<callback>;
-	/** Smart/shared pointer to a const object of this type */
-	using const_ptr_t = std::shared_ptr<const callback>;
+    /** Smart/shared pointer to an object of this type */
+    using ptr_t = std::shared_ptr<callback>;
+    /** Smart/shared pointer to a const object of this type */
+    using const_ptr_t = std::shared_ptr<const callback>;
 
-	/**
-	 * Virtual destructor.
-	 */
-	virtual ~callback() {}
+    /**
+     * Virtual destructor.
+     */
+    virtual ~callback() {}
 
-	/**
-	 * This method is called when the client is connected.
-	 * @param cause
-	 */
-	virtual void connected(const string& cause) {}
-	/**
-	 * This method is called when the connection to the server is lost.
-	 * @param cause
-	 */
-	virtual void connection_lost(const string& cause) {}
-	/**
-	 * This method is called when a message arrives from the server.
-	 * @param msg The message
-	 */
-	virtual void message_arrived(const_message_ptr msg) {}
-	/**
-	 * Called when delivery for a message has been completed, and all
-	 * acknowledgments have been received.
-	 * @param tok The token tracking the message delivery.
-	 */
-	virtual void delivery_complete(delivery_token_ptr tok) {}
+    /**
+     * This method is called when the client is connected.
+     * @param cause
+     */
+    virtual void connected(const string& /* cause */) {}
+    /**
+     * This method is called when the connection to the server is lost.
+     * @param cause
+     */
+    virtual void connection_lost(const string& /* cause */) {}
+    /**
+     * This method is called when a message arrives from the server.
+     * @param msg The message
+     */
+    virtual void message_arrived(const_message_ptr /* msg */) {}
+    /**
+     * Called when delivery for a message has been completed, and all
+     * acknowledgments have been received.
+     * @param tok The token tracking the message delivery.
+     */
+    virtual void delivery_complete(delivery_token_ptr /* tok */) {}
 };
 
 /** Smart/shared pointer to a callback object */

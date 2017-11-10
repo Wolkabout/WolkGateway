@@ -16,13 +16,14 @@
 
 #include "Wolk.h"
 #include "ActuationHandler.h"
-#include "ActuatorCommand.h"
-#include "ActuatorStatus.h"
 #include "ActuatorStatusProvider.h"
-#include "Device.h"
-#include "JsonParser.h"
-#include "ReadingsBuffer.h"
-#include "SensorReading.h"
+#include "WolkBuilder.h"
+#include "model/ActuatorCommand.h"
+#include "model/ActuatorStatus.h"
+#include "model/Alarm.h"
+#include "model/Device.h"
+#include "model/SensorReading.h"
+#include "service/publish/PublishService.h"
 
 #include <memory>
 #include <sstream>
@@ -34,15 +35,9 @@
 
 namespace wolkabout
 {
-void Wolk::addAlarm(const std::string& reference, const std::string& value, unsigned long long rtc)
+WolkBuilder Wolk::newBuilder(Device device)
 {
-    if (rtc == 0)
-    {
-        rtc = Wolk::currentRtc();
-    }
-
-    std::unique_ptr<Alarm> event(new Alarm(value, reference, rtc));
-    m_readingsBuffer->addReading(std::move(event));
+    return WolkBuilder(device);
 }
 
 template <> void Wolk::addSensorReading(const std::string& reference, std::string value, unsigned long long rtc)
@@ -52,8 +47,8 @@ template <> void Wolk::addSensorReading(const std::string& reference, std::strin
         rtc = Wolk::currentRtc();
     }
 
-    std::unique_ptr<SensorReading> sensorReading(new SensorReading(value, reference, rtc));
-    m_readingsBuffer->addReading(std::move(sensorReading));
+    std::unique_ptr<SensorReading> sensorReading(new SensorReading(std::move(value), reference, rtc));
+    m_publishService->addReading(std::move(sensorReading));
 }
 
 template <typename T> void Wolk::addSensorReading(const std::string& reference, T value, unsigned long long rtc)
@@ -85,6 +80,17 @@ INSTANTIATE_ADD_SENSOR_READING_FOR(unsigned int);
 INSTANTIATE_ADD_SENSOR_READING_FOR(unsigned long int);
 INSTANTIATE_ADD_SENSOR_READING_FOR(unsigned long long int);
 
+void Wolk::addAlarm(const std::string& reference, const std::string& value, unsigned long long rtc)
+{
+    if (rtc == 0)
+    {
+        rtc = Wolk::currentRtc();
+    }
+
+    std::unique_ptr<Alarm> event(new Alarm(value, reference, rtc));
+    m_publishService->addReading(std::move(event));
+}
+
 void Wolk::publishActuatorStatus(const std::string& reference)
 {
     if (auto provider = m_actuatorStatusProvider.lock())
@@ -99,31 +105,9 @@ void Wolk::publishActuatorStatus(const std::string& reference)
     }
 }
 
-void Wolk::disconnect()
-{
-    if (m_publishingService)
-    {
-        m_publishingService->stop();
-    }
-}
-
-Wolk::Wolk(std::shared_ptr<ConnectivityService> connectivityService, Device device)
-: m_device(std::move(device))
-, m_actuationHandlerLambda(nullptr)
-, m_actuatorStatusProviderLambda(nullptr)
-, m_connectivityService(connectivityService)
-, m_ConnectivityServiceListener(
-    std::shared_ptr<ConnectivityServiceListenerImpl>(new ConnectivityServiceListenerImpl(*this)))
-, m_publishingService(nullptr)
-, m_readingsBuffer(std::shared_ptr<ReadingBuffer>(new ReadingBuffer()))
-{
-    m_connectivityService->setListener(m_ConnectivityServiceListener);
-}
-
 void Wolk::connect()
 {
-    m_publishingService.reset(new PublishingService(m_connectivityService, m_readingsBuffer));
-    m_publishingService->start();
+    m_publishService->start();
 
     for (const std::string& actuatorReference : m_device.getActuatorReferences())
     {
@@ -131,36 +115,52 @@ void Wolk::connect()
     }
 }
 
+void Wolk::disconnect()
+{
+    if (m_publishService)
+    {
+        m_publishService->stop();
+    }
+}
+
+Wolk::Wolk(std::shared_ptr<PublishService> publishService, Device device)
+: m_device(std::move(device))
+, m_actuationHandlerLambda(nullptr)
+, m_actuatorStatusProviderLambda(nullptr)
+, m_publishService(publishService)
+{
+}
+
 void Wolk::addActuatorStatus(const std::string& reference, const ActuatorStatus& actuatorStatus)
 {
     std::unique_ptr<ActuatorStatus> status(
       new ActuatorStatus(actuatorStatus.getValue(), reference, actuatorStatus.getState()));
 
-    m_readingsBuffer->addReading(std::move(status));
+    m_publishService->addReading(std::move(status));
 }
 
-void Wolk::handleActuatorCommand(const ActuatorCommand& actuatorCommand, const std::string& reference)
+void Wolk::handleActuatorCommand(const ActuatorCommand& actuatorCommand)
 {
     if (actuatorCommand.getType() == ActuatorCommand::Type::STATUS)
     {
-        publishActuatorStatus(reference);
+        publishActuatorStatus(actuatorCommand.getReference());
     }
     else if (actuatorCommand.getType() == ActuatorCommand::Type::SET)
     {
-        handleSetActuator(actuatorCommand, reference);
-        publishActuatorStatus(reference);
+        handleSetActuator(actuatorCommand);
+        publishActuatorStatus(actuatorCommand.getReference());
     }
 }
 
-void Wolk::handleSetActuator(const ActuatorCommand& actuatorCommand, const std::string& reference)
+void Wolk::handleSetActuator(const ActuatorCommand& actuatorCommand)
 {
     if (auto provider = m_actuationHandler.lock())
     {
-        provider->handleActuation(reference, actuatorCommand.getValue());
+        provider->handleActuation(actuatorCommand.getReference(), actuatorCommand.getValue());
     }
     else if (m_actuationHandlerLambda)
     {
-        m_actuationHandlerLambda(reference, actuatorCommand.getValue());
+        m_actuationHandlerLambda(actuatorCommand.getReference(), actuatorCommand.getValue());
     }
 }
 
@@ -168,13 +168,5 @@ unsigned long long Wolk::currentRtc()
 {
     auto duration = std::chrono::system_clock::now().time_since_epoch();
     return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
-}
-
-Wolk::ConnectivityServiceListenerImpl::ConnectivityServiceListenerImpl(Wolk& wolk) : m_wolk(wolk) {}
-
-void Wolk::ConnectivityServiceListenerImpl::actuatorCommandReceived(const ActuatorCommand& actuatorCommand,
-                                                                    const std::string& reference)
-{
-    m_wolk.handleActuatorCommand(actuatorCommand, reference);
 }
 }

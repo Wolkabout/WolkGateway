@@ -26,7 +26,8 @@ class ActuationHandler
 public:
     /**
      * @brief Actuation handler callback<br>
-     *        Must be implemented as non blocking
+     *        Must be implemented as non blocking<br>
+     *        Must be implemented as thread safe
      * @param reference Actuator reference
      * @param value Desired actuator value
      */

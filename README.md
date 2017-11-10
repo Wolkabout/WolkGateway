@@ -5,6 +5,7 @@ Prerequisite
 ------
 Following tools/libraries are required in order to build WolkAbout C++ connector
 
+* cmake - version 3.5 or later
 * autotools
 * autoconf
 * m4
@@ -30,24 +31,22 @@ Example Usage
 wolkabout::Device device("DEVICE_KEY", "DEVICE_PASSWORD", {"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO"});
 
 std::unique_ptr<wolkabout::Wolk> wolk =
-    wolkabout::Wolk::connectDevice(device)
-        .actuationHandler([](const std::string& reference, const std::string& value) -> void {
-            std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
-        })
+  wolkabout::Wolk::newBuilder(device)
+    .actuationHandler([](const std::string& reference, const std::string& value) -> void {
+        std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
+    })
+    .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
+        if (reference == "ACTUATOR_REFERENCE_ONE") {
+            return wolkabout::ActuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
+        } else if (reference == "ACTUATOR_REFERENCE_TWO") {
+            return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
+        }
 
-        .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
-            if (reference == "ACTUATOR_REFERENCE_ONE") {
-                wolkabout::ActuatorStatus actuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
-                return actuatorStatus;
-            } else if (reference == "ACTUATOR_REFERENCE_TWO") {
-                wolkabout::ActuatorStatus actuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
-                return actuatorStatus;
-            }
+        return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
+    })
+    .build();
 
-            wolkabout::ActuatorStatus actuatorStatus("", wolkabout::ActuatorStatus::State::READY);
-            return actuatorStatus;
-        })
-        .connect();
+    wolk->connect();
 ```
 
 **Publishing sensor readings:**
@@ -68,10 +67,69 @@ and publish actuator status.
 wolk->addAlarm("ALARM_REF", "ALARM_MESSAGE_FROM_CONNECTOR");
 ```
 
-Sensor readings, actuator statuses, and events are automatically pushed to WolkAbout IoT platform every 200 milliseconds,
+Sensor readings, actuator statuses, and events are automatically pushed to WolkAbout IoT platform every 50 milliseconds,
 hence no action other than *addSensorReading*, *publishActuatorStatus*, or *addEvent* is required.
 
 **Disconnecting from the platform:**
 ```cpp
 wolk->disconnect();
 ```
+
+**Data persistence:**
+
+WolkAbout C++ Connector provides mechanism for persisting data in situations where readings can not be sent to WolkAbout IoT platform.
+
+Persisted readings are sent to WolkAbout IoT platform once connection is established.
+
+Data persistence mechanism **is not enabled by default**, and can be enabled via wolkabout::WolkBuilder when constructing wolkabout::Wolk instance in following manner:
+
+```cpp
+wolkabout::Device device("DEVICE_KEY", "DEVICE_PASSWORD", {"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO"});
+
+std::unique_ptr<wolkabout::Wolk> wolk =
+  wolkabout::Wolk::newBuilder(device)
+    .actuationHandler([](const std::string& reference, const std::string& value) -> void {
+        std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
+    })
+    .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
+        if (reference == "ACTUATOR_REFERENCE_ONE") {
+            return wolkabout::ActuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
+        } else if (reference == "ACTUATOR_REFERENCE_TWO") {
+            return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
+        }
+
+        return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
+    })
+    .withDataPersistence() // Enable data persistance via default filesystem persister
+    .build();
+
+    wolk->connect();
+```
+
+In cases when provided filesystem persistence is suboptimal, one can use custom persistence by implementing wolkabout::PersistService interface, and forwarding it to
+builder in following manner:
+
+```cpp
+wolkabout::Device device("DEVICE_KEY", "DEVICE_PASSWORD", {"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO"});
+
+std::unique_ptr<wolkabout::Wolk> wolk =
+  wolkabout::Wolk::newBuilder(device)
+    .actuationHandler([](const std::string& reference, const std::string& value) -> void {
+        std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
+    })
+    .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
+        if (reference == "ACTUATOR_REFERENCE_ONE") {
+            return wolkabout::ActuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
+        } else if (reference == "ACTUATOR_REFERENCE_TWO") {
+            return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
+        }
+
+        return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
+    })
+    .withDataPersistence(std::make_shared<CustomPersistServiceImplemenation>()) // Enable data persistance via custom persister
+    .build();
+
+    wolk->connect();
+```
+
+Where 'CustomPersistServiceImplemenation' is implementation of wolkabout::PersistService interface.

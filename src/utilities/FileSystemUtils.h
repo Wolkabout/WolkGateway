@@ -14,28 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
+#ifndef FILESYSTEMUTILS_H
+#define FILESYSTEMUTILS_H
 
-#include "model/ActuatorStatus.h"
-
+#include <cstddef>
 #include <string>
+#include <vector>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+class FileSystemUtils
 {
 public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
+    FileSystemUtils() = delete;
 
-    virtual ~ActuatorStatusProvider() = default;
+    static bool isFilePresent(const std::string& filePath);
+
+    static bool createFileWithContent(const std::string& filePath, const std::string& content);
+
+    static bool deleteFile(const std::string& filePath);
+
+    static bool isDirectoryPresent(const std::string& dirPath);
+
+    static bool createDirectory(const std::string& dirPath);
+
+    static bool readFileContent(const std::string& filePath, std::string& content);
+
+    static std::vector<std::string> listFiles(std::string directoryPath);
 };
 }
 

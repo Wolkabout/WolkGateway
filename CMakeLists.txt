@@ -17,6 +17,27 @@ project(WolkAboutConnector C CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -Weffc++ -pedantic                                           \
+                                            -pedantic-errors -Waggregate-return -Wcast-align                           \
+                                            -Wcast-qual -Wconversion                                                   \
+                                            -Wdisabled-optimization                                                    \
+                                            -Wfloat-equal -Wformat=2                                                   \
+                                            -Wformat-nonliteral -Wformat-security                                      \
+                                            -Wformat-y2k                                                               \
+                                            -Wimport  -Winit-self  -Winline                                            \
+                                            -Wlong-long                                                                \
+                                            -Wmissing-field-initializers -Wmissing-format-attribute                    \
+                                            -Wmissing-include-dirs -Wmissing-noreturn                                  \
+                                            -Wpointer-arith                                                            \
+                                            -Wno-packed  -Wno-padded -Wredundant-decls                                 \
+                                            -Wshadow -Wstack-protector                                                 \
+                                            -Wstrict-aliasing=2 -Wswitch-default                                       \
+                                            -Wswitch-enum                                                              \
+                                            -Wunreachable-code -Wunused                                                \
+                                            -Wunused-parameter                                                         \
+                                            -Wvariadic-macros                                                          \
+                                            -Wwrite-strings")
+
 # Paho MQTT
 IF (NOT OPENSSL_INCLUDE_DIR)
     message(FATAL_ERROR

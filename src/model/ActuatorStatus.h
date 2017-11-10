@@ -14,28 +14,37 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
+#ifndef ACTUATORSTATUS_H
+#define ACTUATORSTATUS_H
 
-#include "model/ActuatorStatus.h"
+#include "model/Reading.h"
 
 #include <string>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+class ActuatorStatus : public Reading
 {
 public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
+    enum class State
+    {
+        READY,
+        BUSY,
+        ERROR
+    };
 
-    virtual ~ActuatorStatusProvider() = default;
+    ActuatorStatus();
+    ActuatorStatus(std::string value, ActuatorStatus::State state);
+    ActuatorStatus(std::string value, std::string reference, ActuatorStatus::State state);
+
+    virtual ~ActuatorStatus() = default;
+
+    ActuatorStatus::State getState() const;
+
+    void acceptVisit(ReadingVisitor& visitor) override;
+
+private:
+    ActuatorStatus::State m_state;
 };
 }
 

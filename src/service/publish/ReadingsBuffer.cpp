@@ -14,29 +14,37 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
+#include "ReadingsBuffer.h"
+#include "model/Reading.h"
 
-#include "model/ActuatorStatus.h"
-
-#include <string>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+void ReadingBuffer::addReading(std::shared_ptr<Reading> reading)
 {
-public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
-
-    virtual ~ActuatorStatusProvider() = default;
-};
+    m_readings.push(reading);
 }
 
-#endif
+std::vector<std::shared_ptr<Reading>> ReadingBuffer::getReadings()
+{
+    m_readings.swapBuffers();
+
+    std::vector<std::shared_ptr<Reading>> readings;
+
+    std::shared_ptr<Reading> reading;
+    while ((reading = m_readings.pop()) != nullptr)
+    {
+        readings.push_back(reading);
+    }
+
+    return readings;
+}
+
+bool ReadingBuffer::hasReadings()
+{
+    return !m_readings.isEmpty();
+}
+}

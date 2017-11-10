@@ -14,29 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
+#include "service/persist/PersistService.h"
 
-#include "model/ActuatorStatus.h"
-
+#include <memory>
 #include <string>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+PersistService::PersistService(std::string persistPath)
 {
-public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
+    if (m_persistPath.back() != '\\' && m_persistPath.back() != '/')
+    {
+        persistPath = persistPath + "/";
+    }
 
-    virtual ~ActuatorStatusProvider() = default;
-};
+    m_persistPath = persistPath;
 }
 
-#endif
+const std::string& PersistService::getPersistPath() const
+{
+    return m_persistPath;
+}
+}

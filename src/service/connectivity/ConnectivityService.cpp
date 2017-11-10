@@ -14,29 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
-
-#include "model/ActuatorStatus.h"
-
-#include <string>
+#include "service/connectivity/ConnectivityService.h"
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+void ConnectivityService::setListener(std::weak_ptr<ConnectivityServiceListener> listener)
 {
-public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
-
-    virtual ~ActuatorStatusProvider() = default;
-};
+    m_listener = listener;
 }
 
-#endif
+void ConnectivityService::setListener(std::function<void(const ActuatorCommand&)> listener)
+{
+    m_listenerLambda = listener;
+}
+
+void ConnectivityService::invokeListener(const ActuatorCommand& actuatorCommand) const
+{
+    if (auto listener = m_listener.lock())
+    {
+        listener->actuatorCommandReceived(actuatorCommand);
+    }
+
+    if (m_listenerLambda)
+    {
+        m_listenerLambda(actuatorCommand);
+    }
+}
+}

@@ -14,28 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
+#ifndef ACTUATORCOMMANDDTO_H
+#define ACTUATORCOMMANDDTO_H
 
-#include "model/ActuatorStatus.h"
+#include "model/ActuatorCommand.h"
 
 #include <string>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+class ActuatorCommandDto
 {
 public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
+    ActuatorCommandDto() = default;
+    ActuatorCommandDto(const ActuatorCommand& actuatorCommand);
+    ActuatorCommandDto(ActuatorCommand::Type type, std::string value);
 
-    virtual ~ActuatorStatusProvider() = default;
+    virtual ~ActuatorCommandDto() = default;
+
+    ActuatorCommand::Type getType() const;
+    const std::string& getValue() const;
+
+private:
+    ActuatorCommand::Type m_type;
+    std::string m_value;
 };
 }
 

@@ -14,28 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
+#ifndef SENSORREADINGDTO_H
+#define SENSORREADINGDTO_H
 
-#include "model/ActuatorStatus.h"
+#include "model/SensorReading.h"
 
 #include <string>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+class SensorReadingDto
 {
 public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
+    SensorReadingDto() = default;
+    SensorReadingDto(const SensorReading& sensorReading);
+    SensorReadingDto(unsigned long long int rtc, std::string value);
 
-    virtual ~ActuatorStatusProvider() = default;
+    virtual ~SensorReadingDto() = default;
+
+    unsigned long long int getRtc() const;
+    const std::string& getValue() const;
+
+private:
+    unsigned long long int m_rtc;
+    std::string m_value;
 };
 }
 

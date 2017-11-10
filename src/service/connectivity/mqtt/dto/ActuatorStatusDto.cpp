@@ -14,29 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
-
-#include "model/ActuatorStatus.h"
+#include "service/connectivity/mqtt/dto/ActuatorStatusDto.h"
 
 #include <string>
+#include <utility>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+ActuatorStatusDto::ActuatorStatusDto(ActuatorStatus actuatorStatus)
+: m_state(actuatorStatus.getState()), m_value(actuatorStatus.getValue())
 {
-public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
-
-    virtual ~ActuatorStatusProvider() = default;
-};
 }
 
-#endif
+ActuatorStatusDto::ActuatorStatusDto(ActuatorStatus::State state, std::string value)
+: m_state(state), m_value(std::move(value))
+{
+}
+
+ActuatorStatus::State ActuatorStatusDto::getState() const
+{
+    return m_state;
+}
+
+const std::string& ActuatorStatusDto::getValue() const
+{
+    return m_value;
+}
+}

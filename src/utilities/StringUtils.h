@@ -14,28 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
-
-#include "model/ActuatorStatus.h"
+#ifndef STRINGUTILS_H
+#define STRINGUTILS_H
 
 #include <string>
+#include <vector>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+class StringUtils
 {
 public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
+    StringUtils() = delete;
 
-    virtual ~ActuatorStatusProvider() = default;
+    static bool contains(const std::string& string, char c);
+
+    static std::vector<std::string> tokenize(const std::string& string, const std::string& delimiters);
+
+    static bool endsWith(const std::string& string, const std::string& suffix);
 };
 }
 

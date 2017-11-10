@@ -14,29 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
-
-#include "model/ActuatorStatus.h"
+#include "service/connectivity/mqtt/dto/SensorReadingDto.h"
+#include "model/SensorReading.h"
 
 #include <string>
+#include <utility>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+SensorReadingDto::SensorReadingDto(const SensorReading& sensorReading)
+: m_rtc(sensorReading.getRtc()), m_value(sensorReading.getValue())
 {
-public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
-
-    virtual ~ActuatorStatusProvider() = default;
-};
 }
 
-#endif
+SensorReadingDto::SensorReadingDto(unsigned long long rtc, std::string value) : m_rtc(rtc), m_value(std::move(value)) {}
+
+unsigned long long SensorReadingDto::getRtc() const
+{
+    return m_rtc;
+}
+
+const std::string& SensorReadingDto::getValue() const
+{
+    return m_value;
+}
+}

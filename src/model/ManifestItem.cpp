@@ -14,29 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
-
-#include "model/ActuatorStatus.h"
+#include "model/ManifestItem.h"
 
 #include <string>
+#include <utility>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+ManifestItem::ManifestItem(std::string reference) : ManifestItem(std::move(reference), "", 1) {}
+
+ManifestItem::ManifestItem(std::string reference, std::string dataDelimiter, unsigned char dataDimensions)
+: m_reference(std::move(reference)), m_dataDelimiter(std::move(dataDelimiter)), m_dataDimensions(dataDimensions)
 {
-public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
-
-    virtual ~ActuatorStatusProvider() = default;
-};
 }
-
-#endif
+}

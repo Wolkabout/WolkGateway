@@ -19,7 +19,9 @@
 
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
-#include "Device.h"
+#include "model/Device.h"
+#include "service/persist/PersistService.h"
+#include "service/persist/json/JsonPersistService.h"
 
 #include <functional>
 #include <string>
@@ -29,10 +31,16 @@ namespace wolkabout
 class Wolk;
 class WolkBuilder final
 {
-    friend class Wolk;
-
 public:
     ~WolkBuilder() = default;
+
+    WolkBuilder(WolkBuilder&&) = default;
+
+    /**
+     * @brief WolkBuilder Initiates wolkabout::Wolk builder
+     * @param device Device for which wolkabout::WolkBuilder is instantiated
+     */
+    WolkBuilder(Device device);
 
     /**
      * @brief Allows passing of URI to custom WolkAbout IoT platform instance
@@ -42,19 +50,12 @@ public:
     WolkBuilder& host(const std::string& host);
 
     /**
-     * @brief Allows specifying which device is to be connected to WolkAbout IoT platform
-     * @param device Device that is to be connected to WolkAbout IoT platform
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& device(const Device& device);
-
-    /**
      * @brief Sets actuation handler
      * @param actuationHandler Lambda that handles actuation requests
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& actuationHandler(
-      std::function<void(const std::string& reference, const std::string& value)> actuationHandler);
+      const std::function<void(const std::string& reference, const std::string& value)>& actuationHandler);
 
     /**
      * @brief Sets actuation handler
@@ -69,7 +70,7 @@ public:
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& actuatorStatusProvider(
-      std::function<ActuatorStatus(const std::string& reference)> actuatorStatusProvider);
+      const std::function<ActuatorStatus(const std::string& reference)>& actuatorStatusProvider);
 
     /**
      * @brief Sets actuation status provider
@@ -79,15 +80,27 @@ public:
     WolkBuilder& actuatorStatusProvider(std::weak_ptr<ActuatorStatusProvider> actuatorStatusProvider);
 
     /**
+     * @brief Sets underlying persistence mechanism to be used<br>
+     *        Sample filesystem persistence is used as default
+     * @param persistService std::shared_ptr to wolkabout::PersistService implementation
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& withDataPersistence(
+      std::shared_ptr<PersistService> withDataPersistence = std::make_shared<wolkabout::JsonPersistService>());
+
+    /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
      */
-    std::unique_ptr<Wolk> build();
+    std::unique_ptr<Wolk> build() const;
+
+    /**
+     * @brief operator std::unique_ptr<Wolk> Conversion to wolkabout::wolk as result returns std::unique_ptr to built
+     * wolkabout::Wolk instance
+     */
+    operator std::unique_ptr<Wolk>() const;
 
 private:
-    WolkBuilder();
-    WolkBuilder(WolkBuilder&&) = default;
-
     std::string m_host;
     Device m_device;
 
@@ -96,6 +109,8 @@ private:
 
     std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
     std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
+
+    std::shared_ptr<PersistService> m_persistService;
 
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
 };

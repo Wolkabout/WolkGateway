@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include "ActuatorStatus.h"
-#include "Device.h"
 #include "Wolk.h"
 
 #include <iostream>
@@ -29,8 +27,7 @@ int main(int /* argc */, char** /* argv */)
     wolkabout::Device device("DEVICE_KEY", "DEVICE_PASSWORD", {"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO", "ACTUATOR_REFERENCE_THREE"});
 
     std::unique_ptr<wolkabout::Wolk> wolk =
-      wolkabout::Wolk::newBuilder()
-        .device(device)
+      wolkabout::Wolk::newBuilder(device)
         .actuationHandler([](const std::string& reference, const std::string& value) -> void {
             std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
         })

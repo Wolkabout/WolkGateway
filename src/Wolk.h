@@ -18,13 +18,12 @@
 #define WOLK_H
 
 #include "ActuationHandler.h"
-#include "ActuatorCommand.h"
 #include "ActuatorStatusProvider.h"
-#include "ConnectivityService.h"
-#include "Device.h"
-#include "PublishingService.h"
-#include "ReadingsBuffer.h"
 #include "WolkBuilder.h"
+#include "model/ActuatorCommand.h"
+#include "model/ActuatorStatus.h"
+#include "model/Device.h"
+#include "service/publish/PublishService.h"
 
 #include <functional>
 #include <memory>
@@ -41,12 +40,14 @@ public:
 
     /**
      * @brief Initiates wolkabout::WolkBuilder that configures device to connect to WolkAbout IoT Cloud
+     * @param device wolkabout::Device
      * @return wolkabout::WolkBuilder instance
      */
-    static WolkBuilder newBuilder();
+    static WolkBuilder newBuilder(Device device);
 
     /**
-     * @brief Publishes sensor reading to WolkAbout IoT Cloud
+     * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
      * @param reference Sensor reference
      * @param value Sensor value<br>
      *              Supported types:<br>
@@ -68,7 +69,8 @@ public:
     template <typename T> void addSensorReading(const std::string& reference, T value, unsigned long long int rtc = 0);
 
     /**
-     * @brief Publishes alarm to WolkAbout IoT Cloud
+     * @brief Publishes alarm to WolkAbout IoT Cloud<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
      * @param reference Alarm reference
      * @param value Alarm value
      * @param rtc POSIX time at which event occurred - Number of seconds since 01/01/1970<br>
@@ -77,7 +79,8 @@ public:
     void addAlarm(const std::string& reference, const std::string& value, unsigned long long int rtc = 0);
 
     /**
-     * @brief Invokes ActuatorStatusProvider callback to obtain actuator status
+     * @brief Invokes ActuatorStatusProvider callback to obtain actuator status<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
      * @param Actuator reference
      */
     void publishActuatorStatus(const std::string& reference);
@@ -93,25 +96,13 @@ public:
     void disconnect();
 
 private:
-    class ConnectivityServiceListenerImpl : public ConnectivityServiceListener
-    {
-    public:
-        ConnectivityServiceListenerImpl(Wolk& wolk);
-        virtual ~ConnectivityServiceListenerImpl() = default;
-
-        void actuatorCommandReceived(const ActuatorCommand& actuatorCommand, const std::string& reference) override;
-
-    private:
-        Wolk& m_wolk;
-    };
-
-    Wolk(std::shared_ptr<ConnectivityService> connectivityService, Device device);
+    Wolk(std::shared_ptr<PublishService> publishService, Device device);
 
     void addActuatorStatus(const std::string& reference, const ActuatorStatus& actuatorStatus);
 
-    void handleActuatorCommand(const ActuatorCommand& actuatorCommand, const std::string& reference);
+    void handleActuatorCommand(const ActuatorCommand& actuatorCommand);
 
-    void handleSetActuator(const ActuatorCommand& actuatorCommand, const std::string& reference);
+    void handleSetActuator(const ActuatorCommand& actuatorCommand);
 
     static unsigned long long int currentRtc();
 
@@ -123,12 +114,7 @@ private:
     std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
     std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
 
-    std::shared_ptr<ConnectivityService> m_connectivityService;
-    std::shared_ptr<ConnectivityServiceListenerImpl> m_ConnectivityServiceListener;
-
-    std::unique_ptr<PublishingService> m_publishingService;
-
-    std::shared_ptr<ReadingBuffer> m_readingsBuffer;
+    std::shared_ptr<PublishService> m_publishService;
 };
 }
 

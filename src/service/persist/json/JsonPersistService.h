@@ -17,7 +17,10 @@
 #ifndef JSONPERSISTSERVICE_H
 #define JSONPERSISTSERVICE_H
 
+#include "model/ActuatorStatus.h"
+#include "model/Alarm.h"
 #include "model/Reading.h"
+#include "model/SensorReading.h"
 #include "service/persist/PersistService.h"
 
 #include <memory>
@@ -31,7 +34,8 @@ class Reading;
 class JsonPersistService : public PersistService
 {
 public:
-    JsonPersistService(std::string persistPath = "persistence");
+    JsonPersistService(std::string persistPath = "persistence",
+                       unsigned long long int maximumNumberOfPersistedItems = 0, bool isCircular = false);
     virtual ~JsonPersistService() = default;
 
     bool hasPersistedReadings() override;
@@ -42,20 +46,37 @@ public:
     void dropFirst() override;
 
 private:
-    std::string generateFileName(std::shared_ptr<Reading> reading);
-    unsigned long long int getLastPersistedReadingNumber();
+    void persist(const ActuatorStatus& actuatorStatus);
+    void persist(const SensorReading& sensorReading);
+    void persist(const Alarm& alarm);
 
-    const std::vector<std::string>& getPersistedReadingsList(bool ignoreCached = false);
-    void invalidateCachedReadingsList();
+    std::shared_ptr<Reading> unpersistActuatorStatus(const std::string& readingFile);
+    std::shared_ptr<Reading> unpersistSensorReading(const std::string& readingFile);
+    std::shared_ptr<Reading> unpersistAlarm(const std::string& readingFile);
+
+    std::string generateFileName(const ActuatorStatus& actuatorStatus);
+    std::string generateFileName(const SensorReading& sensorReading);
+    std::string generateFileName(const Alarm& alarm);
+
+    const std::vector<std::string>& getPersistedActuatorStatusFilenames(bool forceCacheReload = false);
+    const std::vector<std::string>& getPersistedSensorReadingFilenames(bool forceCacheReload = false);
+    const std::vector<std::string>& getPersistedAlarmFilenames(bool forceCacheReload = false);
+
+    std::vector<std::string> getPersistedItemsFilenames(bool forceCacheReload = false);
+
+    void invalidatePersistedItemsCache();
 
     // std::pair<Is list dirty, Readings list>
-    std::pair<bool, std::vector<std::string>> m_cachedReadingsList;
-    static const constexpr int CachedReadingsListIsDirty = 0;
-    static const constexpr int CachedReadingsList = 1;
+    std::pair<bool, std::vector<std::string>> m_cachedActuatorStatusFilenames;
+    std::pair<bool, std::vector<std::string>> m_cachedSensorReadingFilenames;
+    std::pair<bool, std::vector<std::string>> m_cachedAlarmFilenames;
 
-    static const constexpr char* ACTUATOR_STATUS_SUFFIX = "-actuator_status";
-    static const constexpr char* SENSOR_READING_SUFFIX = "-sensor-reading";
-    static const constexpr char* ALARM_SUFFIX = "-alarm";
+    static const constexpr int PersistedItemsListIsDirty = 0;
+    static const constexpr int PersistedItemsList = 1;
+
+    static const constexpr char* ACTUATOR_STATUS_DIRECTORY = "actuator_status_dir/";
+    static const constexpr char* SENSOR_READING_DIRECTORY = "sensor_reading_dir/";
+    static const constexpr char* ALARM_DIRECTORY = "alarm_dir/";
 };
 }
 

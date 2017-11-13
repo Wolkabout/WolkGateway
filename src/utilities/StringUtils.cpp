@@ -26,6 +26,11 @@ bool StringUtils::contains(const std::string& string, char c)
     return string.find(c) != std::string::npos;
 }
 
+bool StringUtils::contains(const std::string& string, const std::string& substring)
+{
+    return string.find(substring) != std::string::npos;
+}
+
 std::vector<std::string> StringUtils::tokenize(const std::string& string, const std::string& delimiters)
 {
     std::vector<std::string> tokens;

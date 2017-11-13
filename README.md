@@ -132,4 +132,4 @@ std::unique_ptr<wolkabout::Wolk> wolk =
     wolk->connect();
 ```
 
-Where 'CustomPersistServiceImplemenation' is implementation of wolkabout::PersistService interface.
+For more info on persistence mechanism see wolkabout::PersistService and wolkabout::JsonPersistService classes

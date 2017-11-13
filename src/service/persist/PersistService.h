@@ -32,8 +32,15 @@ public:
     /**
      * @brief Constructor
      * @param persistPath Relative, or absolute, path to directory to be used with persistence implementation
+     * @param maximumNumberOfPersistedItems This many items will be kept in persistence.<br>
+     *                                      Passing N will limit persistence to keep N sensor readings, and N alarms,
+     *                                      Actuator statuses are not limited by this parameter, since ActuatorStatus-es
+     *                                      do not have history latest actuator statuses are persisted always
+     * @param isCircular True if persistence should act as circular buffer, eg. overwrite oldest sensor reaading or
+     * alarm when maximumNumberOfPersistedItems is reached
      */
-    PersistService(std::string persistPath = "");
+    PersistService(std::string persistPath = "", unsigned long long int maximumNumberOfPersistedItems = 0,
+                   bool isCircular = false);
 
     /**
      * @brief Destructor
@@ -64,12 +71,27 @@ public:
     virtual void dropFirst() = 0;
 
     /**
+     * @brief getMaximumNumberOfPersistedReadings Returns maximum number of persisted readings
+     * @return Maximum number of reading items
+     */
+    unsigned long long int getMaximumNumberOfPersistedReadings() const;
+
+    /**
+     * @brief isCircular Returns whether persistence acts as circular
+     * @return true if persistence acts as circular buffer, eg. overwrites oldest when maximumNumberOfPersistedItems is
+     * reached
+     */
+    bool isCircular() const;
+
+    /**
      * @brief Returns path to directory used by persistence
      * @return çonst std::string& containing path to directory used by persistence
      */
     const std::string& getPersistPath() const;
 
 private:
+    unsigned long long int m_maximumNumberOfPersistedReadings;
+    bool m_isCircular;
     std::string m_persistPath;
 };
 }

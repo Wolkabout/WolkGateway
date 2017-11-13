@@ -29,6 +29,8 @@ public:
 
     static bool contains(const std::string& string, char c);
 
+    static bool contains(const std::string& string, const std::string& substring);
+
     static std::vector<std::string> tokenize(const std::string& string, const std::string& delimiters);
 
     static bool endsWith(const std::string& string, const std::string& suffix);

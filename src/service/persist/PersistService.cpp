@@ -21,7 +21,9 @@
 
 namespace wolkabout
 {
-PersistService::PersistService(std::string persistPath)
+PersistService::PersistService(std::string persistPath, unsigned long long int maximumNumberOfPersistedItems,
+                               bool isCircular)
+: m_maximumNumberOfPersistedReadings(maximumNumberOfPersistedItems), m_isCircular(isCircular)
 {
     if (m_persistPath.back() != '\\' && m_persistPath.back() != '/')
     {
@@ -29,6 +31,16 @@ PersistService::PersistService(std::string persistPath)
     }
 
     m_persistPath = persistPath;
+}
+
+unsigned long long PersistService::getMaximumNumberOfPersistedReadings() const
+{
+    return m_maximumNumberOfPersistedReadings;
+}
+
+bool PersistService::isCircular() const
+{
+    return m_isCircular;
 }
 
 const std::string& PersistService::getPersistPath() const

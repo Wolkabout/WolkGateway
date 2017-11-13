@@ -12403,5 +12403,4 @@ inline nlohmann::json::json_pointer operator"" _json_pointer(const char* s, std:
 #undef JSON_DEPRECATED
 #undef JSON_THROW
 #undef JSON_TRY
-
 #endif

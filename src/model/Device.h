@@ -26,7 +26,7 @@ class Device
 {
 public:
     /**
-     * @brief
+     * @brief Constructor
      * @param key Device key provided by WolkAbout IoT Platform
      * @param password Device password provided by WolkAbout IoT Platform
      * @param actuatorReferences List of actuator references
@@ -34,22 +34,22 @@ public:
     Device(std::string key, std::string password, std::vector<std::string> actuatorReferences = {});
 
     /**
-     * @brief Gets device key
-     * @return Reference to current wolkabout::Device instance (Provides fluent interface)
+     * @brief Returns device key
+     * @return device key
      */
-    const std::string& getDeviceKey();
+    const std::string& getDeviceKey() const;
 
     /**
-     * @brief Gets device password
-     * @return Device password
+     * @brief Returns device password
+     * @return device password
      */
-    const std::string& getDevicePassword();
+    const std::string& getDevicePassword() const;
 
     /**
-     * @brief Gets actuator references for device
-     * @return Actuator references
+     * @brief Returns actuator references for device
+     * @return actuator references for device
      */
-    const std::vector<std::string> getActuatorReferences();
+    const std::vector<std::string> getActuatorReferences() const;
 
     virtual ~Device() = default;
 

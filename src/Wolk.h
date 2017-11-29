@@ -19,11 +19,12 @@
 
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
+#include "CommandBuffer.h"
 #include "WolkBuilder.h"
+#include "connectivity/ConnectivityService.h"
 #include "model/ActuatorCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/Device.h"
-#include "service/publish/PublishService.h"
 
 #include <functional>
 #include <memory>
@@ -95,17 +96,32 @@ public:
      */
     void disconnect();
 
+    /**
+     * @brief publish Publishes data
+     */
+    void publish();
+
 private:
-    Wolk(std::shared_ptr<PublishService> publishService, Device device);
+    static const constexpr unsigned int PUBLISH_BATCH_ITEMS_COUNT = 50;
 
-    void addActuatorStatus(const std::string& reference, const ActuatorStatus& actuatorStatus);
+    Wolk(std::shared_ptr<ConnectivityService> connectivityService, std::shared_ptr<Persistence> persistence,
+         Device device);
 
-    void handleActuatorCommand(const ActuatorCommand& actuatorCommand);
-
-    void handleSetActuator(const ActuatorCommand& actuatorCommand);
+    void addToCommandBuffer(std::function<void()> command);
 
     static unsigned long long int currentRtc();
 
+    void publishActuatorStatuses();
+    void publishAlarms();
+    void publishSensorReadings();
+
+    void addActuatorStatus(std::shared_ptr<ActuatorStatus> actuatorStatus);
+
+    void handleActuatorCommand(const ActuatorCommand& actuatorCommand);
+    void handleSetActuator(const ActuatorCommand& actuatorCommand);
+
+    std::shared_ptr<ConnectivityService> m_connectivityService;
+    std::shared_ptr<Persistence> m_persistence;
     Device m_device;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;
@@ -114,7 +130,7 @@ private:
     std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
     std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
 
-    std::shared_ptr<PublishService> m_publishService;
+    std::unique_ptr<CommandBuffer> m_commandBuffer;
 };
 }
 

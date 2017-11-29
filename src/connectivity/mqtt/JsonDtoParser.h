@@ -14,30 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSDTO_H
-#define ACTUATORSTATUSDTO_H
-
-#include "model/ActuatorStatus.h"
+#ifndef JSONDTOPARSER_H
+#define JSONDTOPARSER_H
 
 #include <string>
 
 namespace wolkabout
 {
-class ActuatorStatusDto
+class SensorReading;
+class Alarm;
+class ActuatorStatus;
+class ActuatorCommand;
+
+class JsonParser
 {
 public:
-    ActuatorStatusDto() = default;
-    ActuatorStatusDto(ActuatorStatus actuatorStatus);
-    ActuatorStatusDto(ActuatorStatus::State state, std::string value);
+    JsonParser() = delete;
 
-    virtual ~ActuatorStatusDto() = default;
-
-    ActuatorStatus::State getState() const;
-    const std::string& getValue() const;
-
-private:
-    ActuatorStatus::State m_state;
-    std::string m_value;
+    static bool fromJson(const std::string& jsonString, ActuatorCommand& actuatorCommand);
 };
 }
 

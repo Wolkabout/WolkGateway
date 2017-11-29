@@ -18,13 +18,15 @@
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
 #include "Wolk.h"
+#include "connectivity/ConnectivityService.h"
+#include "connectivity/mqtt/MqttConnectivityService.h"
+#include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
-#include "service/connectivity/mqtt/MqttConnectivityService.h"
-#include "service/connectivity/mqtt/PahoMqttClient.h"
-#include "service/persist/PersistService.h"
-#include "service/persist/json/JsonPersistService.h"
+#include "persistence/Persistence.h"
+#include "persistence/inmemory/InMemoryPersistence.h"
 
 #include <functional>
+#include <stdexcept>
 #include <string>
 
 namespace wolkabout
@@ -65,21 +67,36 @@ WolkBuilder& WolkBuilder::actuatorStatusProvider(std::weak_ptr<ActuatorStatusPro
     return *this;
 }
 
-WolkBuilder& WolkBuilder::withDataPersistence(std::shared_ptr<PersistService> persistService)
+WolkBuilder& WolkBuilder::withPersistence(std::shared_ptr<Persistence> persistence)
 {
-    m_persistService = persistService;
+    m_persistence = persistence;
     return *this;
 }
 
 std::unique_ptr<Wolk> WolkBuilder::build() const
 {
+    if (m_device.getDeviceKey().empty())
+    {
+        throw std::logic_error("No device key present.");
+    }
+
+    if (m_device.getActuatorReferences().size() != 0)
+    {
+        if (m_actuationHandler.lock() == nullptr && m_actuationHandlerLambda == nullptr)
+        {
+            throw std::logic_error("Actuation handler not set.");
+        }
+
+        if (m_actuatorStatusProvider.lock() == nullptr && m_actuatorStatusProviderLambda == nullptr)
+        {
+            throw std::logic_error("Actuator status provider not set.");
+        }
+    }
+
     auto mqttClient = std::make_shared<PahoMqttClient>();
     auto connectivityService = std::make_shared<MqttConnectivityService>(mqttClient, m_device, m_host);
 
-    auto publishService =
-      std::make_shared<PublishService>(connectivityService, m_persistService, std::chrono::milliseconds(50));
-
-    auto wolk = std::unique_ptr<Wolk>(new Wolk(publishService, m_device));
+    auto wolk = std::unique_ptr<Wolk>(new Wolk(connectivityService, m_persistence, m_device));
 
     wolk->m_actuationHandlerLambda = m_actuationHandlerLambda;
     wolk->m_actuationHandler = m_actuationHandler;
@@ -98,7 +115,8 @@ wolkabout::WolkBuilder::operator std::unique_ptr<Wolk>() const
     return build();
 }
 
-WolkBuilder::WolkBuilder(Device device) : m_host(WOLK_DEMO_HOST), m_device(std::move(device)), m_persistService(nullptr)
+WolkBuilder::WolkBuilder(Device device)
+: m_host(WOLK_DEMO_HOST), m_device(std::move(device)), m_persistence(new InMemoryPersistence())
 {
 }
 }

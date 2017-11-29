@@ -31,7 +31,7 @@ public:
     virtual void actuatorCommandReceived(const ActuatorCommand& actuatorCommand) = 0;
 };
 
-class Reading;
+class OutboundMessage;
 class ConnectivityService
 {
 public:
@@ -42,7 +42,7 @@ public:
 
     virtual bool isConnected() = 0;
 
-    virtual bool publish(std::shared_ptr<Reading> reading) = 0;
+    virtual bool publish(std::shared_ptr<OutboundMessage> outboundMessage) = 0;
 
     void setListener(std::weak_ptr<ConnectivityServiceListener> listener);
     void setListener(std::function<void(const ActuatorCommand&)> listener);

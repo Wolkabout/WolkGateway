@@ -14,25 +14,28 @@
  * limitations under the License.
  */
 
-#include "service/connectivity/mqtt/dto/AlarmDto.h"
-#include "model/Alarm.h"
+#ifndef OUTBOUNDMESSAGE_H
+#define OUTBOUNDMESSAGE_H
 
 #include <string>
-#include <utility>
 
 namespace wolkabout
 {
-AlarmDto::AlarmDto(const Alarm& alarm) : m_rtc(alarm.getRtc()), m_value(alarm.getValue()) {}
-
-AlarmDto::AlarmDto(unsigned long long rtc, std::string value) : m_rtc(rtc), m_value(std::move(value)) {}
-
-unsigned long long AlarmDto::getRtc() const
+class OutboundMessage
 {
-    return m_rtc;
+public:
+    OutboundMessage(std::string content, std::string topic, unsigned long long int itemsCount);
+    virtual ~OutboundMessage() = default;
+
+    const std::string& getContent() const;
+    const std::string& getTopic() const;
+    unsigned long long getItemsCount() const;
+
+private:
+    std::string m_content;
+    std::string m_topic;
+    unsigned long long int m_itemsCount;
+};
 }
 
-const std::string& AlarmDto::getValue() const
-{
-    return m_value;
-}
-}
+#endif

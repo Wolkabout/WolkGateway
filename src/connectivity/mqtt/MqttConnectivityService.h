@@ -17,11 +17,11 @@
 #ifndef MQTTCONNECTIVITYSERVICE_H
 #define MQTTCONNECTIVITYSERVICE_H
 
+#include "connectivity/ConnectivityService.h"
+#include "connectivity/mqtt/MqttClient.h"
+#include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
 #include "model/Reading.h"
-#include "service/connectivity/ConnectivityService.h"
-#include "service/connectivity/mqtt/MqttClient.h"
-#include "service/connectivity/mqtt/PahoMqttClient.h"
 
 #include <atomic>
 #include <memory>
@@ -41,29 +41,10 @@ public:
 
     bool isConnected() override;
 
-    bool publish(std::shared_ptr<Reading> reading) override;
+    bool publish(std::shared_ptr<OutboundMessage> outboundMessage) override;
 
 private:
-    class ReadingPublisherVisitor : public ReadingVisitor
-    {
-    public:
-        ReadingPublisherVisitor(MqttClient& mqttClient, Device& device, bool& isPublished)
-        : m_mqttClient(mqttClient), m_device(device), m_isPublished(isPublished)
-        {
-        }
-
-        ~ReadingPublisherVisitor() = default;
-
-        void visit(ActuatorStatus& actuatorStatus) override;
-        void visit(Alarm& alarm) override;
-        void visit(SensorReading& sensorReading) override;
-
-    private:
-        MqttClient& m_mqttClient;
-        Device& m_device;
-        bool& m_isPublished;
-    };
-
+    std::shared_ptr<MqttClient> m_mqttClient;
     Device m_device;
     std::string m_host;
 
@@ -71,13 +52,8 @@ private:
 
     std::atomic_bool m_connected;
 
-    std::shared_ptr<MqttClient> m_mqttClient;
-
-    static const constexpr char* TOPIC_ROOT_LAST_WILL = "lastwill/";
-    static const constexpr char* TOPIC_ROOT_SENSOR_READING = "readings/";
-    static const constexpr char* TOPIC_ROOT_ACTUATION_REQUEST = "actuators/commands/";
-    static const constexpr char* TOPIC_ROOT_ACTUATOR_STATUS = "actuators/status/";
-    static const constexpr char* TOPIC_ROOT_ALARM = "events/";
+    static const constexpr char* LAST_WILL_TOPIC_ROOT = "lastwill/";
+    static const constexpr char* ACTUATION_REQUEST_TOPIC_ROOT = "actuators/commands/";
 
     static const constexpr char* TRUST_STORE = "ca.crt";
 };

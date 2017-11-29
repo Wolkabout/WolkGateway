@@ -18,7 +18,7 @@
 #define PAHOMQTTCLIENT_H
 
 #include "async_client.h"
-#include "service/connectivity/mqtt/MqttClient.h"
+#include "connectivity/mqtt/MqttClient.h"
 
 #include <atomic>
 #include <string>

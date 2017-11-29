@@ -14,28 +14,30 @@
  * limitations under the License.
  */
 
-#include "service/connectivity/mqtt/dto/ActuatorCommandDto.h"
-#include "model/ActuatorCommand.h"
+#include "OutboundMessage.h"
 
 #include <string>
 #include <utility>
 
-wolkabout::ActuatorCommandDto::ActuatorCommandDto(const ActuatorCommand& actuatorCommand)
-: m_type(actuatorCommand.getType()), m_value(actuatorCommand.getValue())
+namespace wolkabout
+{
+OutboundMessage::OutboundMessage(std::string content, std::string topic, unsigned long long itemsCount)
+: m_content(std::move(content)), m_topic(std::move(topic)), m_itemsCount(itemsCount)
 {
 }
 
-wolkabout::ActuatorCommandDto::ActuatorCommandDto(wolkabout::ActuatorCommand::Type type, std::string value)
-: m_type(type), m_value(std::move(value))
+const std::string& OutboundMessage::getContent() const
 {
+    return m_content;
 }
 
-wolkabout::ActuatorCommand::Type wolkabout::ActuatorCommandDto::getType() const
+const std::string& OutboundMessage::getTopic() const
 {
-    return m_type;
+    return m_topic;
 }
 
-const std::string& wolkabout::ActuatorCommandDto::getValue() const
+unsigned long long OutboundMessage::getItemsCount() const
 {
-    return m_value;
+    return m_itemsCount;
+}
 }

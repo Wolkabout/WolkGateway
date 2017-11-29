@@ -27,17 +27,17 @@ Device::Device(std::string key, std::string password, std::vector<std::string> a
 {
 }
 
-const std::string& Device::getDeviceKey()
+const std::string& Device::getDeviceKey() const
 {
     return m_key;
 }
 
-const std::string& Device::getDevicePassword()
+const std::string& Device::getDevicePassword() const
 {
     return m_password;
 }
 
-const std::vector<std::string> Device::getActuatorReferences()
+const std::vector<std::string> Device::getActuatorReferences() const
 {
     return m_actuatorReferences;
 }

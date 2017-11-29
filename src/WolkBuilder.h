@@ -19,11 +19,12 @@
 
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
+#include "connectivity/ConnectivityService.h"
 #include "model/Device.h"
-#include "service/persist/PersistService.h"
-#include "service/persist/json/JsonPersistService.h"
+#include "persistence/Persistence.h"
 
 #include <functional>
+#include <memory>
 #include <string>
 
 namespace wolkabout
@@ -81,16 +82,19 @@ public:
 
     /**
      * @brief Sets underlying persistence mechanism to be used<br>
-     *        Sample filesystem persistence is used as default
-     * @param persistService std::shared_ptr to wolkabout::PersistService implementation
+     *        Sample in-memory persistence is used as default
+     * @param persistence std::shared_ptr to wolkabout::Persistence implementation
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withDataPersistence(
-      std::shared_ptr<PersistService> withDataPersistence = std::make_shared<wolkabout::JsonPersistService>());
+    WolkBuilder& withPersistence(std::shared_ptr<Persistence> persistence);
 
     /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
+     *
+     * @throws std::logic_error if device key is not present in wolkabout::Device
+     * @throws std::logic_error if actuator status provider is not set, and wolkabout::Device has actuator references
+     * @throws std::logic_error if actuation handler is not set, and wolkabout::Device has actuator references
      */
     std::unique_ptr<Wolk> build() const;
 
@@ -110,7 +114,7 @@ private:
     std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
     std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
 
-    std::shared_ptr<PersistService> m_persistService;
+    std::shared_ptr<Persistence> m_persistence;
 
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
 };

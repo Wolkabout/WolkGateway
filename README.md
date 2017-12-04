@@ -1,5 +1,5 @@
 # WolkConnector C++
-WolkAbout C++ Connector library for connecting devices to WolkAbout IoT platform.
+WolkAbout C++11 Connector library for connecting devices to WolkAbout IoT platform.
 
 Supported protocol(s):
 * JSON_SINGLE

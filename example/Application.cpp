@@ -24,30 +24,45 @@
 
 int main(int /* argc */, char** /* argv */)
 {
-    wolkabout::Device device("DEVICE_KEY", "DEVICE_PASSWORD", {"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO", "ACTUATOR_REFERENCE_THREE"});
+    wolkabout::Device device("device_key", "some_password", {"SW", "SL"});
+
+    static bool switchValue = false;
+    static int sliderValue = 0;
 
     std::unique_ptr<wolkabout::Wolk> wolk =
       wolkabout::Wolk::newBuilder(device)
-        .actuationHandler([](const std::string& reference, const std::string& value) -> void {
-            std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
-        })
-        .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
-            if (reference == "ACTUATOR_REFERENCE_ONE") {
-                return wolkabout::ActuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
-            } else if (reference == "ACTUATOR_REFERENCE_TWO") {
-                return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
-            }
+            .actuationHandler([&](const std::string& reference, const std::string& value) -> void {
+        std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
 
-            return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
+        if (reference == "SW") {
+            switchValue = value == "true" ? true : false;
+        }
+        else if (reference == "SL") {
+            try {
+                sliderValue = std::stoi(value);
+            } catch (...) {
+                sliderValue = 0;
+            }
+        }
+    })
+            .actuatorStatusProvider([&](const std::string& reference) -> wolkabout::ActuatorStatus {
+        if (reference == "SW") {
+            return wolkabout::ActuatorStatus(switchValue ? "true" : "false", wolkabout::ActuatorStatus::State::READY);
+        } else if (reference == "SL") {
+            return wolkabout::ActuatorStatus(std::to_string(sliderValue), wolkabout::ActuatorStatus::State::READY);
+        }
+
+        return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
         })
         .build();
 
     wolk->connect();
 
-    wolk->addSensorReading("TEMPERATURE_REF", 23.4);
-    wolk->addSensorReading("BOOL_SENSOR_REF", true);
+    wolk->addSensorReading("P", 1024);
+    wolk->addSensorReading("T", 25.6);
+    wolk->addSensorReading("H", 52);
 
-    wolk->addAlarm("ALARM_REF", "ALARM_MESSAGE_FROM_CONNECTOR");
+    wolk->addAlarm("HH", "High Humidity");
 
     while(true)
     {

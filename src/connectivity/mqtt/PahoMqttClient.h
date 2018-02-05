@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 
 #include <atomic>
 #include <string>
+#include <mutex>
 
 namespace wolkabout
 {
@@ -50,11 +51,12 @@ private:
 
     std::unique_ptr<mqtt::async_client> m_client;
 
-    static const constexpr int MQTT_CONNECTION_COMPLETITION_TIMEOUT_SEC = 2;
-    static const constexpr int MQTT_ACTION_COMPLETITION_TIMEOUT_SEC = 2;
-    static const constexpr int MQTT_KEEP_ALIVE_SEC = 60;
+	std::mutex m_mutex;
 
-    static const constexpr int MQTT_QOS = 0;
+	static const unsigned short MQTT_CONNECTION_COMPLETITION_TIMEOUT_MSEC;
+	static const unsigned short MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC;
+	static const unsigned short MQTT_KEEP_ALIVE_SEC;
+	static const unsigned short MQTT_QOS;
 
     void connected(const mqtt::string& cause) override;
     void connection_lost(const mqtt::string& cause) override;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@
 #include "model/Alarm.h"
 #include "model/OutboundMessage.h"
 #include "model/SensorReading.h"
+#include "model/FirmwareUpdateResponse.h"
+#include "model/FilePacketRequest.h"
 #include "utilities/json.hpp"
 
 #include <memory>
@@ -42,14 +44,7 @@ void to_json(json& j, const SensorReading& p)
 
 void to_json(json& j, const std::shared_ptr<SensorReading>& p)
 {
-    if (p->getRtc() == 0)
-    {
-        j = json{{"data", p->getValue()}};
-    }
-    else
-    {
-        j = json{{"utc", p->getRtc()}, {"data", p->getValue()}};
-    }
+	to_json(j, *p);
 }
 /*** SENSOR READING ***/
 
@@ -68,62 +63,90 @@ void to_json(json& j, const Alarm& p)
 
 void to_json(json& j, const std::shared_ptr<Alarm>& p)
 {
-    if (p->getRtc() == 0)
-    {
-        j = json{{"data", p->getValue()}};
-    }
-    else
-    {
-        j = json{{"utc", p->getRtc()}, {"data", p->getValue()}};
-    }
+	to_json(j, *p);
 }
 /*** ALARM ***/
 
 /*** ACTUATOR STATUS ***/
 void to_json(json& j, const ActuatorStatus& p)
 {
-    const std::string status = [&]() -> std::string {
-        if (p.getState() == ActuatorStatus::State::READY)
-        {
-            return "READY";
-        }
-        else if (p.getState() == ActuatorStatus::State::BUSY)
-        {
-            return "BUSY";
-        }
-        else if (p.getState() == ActuatorStatus::State::ERROR)
-        {
-            return "ERROR";
-        }
+	const std::string status = [&]() -> std::string {
+		if (p.getState() == ActuatorStatus::State::READY)
+		{
+			return "READY";
+		}
+		else if (p.getState() == ActuatorStatus::State::BUSY)
+		{
+			return "BUSY";
+		}
+		else if (p.getState() == ActuatorStatus::State::ERROR)
+		{
+			return "ERROR";
+		}
 
-        return "ERROR";
-    }();
+		return "ERROR";
+	}();
 
-    j = json{{"status", status}, {"value", p.getValue()}};
+	j = json{{"status", status}, {"value", p.getValue()}};
 }
 
 void to_json(json& j, const std::shared_ptr<ActuatorStatus>& p)
 {
-    const std::string status = [&]() -> std::string {
-        if (p->getState() == ActuatorStatus::State::READY)
-        {
-            return "READY";
-        }
-        else if (p->getState() == ActuatorStatus::State::BUSY)
-        {
-            return "BUSY";
-        }
-        else if (p->getState() == ActuatorStatus::State::ERROR)
-        {
-            return "ERROR";
-        }
-
-        return "ERROR";
-    }();
-
-    j = json{{"status", status}, {"value", p->getValue()}};
+	to_json(j, *p);
 }
 /*** ACTUATOR STATUS ***/
+
+/*** FIRMWARE UPDATE RESPONSE ***/
+void to_json(json& j, const FirmwareUpdateResponse& p)
+{
+	const std::string status = [&]() -> std::string {
+		switch (p.getStatus())
+		{
+			case FirmwareUpdateResponse::Status::FILE_TRANSFER:
+				return "FILE_TRANSFER";
+			case FirmwareUpdateResponse::Status::FILE_READY:
+				return "FILE_READY";
+			case FirmwareUpdateResponse::Status::INSTALLATION:
+				return "INSTALLATION";
+			case FirmwareUpdateResponse::Status::COMPLETED:
+				return "COMPLETED";
+			case FirmwareUpdateResponse::Status::ABORTED:
+				return "ABORTED";
+			case FirmwareUpdateResponse::Status::ERROR:
+				return "ERROR";
+			default:
+				return "ERROR";
+		}
+	}();
+
+	j = json{{"status", status}};
+
+	if(!p.getErrorCode().null())
+	{
+		auto errorCode = static_cast<FirmwareUpdateResponse::ErrorCode>(p.getErrorCode());
+
+		j.emplace("error", static_cast<int>(errorCode));
+	}
+}
+
+void to_json(json& j, const std::shared_ptr<FirmwareUpdateResponse>& p)
+{
+	to_json(j, *p);
+}
+/*** FIRMWARE UPDATE RESPONSE ***/
+
+/*** FILE PACKET_REQUEST ***/
+void to_json(json& j, const FilePacketRequest& p)
+{
+	j = json{{"fileName", p.getFileName()}, {"chunkIndex", p.getChunkIndex()}, {"chunkSize", p.getChunkSize()}};
+}
+
+void to_json(json& j, const std::shared_ptr<FilePacketRequest>& p)
+{
+	to_json(j, *p);
+}
+/*** FILE PACKET_REQUEST ***/
+
 
 std::shared_ptr<OutboundMessage> OutboundMessageFactory::make(
   const std::string& deviceKey, std::vector<std::shared_ptr<SensorReading>> sensorReadings)
@@ -165,10 +188,37 @@ std::shared_ptr<OutboundMessage> OutboundMessageFactory::make(
 
     const json jPayload(actuatorStatuses.front());
     const std::string payload = jPayload.dump();
-    const std::string topic = ACTUATOR_STATUS_TOPIC_TOOT + deviceKey + "/" + actuatorStatuses.front()->getReference();
+	const std::string topic = ACTUATOR_STATUS_TOPIC_ROOT + deviceKey + "/" + actuatorStatuses.front()->getReference();
 
     /* Currently supported protocol (JSON_SINGLE) allows only 1 ActuatorStatus per OutboundMessage, hence 'magic' number
      * 1 below */
     return std::make_shared<OutboundMessage>(payload, topic, 1);
+}
+
+std::shared_ptr<OutboundMessage> OutboundMessageFactory::make(
+		const std::string& deviceKey, const FirmwareUpdateResponse& firmwareUpdateResponse)
+{
+	const json jPayload(firmwareUpdateResponse);
+	const std::string payload = jPayload.dump();
+	const std::string topic = FIRMWARE_UPDATE_STATUS_TOPIC_ROOT + deviceKey;
+
+	return std::make_shared<OutboundMessage>(payload, topic, 1);
+}
+
+std::shared_ptr<OutboundMessage> OutboundMessageFactory::make(
+		const std::string& deviceKey, const FilePacketRequest& filePacketRequest)
+{
+	const json jPayload(filePacketRequest);
+	const std::string payload = jPayload.dump();
+	const std::string topic = FILE_HANDLING_STATUS_TOPIC_ROOT + deviceKey;
+
+	return std::make_shared<OutboundMessage>(payload, topic, 1);
+}
+
+std::shared_ptr<OutboundMessage> OutboundMessageFactory::makeFromFirmwareVersion(
+		const std::string& deviceKey, const std::string& firmwareVerion)
+{
+	const std::string topic = FIRMWARE_VERSION_TOPIC_ROOT + deviceKey;
+	return std::make_shared<OutboundMessage>(firmwareVerion, topic, 1);
 }
 }

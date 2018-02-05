@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,23 +21,5 @@ namespace wolkabout
 void ConnectivityService::setListener(std::weak_ptr<ConnectivityServiceListener> listener)
 {
     m_listener = listener;
-}
-
-void ConnectivityService::setListener(std::function<void(const ActuatorCommand&)> listener)
-{
-    m_listenerLambda = listener;
-}
-
-void ConnectivityService::invokeListener(const ActuatorCommand& actuatorCommand) const
-{
-    if (auto listener = m_listener.lock())
-    {
-        listener->actuatorCommandReceived(actuatorCommand);
-    }
-
-    if (m_listenerLambda)
-    {
-        m_listenerLambda(actuatorCommand);
-    }
 }
 }

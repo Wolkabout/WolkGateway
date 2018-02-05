@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,13 +37,13 @@ public:
     virtual ~InMemoryPersistence() = default;
 
     bool putSensorReading(const std::string& key, std::shared_ptr<SensorReading> sensorReading) override;
-    std::vector<std::shared_ptr<SensorReading>> getSensorReadings(const std::string& key, uint_fast64_t count) override;
-    void removeSensorReadings(const std::string& key, uint_fast64_t count) override;
+	std::vector<std::shared_ptr<SensorReading>> getSensorReadings(const std::string& key, std::uint_fast64_t count) override;
+	void removeSensorReadings(const std::string& key, std::uint_fast64_t count) override;
     std::vector<std::string> getSensorReadingsKeys() override;
 
     bool putAlarm(const std::string& key, std::shared_ptr<Alarm> alarm) override;
-    std::vector<std::shared_ptr<Alarm>> getAlarms(const std::string& key, uint_fast64_t count) override;
-    void removeAlarms(const std::string& key, uint_fast64_t count) override;
+	std::vector<std::shared_ptr<Alarm>> getAlarms(const std::string& key, std::uint_fast64_t count) override;
+	void removeAlarms(const std::string& key, std::uint_fast64_t count) override;
     std::vector<std::string> getAlarmsKeys() override;
 
     bool putActuatorStatus(const std::string& key, std::shared_ptr<ActuatorStatus> actuatorStatus) override;

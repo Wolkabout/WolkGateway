@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,17 @@ public:
 
     static std::vector<std::string> tokenize(const std::string& string, const std::string& delimiters);
 
+	static bool startsWith(const std::string& string, const std::string& prefix);
+
     static bool endsWith(const std::string& string, const std::string& suffix);
+
+	static void removeTrailingWhitespace(std::string& string);
+
+	static bool isBase64(unsigned char c);
+
+	static std::string base64Encode(const char* bytesToEncode, unsigned int len);
+
+	static std::string base64Decode(const std::string& encodedString);
 };
 }
 

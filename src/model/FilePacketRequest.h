@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef JSONDTOPARSER_H
-#define JSONDTOPARSER_H
+#ifndef FILEPACKETREQUEST_H
+#define FILEPACKETREQUEST_H
 
 #include <string>
+#include <cstdint>
 
 namespace wolkabout
 {
-class SensorReading;
-class Alarm;
-class ActuatorStatus;
-class ActuatorCommand;
-
-class JsonParser
+class FilePacketRequest
 {
 public:
-    JsonParser() = delete;
+	FilePacketRequest();
+	FilePacketRequest(const std::string& fileName, unsigned chunkIndex, std::uint_fast64_t chunkSize);
 
-    static bool fromJson(const std::string& jsonString, ActuatorCommand& actuatorCommand);
+	const std::string& getFileName() const;
+	unsigned getChunkIndex() const;
+	std::uint_fast64_t getChunkSize() const;
+
+private:
+	const std::string m_fileName;
+	const unsigned m_chunkIndex;
+	const uint_fast64_t m_chunkSize;
 };
 }
 
-#endif
+#endif // FILEPACKETREQUEST_H

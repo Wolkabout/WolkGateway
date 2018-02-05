@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017 WolkAbout Technology s.r.o.
+# Copyright 2018 WolkAbout Technology s.r.o.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@ pushd dependencies
 ./make.sh
 popd
 
+# Note
+# OPENSSL_INCLUDE_DIR is absoulte path or relative path to project source directory
+
 pushd out
-cmake -G "Unix Makefiles" -DOPENSSL_INCLUDE_DIR=../dependencies/build/include .. -DCMAKE_BUILD_TYPE=Release ..
+cmake -G "Unix Makefiles" -DOPENSSL_INCLUDE_DIR=dependencies/build/include .. -DCMAKE_BUILD_TYPE=Release ..
 popd

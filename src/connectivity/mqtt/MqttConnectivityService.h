@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,11 @@
 
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/mqtt/MqttClient.h"
-#include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
-#include "model/Reading.h"
 
 #include <atomic>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace wolkabout
 {
@@ -39,7 +36,7 @@ public:
     bool connect() override;
     void disconnect() override;
 
-    bool isConnected() override;
+	bool isConnected() override;
 
     bool publish(std::shared_ptr<OutboundMessage> outboundMessage) override;
 
@@ -48,13 +45,9 @@ private:
     Device m_device;
     std::string m_host;
 
-    std::vector<std::string> m_subscriptionList;
-
     std::atomic_bool m_connected;
 
     static const constexpr char* LAST_WILL_TOPIC_ROOT = "lastwill/";
-    static const constexpr char* ACTUATION_REQUEST_TOPIC_ROOT = "actuators/commands/";
-
     static const constexpr char* TRUST_STORE = "ca.crt";
 };
 }

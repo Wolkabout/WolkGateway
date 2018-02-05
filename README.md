@@ -126,3 +126,56 @@ std::unique_ptr<wolkabout::Wolk> wolk =
 ```
 
 For more info on persistence mechanism see wolkabout::Persistence and wolkabout::InMemoryPersistence classes
+
+**Firmware Update:**
+
+WolkAbout c++ Connector provides mechanism for updating device firmware.
+
+By default this feature is disabled.
+See code snippet below on how to enable device firmware update.
+
+```c++
+
+wolkabout::Device device("DEVICE_KEY", "DEVICE_PASSWORD", {"ACTUATOR_REFERENCE_ONE", "ACTUATOR_REFERENCE_TWO"});
+
+class CustomFirmwareInstaller: public wolkabout::FirmwareInstaller
+{
+public:
+	bool install(const std::string& firmwareFile) override
+	{
+		// Mock install
+		std::cout << "Updating firmware with file " << firmwareFile << std::endl;
+
+		// Optionally delete 'firmwareFile
+		return true;
+	}
+};
+
+auto installer = std::make_shared<CustomFirmwareInstaller>();
+
+std::unique_ptr<wolkabout::Wolk> wolk =
+  wolkabout::Wolk::newBuilder(device)
+    .actuationHandler([](const std::string& reference, const std::string& value) -> void {
+        std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
+    })
+    .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
+        if (reference == "ACTUATOR_REFERENCE_ONE") {
+            return wolkabout::ActuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
+        } else if (reference == "ACTUATOR_REFERENCE_TWO") {
+            return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
+        }
+
+        return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
+    })
+    .withPersistence(std::make_shared<CustomPersistenceImpl>()) // Enable data persistance via custom persistence mechanism
+	// Enable firmware update
+	.withFirmwareUpdate("2.1.0",								// Current firmware version
+						installer,								// Implementation of FirmwareInstaller, which performs installation of obtained device firmware
+						".",									// Directory where downloaded device firmware files will be stored
+						100 * 1024 * 1024,						// Maximum acceptable size of firmware file, in bytes
+						1024 * 1024,							// Size of firmware file transfer chunk, in bytes
+						urlDownloader)							// Optional implementation of UrlFileDownloader for cases when one wants to download device firmware via given URL
+    .build();
+
+    wolk->connect();
+```

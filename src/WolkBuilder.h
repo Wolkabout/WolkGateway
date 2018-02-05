@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,14 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <cstdint>
 
 namespace wolkabout
 {
 class Wolk;
+class UrlFileDownloader;
+class FirmwareInstaller;
+
 class WolkBuilder final
 {
 public:
@@ -88,6 +92,31 @@ public:
      */
     WolkBuilder& withPersistence(std::shared_ptr<Persistence> persistence);
 
+	/**
+	 * @brief withFirmwareUpdate Enables firmware update for device
+	 * @param firmwareVersion Current version of the firmware
+	 * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
+	 * @param firmwareDownloadDirectory Directory where to download firmware file
+	 * @param maxFirmwareFileSize Maximum size of firmware file that can be handled
+	 * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+	 */
+	WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::weak_ptr<FirmwareInstaller> installer,
+									const std::string& firmwareDownloadDirectory, std::uint_fast64_t maxFirmwareFileSize,
+									std::uint_fast64_t maxFirmwareFileChunkSize);
+
+	/**
+	 * @brief withFirmwareUpdate Enables firmware update for device
+	 * @param firmwareVersion Current version of the firmware
+	 * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
+	 * @param firmwareDownloadDirectory Directory where to download firmware file
+	 * @param maxFirmwareFileSize Maximum size of firmware file that can be handled
+	 * @param urlDownloader Instance of wolkabout::UrlFileDownloader used to downlad firmware from provided url
+	 * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+	 */
+	WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::weak_ptr<FirmwareInstaller> installer,
+									const std::string& firmwareDownloadDirectory, std::uint_fast64_t maxFirmwareFileSize,
+									std::uint_fast64_t maxFirmwareFileChunkSize, std::weak_ptr<UrlFileDownloader> urlDownloader);
+
     /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
@@ -116,7 +145,14 @@ private:
 
     std::shared_ptr<Persistence> m_persistence;
 
-    static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
+	std::string m_firmwareVersion;
+	std::string m_firmwareDownloadDirectory;
+	std::uint_fast64_t m_maxFirmwareFileSize;
+	std::uint_fast64_t m_maxFirmwareFileChunkSize;
+	std::weak_ptr<FirmwareInstaller> m_firmwareInstaller;
+	std::weak_ptr<UrlFileDownloader> m_urlFileDownloader;
+
+	static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
 };
 }
 

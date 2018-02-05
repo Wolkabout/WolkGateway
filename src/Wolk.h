@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,8 @@
 
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
-#include "CommandBuffer.h"
+#include "utilities/CommandBuffer.h"
 #include "WolkBuilder.h"
-#include "connectivity/ConnectivityService.h"
 #include "model/ActuatorCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/Device.h"
@@ -29,9 +28,16 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace wolkabout
 {
+class ConnectivityService;
+class InboundMessageHandler;
+class FirmwareUpdateService;
+class FileDownloadService;
+class OutboundServiceDataHandler;
+
 class Wolk
 {
     friend class WolkBuilder;
@@ -105,7 +111,8 @@ private:
     static const constexpr unsigned int PUBLISH_BATCH_ITEMS_COUNT = 50;
 
     Wolk(std::shared_ptr<ConnectivityService> connectivityService, std::shared_ptr<Persistence> persistence,
-         Device device);
+		 std::shared_ptr<InboundMessageHandler> inboundMessageHandler,
+		 std::shared_ptr<OutboundServiceDataHandler> outboundServiceDataHandler, Device device);
 
     void addToCommandBuffer(std::function<void()> command);
 
@@ -120,9 +127,18 @@ private:
     void handleActuatorCommand(const ActuatorCommand& actuatorCommand);
     void handleSetActuator(const ActuatorCommand& actuatorCommand);
 
+	void publishFirmwareVersion();
+
     std::shared_ptr<ConnectivityService> m_connectivityService;
     std::shared_ptr<Persistence> m_persistence;
-    Device m_device;
+
+	std::shared_ptr<InboundMessageHandler> m_inboundMessageHandler;
+	std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
+
+	std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
+	std::shared_ptr<FileDownloadService> m_fileDownloadService;
+
+	Device m_device;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;
     std::weak_ptr<ActuationHandler> m_actuationHandler;

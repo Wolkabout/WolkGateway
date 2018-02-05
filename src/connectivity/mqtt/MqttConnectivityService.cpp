@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,7 @@
  */
 
 #include "connectivity/mqtt/MqttConnectivityService.h"
-#include "connectivity/ConnectivityService.h"
-#include "connectivity/mqtt/JsonDtoParser.h"
-#include "connectivity/mqtt/MqttClient.h"
-#include "connectivity/mqtt/PahoMqttClient.h"
-#include "model/ActuatorCommand.h"
-#include "model/Device.h"
 #include "model/OutboundMessage.h"
-#include "model/Reading.h"
-
-#include <atomic>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace wolkabout
 {
@@ -38,33 +24,14 @@ MqttConnectivityService::MqttConnectivityService(std::shared_ptr<MqttClient> mqt
 : m_mqttClient(std::move(mqttClient))
 , m_device(std::move(device))
 , m_host(std::move(host))
-, m_subscriptionList({})
 , m_connected(false)
 {
-    for (const std::string& actuatorReference : m_device.getActuatorReferences())
-    {
-        std::stringstream topic("");
-        topic << ACTUATION_REQUEST_TOPIC_ROOT << m_device.getDeviceKey() << "/" << actuatorReference;
-        m_subscriptionList.emplace_back(topic.str());
-    }
-
-    m_mqttClient->onMessageReceived([this](std::string topic, std::string message) -> void {
-        const size_t referencePosition = topic.find_last_of('/');
-        if (referencePosition == std::string::npos)
-        {
-            return;
-        }
-
-        ActuatorCommand actuatorCommand;
-        if (!JsonParser::fromJson(message, actuatorCommand))
-        {
-            return;
-        }
-
-        const std::string reference = topic.substr(referencePosition + 1);
-        ConnectivityService::invokeListener(
-          ActuatorCommand(actuatorCommand.getType(), reference, actuatorCommand.getValue()));
-    });
+	m_mqttClient->onMessageReceived([this](std::string topic, std::string message) -> void {
+		if(auto handler = m_listener.lock())
+		{
+			handler->messageReceived(topic, message);
+		}
+	});
 }
 
 bool MqttConnectivityService::connect()
@@ -74,10 +41,14 @@ bool MqttConnectivityService::connect()
                                              m_device.getDeviceKey());
     if (isConnected)
     {
-        for (const std::string& topic : m_subscriptionList)
-        {
-            m_mqttClient->subscribe(topic);
-        }
+		if(auto handler = m_listener.lock())
+		{
+			const auto& topics = handler->getTopics();
+			for (const std::string& topic : topics)
+			{
+				m_mqttClient->subscribe(topic);
+			}
+		}
     }
 
     return isConnected;

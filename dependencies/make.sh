@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017 WolkAbout Technology s.r.o.
+# Copyright 2018 WolkAbout Technology s.r.o.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ BASE_DIR="$(pwd)"
 
 BUILD_DIR="$BASE_DIR/build"
 LIB_DIR="$BUILD_DIR/lib"
+DEPLOY_DIR="$BASE_DIR/../out/lib"
 
 LIB_EXTENSION="so"
 
@@ -42,5 +43,6 @@ if [ ! -f "$LIB_DIR/libssl.$LIB_EXTENSION" ]; then
 fi
 
 # Copy shared libraries
-cp $BUILD_DIR/lib/libcrypto.*$LIB_EXTENSION* $BASE_DIR/../out
-cp $BUILD_DIR/lib/libssl.*$LIB_EXTENSION* $BASE_DIR/../out
+mkdir -p $DEPLOY_DIR
+cp $BUILD_DIR/lib/libcrypto.*$LIB_EXTENSION* $DEPLOY_DIR
+cp $BUILD_DIR/lib/libssl.*$LIB_EXTENSION* $DEPLOY_DIR

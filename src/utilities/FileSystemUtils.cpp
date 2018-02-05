@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ bool FileSystemUtils::isFilePresent(const std::string& filePath)
     }
 
     fclose(configFile);
-    return false;
+	return true;
 }
 
 bool FileSystemUtils::createFileWithContent(const std::string& filePath, const std::string& content)
@@ -58,6 +58,32 @@ bool FileSystemUtils::createFileWithContent(const std::string& filePath, const s
     {
         return false;
     }
+}
+
+bool FileSystemUtils::createBinaryFileWithContent(const std::string& filePath, const ByteArray& content)
+{
+	try
+	{
+		std::ofstream ofstream;
+		ofstream.open(filePath, std::ofstream::binary);
+		if (!ofstream.is_open())
+		{
+			return false;
+		}
+
+		ofstream.write(reinterpret_cast<const char *>(content.data()), content.size());
+		if (!ofstream)
+		{
+			deleteFile(filePath);
+			return false;
+		}
+
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 
 bool FileSystemUtils::deleteFile(const std::string& filePath)
@@ -94,8 +120,21 @@ bool FileSystemUtils::readFileContent(const std::string& filePath, std::string& 
         return false;
     }
 
-    content = std::string((std::istreambuf_iterator<char>(ifstream)), std::istreambuf_iterator<char>());
+	content = std::string((std::istreambuf_iterator<char>(ifstream)), std::istreambuf_iterator<char>());
     return true;
+}
+
+bool FileSystemUtils::readBinaryFileContent(const std::string& filePath, ByteArray& content)
+{
+	std::ifstream ifstream(filePath, std::ofstream::binary);
+	if (!ifstream.is_open())
+	{
+		return false;
+	}
+
+	content = ByteUtils::toByteArray(std::string((std::istreambuf_iterator<char>(ifstream)), std::istreambuf_iterator<char>()));
+
+	return true;
 }
 
 std::vector<std::string> FileSystemUtils::listFiles(std::string directoryPath)

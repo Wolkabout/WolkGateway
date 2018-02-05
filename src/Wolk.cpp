@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 WolkAbout Technology s.r.o.
+ * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@
 #include "Wolk.h"
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
-#include "OutboundMessageFactory.h"
+#include "connectivity/json/OutboundMessageFactory.h"
 #include "WolkBuilder.h"
 #include "connectivity/ConnectivityService.h"
+#include "service/FirmwareUpdateService.h"
 #include "model/ActuatorCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/Alarm.h"
@@ -122,14 +123,20 @@ void Wolk::publishActuatorStatus(const std::string& reference)
 void Wolk::connect()
 {
     addToCommandBuffer([=]() -> void {
-        m_connectivityService->connect();
+		if(!m_connectivityService->connect())
+		{
+			return;
+		}
 
-        for (const std::string& actuatorReference : m_device.getActuatorReferences())
-        {
-            publishActuatorStatus(actuatorReference);
-        }
+		publishFirmwareVersion();
+		m_firmwareUpdateService->reportFirmwareUpdateResult();
 
-        publish();
+		for (const std::string& actuatorReference : m_device.getActuatorReferences())
+		{
+			publishActuatorStatus(actuatorReference);
+		}
+
+		publish();
     });
 }
 
@@ -153,9 +160,12 @@ void Wolk::publish()
 }
 
 Wolk::Wolk(std::shared_ptr<ConnectivityService> connectivityService, std::shared_ptr<Persistence> persistence,
-           Device device)
+		   std::shared_ptr<InboundMessageHandler> inboundMessageHandler,
+		   std::shared_ptr<OutboundServiceDataHandler> outboundServiceDataHandler, Device device)
 : m_connectivityService(std::move(connectivityService))
 , m_persistence(persistence)
+, m_inboundMessageHandler(std::move(inboundMessageHandler))
+, m_outboundServiceDataHandler(std::move(outboundServiceDataHandler))
 , m_device(device)
 , m_actuationHandlerLambda(nullptr)
 , m_actuatorStatusProviderLambda(nullptr)
@@ -247,5 +257,20 @@ void Wolk::handleSetActuator(const ActuatorCommand& actuatorCommand)
     {
         m_actuationHandlerLambda(actuatorCommand.getReference(), actuatorCommand.getValue());
     }
+}
+
+void Wolk::publishFirmwareVersion()
+{
+	if(m_firmwareUpdateService)
+	{
+		const auto firmwareVerion = m_firmwareUpdateService->getFirmwareVersion();
+		const std::shared_ptr<OutboundMessage> outboundMessage =
+				OutboundMessageFactory::makeFromFirmwareVersion(m_device.getDeviceKey(), firmwareVerion);
+
+		if (!(outboundMessage && m_connectivityService->publish(outboundMessage)))
+		{
+			// TODO Log error
+		}
+	}
 }
 }

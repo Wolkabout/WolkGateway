@@ -165,6 +165,7 @@ void PahoMqttClient::connected(const mqtt::string& /* cause */)
 void PahoMqttClient::connection_lost(const mqtt::string& /* cause */)
 {
     m_isConnected = false;
+	m_onConnectionLost();
 }
 
 void PahoMqttClient::message_arrived(mqtt::const_message_ptr msg)

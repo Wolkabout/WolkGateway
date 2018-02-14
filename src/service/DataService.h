@@ -14,19 +14,25 @@
  * limitations under the License.
  */
 
-#include "MqttClient.h"
+#ifndef DATASERVICE_H
+#define DATASERVICE_H
 
-#include <utility>
+#include "model/SensorReading.h"
+#include "model/ActuatorSetCommand.h"
+#include "model/ActuatorGetCommand.h"
+#include "model/ActuatorStatus.h"
+#include "model/Alarm.h"
 
 namespace wolkabout
 {
-void MqttClient::onMessageReceived(MqttClient::OnMessageReceivedCallback callback)
+class DataService
 {
-	m_onMessageReceived = std::move(callback);
+public:
+	void handleSensorReading(SensorReading reading);
+	void handleActuatorSetCommand(ActuatorSetCommand command);
+	void handleActuatorGetCommand(ActuatorGetCommand command);
+	void handleActuatorStatus(ActuatorStatus status);
+};
 }
 
-void MqttClient::onConnectionLost(MqttClient::OnConnectionLostCallback callback)
-{
-	m_onConnectionLost = std::move(callback);
-}
-}
+#endif

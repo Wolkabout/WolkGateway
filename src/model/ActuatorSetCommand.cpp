@@ -14,31 +14,26 @@
  * limitations under the License.
  */
 
-#include "model/ActuatorCommand.h"
+#include "model/ActuatorSetCommand.h"
 
 #include <string>
 #include <utility>
 
 namespace wolkabout
 {
-ActuatorCommand::ActuatorCommand() : m_type(ActuatorCommand::Type::STATUS), m_reference(""), m_value("") {}
+ActuatorSetCommand::ActuatorSetCommand() : m_reference{""}, m_value{""} {}
 
-ActuatorCommand::ActuatorCommand(wolkabout::ActuatorCommand::Type type, std::string reference, std::string value)
-: m_type(type), m_reference(std::move(reference)), m_value(std::move(value))
+ActuatorSetCommand::ActuatorSetCommand(const std::string& reference, const std::string& value)
+	: m_reference{std::move(reference)}, m_value{std::move(value)}
 {
 }
 
-ActuatorCommand::Type ActuatorCommand::getType() const
-{
-    return m_type;
-}
-
-const std::string& ActuatorCommand::getReference() const
+const std::string& ActuatorSetCommand::getReference() const
 {
     return m_reference;
 }
 
-const std::string& ActuatorCommand::getValue() const
+const std::string& ActuatorSetCommand::getValue() const
 {
     return m_value;
 }

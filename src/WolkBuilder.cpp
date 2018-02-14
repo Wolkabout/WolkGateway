@@ -121,8 +121,9 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
         }
     }
 
-    auto mqttClient = std::make_shared<PahoMqttClient>();
-    auto connectivityService = std::make_shared<MqttConnectivityService>(mqttClient, m_device, m_host);
+
+	auto wolkConnectivityService = std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device, m_host);
+	auto moduleConnectivityService = std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device, "tcp://127.0.0.1:1883");
 
 	auto inboundMessageHandler = std::make_shared<InboundMessageHandler>(m_device);
 	auto outboundServiceDataHandler = std::make_shared<OutboundDataService>(m_device, connectivityService);

@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-#include "MqttClient.h"
-
-#include <utility>
+#include "DeviceManifest.h"
 
 namespace wolkabout
 {
-void MqttClient::onMessageReceived(MqttClient::OnMessageReceivedCallback callback)
-{
-	m_onMessageReceived = std::move(callback);
-}
 
-void MqttClient::onConnectionLost(MqttClient::OnConnectionLostCallback callback)
-{
-	m_onConnectionLost = std::move(callback);
-}
 }

@@ -14,35 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORCOMMAND_H
-#define ACTUATORCOMMAND_H
-
-#include <string>
+#ifndef DEVICEMANIFEST_H
+#define DEVICEMANIFEST_H
 
 namespace wolkabout
 {
-class ActuatorCommand
+
+class DeviceManifest
 {
-public:
-    enum class Type
-    {
-        SET,
-        STATUS
-    };
 
-    ActuatorCommand();
-    ActuatorCommand(ActuatorCommand::Type type, std::string reference, std::string value);
-
-    virtual ~ActuatorCommand() = default;
-
-    ActuatorCommand::Type getType() const;
-    const std::string& getReference() const;
-    const std::string& getValue() const;
-
-private:
-    ActuatorCommand::Type m_type;
-    std::string m_reference;
-    std::string m_value;
 };
 }
 

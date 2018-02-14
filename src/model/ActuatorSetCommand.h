@@ -14,19 +14,26 @@
  * limitations under the License.
  */
 
-#include "MqttClient.h"
+#ifndef ACTUATORSETCOMMAND_H
+#define ACTUATORSETCOMMAND_H
 
-#include <utility>
+#include <string>
 
 namespace wolkabout
 {
-void MqttClient::onMessageReceived(MqttClient::OnMessageReceivedCallback callback)
+class ActuatorSetCommand
 {
-	m_onMessageReceived = std::move(callback);
+public:
+	ActuatorSetCommand();
+	ActuatorSetCommand(const std::string& reference, const std::string& value);
+
+    const std::string& getReference() const;
+    const std::string& getValue() const;
+
+private:
+    std::string m_reference;
+    std::string m_value;
+};
 }
 
-void MqttClient::onConnectionLost(MqttClient::OnConnectionLostCallback callback)
-{
-	m_onConnectionLost = std::move(callback);
-}
-}
+#endif

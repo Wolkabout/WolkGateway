@@ -17,26 +17,31 @@
 #ifndef INBOUNDMODULEMESSAGEHANDLER_H
 #define INBOUNDMODULEMESSAGEHANDLER_H
 
-#include "connectivity/ConnectivityService.h"
-#include "model/DeviceManifest.h"
-#include "model/ActuatorStatus.h"
+#include "InboundMessageHandler.h"
+#include "model/Message.h"
 #include "utilities/CommandBuffer.h"
 
 #include <string>
-#include <map>
 #include <vector>
 
 namespace wolkabout
 {
-class InboundModuleMessageHandler: public ConnectivityServiceListener
+class InboundModuleMessageHandler: public InboundMessageHandler
 {
+public:
 	InboundModuleMessageHandler();
 
 	void messageReceived(const std::string& topic, const std::string& message) override;
 
 	const std::vector<std::string>& getTopics() const override;
 
-	void setActuatorStatusHandler(std::function<void(ActuatorStatus)> handler);
+	void setSensorReadingHandler(std::function<void(Message)> handler);
+	void setAlarmHandler(std::function<void(Message)> handler);
+	void setActuatorStatusHandler(std::function<void(Message)> handler);
+	void setConfigurationHandler(std::function<void(Message)> handler);
+	void setDeviceStatusHandler(std::function<void(Message)> handler);
+	void setDeviceRegistrationRequestHandler(std::function<void(Message)> handler);
+	void setDeviceReregistrationResponseHandler(std::function<void(Message)> handler);
 
 //	void setBinaryDataHandler(std::function<void(BinaryData)> handler);
 
@@ -47,19 +52,17 @@ private:
 
 	std::unique_ptr<CommandBuffer> m_commandBuffer;
 
-	std::map<std::string, DeviceManifest> m_devices;
 	std::vector<std::string> m_subscriptionList;
 
-	std::function<void(ActuatorStatus)> m_actuationStatusHandler;
+	std::function<void(Message)> m_sensorReadingHandler;
+	std::function<void(Message)> m_alarmHandler;
+	std::function<void(Message)> m_actuationStatusHandler;
+	std::function<void(Message)> m_configurationHandler;
+	std::function<void(Message)> m_deviceStatusHandler;
+	std::function<void(Message)> m_deviceRegistrationRequestHandler;
+	std::function<void(Message)> m_deviceReregistrationResponseHandler;
 //	std::function<void(BinaryData)> m_binaryDataHandler;
 //	std::function<void(FirmwareUpdateCommand)> m_firmwareUpdateHandler;
-
-	static const constexpr char* SENSOR_READING_TOPIC_ROOT = "d2p/sensor_reading/";
-	static const constexpr char* ACTUATION_STATUS_TOPIC_ROOT = "d2p/actuator_status/";
-	static const constexpr char* CONFIGURATION_TOPIC_ROOT = "d2p/configuration_get/";
-	static const constexpr char* DEVICE_STATUS_ROOT = "d2p/status/";
-	static const constexpr char* DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT = "d2p/register_device/";
-	static const constexpr char* DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT = "d2p/reregister_device/";
 };
 }
 

@@ -14,27 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef JSONDTOPARSER_H
-#define JSONDTOPARSER_H
-
-#include <string>
+#ifndef ACTUATORCOMMANDLISTENER_H
+#define ACTUATORCOMMANDLISTENER_H
 
 namespace wolkabout
 {
-class SensorReading;
-class Alarm;
-class ActuatorStatus;
-class ActuatorCommand;
-class FirmwareUpdateCommand;
+class ActuatorSetCommand;
+class ActuatorGetCommand;
 
-class JsonParser
+class ActuatorCommandListener
 {
 public:
-    JsonParser() = delete;
+	virtual ~ActuatorCommandListener() = default;
 
-    static bool fromJson(const std::string& jsonString, ActuatorCommand& actuatorCommand);
-	static bool fromJson(const std::string& jsonString, FirmwareUpdateCommand& firmwareUpdateCommand);
+	virtual void handleActuatorSetCommand(const ActuatorSetCommand& command) = 0;
+	virtual void handleActuatorGetCommand(const ActuatorGetCommand& command) = 0;
 };
 }
 
-#endif
+#endif // ACTUATORCOMMANDLISTENER_H

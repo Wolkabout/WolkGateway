@@ -17,21 +17,49 @@
 #ifndef DATASERVICE_H
 #define DATASERVICE_H
 
-#include "model/SensorReading.h"
-#include "model/ActuatorSetCommand.h"
-#include "model/ActuatorGetCommand.h"
-#include "model/ActuatorStatus.h"
-#include "model/Alarm.h"
+#include "model/Message.h"
+#include <string>
+#include <vector>
+#include <memory>
 
 namespace wolkabout
 {
+class SensorReading;
+class Alarm;
+class ActuatorStatus;
+class MessageFactory;
+class OutboundMessageHandler;
+class ActuatorCommandListener;
+
 class DataService
 {
 public:
-	void handleSensorReading(SensorReading reading);
-	void handleActuatorSetCommand(ActuatorSetCommand command);
-	void handleActuatorGetCommand(ActuatorGetCommand command);
-	void handleActuatorStatus(ActuatorStatus status);
+	DataService(const std::string& gatewayKey, std::unique_ptr<MessageFactory> protocol,
+				std::shared_ptr<OutboundMessageHandler> outboundWolkaboutMessageHandler,
+				std::shared_ptr<OutboundMessageHandler> outboundModuleMessageHandler,
+				std::weak_ptr<ActuatorCommandListener> actuationHandler);
+
+	void handleSensorReading(Message reading);
+	void handleAlarm(Message alarm);
+	void handleActuatorSetCommand(Message command);
+	void handleActuatorGetCommand(Message command);
+	void handleActuatorStatus(Message status);
+
+	void addSensorReadings(std::vector<std::shared_ptr<SensorReading>> sensorReadings);
+	void addAlarms(std::vector<std::shared_ptr<Alarm>> alarms);
+	void addActuatorStatus(std::shared_ptr<ActuatorStatus> actuatorStatus);
+
+private:
+	void routeModuleMessage(const Message& message, const std::string& topicRoot);
+	void routeWolkaboutMessage(const Message& message);
+
+	const std::string m_gatewayKey;
+	std::unique_ptr<MessageFactory> m_protocol;
+
+	std::shared_ptr<OutboundMessageHandler> m_outboundWolkaboutMessageHandler;
+	std::shared_ptr<OutboundMessageHandler> m_outboundModuleMessageHandler;
+
+	std::weak_ptr<ActuatorCommandListener> m_actuationHandler;
 };
 }
 

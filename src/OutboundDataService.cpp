@@ -17,7 +17,6 @@
 #include "OutboundDataService.h"
 #include "model/FirmwareUpdateResponse.h"
 #include "connectivity/ConnectivityService.h"
-#include "connectivity/json/OutboundMessageFactory.h"
 
 #include <iostream>
 
@@ -30,24 +29,24 @@ OutboundDataService::OutboundDataService(Device device, std::shared_ptr<Connecti
 
 void OutboundDataService::addFirmwareUpdateResponse(const FirmwareUpdateResponse& response)
 {
-	const std::shared_ptr<OutboundMessage> outboundMessage =
-			OutboundMessageFactory::make(m_device.getDeviceKey(), response);
+//	const std::shared_ptr<OutboundMessage> outboundMessage =
+//			OutboundMessageFactory::make(m_device.getDeviceKey(), response);
 
-	if (outboundMessage && m_connectivityService->publish(outboundMessage))
-	{
-		std::cout << "Message sent " << outboundMessage->getContent();
-	}
+//	if (outboundMessage && m_connectivityService->publish(outboundMessage))
+//	{
+//		std::cout << "Message sent " << outboundMessage->getContent();
+//	}
 }
 
 void OutboundDataService::addFilePacketRequest(const FilePacketRequest& request)
 {
-	const std::shared_ptr<OutboundMessage> outboundMessage =
-			OutboundMessageFactory::make(m_device.getDeviceKey(), request);
+//	const std::shared_ptr<OutboundMessage> outboundMessage =
+//			OutboundMessageFactory::make(m_device.getDeviceKey(), request);
 
-	if (outboundMessage && m_connectivityService->publish(outboundMessage))
-	{
-		std::cout << "Message sent " << outboundMessage->getContent();
-	}
+//	if (outboundMessage && m_connectivityService->publish(outboundMessage))
+//	{
+//		std::cout << "Message sent " << outboundMessage->getContent();
+//	}
 }
 
 }

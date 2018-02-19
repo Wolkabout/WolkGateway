@@ -14,45 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef CONNECTIVITYSERVICE_H
-#define CONNECTIVITYSERVICE_H
+#ifndef INBOUNDMESSAGEHANDLER_H
+#define INBOUNDMESSAGEHANDLER_H
 
-#include <functional>
-#include <memory>
 #include <string>
 #include <vector>
 
 namespace wolkabout
 {
-class ConnectivityServiceListener
+class InboundMessageHandler
 {
 public:
-    virtual ~ConnectivityServiceListener() = default;
+	virtual ~InboundMessageHandler() = default;
 
 	virtual void messageReceived(const std::string& topic, const std::string& message) = 0;
-
-	virtual void connectionLost() = 0;
-
 	virtual const std::vector<std::string>& getTopics() const = 0;
-};
-
-class OutboundMessage;
-class ConnectivityService
-{
-public:
-    virtual ~ConnectivityService() = default;
-
-    virtual bool connect() = 0;
-    virtual void disconnect() = 0;
-
-	virtual bool isConnected() = 0;
-
-    virtual bool publish(std::shared_ptr<OutboundMessage> outboundMessage) = 0;
-
-    void setListener(std::weak_ptr<ConnectivityServiceListener> listener);
-
-protected:
-    std::weak_ptr<ConnectivityServiceListener> m_listener;
 };
 }
 

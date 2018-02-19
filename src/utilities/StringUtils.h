@@ -39,6 +39,8 @@ public:
 
 	static void removeTrailingWhitespace(std::string& string);
 
+	static std::string removeSubstring(const std::string& string, const std::string& substring);
+
 	static bool isBase64(unsigned char c);
 
 	static std::string base64Encode(const char* bytesToEncode, unsigned int len);

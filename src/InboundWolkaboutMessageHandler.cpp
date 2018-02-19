@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-#include "InboundMessageHandler.h"
-#include "connectivity/json/JsonDtoParser.h"
+#include "InboundWolkaboutMessageHandler.h"
+#include "connectivity/Channels.h"
 #include "utilities/StringUtils.h"
-#include "utilities/ByteUtils.h"
 #include "utilities/Logger.h"
 
 #include <sstream>
-#include <iostream>
 
 namespace wolkabout
 {
@@ -29,68 +27,99 @@ namespace wolkabout
 InboundWolkaboutMessageHandler::InboundWolkaboutMessageHandler(const std::string& gatewayKey) :
 	m_commandBuffer{new CommandBuffer()}, m_gatewayKey{gatewayKey}
 {
+	std::string topic = Channel::ACTUATION_SET_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX + m_gatewayKey + Channel::CHANNEL_DELIMITER +
+			Channel::CHANNEL_WILDCARD;
+	m_subscriptionList.emplace_back(topic);
+
+	topic = Channel::ACTUATION_GET_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX + m_gatewayKey + Channel::CHANNEL_DELIMITER +
+			Channel::CHANNEL_WILDCARD;
+	m_subscriptionList.emplace_back(topic);
+
+	topic = Channel::CONFIGURATION_SET_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX + m_gatewayKey + Channel::CHANNEL_DELIMITER +
+			Channel::CHANNEL_WILDCARD;
+	m_subscriptionList.emplace_back(topic);
+
+	topic = Channel::CONFIGURATION_GET_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX + m_gatewayKey + Channel::CHANNEL_DELIMITER +
+			Channel::CHANNEL_WILDCARD;
+	m_subscriptionList.emplace_back(topic);
+
+	topic = Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX + m_gatewayKey + Channel::CHANNEL_DELIMITER +
+			Channel::CHANNEL_WILDCARD;
+	m_subscriptionList.emplace_back(topic);
+
+	topic = Channel::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX + m_gatewayKey + Channel::CHANNEL_DELIMITER +
+			Channel::CHANNEL_WILDCARD;
+	m_subscriptionList.emplace_back(topic);
 }
 
 void InboundWolkaboutMessageHandler::messageReceived(const std::string& topic, const std::string& message)
 {
-	LOG(DEBUG) << "Message received: " << topic << ", " << message;
+	LOG(DEBUG) << "Message received from Wolkabout: " << topic << ", " << message;
 
-	if(StringUtils::startsWith(topic, ACTUATION_SET_REQUEST_TOPIC_ROOT))
+	if(StringUtils::startsWith(topic, Channel::ACTUATION_SET_TOPIC_ROOT))
 	{
-		const size_t referencePosition = topic.find_last_of('/');
-		if (referencePosition == std::string::npos)
-		{
-			return;
-		}
-
-		ActuatorSetCommand actuatorCommand;
-//		if (!JsonParser::fromJson(message, actuatorCommand))
-//		{
-//			return;
-//		}
-
-		const std::string reference = topic.substr(referencePosition + 1);
-
-		addToCommandBuffer([=]() -> void {
+		addToCommandBuffer([=]{
 			if(m_actuationSetHandler)
 			{
-				m_actuationSetHandler(ActuatorSetCommand(reference, actuatorCommand.getValue()));
+				Message msg{message, topic};
+				m_actuationSetHandler(msg);
 			}
 		});
 	}
-//	else if(StringUtils::startsWith(topic, FIRMWARE_UPDATE_TOPIC_ROOT))
-//	{
-//		FirmwareUpdateCommand firmwareUpdateCommand;
-//		if (!JsonParser::fromJson(message, firmwareUpdateCommand))
-//		{
-//			return;
-//		}
-
-//		addToCommandBuffer([=]() -> void {
-//			if(m_firmwareUpdateHandler)
-//			{
-//				m_firmwareUpdateHandler(firmwareUpdateCommand);
-//			}
-//		});
-//	}
-//	else if(StringUtils::startsWith(topic, BINARY_TOPIC_ROOT))
-//	{
-//		try
-//		{
-//			BinaryData data{ByteUtils::toByteArray(message)};
-
-//			addToCommandBuffer([=]() -> void {
-//				if(m_binaryDataHandler)
-//				{
-//					m_binaryDataHandler(data);
-//				}
-//			});
-//		}
-//		catch (const std::invalid_argument& e)
-//		{
-//			std::cout << e.what();
-//		}
-//	}
+	else if(StringUtils::startsWith(topic, Channel::ACTUATION_GET_TOPIC_ROOT))
+	{
+		addToCommandBuffer([=]{
+			if(m_actuationGetHandler)
+			{
+				Message msg{message, topic};
+				m_actuationGetHandler(msg);
+			}
+		});
+	}
+	else if(StringUtils::startsWith(topic, Channel::CONFIGURATION_SET_REQUEST_TOPIC_ROOT))
+	{
+		addToCommandBuffer([=]{
+			if(m_configurationSetHandler)
+			{
+				Message msg{message, topic};
+				m_configurationSetHandler(msg);
+			}
+		});
+	}
+	else if(StringUtils::startsWith(topic, Channel::CONFIGURATION_GET_REQUEST_TOPIC_ROOT))
+	{
+		addToCommandBuffer([=]{
+			if(m_configurationGetHandler)
+			{
+				Message msg{message, topic};
+				m_configurationGetHandler(msg);
+			}
+		});
+	}
+	else if(StringUtils::startsWith(topic, Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT))
+	{
+		addToCommandBuffer([=]{
+			if(m_deviceRegistrationResponseHandler)
+			{
+				Message msg{message, topic};
+				m_deviceRegistrationResponseHandler(msg);
+			}
+		});
+	}
+	else if(StringUtils::startsWith(topic, Channel::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT))
+	{
+		addToCommandBuffer([=]{
+			if(m_deviceReregistrationResuestHandler)
+			{
+				Message msg{message, topic};
+				m_deviceReregistrationResuestHandler(msg);
+			}
+		});
+	}
+	else
+	{
+		LOG(DEBUG) << "Unable to parse message: " << topic << ", " << message;
+	}
 }
 
 const std::vector<std::string>& InboundWolkaboutMessageHandler::getTopics() const
@@ -98,9 +127,34 @@ const std::vector<std::string>& InboundWolkaboutMessageHandler::getTopics() cons
 	return m_subscriptionList;
 }
 
-void InboundWolkaboutMessageHandler::setActuatorSetCommandHandler(std::function<void(ActuatorSetCommand)> handler)
+void InboundWolkaboutMessageHandler::setActuatorSetRequestHandler(std::function<void(Message)> handler)
 {
 	m_actuationSetHandler = handler;
+}
+
+void InboundWolkaboutMessageHandler::setActuatorGetRequestHandler(std::function<void(Message)> handler)
+{
+	m_actuationGetHandler = handler;
+}
+
+void InboundWolkaboutMessageHandler::setConfigurationSetRequestHandler(std::function<void(Message)> handler)
+{
+	m_configurationSetHandler = handler;
+}
+
+void InboundWolkaboutMessageHandler::setConfigurationGetRequestHandler(std::function<void(Message)> handler)
+{
+	m_configurationGetHandler = handler;
+}
+
+void InboundWolkaboutMessageHandler::setDeviceRegistrationResponseHandler(std::function<void(Message)> handler)
+{
+	m_deviceRegistrationResponseHandler = handler;
+}
+
+void InboundWolkaboutMessageHandler::setDeviceReregistrationRequestHandler(std::function<void(Message)> handler)
+{
+	m_deviceReregistrationResuestHandler = handler;
 }
 
 //void InboundMessageHandler::setBinaryDataHandler(std::function<void(BinaryData)> handler)

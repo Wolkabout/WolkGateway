@@ -75,6 +75,20 @@ void StringUtils::removeTrailingWhitespace(std::string& string)
 	}
 }
 
+std::string StringUtils::removeSubstring(const std::string& string, const std::string& substring)
+{
+	auto pos = string.find(substring);
+	if(pos != std::string::npos)
+	{
+		std::string ret = string;
+		ret.erase(pos, substring.size());
+
+		return ret;
+	}
+
+	return string;
+}
+
 bool StringUtils::isBase64(unsigned char c)
 {
 	return (isalnum(c) || (c == '+') || (c == '/'));

@@ -21,7 +21,8 @@
 #include "ActuatorStatusProvider.h"
 #include "utilities/CommandBuffer.h"
 #include "WolkBuilder.h"
-#include "model/ActuatorCommand.h"
+#include "model/ActuatorSetCommand.h"
+#include "model/ActuatorGetCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/Device.h"
 
@@ -34,8 +35,11 @@ namespace wolkabout
 {
 class ConnectivityService;
 class InboundMessageHandler;
-class FirmwareUpdateService;
-class FileDownloadService;
+class InboundModuleMessageHandler;
+class InboundWolkaboutMessageHandler;
+//class FirmwareUpdateService;
+//class FileDownloadService;
+class DataService;
 class OutboundServiceDataHandler;
 
 class Wolk
@@ -90,7 +94,7 @@ public:
      *        This method is thread safe, and can be called from multiple thread simultaneously
      * @param Actuator reference
      */
-    void publishActuatorStatus(const std::string& reference);
+	void publishActuatorStatus(const std::string& reference);
 
     /**
      * @brief connect Establishes connection with WolkAbout IoT platform
@@ -102,41 +106,43 @@ public:
      */
     void disconnect();
 
-    /**
-     * @brief publish Publishes data
-     */
-    void publish();
-
 private:
-    static const constexpr unsigned int PUBLISH_BATCH_ITEMS_COUNT = 50;
+	class ConnectivityFacade;
 
-    Wolk(std::shared_ptr<ConnectivityService> connectivityService, std::shared_ptr<Persistence> persistence,
-		 std::shared_ptr<InboundMessageHandler> inboundMessageHandler,
+	Wolk(std::shared_ptr<ConnectivityService> wolkConnectivityService,
+		 std::shared_ptr<ConnectivityService> moduleConnectivityService,
+		 std::shared_ptr<Persistence> persistence,
+		 std::shared_ptr<InboundWolkaboutMessageHandler> inboundWolkaboutMessageHandler,
+		 std::shared_ptr<InboundModuleMessageHandler> inboundModuleMessageHandler,
 		 std::shared_ptr<OutboundServiceDataHandler> outboundServiceDataHandler, Device device);
 
     void addToCommandBuffer(std::function<void()> command);
 
     static unsigned long long int currentRtc();
 
-    void publishActuatorStatuses();
-    void publishAlarms();
-    void publishSensorReadings();
+	void handleActuatorSetCommand(const ActuatorSetCommand& command);
+	void handleActuatorGetCommand(const ActuatorGetCommand& command);
 
-    void addActuatorStatus(std::shared_ptr<ActuatorStatus> actuatorStatus);
+	void connectToWolkabout();
+	void connectToModules();
 
-    void handleActuatorCommand(const ActuatorCommand& actuatorCommand);
-    void handleSetActuator(const ActuatorCommand& actuatorCommand);
+	//void publishFirmwareVersion();
 
-	void publishFirmwareVersion();
-
-    std::shared_ptr<ConnectivityService> m_connectivityService;
+	std::shared_ptr<ConnectivityService> m_wolkConnectivityService;
+	std::shared_ptr<ConnectivityService> m_moduleConnectivityService;
     std::shared_ptr<Persistence> m_persistence;
 
-	std::shared_ptr<InboundMessageHandler> m_inboundMessageHandler;
+	std::shared_ptr<InboundWolkaboutMessageHandler> m_inboundWolkaboutMessageHandler;
+	std::shared_ptr<InboundModuleMessageHandler> m_inboundModuleMessageHandler;
+
 	std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
 
-	std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
-	std::shared_ptr<FileDownloadService> m_fileDownloadService;
+	std::shared_ptr<ConnectivityFacade> m_wolkaboutConnectivityManager;
+	std::shared_ptr<ConnectivityFacade> m_moduleConnectivityManager;
+
+	//std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
+	//std::shared_ptr<FileDownloadService> m_fileDownloadService;
+	std::shared_ptr<DataService> m_dataService;
 
 	Device m_device;
 
@@ -147,6 +153,20 @@ private:
     std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
 
     std::unique_ptr<CommandBuffer> m_commandBuffer;
+
+
+	class ConnectivityFacade: public ConnectivityServiceListener
+	{
+	public:
+		ConnectivityFacade(InboundMessageHandler* handler, std::function<void()> connectionLostHandler);
+
+		void messageReceived(const std::string& topic, const std::string& message) override;
+		void connectionLost() override;
+		const std::vector<std::string>& getTopics() const override;
+	private:
+		InboundMessageHandler* m_messageHandler;
+		std::function<void()> m_connectionLostHandler;
+	};
 };
 }
 

@@ -17,15 +17,15 @@
 #include "Wolk.h"
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
-#include "connectivity/json/OutboundMessageFactory.h"
 #include "WolkBuilder.h"
 #include "connectivity/ConnectivityService.h"
 #include "service/FirmwareUpdateService.h"
-#include "model/ActuatorCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/Alarm.h"
 #include "model/Device.h"
 #include "model/SensorReading.h"
+#include "InboundMessageHandler.h"
+#include "service/DataService.h"
 
 #include <memory>
 #include <sstream>
@@ -53,7 +53,7 @@ template <> void Wolk::addSensorReading(const std::string& reference, std::strin
     auto sensorReading = std::make_shared<SensorReading>(value, reference, rtc);
 
     addToCommandBuffer(
-      [=]() -> void { m_persistence->putSensorReading(sensorReading->getReference(), sensorReading); });
+	  [=]() -> void { m_dataService->addSensorReadings({sensorReading}); });
 }
 
 template <typename T> void Wolk::addSensorReading(const std::string& reference, T value, unsigned long long rtc)
@@ -94,7 +94,7 @@ void Wolk::addAlarm(const std::string& reference, const std::string& value, unsi
 
     auto alarm = std::make_shared<Alarm>(value, reference, rtc);
 
-    addToCommandBuffer([=]() -> void { m_persistence->putAlarm(alarm->getReference(), alarm); });
+	addToCommandBuffer([=]() -> void { m_dataService->addAlarms({alarm}); });
 }
 
 void Wolk::publishActuatorStatus(const std::string& reference)
@@ -114,57 +114,59 @@ void Wolk::publishActuatorStatus(const std::string& reference)
 
     auto actuatorStatusWithRef =
       std::make_shared<ActuatorStatus>(actuatorStatus.getValue(), reference, actuatorStatus.getState());
-    addToCommandBuffer([=]() -> void {
-        addActuatorStatus(actuatorStatusWithRef);
-        publishActuatorStatuses();
-    });
+	addToCommandBuffer([=]() -> void { m_dataService->addActuatorStatus(actuatorStatusWithRef); });
 }
 
 void Wolk::connect()
 {
     addToCommandBuffer([=]() -> void {
-		if(!m_connectivityService->connect())
+		if(!m_wolkConnectivityService->connect())
 		{
 			return;
 		}
 
-		publishFirmwareVersion();
-		m_firmwareUpdateService->reportFirmwareUpdateResult();
+//		publishFirmwareVersion();
+//		m_firmwareUpdateService->reportFirmwareUpdateResult();
 
 		for (const std::string& actuatorReference : m_device.getActuatorReferences())
 		{
 			publishActuatorStatus(actuatorReference);
 		}
 
-		publish();
+		//publish();
     });
 }
 
 void Wolk::disconnect()
 {
-    addToCommandBuffer([=]() -> void { m_connectivityService->disconnect(); });
+	addToCommandBuffer([=]() -> void { m_wolkConnectivityService->disconnect(); });
 }
 
-void Wolk::publish()
-{
-    addToCommandBuffer([=]() -> void {
-        publishActuatorStatuses();
-        publishAlarms();
-        publishSensorReadings();
+//void Wolk::publish()
+//{
+//    addToCommandBuffer([=]() -> void {
+//        publishActuatorStatuses();
+//        publishAlarms();
+//        publishSensorReadings();
 
-        if (!m_persistence->isEmpty())
-        {
-            publish();
-        }
-    });
-}
+//        if (!m_persistence->isEmpty())
+//        {
+//            publish();
+//        }
+//    });
+//}
 
-Wolk::Wolk(std::shared_ptr<ConnectivityService> connectivityService, std::shared_ptr<Persistence> persistence,
-		   std::shared_ptr<InboundMessageHandler> inboundMessageHandler,
+Wolk::Wolk(std::shared_ptr<ConnectivityService> wolkConnectivityService,
+		   std::shared_ptr<ConnectivityService> moduleConnectivityService,
+		   std::shared_ptr<Persistence> persistence,
+		   std::shared_ptr<InboundWolkaboutMessageHandler> inboundWolkaboutMessageHandler,
+		   std::shared_ptr<InboundModuleMessageHandler> inboundModuleMessageHandler,
 		   std::shared_ptr<OutboundServiceDataHandler> outboundServiceDataHandler, Device device)
-: m_connectivityService(std::move(connectivityService))
+: m_wolkConnectivityService(std::move(wolkConnectivityService))
+, m_moduleConnectivityService(std::move(moduleConnectivityService))
 , m_persistence(persistence)
-, m_inboundMessageHandler(std::move(inboundMessageHandler))
+, m_inboundWolkaboutMessageHandler(std::move(inboundWolkaboutMessageHandler))
+, m_inboundModuleMessageHandler(std::move(inboundModuleMessageHandler))
 , m_outboundServiceDataHandler(std::move(outboundServiceDataHandler))
 , m_device(device)
 , m_actuationHandlerLambda(nullptr)
@@ -184,93 +186,77 @@ unsigned long long Wolk::currentRtc()
     return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
 }
 
-void Wolk::publishActuatorStatuses()
+void Wolk::handleActuatorSetCommand(const ActuatorSetCommand& command)
 {
-    for (const std::string& key : m_persistence->getGetActuatorStatusesKeys())
-    {
-        const auto actuatorStatus = m_persistence->getActuatorStatus(key);
-        const std::shared_ptr<OutboundMessage> outboundMessage =
-          OutboundMessageFactory::make(m_device.getDeviceKey(), {actuatorStatus});
-
-        if (outboundMessage && m_connectivityService->publish(outboundMessage))
-        {
-            m_persistence->removeActuatorStatus(actuatorStatus->getReference());
-        }
-    }
-}
-
-void Wolk::publishAlarms()
-{
-    for (const std::string& key : m_persistence->getAlarmsKeys())
-    {
-        const auto alarms = m_persistence->getAlarms(key, PUBLISH_BATCH_ITEMS_COUNT);
-        const std::shared_ptr<OutboundMessage> outboundMessage =
-          OutboundMessageFactory::make(m_device.getDeviceKey(), alarms);
-
-        if (outboundMessage && m_connectivityService->publish(outboundMessage))
-        {
-            m_persistence->removeAlarms(key, PUBLISH_BATCH_ITEMS_COUNT);
-        }
-    }
-}
-
-void Wolk::publishSensorReadings()
-{
-    for (const std::string& key : m_persistence->getSensorReadingsKeys())
-    {
-        const auto sensorReadings = m_persistence->getSensorReadings(key, PUBLISH_BATCH_ITEMS_COUNT);
-        const std::shared_ptr<OutboundMessage> outboundMessage =
-          OutboundMessageFactory::make(m_device.getDeviceKey(), sensorReadings);
-
-        if (outboundMessage && m_connectivityService->publish(outboundMessage))
-        {
-            m_persistence->removeSensorReadings(key, PUBLISH_BATCH_ITEMS_COUNT);
-        }
-    }
-}
-
-void Wolk::addActuatorStatus(std::shared_ptr<ActuatorStatus> actuatorStatus)
-{
-    m_persistence->putActuatorStatus(actuatorStatus->getReference(), actuatorStatus);
-}
-
-void Wolk::handleActuatorCommand(const ActuatorCommand& actuatorCommand)
-{
-    if (actuatorCommand.getType() == ActuatorCommand::Type::STATUS)
-    {
-        publishActuatorStatus(actuatorCommand.getReference());
-    }
-    else if (actuatorCommand.getType() == ActuatorCommand::Type::SET)
-    {
-        handleSetActuator(actuatorCommand);
-        publishActuatorStatus(actuatorCommand.getReference());
-    }
-}
-
-void Wolk::handleSetActuator(const ActuatorCommand& actuatorCommand)
-{
-    if (auto provider = m_actuationHandler.lock())
-    {
-        provider->handleActuation(actuatorCommand.getReference(), actuatorCommand.getValue());
-    }
-    else if (m_actuationHandlerLambda)
-    {
-        m_actuationHandlerLambda(actuatorCommand.getReference(), actuatorCommand.getValue());
-    }
-}
-
-void Wolk::publishFirmwareVersion()
-{
-	if(m_firmwareUpdateService)
+	if (auto provider = m_actuationHandler.lock())
 	{
-		const auto firmwareVerion = m_firmwareUpdateService->getFirmwareVersion();
-		const std::shared_ptr<OutboundMessage> outboundMessage =
-				OutboundMessageFactory::makeFromFirmwareVersion(m_device.getDeviceKey(), firmwareVerion);
-
-		if (!(outboundMessage && m_connectivityService->publish(outboundMessage)))
-		{
-			// TODO Log error
-		}
+		provider->handleActuation(command.getReference(), command.getValue());
 	}
+	else if (m_actuationHandlerLambda)
+	{
+		m_actuationHandlerLambda(command.getReference(), command.getValue());
+	}
+
+	publishActuatorStatus(command.getReference());
+}
+
+void Wolk::handleActuatorGetCommand(const ActuatorGetCommand& command)
+{
+	publishActuatorStatus(command.getReference());
+}
+
+//void Wolk::publishFirmwareVersion()
+//{
+//	if(m_firmwareUpdateService)
+//	{
+//		const auto firmwareVerion = m_firmwareUpdateService->getFirmwareVersion();
+//		const std::shared_ptr<OutboundMessage> outboundMessage =
+//				OutboundMessageFactory::makeFromFirmwareVersion(m_device.getDeviceKey(), firmwareVerion);
+
+//		if (!(outboundMessage && m_connectivityService->publish(outboundMessage)))
+//		{
+//			// TODO Log error
+//		}
+//	}
+//}
+
+void Wolk::connectToWolkabout()
+{
+	addToCommandBuffer([=]() -> void {
+		if(!m_wolkConnectivityService->connect())
+		{
+			connectToWolkabout();
+		}
+	});
+}
+
+void Wolk::connectToModules()
+{
+	addToCommandBuffer([=]() -> void {
+		if(!m_moduleConnectivityService->connect())
+		{
+			connectToModules();
+		}
+	});
+}
+
+Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler* handler, std::function<void()> connectionLostHandler) :
+	m_messageHandler{handler}, m_connectionLostHandler{connectionLostHandler}
+{
+}
+
+void Wolk::ConnectivityFacade::messageReceived(const std::string& topic, const std::string& message)
+{
+	m_messageHandler->messageReceived(topic, message);
+}
+
+void Wolk::ConnectivityFacade::connectionLost()
+{
+	m_connectionLostHandler();
+}
+
+const std::vector<std::string>& Wolk::ConnectivityFacade::getTopics() const
+{
+	return m_messageHandler->getTopics();
 }
 }

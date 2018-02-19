@@ -17,22 +17,17 @@
 #ifndef INBOUNDWOLKABOUTMESSAGEHANDLER_H
 #define INBOUNDWOLKABOUTMESSAGEHANDLER_H
 
-#include "connectivity/ConnectivityService.h"
-#include "model/Device.h"
-#include "model/ActuatorSetCommand.h"
-#include "model/BinaryData.h"
-#include "model/FirmwareUpdateCommand.h"
-#include "model/DeviceManifest.h"
+#include "InboundMessageHandler.h"
+#include "model/Message.h"
 #include "utilities/CommandBuffer.h"
 
 #include <string>
 #include <vector>
-#include <map>
 
 namespace wolkabout
 {
 
-class InboundWolkaboutMessageHandler: public ConnectivityServiceListener
+class InboundWolkaboutMessageHandler: public InboundMessageHandler
 {
 public:
 	InboundWolkaboutMessageHandler(const std::string& gatewayKey);
@@ -41,7 +36,12 @@ public:
 
 	const std::vector<std::string>& getTopics() const override;
 
-	void setActuatorSetCommandHandler(std::function<void(ActuatorSetCommand)> handler);
+	void setActuatorSetRequestHandler(std::function<void(Message)> handler);
+	void setActuatorGetRequestHandler(std::function<void(Message)> handler);
+	void setConfigurationSetRequestHandler(std::function<void(Message)> handler);
+	void setConfigurationGetRequestHandler(std::function<void(Message)> handler);
+	void setDeviceRegistrationResponseHandler(std::function<void(Message)> handler);
+	void setDeviceReregistrationRequestHandler(std::function<void(Message)> handler);
 
 //	void setBinaryDataHandler(std::function<void(BinaryData)> handler);
 
@@ -53,19 +53,16 @@ private:
 	std::unique_ptr<CommandBuffer> m_commandBuffer;
 	const std::string m_gatewayKey;
 
-	std::map<std::string, DeviceManifest> m_devices;
 	std::vector<std::string> m_subscriptionList;
 
-	std::function<void(ActuatorSetCommand)> m_actuationSetHandler;
+	std::function<void(Message)> m_actuationSetHandler;
+	std::function<void(Message)> m_actuationGetHandler;
+	std::function<void(Message)> m_configurationSetHandler;
+	std::function<void(Message)> m_configurationGetHandler;
+	std::function<void(Message)> m_deviceRegistrationResponseHandler;
+	std::function<void(Message)> m_deviceReregistrationResuestHandler;
 //	std::function<void(BinaryData)> m_binaryDataHandler;
 //	std::function<void(FirmwareUpdateCommand)> m_firmwareUpdateHandler;
-
-	static const constexpr char* ACTUATION_SET_REQUEST_TOPIC_ROOT = "p2d/actuator_set/";
-	static const constexpr char* ACTUATION_GET_REQUEST_TOPIC_ROOT = "p2d/actuator_get/";
-	static const constexpr char* CONFIGURATION_SET_REQUEST_TOPIC_ROOT = "p2d/configuration_set/";
-	static const constexpr char* CONFIGURATION_GET_REQUEST_TOPIC_ROOT = "p2d/configuration_get/";
-	static const constexpr char* DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT = "p2d/register_device/";
-	static const constexpr char* DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT = "p2d/reregister_device/";
 
 //	static const constexpr char* FIRMWARE_UPDATE_TOPIC_ROOT = "service/commands/firmware/";
 //	static const constexpr char* BINARY_TOPIC_ROOT = "service/binary/";

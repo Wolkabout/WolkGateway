@@ -22,14 +22,14 @@
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
-#include "InboundMessageHandler.h"
+#include "InboundModuleMessageHandler.h"
+#include "InboundWolkaboutMessageHandler.h"
 #include "persistence/Persistence.h"
 #include "persistence/inmemory/InMemoryPersistence.h"
-#include "model/FirmwareUpdateCommand.h"
 #include "OutboundDataService.h"
-#include "service/FileDownloadService.h"
-#include "service/FirmwareUpdateService.h"
 #include "FileHandler.h"
+
+#include "service/DataService.h"
 
 #include <functional>
 #include <stdexcept>
@@ -125,10 +125,24 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 	auto wolkConnectivityService = std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device, m_host);
 	auto moduleConnectivityService = std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device, "tcp://127.0.0.1:1883");
 
-	auto inboundMessageHandler = std::make_shared<InboundMessageHandler>(m_device);
-	auto outboundServiceDataHandler = std::make_shared<OutboundDataService>(m_device, connectivityService);
+	auto inboundModuleMessageHandler = std::make_shared<InboundModuleMessageHandler>();
+	auto inboundWolkaboutMessageHandler = std::make_shared<InboundWolkaboutMessageHandler>(m_device.getDeviceKey());
 
-	auto wolk = std::unique_ptr<Wolk>(new Wolk(connectivityService, m_persistence, inboundMessageHandler, outboundServiceDataHandler, m_device));
+	auto outboundServiceDataHandler = std::make_shared<OutboundDataService>(m_device, wolkConnectivityService);
+
+	auto wolk = std::unique_ptr<Wolk>(new Wolk(wolkConnectivityService, moduleConnectivityService, m_persistence,
+											   inboundWolkaboutMessageHandler, inboundModuleMessageHandler, outboundServiceDataHandler, m_device));
+
+	wolk->m_wolkaboutConnectivityManager = std::make_shared<Wolk::ConnectivityFacade>(wolk->m_inboundWolkaboutMessageHandler.get(), [&]{
+		wolk->connectToWolkabout();
+	});
+
+	wolk->m_moduleConnectivityManager = std::make_shared<Wolk::ConnectivityFacade>(wolk->m_inboundModuleMessageHandler.get(), [&]{
+		wolk->connectToModules();
+	});
+
+	wolkConnectivityService->setListener(wolk->m_wolkaboutConnectivityManager);
+	moduleConnectivityService->setListener(wolk->m_moduleConnectivityManager);
 
     wolk->m_actuationHandlerLambda = m_actuationHandlerLambda;
     wolk->m_actuationHandler = m_actuationHandler;
@@ -136,40 +150,50 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
     wolk->m_actuatorStatusProviderLambda = m_actuatorStatusProviderLambda;
     wolk->m_actuatorStatusProvider = m_actuatorStatusProvider;
 
-	wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(m_maxFirmwareFileSize, m_maxFirmwareFileChunkSize,
-																		std::unique_ptr<FileHandler>(new FileHandler()),
-																		outboundServiceDataHandler);
+//	wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(m_maxFirmwareFileSize, m_maxFirmwareFileChunkSize,
+//																		std::unique_ptr<FileHandler>(new FileHandler()),
+//																		outboundServiceDataHandler);
 
-	if(m_firmwareInstaller.lock() != nullptr)
-	{
-		wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(m_firmwareVersion, m_firmwareDownloadDirectory,
-																				m_maxFirmwareFileSize, outboundServiceDataHandler,
-																				wolk->m_fileDownloadService, m_urlFileDownloader,
-																				m_firmwareInstaller);
-	}
+//	if(m_firmwareInstaller.lock() != nullptr)
+//	{
+//		wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(m_firmwareVersion, m_firmwareDownloadDirectory,
+//																				m_maxFirmwareFileSize, outboundServiceDataHandler,
+//																				wolk->m_fileDownloadService, m_urlFileDownloader,
+//																				m_firmwareInstaller);
+//	}
 
 
-	inboundMessageHandler->setActuatorCommandHandler([&](const ActuatorCommand& actuatorCommand) -> void {
-		wolk->handleActuatorCommand(actuatorCommand);
-	});
+	std::weak_ptr<DataService> dataService_weak{wolk->m_dataService};
 
-	std::weak_ptr<FileDownloadService> fileDownloadService_weak{wolk->m_fileDownloadService};
-	inboundMessageHandler->setBinaryDataHandler([=](const BinaryData& binaryData) -> void {
-		if(auto handler = fileDownloadService_weak.lock())
+	inboundModuleMessageHandler->setSensorReadingHandler([=](Message reading){
+		if(auto handler = dataService_weak.lock())
 		{
-			handler->handleBinaryData(binaryData);
+			handler->handleSensorReading(reading);
 		}
 	});
 
-	std::weak_ptr<FirmwareUpdateService> firmwareUpdateService_weak{wolk->m_firmwareUpdateService};
-	inboundMessageHandler->setFirmwareUpdateCommandHandler([=](const FirmwareUpdateCommand& firmwareUpdateCommand) -> void {
-		if(auto handler = firmwareUpdateService_weak.lock())
+	inboundModuleMessageHandler->setActuatorStatusHandler([=](Message status){
+		if(auto handler = dataService_weak.lock())
 		{
-			handler->handleFirmwareUpdateCommand(firmwareUpdateCommand);
+			handler->handleActuatorStatus(status);
 		}
 	});
 
-	connectivityService->setListener(std::dynamic_pointer_cast<ConnectivityServiceListener>(inboundMessageHandler));
+//	std::weak_ptr<FileDownloadService> fileDownloadService_weak{wolk->m_fileDownloadService};
+//	inboundMessageHandler->setBinaryDataHandler([=](const BinaryData& binaryData) -> void {
+//		if(auto handler = fileDownloadService_weak.lock())
+//		{
+//			handler->handleBinaryData(binaryData);
+//		}
+//	});
+
+//	std::weak_ptr<FirmwareUpdateService> firmwareUpdateService_weak{wolk->m_firmwareUpdateService};
+//	inboundMessageHandler->setFirmwareUpdateCommandHandler([=](const FirmwareUpdateCommand& firmwareUpdateCommand) -> void {
+//		if(auto handler = firmwareUpdateService_weak.lock())
+//		{
+//			handler->handleFirmwareUpdateCommand(firmwareUpdateCommand);
+//		}
+//	});
 
     return wolk;
 }

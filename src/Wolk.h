@@ -25,6 +25,7 @@
 #include "model/ActuatorGetCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/Device.h"
+#include "service/ActuatorCommandListener.h"
 
 #include <functional>
 #include <memory>
@@ -40,6 +41,7 @@ class InboundWolkaboutMessageHandler;
 //class FirmwareUpdateService;
 //class FileDownloadService;
 class DataService;
+class PublishingService;
 class OutboundServiceDataHandler;
 
 class Wolk
@@ -108,13 +110,9 @@ public:
 
 private:
 	class ConnectivityFacade;
+	class ActuationFacade;
 
-	Wolk(std::shared_ptr<ConnectivityService> wolkConnectivityService,
-		 std::shared_ptr<ConnectivityService> moduleConnectivityService,
-		 std::shared_ptr<Persistence> persistence,
-		 std::shared_ptr<InboundWolkaboutMessageHandler> inboundWolkaboutMessageHandler,
-		 std::shared_ptr<InboundModuleMessageHandler> inboundModuleMessageHandler,
-		 std::shared_ptr<OutboundServiceDataHandler> outboundServiceDataHandler, Device device);
+	Wolk(Device device);
 
     void addToCommandBuffer(std::function<void()> command);
 
@@ -140,6 +138,11 @@ private:
 	std::shared_ptr<ConnectivityFacade> m_wolkaboutConnectivityManager;
 	std::shared_ptr<ConnectivityFacade> m_moduleConnectivityManager;
 
+	std::shared_ptr<PublishingService> m_wolkaboutPublisher;
+	std::shared_ptr<PublishingService> m_modulePublisher;
+
+	std::shared_ptr<ActuationFacade> m_actuationManager;
+
 	//std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
 	//std::shared_ptr<FileDownloadService> m_fileDownloadService;
 	std::shared_ptr<DataService> m_dataService;
@@ -158,14 +161,24 @@ private:
 	class ConnectivityFacade: public ConnectivityServiceListener
 	{
 	public:
-		ConnectivityFacade(InboundMessageHandler* handler, std::function<void()> connectionLostHandler);
+		ConnectivityFacade(InboundMessageHandler& handler, std::function<void()> connectionLostHandler);
 
 		void messageReceived(const std::string& topic, const std::string& message) override;
 		void connectionLost() override;
 		const std::vector<std::string>& getTopics() const override;
 	private:
-		InboundMessageHandler* m_messageHandler;
+		InboundMessageHandler& m_messageHandler;
 		std::function<void()> m_connectionLostHandler;
+	};
+
+	class ActuationFacade: public ActuatorCommandListener
+	{
+	public:
+		ActuationFacade(Wolk& wolk);
+		void handleActuatorSetCommand(const ActuatorSetCommand& command) override;
+		void handleActuatorGetCommand(const ActuatorGetCommand& command) override;
+	private:
+		Wolk& m_wolk;
 	};
 };
 }

@@ -14,27 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef OUTBOUNDMESSAGE_H
-#define OUTBOUNDMESSAGE_H
+#ifndef CONSOLELOGGER_H
+#define CONSOLELOGGER_H
 
-#include <string>
+#include "utilities/Logger.h"
+#include <atomic>
 
 namespace wolkabout
 {
-class OutboundMessage
+class ConsoleLogger: public Logger
 {
 public:
-    OutboundMessage(std::string content, std::string topic, unsigned long long int itemsCount);
-    virtual ~OutboundMessage() = default;
-
-    const std::string& getContent() const;
-    const std::string& getTopic() const;
-    unsigned long long getItemsCount() const;
+	void logEntry(Log& log) override;
+	void setLogLevel(wolkabout::LogLevel level) override;
 
 private:
-    std::string m_content;
-    std::string m_topic;
-    unsigned long long int m_itemsCount;
+	std::atomic<LogLevel> m_level;
 };
 }
 

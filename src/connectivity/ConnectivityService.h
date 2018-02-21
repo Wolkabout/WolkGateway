@@ -36,7 +36,7 @@ public:
 	virtual const std::vector<std::string>& getTopics() const = 0;
 };
 
-class OutboundMessage;
+class Message;
 class ConnectivityService
 {
 public:
@@ -47,7 +47,7 @@ public:
 
 	virtual bool isConnected() = 0;
 
-    virtual bool publish(std::shared_ptr<OutboundMessage> outboundMessage) = 0;
+	virtual bool publish(std::shared_ptr<Message> outboundMessage) = 0;
 
     void setListener(std::weak_ptr<ConnectivityServiceListener> listener);
 

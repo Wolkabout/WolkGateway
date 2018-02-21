@@ -51,9 +51,7 @@ InboundModuleMessageHandler::InboundModuleMessageHandler() :
 
 void InboundModuleMessageHandler::messageReceived(const std::string& topic, const std::string& message)
 {
-	LOG(DEBUG) << "Message received from Modules: " << topic << ", " << message;
-
-
+	LOG(DEBUG) << "Module message received: " << topic << ", " << message;
 
 	if(StringUtils::startsWith(topic, Channel::SENSOR_READING_TOPIC_ROOT))
 	{
@@ -137,7 +135,7 @@ void InboundModuleMessageHandler::messageReceived(const std::string& topic, cons
 	}
 	else
 	{
-		LOG(DEBUG) << "Unable to parse message: " << topic << ", " << message;
+		LOG(WARN) << "Unable to parse module message: " << topic << ", " << message;
 	}
 }
 

@@ -18,48 +18,22 @@
 #define INMEMORYPERSISTENCE_H
 
 #include "persistence/Persistence.h"
-
-#include <cstdint>
-#include <map>
 #include <mutex>
-#include <string>
-#include <vector>
+#include <queue>
 
 namespace wolkabout
 {
-class Reading;
-class Alarm;
-class ActuatorStatus;
-class InMemoryPersistence : public Persistence
+class InMemoryPersistence: public Persistence
 {
 public:
-    InMemoryPersistence() = default;
-    virtual ~InMemoryPersistence() = default;
-
-    bool putSensorReading(const std::string& key, std::shared_ptr<SensorReading> sensorReading) override;
-	std::vector<std::shared_ptr<SensorReading>> getSensorReadings(const std::string& key, std::uint_fast64_t count) override;
-	void removeSensorReadings(const std::string& key, std::uint_fast64_t count) override;
-    std::vector<std::string> getSensorReadingsKeys() override;
-
-    bool putAlarm(const std::string& key, std::shared_ptr<Alarm> alarm) override;
-	std::vector<std::shared_ptr<Alarm>> getAlarms(const std::string& key, std::uint_fast64_t count) override;
-	void removeAlarms(const std::string& key, std::uint_fast64_t count) override;
-    std::vector<std::string> getAlarmsKeys() override;
-
-    bool putActuatorStatus(const std::string& key, std::shared_ptr<ActuatorStatus> actuatorStatus) override;
-    std::shared_ptr<ActuatorStatus> getActuatorStatus(const std::string& key) override;
-    void removeActuatorStatus(const std::string& key) override;
-    std::vector<std::string> getGetActuatorStatusesKeys() override;
-
-    bool isEmpty() override;
+	bool push(std::shared_ptr<Message> message) override;
+	std::shared_ptr<Message> pop() override;
+	std::shared_ptr<Message> front() override;
+	bool empty() const override;
 
 private:
-    std::vector<std::shared_ptr<SensorReading>>& getOrCreateSensorReadingsByKey(const std::string& key);
-    std::vector<std::shared_ptr<Alarm>>& getOrCreateAlarmsByKey(const std::string& key);
-
-    std::map<std::string, std::vector<std::shared_ptr<SensorReading>>> m_readings;
-    std::map<std::string, std::vector<std::shared_ptr<Alarm>>> m_alarms;
-    std::map<std::string, std::shared_ptr<ActuatorStatus>> m_actuatorStatuses;
+	mutable std::mutex m_lock;
+	std::queue<std::shared_ptr<Message>> m_queue;
 };
 }
 

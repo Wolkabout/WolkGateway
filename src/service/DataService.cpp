@@ -127,6 +127,12 @@ void DataService::addSensorReadings(std::vector<std::shared_ptr<SensorReading>> 
 
 	const std::shared_ptr<Message> outboundMessage = m_protocol->make(topic, sensorReadings);
 
+	if(!outboundMessage)
+	{
+		LOG(WARN) << "Message not created for " << topic;
+		return;
+	}
+
 	m_outboundWolkaboutMessageHandler->addMessage(outboundMessage);
 }
 
@@ -142,6 +148,12 @@ void DataService::addAlarms(std::vector<std::shared_ptr<Alarm>> alarms)
 
 	const std::shared_ptr<Message> outboundMessage = m_protocol->make(topic, alarms);
 
+	if(!outboundMessage)
+	{
+		LOG(WARN) << "Message not created for " << topic;
+		return;
+	}
+
 	m_outboundWolkaboutMessageHandler->addMessage(outboundMessage);
 }
 
@@ -151,6 +163,12 @@ void DataService::addActuatorStatus(std::shared_ptr<ActuatorStatus> actuatorStat
 			actuatorStatus->getReference();
 
 	const std::shared_ptr<Message> outboundMessage = m_protocol->make(topic, {actuatorStatus});
+
+	if(!outboundMessage)
+	{
+		LOG(WARN) << "Message not created for " << topic;
+		return;
+	}
 
 	m_outboundWolkaboutMessageHandler->addMessage(outboundMessage);
 }

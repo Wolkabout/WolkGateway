@@ -28,6 +28,9 @@
 #include "persistence/inmemory/InMemoryPersistence.h"
 #include "OutboundDataService.h"
 #include "FileHandler.h"
+#include "connectivity/json/JsonMessageFactory.h"
+#include "service/PublishingService.h"
+#include "service/ActuatorCommandListener.h"
 
 #include "service/DataService.h"
 
@@ -121,28 +124,38 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
         }
     }
 
+	auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
 
-	auto wolkConnectivityService = std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device, m_host);
-	auto moduleConnectivityService = std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device, "tcp://127.0.0.1:1883");
+	wolk->m_wolkConnectivityService = std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device, m_host);
 
-	auto inboundModuleMessageHandler = std::make_shared<InboundModuleMessageHandler>();
-	auto inboundWolkaboutMessageHandler = std::make_shared<InboundWolkaboutMessageHandler>(m_device.getDeviceKey());
+	wolk->m_moduleConnectivityService = std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device, "tcp://127.0.0.1:1883");
 
-	auto outboundServiceDataHandler = std::make_shared<OutboundDataService>(m_device, wolkConnectivityService);
+	wolk->m_inboundWolkaboutMessageHandler = std::make_shared<InboundWolkaboutMessageHandler>(m_device.getDeviceKey());
 
-	auto wolk = std::unique_ptr<Wolk>(new Wolk(wolkConnectivityService, moduleConnectivityService, m_persistence,
-											   inboundWolkaboutMessageHandler, inboundModuleMessageHandler, outboundServiceDataHandler, m_device));
+	wolk->m_inboundModuleMessageHandler = std::make_shared<InboundModuleMessageHandler>();
 
-	wolk->m_wolkaboutConnectivityManager = std::make_shared<Wolk::ConnectivityFacade>(wolk->m_inboundWolkaboutMessageHandler.get(), [&]{
+	wolk->m_wolkaboutConnectivityManager = std::make_shared<Wolk::ConnectivityFacade>(*wolk->m_inboundWolkaboutMessageHandler, [&]{
+		wolk->m_wolkaboutPublisher->disconnected();
 		wolk->connectToWolkabout();
 	});
 
-	wolk->m_moduleConnectivityManager = std::make_shared<Wolk::ConnectivityFacade>(wolk->m_inboundModuleMessageHandler.get(), [&]{
+	wolk->m_moduleConnectivityManager = std::make_shared<Wolk::ConnectivityFacade>(*wolk->m_inboundModuleMessageHandler, [&]{
+		wolk->m_modulePublisher->disconnected();
 		wolk->connectToModules();
 	});
 
-	wolkConnectivityService->setListener(wolk->m_wolkaboutConnectivityManager);
-	moduleConnectivityService->setListener(wolk->m_moduleConnectivityManager);
+	wolk->m_outboundServiceDataHandler = std::make_shared<OutboundDataService>(m_device, wolk->m_wolkConnectivityService);
+
+	wolk->m_wolkConnectivityService->setListener(wolk->m_wolkaboutConnectivityManager);
+	wolk->m_moduleConnectivityService->setListener(wolk->m_moduleConnectivityManager);
+
+	wolk->m_actuationManager = std::make_shared<Wolk::ActuationFacade>(*wolk);
+
+	wolk->m_wolkaboutPublisher = std::make_shared<PublishingService>(wolk->m_wolkConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
+	wolk->m_modulePublisher = std::make_shared<PublishingService>(wolk->m_moduleConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
+
+	wolk->m_dataService = std::make_shared<DataService>(m_device.getDeviceKey(), std::unique_ptr<MessageFactory>(new JsonMessageFactory),
+														wolk->m_wolkaboutPublisher, wolk->m_modulePublisher, wolk->m_actuationManager);
 
     wolk->m_actuationHandlerLambda = m_actuationHandlerLambda;
     wolk->m_actuationHandler = m_actuationHandler;
@@ -165,17 +178,31 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
 	std::weak_ptr<DataService> dataService_weak{wolk->m_dataService};
 
-	inboundModuleMessageHandler->setSensorReadingHandler([=](Message reading){
+	wolk->m_inboundModuleMessageHandler->setSensorReadingHandler([=](Message reading){
 		if(auto handler = dataService_weak.lock())
 		{
 			handler->handleSensorReading(reading);
 		}
 	});
 
-	inboundModuleMessageHandler->setActuatorStatusHandler([=](Message status){
+	wolk->m_inboundModuleMessageHandler->setAlarmHandler([=](Message alarm){
+		if(auto handler = dataService_weak.lock())
+		{
+			handler->handleAlarm(alarm);
+		}
+	});
+
+	wolk->m_inboundModuleMessageHandler->setActuatorStatusHandler([=](Message status){
 		if(auto handler = dataService_weak.lock())
 		{
 			handler->handleActuatorStatus(status);
+		}
+	});
+
+	wolk->m_inboundWolkaboutMessageHandler->setActuatorSetRequestHandler([=](Message command){
+		if(auto handler = dataService_weak.lock())
+		{
+			handler->handleActuatorSetCommand(command);
 		}
 	});
 

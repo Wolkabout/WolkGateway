@@ -26,6 +26,7 @@
 #include "model/SensorReading.h"
 #include "InboundMessageHandler.h"
 #include "service/DataService.h"
+#include "service/PublishingService.h"
 
 #include <memory>
 #include <sstream>
@@ -119,22 +120,24 @@ void Wolk::publishActuatorStatus(const std::string& reference)
 
 void Wolk::connect()
 {
-    addToCommandBuffer([=]() -> void {
-		if(!m_wolkConnectivityService->connect())
-		{
-			return;
-		}
+	connectToWolkabout();
+	connectToModules();
+//    addToCommandBuffer([=]() -> void {
+//		if(!m_wolkConnectivityService->connect())
+//		{
+//			return;
+//		}
 
-//		publishFirmwareVersion();
-//		m_firmwareUpdateService->reportFirmwareUpdateResult();
+////		publishFirmwareVersion();
+////		m_firmwareUpdateService->reportFirmwareUpdateResult();
 
-		for (const std::string& actuatorReference : m_device.getActuatorReferences())
-		{
-			publishActuatorStatus(actuatorReference);
-		}
+////		for (const std::string& actuatorReference : m_device.getActuatorReferences())
+////		{
+////			publishActuatorStatus(actuatorReference);
+////		}
 
-		//publish();
-    });
+//		//publish();
+//    });
 }
 
 void Wolk::disconnect()
@@ -156,19 +159,8 @@ void Wolk::disconnect()
 //    });
 //}
 
-Wolk::Wolk(std::shared_ptr<ConnectivityService> wolkConnectivityService,
-		   std::shared_ptr<ConnectivityService> moduleConnectivityService,
-		   std::shared_ptr<Persistence> persistence,
-		   std::shared_ptr<InboundWolkaboutMessageHandler> inboundWolkaboutMessageHandler,
-		   std::shared_ptr<InboundModuleMessageHandler> inboundModuleMessageHandler,
-		   std::shared_ptr<OutboundServiceDataHandler> outboundServiceDataHandler, Device device)
-: m_wolkConnectivityService(std::move(wolkConnectivityService))
-, m_moduleConnectivityService(std::move(moduleConnectivityService))
-, m_persistence(persistence)
-, m_inboundWolkaboutMessageHandler(std::move(inboundWolkaboutMessageHandler))
-, m_inboundModuleMessageHandler(std::move(inboundModuleMessageHandler))
-, m_outboundServiceDataHandler(std::move(outboundServiceDataHandler))
-, m_device(device)
+Wolk::Wolk(Device device)
+: m_device(device)
 , m_actuationHandlerLambda(nullptr)
 , m_actuatorStatusProviderLambda(nullptr)
 {
@@ -223,7 +215,16 @@ void Wolk::handleActuatorGetCommand(const ActuatorGetCommand& command)
 void Wolk::connectToWolkabout()
 {
 	addToCommandBuffer([=]() -> void {
-		if(!m_wolkConnectivityService->connect())
+		if(m_wolkConnectivityService->connect())
+		{
+			m_wolkaboutPublisher->connected();
+
+			for (const std::string& actuatorReference : m_device.getActuatorReferences())
+			{
+				publishActuatorStatus(actuatorReference);
+			}
+		}
+		else
 		{
 			connectToWolkabout();
 		}
@@ -233,21 +234,25 @@ void Wolk::connectToWolkabout()
 void Wolk::connectToModules()
 {
 	addToCommandBuffer([=]() -> void {
-		if(!m_moduleConnectivityService->connect())
+		if(m_moduleConnectivityService->connect())
+		{
+			m_modulePublisher->connected();
+		}
+		else
 		{
 			connectToModules();
 		}
 	});
 }
 
-Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler* handler, std::function<void()> connectionLostHandler) :
+Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler& handler, std::function<void()> connectionLostHandler) :
 	m_messageHandler{handler}, m_connectionLostHandler{connectionLostHandler}
 {
 }
 
 void Wolk::ConnectivityFacade::messageReceived(const std::string& topic, const std::string& message)
 {
-	m_messageHandler->messageReceived(topic, message);
+	m_messageHandler.messageReceived(topic, message);
 }
 
 void Wolk::ConnectivityFacade::connectionLost()
@@ -257,6 +262,20 @@ void Wolk::ConnectivityFacade::connectionLost()
 
 const std::vector<std::string>& Wolk::ConnectivityFacade::getTopics() const
 {
-	return m_messageHandler->getTopics();
+	return m_messageHandler.getTopics();
+}
+
+Wolk::ActuationFacade::ActuationFacade(Wolk& wolk) : m_wolk{wolk}
+{
+}
+
+void Wolk::ActuationFacade::handleActuatorSetCommand(const ActuatorSetCommand& command)
+{
+	m_wolk.handleActuatorSetCommand(command);
+}
+
+void Wolk::ActuationFacade::handleActuatorGetCommand(const ActuatorGetCommand& command)
+{
+	m_wolk.handleActuatorGetCommand(command);
 }
 }

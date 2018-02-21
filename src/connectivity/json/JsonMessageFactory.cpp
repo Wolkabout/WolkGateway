@@ -41,6 +41,82 @@ void from_json(const json& j, SensorReading& reading)
 	reading = SensorReading("", value);
 }
 
+void to_json(json& j, const SensorReading& p)
+{
+	if (p.getRtc() == 0)
+	{
+		j = json{{"data", p.getValue()}};
+	}
+	else
+	{
+		j = json{{"utc", p.getRtc()}, {"data", p.getValue()}};
+	}
+}
+
+void to_json(json& j, const std::shared_ptr<SensorReading>& p)
+{
+	if(!p)
+	{
+		return;
+	}
+
+	to_json(j, *p);
+}
+
+void to_json(json& j, const Alarm& p)
+{
+	if (p.getRtc() == 0)
+	{
+		j = json{{"data", p.getValue()}};
+	}
+	else
+	{
+		j = json{{"utc", p.getRtc()}, {"data", p.getValue()}};
+	}
+}
+
+void to_json(json& j, const std::shared_ptr<Alarm>& p)
+{
+	if(!p)
+	{
+		return;
+	}
+
+	to_json(j, *p);
+}
+
+void to_json(json& j, const ActuatorStatus& p)
+{
+	const std::string status = [&]() -> std::string {
+		if (p.getState() == ActuatorStatus::State::READY)
+		{
+			return "READY";
+		}
+		else if (p.getState() == ActuatorStatus::State::BUSY)
+		{
+			return "BUSY";
+		}
+		else if (p.getState() == ActuatorStatus::State::ERROR)
+		{
+			return "ERROR";
+		}
+
+		return "ERROR";
+	}();
+
+	j = json{{"status", status}, {"value", p.getValue()}};
+}
+
+void to_json(json& j, const std::shared_ptr<ActuatorStatus>& p)
+{
+	if(!p)
+	{
+		return;
+	}
+
+	to_json(j, *p);
+}
+
 void from_json(const json& j, ActuatorSetCommand& command)
 {
 	const std::string value = [&]() -> std::string {
@@ -63,19 +139,45 @@ void from_json(const json& j, ActuatorSetCommand& command)
 std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path,
 												  std::vector<std::shared_ptr<SensorReading>> sensorReadings)
 {
+	if (sensorReadings.size() == 0)
+	{
+		return nullptr;
+	}
 
+	const json jPayload(sensorReadings);
+	const std::string payload = jPayload.dump();
+
+	return std::make_shared<Message>(payload, path);
 }
 
 std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path,
 												  std::vector<std::shared_ptr<Alarm>> alarms)
 {
+	if (alarms.size() == 0)
+	{
+		return nullptr;
+	}
 
+	const json jPayload(alarms);
+	const std::string payload = jPayload.dump();
+
+	return std::make_shared<Message>(payload, path);
 }
 
 std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path,
 												  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses)
 {
+	if (actuatorStatuses.size() == 0)
+	{
+		return nullptr;
+	}
 
+	/* Currently supported protocol (JSON_SINGLE) allows only 1 ActuatorStatus per Message,
+	 * hence only first element is deserialized*/
+	const json jPayload(actuatorStatuses.front());
+	const std::string payload = jPayload.dump();
+
+	return std::make_shared<Message>(payload, path);
 }
 
 std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path,

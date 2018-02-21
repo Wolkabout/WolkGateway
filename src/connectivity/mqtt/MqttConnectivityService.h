@@ -38,7 +38,7 @@ public:
 
 	bool isConnected() override;
 
-    bool publish(std::shared_ptr<OutboundMessage> outboundMessage) override;
+	bool publish(std::shared_ptr<Message> outboundMessage) override;
 
 private:
     std::shared_ptr<MqttClient> m_mqttClient;

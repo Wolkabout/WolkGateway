@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-#include "OutboundMessage.h"
-
-#include <string>
-#include <utility>
+#ifndef CONNECTIONSTATUSLISTENER_H
+#define CONNECTIONSTATUSLISTENER_H
 
 namespace wolkabout
 {
-OutboundMessage::OutboundMessage(std::string content, std::string topic, unsigned long long itemsCount)
-: m_content(std::move(content)), m_topic(std::move(topic)), m_itemsCount(itemsCount)
+class ConnectionStatusListener
 {
+public:
+	virtual ~ConnectionStatusListener() = default;
+
+	virtual void connected() = 0;
+	virtual void disconnected() = 0;
+};
 }
 
-const std::string& OutboundMessage::getContent() const
-{
-    return m_content;
-}
-
-const std::string& OutboundMessage::getTopic() const
-{
-    return m_topic;
-}
-
-unsigned long long OutboundMessage::getItemsCount() const
-{
-    return m_itemsCount;
-}
-}
+#endif

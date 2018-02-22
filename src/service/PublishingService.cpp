@@ -15,60 +15,61 @@
  */
 
 #include "PublishingService.h"
-#include "persistence/Persistence.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/Message.h"
+#include "persistence/Persistence.h"
 #include "utilities/Logger.h"
 
 namespace wolkabout
 {
-PublishingService::PublishingService(std::shared_ptr<ConnectivityService> connectivityService, std::unique_ptr<Persistence> persistence) :
-	m_connectivityService{std::move(connectivityService)},
-	m_persistence{std::move(persistence)},
-	m_worker{new std::thread(&PublishingService::run, this)}
+PublishingService::PublishingService(std::shared_ptr<ConnectivityService> connectivityService,
+                                     std::unique_ptr<Persistence> persistence)
+: m_connectivityService{std::move(connectivityService)}
+, m_persistence{std::move(persistence)}
+, m_worker{new std::thread(&PublishingService::run, this)}
 {
 }
 
 PublishingService::~PublishingService()
 {
-	m_run = false;
-	m_condition.notify_one();
-	m_worker->join();
+    m_run = false;
+    m_condition.notify_one();
+    m_worker->join();
 }
 
 void PublishingService::addMessage(std::shared_ptr<Message> message)
 {
-	LOG(DEBUG) << "Message added " << message->getTopic() << " " << message->getContent();
-	m_persistence->push(message);
-	m_condition.notify_one();
+    LOG(DEBUG) << "Message added " << message->getTopic() << " " << message->getContent();
+    m_persistence->push(message);
+    m_condition.notify_one();
 }
 
 void PublishingService::connected()
 {
-	m_connected = true;
-	m_condition.notify_one();
+    m_connected = true;
+    m_condition.notify_one();
 }
 
 void PublishingService::disconnected()
 {
-	m_connected = false;
+    m_connected = false;
 }
 
 void PublishingService::run()
 {
-	while(m_run)
-	{
-		while(m_connected && !m_persistence->empty())
-		{
-			const auto message = m_persistence->front();
-			if(m_connectivityService->publish(message))
-			{
-				m_persistence->pop();
-			}
-		}
+    while (m_run)
+    {
+        while (m_connected && !m_persistence->empty())
+        {
+            const auto message = m_persistence->front();
+            if (m_connectivityService->publish(message))
+            {
+                m_persistence->pop();
+            }
+        }
 
-		std::unique_lock<std::mutex> locker{m_lock};
-		m_condition.wait(locker);
-	}
+        std::unique_lock<std::mutex> locker{m_lock};
+        m_condition.wait(locker);
+    }
 }
-}
+}    // namespace wolkabout

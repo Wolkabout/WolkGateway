@@ -31,24 +31,21 @@ class ActuatorStatus;
 class ActuatorSetCommand;
 class ActuatorGetCommand;
 
-class JsonMessageFactory: public MessageFactory
+class JsonMessageFactory : public MessageFactory
 {
 public:
-	std::shared_ptr<Message> make(const std::string& path,
-								  std::vector<std::shared_ptr<SensorReading>> sensorReadings) override;
-	std::shared_ptr<Message> make(const std::string& path,
-								  std::vector<std::shared_ptr<Alarm>> alarms) override;
-	std::shared_ptr<Message> make(const std::string& path,
-								  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses) override;
-	std::shared_ptr<Message> make(const std::string& path,
-								  std::shared_ptr<ActuatorSetCommand> command) override;
-	std::shared_ptr<Message> make(const std::string& path,
-								  std::shared_ptr<ActuatorGetCommand> command) override;
+    std::shared_ptr<Message> make(const std::string& path,
+                                  std::vector<std::shared_ptr<SensorReading>> sensorReadings) override;
+    std::shared_ptr<Message> make(const std::string& path, std::vector<std::shared_ptr<Alarm>> alarms) override;
+    std::shared_ptr<Message> make(const std::string& path,
+                                  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses) override;
+    std::shared_ptr<Message> make(const std::string& path, std::shared_ptr<ActuatorSetCommand> command) override;
+    std::shared_ptr<Message> make(const std::string& path, std::shared_ptr<ActuatorGetCommand> command) override;
 
-	std::shared_ptr<Message> make(const std::string& path, const std::string& value) override;
+    std::shared_ptr<Message> make(const std::string& path, const std::string& value) override;
 
-	bool fromJson(const std::string& jsonString, ActuatorSetCommand& command) override;
+    bool fromJson(const std::string& jsonString, ActuatorSetCommand& command) override;
 };
-}
+}    // namespace wolkabout
 
 #endif

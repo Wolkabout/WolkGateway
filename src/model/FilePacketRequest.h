@@ -17,26 +17,26 @@
 #ifndef FILEPACKETREQUEST_H
 #define FILEPACKETREQUEST_H
 
-#include <string>
 #include <cstdint>
+#include <string>
 
 namespace wolkabout
 {
 class FilePacketRequest
 {
 public:
-	FilePacketRequest();
-	FilePacketRequest(const std::string& fileName, unsigned chunkIndex, std::uint_fast64_t chunkSize);
+    FilePacketRequest();
+    FilePacketRequest(const std::string& fileName, unsigned chunkIndex, std::uint_fast64_t chunkSize);
 
-	const std::string& getFileName() const;
-	unsigned getChunkIndex() const;
-	std::uint_fast64_t getChunkSize() const;
+    const std::string& getFileName() const;
+    unsigned getChunkIndex() const;
+    std::uint_fast64_t getChunkSize() const;
 
 private:
-	const std::string m_fileName;
-	const unsigned m_chunkIndex;
-	const uint_fast64_t m_chunkSize;
+    const std::string m_fileName;
+    const unsigned m_chunkIndex;
+    const uint_fast64_t m_chunkSize;
 };
-}
+}    // namespace wolkabout
 
-#endif // FILEPACKETREQUEST_H
+#endif    // FILEPACKETREQUEST_H

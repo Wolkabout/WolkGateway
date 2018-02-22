@@ -17,26 +17,25 @@
 #ifndef BYTEUTILS_H
 #define BYTEUTILS_H
 
-#include <vector>
-#include <string>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace wolkabout
 {
-
 using Byte = std::uint8_t;
 using ByteArray = std::vector<Byte>;
 
 class ByteUtils
 {
 public:
-	ByteUtils() = delete;
+    ByteUtils() = delete;
 
-	static ByteArray toByteArray(const std::string& data);
-	static ByteArray hashSHA256(const ByteArray& value);
+    static ByteArray toByteArray(const std::string& data);
+    static ByteArray hashSHA256(const ByteArray& value);
 
-	static const short SHA_256_HASH_BYTE_LENGTH = 32;
+    static const short SHA_256_HASH_BYTE_LENGTH = 32;
 };
-}
+}    // namespace wolkabout
 
-#endif // BYTE_H
+#endif    // BYTE_H

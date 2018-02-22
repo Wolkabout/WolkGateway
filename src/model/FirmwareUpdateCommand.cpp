@@ -21,55 +21,55 @@
 
 namespace wolkabout
 {
-FirmwareUpdateCommand::FirmwareUpdateCommand() : m_type{FirmwareUpdateCommand::Type::UNKNOWN}, m_name{}, m_size{}, m_hash{},
-	m_url{}, m_autoInstall{}
+FirmwareUpdateCommand::FirmwareUpdateCommand()
+: m_type{FirmwareUpdateCommand::Type::UNKNOWN}, m_name{}, m_size{}, m_hash{}, m_url{}, m_autoInstall{}
 {
 }
 
-FirmwareUpdateCommand::FirmwareUpdateCommand(FirmwareUpdateCommand::Type type) : m_type{type}, m_name{}, m_size{}, m_hash{},
-	m_url{}, m_autoInstall{}
+FirmwareUpdateCommand::FirmwareUpdateCommand(FirmwareUpdateCommand::Type type)
+: m_type{type}, m_name{}, m_size{}, m_hash{}, m_url{}, m_autoInstall{}
 {
 }
 
 FirmwareUpdateCommand::FirmwareUpdateCommand(FirmwareUpdateCommand::Type type, std::string name, uint_fast64_t size,
-											 std::string hash, bool autoInstall) :
-	m_type{type}, m_name{name}, m_size{size}, m_hash{hash}, m_url{}, m_autoInstall{autoInstall}
+                                             std::string hash, bool autoInstall)
+: m_type{type}, m_name{name}, m_size{size}, m_hash{hash}, m_url{}, m_autoInstall{autoInstall}
 {
 }
 
-FirmwareUpdateCommand::FirmwareUpdateCommand(FirmwareUpdateCommand::Type type, std::string url, bool autoInstall) :
-	m_type{type}, m_name{}, m_size{}, m_hash{}, m_url{url}, m_autoInstall{autoInstall}
+FirmwareUpdateCommand::FirmwareUpdateCommand(FirmwareUpdateCommand::Type type, std::string url, bool autoInstall)
+: m_type{type}, m_name{}, m_size{}, m_hash{}, m_url{url}, m_autoInstall{autoInstall}
 {
 }
 
 const WolkOptional<std::string>& FirmwareUpdateCommand::getName() const
 {
-	return m_name;
+    return m_name;
 }
 
 const WolkOptional<uint_fast64_t>& FirmwareUpdateCommand::getSize() const
 {
-	return m_size;
+    return m_size;
 }
 
 const WolkOptional<std::string>& FirmwareUpdateCommand::getHash() const
 {
-	return m_hash;
+    return m_hash;
 }
 
 const WolkOptional<std::string>& FirmwareUpdateCommand::getUrl() const
 {
-	return m_url;
+    return m_url;
 }
 
 const WolkOptional<bool>& FirmwareUpdateCommand::getAutoInstall() const
 {
-	return m_autoInstall;
+    return m_autoInstall;
 }
 
 FirmwareUpdateCommand::Type FirmwareUpdateCommand::getType() const
 {
-	return m_type;
+    return m_type;
 }
 
-}
+}    // namespace wolkabout

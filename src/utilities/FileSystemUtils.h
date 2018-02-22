@@ -33,7 +33,7 @@ public:
 
     static bool createFileWithContent(const std::string& filePath, const std::string& content);
 
-	static bool createBinaryFileWithContent(const std::string& filePath, const ByteArray& content);
+    static bool createBinaryFileWithContent(const std::string& filePath, const ByteArray& content);
 
     static bool deleteFile(const std::string& filePath);
 
@@ -41,12 +41,12 @@ public:
 
     static bool createDirectory(const std::string& dirPath);
 
-	static bool readFileContent(const std::string& filePath, std::string& content);
+    static bool readFileContent(const std::string& filePath, std::string& content);
 
-	static bool readBinaryFileContent(const std::string& filePath, ByteArray& content);
+    static bool readBinaryFileContent(const std::string& filePath, ByteArray& content);
 
     static std::vector<std::string> listFiles(std::string directoryPath);
 };
-}
+}    // namespace wolkabout
 
 #endif

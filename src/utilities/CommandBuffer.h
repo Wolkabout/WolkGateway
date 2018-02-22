@@ -60,6 +60,6 @@ private:
     std::atomic_bool m_isRunning;
     std::unique_ptr<std::thread> m_worker;
 };
-}
+}    // namespace wolkabout
 
 #endif

@@ -19,13 +19,13 @@
 
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
-#include "utilities/CommandBuffer.h"
 #include "WolkBuilder.h"
-#include "model/ActuatorSetCommand.h"
 #include "model/ActuatorGetCommand.h"
+#include "model/ActuatorSetCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/Device.h"
 #include "service/ActuatorCommandListener.h"
+#include "utilities/CommandBuffer.h"
 
 #include <functional>
 #include <memory>
@@ -38,8 +38,8 @@ class ConnectivityService;
 class InboundMessageHandler;
 class InboundModuleMessageHandler;
 class InboundWolkaboutMessageHandler;
-//class FirmwareUpdateService;
-//class FileDownloadService;
+// class FirmwareUpdateService;
+// class FileDownloadService;
 class DataService;
 class PublishingService;
 class OutboundServiceDataHandler;
@@ -96,7 +96,7 @@ public:
      *        This method is thread safe, and can be called from multiple thread simultaneously
      * @param Actuator reference
      */
-	void publishActuatorStatus(const std::string& reference);
+    void publishActuatorStatus(const std::string& reference);
 
     /**
      * @brief connect Establishes connection with WolkAbout IoT platform
@@ -109,45 +109,45 @@ public:
     void disconnect();
 
 private:
-	class ConnectivityFacade;
-	class ActuationFacade;
+    class ConnectivityFacade;
+    class ActuationFacade;
 
-	Wolk(Device device);
+    Wolk(Device device);
 
     void addToCommandBuffer(std::function<void()> command);
 
     static unsigned long long int currentRtc();
 
-	void handleActuatorSetCommand(const ActuatorSetCommand& command);
-	void handleActuatorGetCommand(const ActuatorGetCommand& command);
+    void handleActuatorSetCommand(const ActuatorSetCommand& command);
+    void handleActuatorGetCommand(const ActuatorGetCommand& command);
 
-	void connectToWolkabout();
-	void connectToModules();
+    void connectToWolkabout();
+    void connectToModules();
 
-	//void publishFirmwareVersion();
+    // void publishFirmwareVersion();
 
-	std::shared_ptr<ConnectivityService> m_wolkConnectivityService;
-	std::shared_ptr<ConnectivityService> m_moduleConnectivityService;
+    std::shared_ptr<ConnectivityService> m_wolkConnectivityService;
+    std::shared_ptr<ConnectivityService> m_moduleConnectivityService;
     std::shared_ptr<Persistence> m_persistence;
 
-	std::shared_ptr<InboundWolkaboutMessageHandler> m_inboundWolkaboutMessageHandler;
-	std::shared_ptr<InboundModuleMessageHandler> m_inboundModuleMessageHandler;
+    std::shared_ptr<InboundWolkaboutMessageHandler> m_inboundWolkaboutMessageHandler;
+    std::shared_ptr<InboundModuleMessageHandler> m_inboundModuleMessageHandler;
 
-	std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
+    std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
 
-	std::shared_ptr<ConnectivityFacade> m_wolkaboutConnectivityManager;
-	std::shared_ptr<ConnectivityFacade> m_moduleConnectivityManager;
+    std::shared_ptr<ConnectivityFacade> m_wolkaboutConnectivityManager;
+    std::shared_ptr<ConnectivityFacade> m_moduleConnectivityManager;
 
-	std::shared_ptr<PublishingService> m_wolkaboutPublisher;
-	std::shared_ptr<PublishingService> m_modulePublisher;
+    std::shared_ptr<PublishingService> m_wolkaboutPublisher;
+    std::shared_ptr<PublishingService> m_modulePublisher;
 
-	std::shared_ptr<ActuationFacade> m_actuationManager;
+    std::shared_ptr<ActuationFacade> m_actuationManager;
 
-	//std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
-	//std::shared_ptr<FileDownloadService> m_fileDownloadService;
-	std::shared_ptr<DataService> m_dataService;
+    // std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
+    // std::shared_ptr<FileDownloadService> m_fileDownloadService;
+    std::shared_ptr<DataService> m_dataService;
 
-	Device m_device;
+    Device m_device;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;
     std::weak_ptr<ActuationHandler> m_actuationHandler;
@@ -157,30 +157,31 @@ private:
 
     std::unique_ptr<CommandBuffer> m_commandBuffer;
 
+    class ConnectivityFacade : public ConnectivityServiceListener
+    {
+    public:
+        ConnectivityFacade(InboundMessageHandler& handler, std::function<void()> connectionLostHandler);
 
-	class ConnectivityFacade: public ConnectivityServiceListener
-	{
-	public:
-		ConnectivityFacade(InboundMessageHandler& handler, std::function<void()> connectionLostHandler);
+        void messageReceived(const std::string& topic, const std::string& message) override;
+        void connectionLost() override;
+        const std::vector<std::string>& getTopics() const override;
 
-		void messageReceived(const std::string& topic, const std::string& message) override;
-		void connectionLost() override;
-		const std::vector<std::string>& getTopics() const override;
-	private:
-		InboundMessageHandler& m_messageHandler;
-		std::function<void()> m_connectionLostHandler;
-	};
+    private:
+        InboundMessageHandler& m_messageHandler;
+        std::function<void()> m_connectionLostHandler;
+    };
 
-	class ActuationFacade: public ActuatorCommandListener
-	{
-	public:
-		ActuationFacade(Wolk& wolk);
-		void handleActuatorSetCommand(const ActuatorSetCommand& command) override;
-		void handleActuatorGetCommand(const ActuatorGetCommand& command) override;
-	private:
-		Wolk& m_wolk;
-	};
+    class ActuationFacade : public ActuatorCommandListener
+    {
+    public:
+        ActuationFacade(Wolk& wolk);
+        void handleActuatorSetCommand(const ActuatorSetCommand& command) override;
+        void handleActuatorGetCommand(const ActuatorGetCommand& command) override;
+
+    private:
+        Wolk& m_wolk;
+    };
 };
-}
+}    // namespace wolkabout
 
 #endif

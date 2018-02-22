@@ -94,6 +94,6 @@ template <class T> bool Buffer<T>::isEmpty() const
 
     return m_pushQueue.empty();
 }
-}
+}    // namespace wolkabout
 
 #endif

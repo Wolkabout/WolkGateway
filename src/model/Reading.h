@@ -54,6 +54,6 @@ private:
     std::string m_reference;
     unsigned long long int m_rtc;
 };
-}
+}    // namespace wolkabout
 
 #endif

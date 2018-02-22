@@ -22,16 +22,15 @@
 
 namespace wolkabout
 {
-
 class Log;
 
 enum class LogLevel
 {
-	TRACE = 0,
-	DEBUG,
-	INFO,
-	WARN,
-	ERROR
+    TRACE = 0,
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR
 };
 
 /**
@@ -50,39 +49,39 @@ wolkabout::LogLevel from_string(std::string level);
 class Logger
 {
 public:
-	/**
-	 * @brief Logger destructor.
-	 */
-	virtual ~Logger() = default;
+    /**
+     * @brief Logger destructor.
+     */
+    virtual ~Logger() = default;
 
-	/**
-	 * @brief Prints a log message to a standard output.
-	 * @param log log to be printed
-	 */
-	void operator+=(Log& log);
+    /**
+     * @brief Prints a log message to a standard output.
+     * @param log log to be printed
+     */
+    void operator+=(Log& log);
 
-	virtual void logEntry(Log& log) = 0;
+    virtual void logEntry(Log& log) = 0;
 
-	/**
-	 * @brief Sets the log level.
-	 * @param level log level to be set
-	 */
-	virtual void setLogLevel(wolkabout::LogLevel level) = 0;
+    /**
+     * @brief Sets the log level.
+     * @param level log level to be set
+     */
+    virtual void setLogLevel(wolkabout::LogLevel level) = 0;
 
-	/**
-	 * @brief Sets the Logger single instance
-	 * @param instance instance of logger to be used as singleton
-	 */
-	static void setInstance(std::unique_ptr<Logger> instance);
+    /**
+     * @brief Sets the Logger single instance
+     * @param instance instance of logger to be used as singleton
+     */
+    static void setInstance(std::unique_ptr<Logger> instance);
 
-	/**
-	 * @brief Provides a logger singleton instance.
-	 * @return logger instance
-	 */
-	static Logger* getInstance();
+    /**
+     * @brief Provides a logger singleton instance.
+     * @return logger instance
+     */
+    static Logger* getInstance();
 
 private:
-	static std::unique_ptr<Logger> m_instance;
+    static std::unique_ptr<Logger> m_instance;
 };
 
 /**
@@ -93,53 +92,49 @@ private:
 class Log
 {
 public:
-	/**
-	 * @brief Log constructor.
-	 * @param level log level that will be used for this log
-	 */
-	Log(wolkabout::LogLevel level);
+    /**
+     * @brief Log constructor.
+     * @param level log level that will be used for this log
+     */
+    Log(wolkabout::LogLevel level);
 
-	/**
-	 * @brief This is log appender for string value
-	 * @param value value to be appended
-	 * @return reference to appended log instance
-	 */
-	template <typename T>
-	Log& operator<<(T value);
+    /**
+     * @brief This is log appender for string value
+     * @param value value to be appended
+     * @return reference to appended log instance
+     */
+    template <typename T> Log& operator<<(T value);
 
-	/**
-	 * @brief Provides a log level for this log.
-	 * @return log level
-	 */
-	wolkabout::LogLevel getLogLevel() const;
+    /**
+     * @brief Provides a log level for this log.
+     * @return log level
+     */
+    wolkabout::LogLevel getLogLevel() const;
 
-	/**
-	 * @brief Provides a message for this log.
-	 * @return message
-	 */
-	std::string getMessage() const;
+    /**
+     * @brief Provides a message for this log.
+     * @return message
+     */
+    std::string getMessage() const;
 
 private:
-	const wolkabout::LogLevel m_level;
-	std::stringstream m_message;
+    const wolkabout::LogLevel m_level;
+    std::stringstream m_message;
 };
 
-
-template <typename T>
-Log& Log::operator<<(T value)
+template <typename T> Log& Log::operator<<(T value)
 {
-	m_message << value;
-	return *this;
+    m_message << value;
+    return *this;
 }
-
 
 #define PREPEND_NAMED_SCOPE(logLevel) wolkabout::LogLevel::logLevel
 
-#define LOG_(level)                        \
-	if (wolkabout::Logger::getInstance()) \
-	(*wolkabout::Logger::getInstance()) += wolkabout::Log(level)
+#define LOG_(level)                       \
+    if (wolkabout::Logger::getInstance()) \
+    (*wolkabout::Logger::getInstance()) += wolkabout::Log(level)
 
 #define LOG(level) LOG_(PREPEND_NAMED_SCOPE(level))
-}
+}    // namespace wolkabout
 
-#endif // LOGGER_H
+#endif    // LOGGER_H

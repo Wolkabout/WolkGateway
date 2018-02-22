@@ -21,8 +21,8 @@
 #include "connectivity/mqtt/MqttClient.h"
 
 #include <atomic>
-#include <string>
 #include <mutex>
+#include <string>
 
 namespace wolkabout
 {
@@ -51,18 +51,18 @@ private:
 
     std::unique_ptr<mqtt::async_client> m_client;
 
-	std::mutex m_mutex;
+    std::mutex m_mutex;
 
-	static const unsigned short MQTT_CONNECTION_COMPLETITION_TIMEOUT_MSEC;
-	static const unsigned short MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC;
-	static const unsigned short MQTT_KEEP_ALIVE_SEC;
-	static const unsigned short MQTT_QOS;
+    static const unsigned short MQTT_CONNECTION_COMPLETITION_TIMEOUT_MSEC;
+    static const unsigned short MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC;
+    static const unsigned short MQTT_KEEP_ALIVE_SEC;
+    static const unsigned short MQTT_QOS;
 
     void connected(const mqtt::string& cause) override;
     void connection_lost(const mqtt::string& cause) override;
     void message_arrived(mqtt::const_message_ptr msg) override;
     void delivery_complete(mqtt::delivery_token_ptr tok) override;
 };
-}
+}    // namespace wolkabout
 
 #endif

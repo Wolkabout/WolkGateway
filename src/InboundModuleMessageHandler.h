@@ -26,44 +26,44 @@
 
 namespace wolkabout
 {
-class InboundModuleMessageHandler: public InboundMessageHandler
+class InboundModuleMessageHandler : public InboundMessageHandler
 {
 public:
-	InboundModuleMessageHandler();
+    InboundModuleMessageHandler();
 
-	void messageReceived(const std::string& topic, const std::string& message) override;
+    void messageReceived(const std::string& topic, const std::string& message) override;
 
-	const std::vector<std::string>& getTopics() const override;
+    const std::vector<std::string>& getTopics() const override;
 
-	void setSensorReadingHandler(std::function<void(Message)> handler);
-	void setAlarmHandler(std::function<void(Message)> handler);
-	void setActuatorStatusHandler(std::function<void(Message)> handler);
-	void setConfigurationHandler(std::function<void(Message)> handler);
-	void setDeviceStatusHandler(std::function<void(Message)> handler);
-	void setDeviceRegistrationRequestHandler(std::function<void(Message)> handler);
-	void setDeviceReregistrationResponseHandler(std::function<void(Message)> handler);
+    void setSensorReadingHandler(std::function<void(Message)> handler);
+    void setAlarmHandler(std::function<void(Message)> handler);
+    void setActuatorStatusHandler(std::function<void(Message)> handler);
+    void setConfigurationHandler(std::function<void(Message)> handler);
+    void setDeviceStatusHandler(std::function<void(Message)> handler);
+    void setDeviceRegistrationRequestHandler(std::function<void(Message)> handler);
+    void setDeviceReregistrationResponseHandler(std::function<void(Message)> handler);
 
-//	void setBinaryDataHandler(std::function<void(BinaryData)> handler);
+    //	void setBinaryDataHandler(std::function<void(BinaryData)> handler);
 
-//	void setFirmwareUpdateCommandHandler(std::function<void(FirmwareUpdateCommand)> handler);
+    //	void setFirmwareUpdateCommandHandler(std::function<void(FirmwareUpdateCommand)> handler);
 
 private:
-	void addToCommandBuffer(std::function<void()> command);
+    void addToCommandBuffer(std::function<void()> command);
 
-	std::unique_ptr<CommandBuffer> m_commandBuffer;
+    std::unique_ptr<CommandBuffer> m_commandBuffer;
 
-	std::vector<std::string> m_subscriptionList;
+    std::vector<std::string> m_subscriptionList;
 
-	std::function<void(Message)> m_sensorReadingHandler;
-	std::function<void(Message)> m_alarmHandler;
-	std::function<void(Message)> m_actuationStatusHandler;
-	std::function<void(Message)> m_configurationHandler;
-	std::function<void(Message)> m_deviceStatusHandler;
-	std::function<void(Message)> m_deviceRegistrationRequestHandler;
-	std::function<void(Message)> m_deviceReregistrationResponseHandler;
-//	std::function<void(BinaryData)> m_binaryDataHandler;
-//	std::function<void(FirmwareUpdateCommand)> m_firmwareUpdateHandler;
+    std::function<void(Message)> m_sensorReadingHandler;
+    std::function<void(Message)> m_alarmHandler;
+    std::function<void(Message)> m_actuationStatusHandler;
+    std::function<void(Message)> m_configurationHandler;
+    std::function<void(Message)> m_deviceStatusHandler;
+    std::function<void(Message)> m_deviceRegistrationRequestHandler;
+    std::function<void(Message)> m_deviceReregistrationResponseHandler;
+    //	std::function<void(BinaryData)> m_binaryDataHandler;
+    //	std::function<void(FirmwareUpdateCommand)> m_firmwareUpdateHandler;
 };
-}
+}    // namespace wolkabout
 
 #endif

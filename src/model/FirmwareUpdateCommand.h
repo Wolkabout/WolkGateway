@@ -18,53 +18,53 @@
 #define FIRMWAREUPDATECOMMAND_H
 
 #include "WolkOptional.h"
-#include <string>
 #include <cstdint>
+#include <string>
 
 namespace wolkabout
 {
 class FirmwareUpdateCommand
 {
 public:
-	enum class Type
-	{
-		FILE_UPLOAD,
-		URL_DOWNLOAD,
-		INSTALL,
-		ABORT,
-		UNKNOWN = -1
-	};
+    enum class Type
+    {
+        FILE_UPLOAD,
+        URL_DOWNLOAD,
+        INSTALL,
+        ABORT,
+        UNKNOWN = -1
+    };
 
-	FirmwareUpdateCommand();
+    FirmwareUpdateCommand();
 
-	explicit FirmwareUpdateCommand(FirmwareUpdateCommand::Type type);
+    explicit FirmwareUpdateCommand(FirmwareUpdateCommand::Type type);
 
-	FirmwareUpdateCommand(FirmwareUpdateCommand::Type type, std::string name, std::uint_fast64_t size,
-						  std::string hash, bool autoInstall);
+    FirmwareUpdateCommand(FirmwareUpdateCommand::Type type, std::string name, std::uint_fast64_t size, std::string hash,
+                          bool autoInstall);
 
-	FirmwareUpdateCommand(FirmwareUpdateCommand::Type type, std::string url, bool autoInstall);
+    FirmwareUpdateCommand(FirmwareUpdateCommand::Type type, std::string url, bool autoInstall);
 
-	FirmwareUpdateCommand::Type getType() const;
+    FirmwareUpdateCommand::Type getType() const;
 
-	const WolkOptional<std::string>& getName() const;
-	const WolkOptional<std::uint_fast64_t>& getSize() const;
-	const WolkOptional<std::string>& getHash() const;
+    const WolkOptional<std::string>& getName() const;
+    const WolkOptional<std::uint_fast64_t>& getSize() const;
+    const WolkOptional<std::string>& getHash() const;
 
-	const WolkOptional<std::string>& getUrl() const;
+    const WolkOptional<std::string>& getUrl() const;
 
-	const WolkOptional<bool>& getAutoInstall() const;
+    const WolkOptional<bool>& getAutoInstall() const;
 
 private:
-	FirmwareUpdateCommand::Type m_type;
+    FirmwareUpdateCommand::Type m_type;
 
-	WolkOptional<std::string> m_name;
-	WolkOptional<std::uint_fast64_t> m_size;
-	WolkOptional<std::string> m_hash;
+    WolkOptional<std::string> m_name;
+    WolkOptional<std::uint_fast64_t> m_size;
+    WolkOptional<std::string> m_hash;
 
-	WolkOptional<std::string> m_url;
+    WolkOptional<std::string> m_url;
 
-	WolkOptional<bool> m_autoInstall;
+    WolkOptional<bool> m_autoInstall;
 };
-}
+}    // namespace wolkabout
 
 #endif

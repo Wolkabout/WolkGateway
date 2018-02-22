@@ -15,38 +15,38 @@
  */
 
 #include "OutboundDataService.h"
-#include "model/FirmwareUpdateResponse.h"
 #include "connectivity/ConnectivityService.h"
+#include "model/FirmwareUpdateResponse.h"
 
 #include <iostream>
 
 namespace wolkabout
 {
-OutboundDataService::OutboundDataService(Device device, std::shared_ptr<ConnectivityService> connectivityService) :
-	m_device{device}, m_connectivityService(std::move(connectivityService))
+OutboundDataService::OutboundDataService(Device device, std::shared_ptr<ConnectivityService> connectivityService)
+: m_device{device}, m_connectivityService(std::move(connectivityService))
 {
 }
 
 void OutboundDataService::addFirmwareUpdateResponse(const FirmwareUpdateResponse& response)
 {
-//	const std::shared_ptr<OutboundMessage> outboundMessage =
-//			OutboundMessageFactory::make(m_device.getDeviceKey(), response);
+    //	const std::shared_ptr<OutboundMessage> outboundMessage =
+    //			OutboundMessageFactory::make(m_device.getDeviceKey(), response);
 
-//	if (outboundMessage && m_connectivityService->publish(outboundMessage))
-//	{
-//		std::cout << "Message sent " << outboundMessage->getContent();
-//	}
+    //	if (outboundMessage && m_connectivityService->publish(outboundMessage))
+    //	{
+    //		std::cout << "Message sent " << outboundMessage->getContent();
+    //	}
 }
 
 void OutboundDataService::addFilePacketRequest(const FilePacketRequest& request)
 {
-//	const std::shared_ptr<OutboundMessage> outboundMessage =
-//			OutboundMessageFactory::make(m_device.getDeviceKey(), request);
+    //	const std::shared_ptr<OutboundMessage> outboundMessage =
+    //			OutboundMessageFactory::make(m_device.getDeviceKey(), request);
 
-//	if (outboundMessage && m_connectivityService->publish(outboundMessage))
-//	{
-//		std::cout << "Message sent " << outboundMessage->getContent();
-//	}
+    //	if (outboundMessage && m_connectivityService->publish(outboundMessage))
+    //	{
+    //		std::cout << "Message sent " << outboundMessage->getContent();
+    //	}
 }
 
-}
+}    // namespace wolkabout

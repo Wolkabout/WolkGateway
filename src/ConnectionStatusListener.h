@@ -22,11 +22,11 @@ namespace wolkabout
 class ConnectionStatusListener
 {
 public:
-	virtual ~ConnectionStatusListener() = default;
+    virtual ~ConnectionStatusListener() = default;
 
-	virtual void connected() = 0;
-	virtual void disconnected() = 0;
+    virtual void connected() = 0;
+    virtual void disconnected() = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif

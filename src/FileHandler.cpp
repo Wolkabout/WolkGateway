@@ -20,65 +20,60 @@
 
 namespace wolkabout
 {
-
-FileHandler::FileHandler() :
-	m_currentPacketData{},
-	m_previousPacketHash{}
-{
-}
+FileHandler::FileHandler() : m_currentPacketData{}, m_previousPacketHash{} {}
 
 void FileHandler::clear()
 {
-	m_currentPacketData = {};
-	m_previousPacketHash = {};
+    m_currentPacketData = {};
+    m_previousPacketHash = {};
 }
 
 FileHandler::StatusCode FileHandler::handleData(const BinaryData& binaryData)
 {
-	if(!binaryData.valid())
-	{
-		return FileHandler::StatusCode::PACKAGE_HASH_NOT_VALID;
-	}
+    if (!binaryData.valid())
+    {
+        return FileHandler::StatusCode::PACKAGE_HASH_NOT_VALID;
+    }
 
-	if(m_previousPacketHash.empty())
-	{
-		if(!binaryData.validatePrevious())
-		{
-			return FileHandler::StatusCode::PREVIOUS_PACKAGE_HASH_NOT_VALID;
-		}
-	}
-	else
-	{
-		if(!binaryData.validatePrevious(m_previousPacketHash))
-		{
-			return FileHandler::StatusCode::PREVIOUS_PACKAGE_HASH_NOT_VALID;
-		}
-	}
+    if (m_previousPacketHash.empty())
+    {
+        if (!binaryData.validatePrevious())
+        {
+            return FileHandler::StatusCode::PREVIOUS_PACKAGE_HASH_NOT_VALID;
+        }
+    }
+    else
+    {
+        if (!binaryData.validatePrevious(m_previousPacketHash))
+        {
+            return FileHandler::StatusCode::PREVIOUS_PACKAGE_HASH_NOT_VALID;
+        }
+    }
 
-	m_currentPacketData.insert(m_currentPacketData.end(), binaryData.getData().begin(), binaryData.getData().end());
-	m_previousPacketHash = binaryData.getHash();
+    m_currentPacketData.insert(m_currentPacketData.end(), binaryData.getData().begin(), binaryData.getData().end());
+    m_previousPacketHash = binaryData.getHash();
 
-	return FileHandler::StatusCode::OK;
+    return FileHandler::StatusCode::OK;
 }
 
 FileHandler::StatusCode FileHandler::validateFile(const ByteArray& fileHash) const
 {
-	if(fileHash == ByteUtils::hashSHA256(m_currentPacketData))
-	{
-		return FileHandler::StatusCode::OK;
-	}
+    if (fileHash == ByteUtils::hashSHA256(m_currentPacketData))
+    {
+        return FileHandler::StatusCode::OK;
+    }
 
-	return FileHandler::StatusCode::FILE_HASH_NOT_VALID;
+    return FileHandler::StatusCode::FILE_HASH_NOT_VALID;
 }
 
 FileHandler::StatusCode FileHandler::saveFile(const std::string& filePath) const
 {
-	if(FileSystemUtils::createBinaryFileWithContent(filePath, m_currentPacketData))
-	{
-		return FileHandler::StatusCode::OK;
-	}
+    if (FileSystemUtils::createBinaryFileWithContent(filePath, m_currentPacketData))
+    {
+        return FileHandler::StatusCode::OK;
+    }
 
-	return FileHandler::StatusCode::FILE_HANDLING_ERROR;
+    return FileHandler::StatusCode::FILE_HANDLING_ERROR;
 }
 
-}
+}    // namespace wolkabout

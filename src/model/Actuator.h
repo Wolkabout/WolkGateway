@@ -31,6 +31,6 @@ public:
 
     virtual ~Actuator() = default;
 };
-}
+}    // namespace wolkabout
 
 #endif

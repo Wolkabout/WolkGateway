@@ -18,59 +18,56 @@
 
 namespace wolkabout
 {
-
-Timer::Timer() : m_isRunning(false)
-{
-}
+Timer::Timer() : m_isRunning(false) {}
 
 Timer::~Timer()
 {
-	stop();
+    stop();
 }
 
 void Timer::start(unsigned intervalMsec, std::function<void()> callback)
 {
-	if(m_isRunning)
-	{
-		return;
-	}
+    if (m_isRunning)
+    {
+        return;
+    }
 
-	m_isRunning = true;
+    m_isRunning = true;
 
-	auto thread = [=]{
-		std::unique_lock<std::mutex> lock{m_lock};
-		m_condition.wait_for(lock, std::chrono::milliseconds{intervalMsec}, [=]{return !m_isRunning;});
+    auto thread = [=] {
+        std::unique_lock<std::mutex> lock{m_lock};
+        m_condition.wait_for(lock, std::chrono::milliseconds{intervalMsec}, [=] { return !m_isRunning; });
 
-		// no callback if stopped
-		if(m_isRunning)
-		{
-			callback();
-		}
+        // no callback if stopped
+        if (m_isRunning)
+        {
+            callback();
+        }
 
-		m_isRunning = false;
-	};
+        m_isRunning = false;
+    };
 
-	m_worker.reset(new std::thread(thread));
+    m_worker.reset(new std::thread(thread));
 }
 
 void Timer::stop()
 {
-	{ // the block is for mutex to be unlocked before join
-		std::lock_guard<std::mutex> lock{m_lock};
-		m_isRunning = false;
+    {    // the block is for mutex to be unlocked before join
+        std::lock_guard<std::mutex> lock{m_lock};
+        m_isRunning = false;
 
-		m_condition.notify_all();
-	}
+        m_condition.notify_all();
+    }
 
-	if(m_worker && m_worker->joinable())
-	{
-		m_worker->join();
-	}
+    if (m_worker && m_worker->joinable())
+    {
+        m_worker->join();
+    }
 }
 
 bool Timer::running() const
 {
-	return m_isRunning || (m_worker && m_worker->joinable());
+    return m_isRunning || (m_worker && m_worker->joinable());
 }
 
-}
+}    // namespace wolkabout

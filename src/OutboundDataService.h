@@ -25,20 +25,20 @@ namespace wolkabout
 {
 class ConnectivityService;
 
-class OutboundDataService: public OutboundServiceDataHandler
+class OutboundDataService : public OutboundServiceDataHandler
 {
 public:
-	OutboundDataService(Device device, std::shared_ptr<ConnectivityService> connectivityService);
+    OutboundDataService(Device device, std::shared_ptr<ConnectivityService> connectivityService);
 
-	void addFirmwareUpdateResponse(const FirmwareUpdateResponse& response) override;
-	void addFilePacketRequest(const FilePacketRequest& request) override;
+    void addFirmwareUpdateResponse(const FirmwareUpdateResponse& response) override;
+    void addFilePacketRequest(const FilePacketRequest& request) override;
 
 private:
-	Device m_device;
+    Device m_device;
 
-	std::shared_ptr<ConnectivityService> m_connectivityService;
+    std::shared_ptr<ConnectivityService> m_connectivityService;
 };
 
-}
+}    // namespace wolkabout
 
-#endif // OUTBOUNDDATASERVICE_H
+#endif    // OUTBOUNDDATASERVICE_H

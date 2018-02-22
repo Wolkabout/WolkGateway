@@ -24,44 +24,44 @@ namespace wolkabout
 class Channel
 {
 public:
-	Channel() = delete;
+    Channel() = delete;
 
-	static const std::string CHANNEL_DELIMITER;
-	static const std::string CHANNEL_WILDCARD;
+    static const std::string CHANNEL_DELIMITER;
+    static const std::string CHANNEL_WILDCARD;
 
-	static const std::string DEVICE_TO_PLATFORM_DIRECTION;
-	static const std::string PLATFORM_TO_DEVICE_DIRECTION;
+    static const std::string DEVICE_TO_PLATFORM_DIRECTION;
+    static const std::string PLATFORM_TO_DEVICE_DIRECTION;
 
-	static const std::string GATEWAY_PATH_PREFIX;
-	static const std::string DEVICE_PATH_PREFIX;
+    static const std::string GATEWAY_PATH_PREFIX;
+    static const std::string DEVICE_PATH_PREFIX;
 
-	static const std::string SENSOR_READING_TYPE;
-	static const std::string EVENT_TYPE;
-	static const std::string ACTUATION_STATUS_TYPE;
-	static const std::string ACTUATION_SET_TYPE;
-	static const std::string ACTUATION_GET_TYPE;
-	static const std::string CONFIGURATION_SET_TYPE;
-	static const std::string CONFIGURATION_GET_TYPE;
-	static const std::string DEVICE_STATUS_TYPE;
-	static const std::string REGISTER_DEVICE_TYPE;
-	static const std::string REREGISTER_DEVICE_TYPE;
+    static const std::string SENSOR_READING_TYPE;
+    static const std::string EVENT_TYPE;
+    static const std::string ACTUATION_STATUS_TYPE;
+    static const std::string ACTUATION_SET_TYPE;
+    static const std::string ACTUATION_GET_TYPE;
+    static const std::string CONFIGURATION_SET_TYPE;
+    static const std::string CONFIGURATION_GET_TYPE;
+    static const std::string DEVICE_STATUS_TYPE;
+    static const std::string REGISTER_DEVICE_TYPE;
+    static const std::string REREGISTER_DEVICE_TYPE;
 
-	static const std::string SENSOR_READING_TOPIC_ROOT;
-	static const std::string EVENTS_TOPIC_ROOT;
-	static const std::string ACTUATION_STATUS_TOPIC_ROOT;
-	static const std::string CONFIGURATION_SET_RESPONSE_TOPIC_ROOT;
-	static const std::string CONFIGURATION_GET_RESPONSE_TOPIC_ROOT;
-	static const std::string DEVICE_STATUS_TOPIC_ROOT;
-	static const std::string DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT;
-	static const std::string DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT;
+    static const std::string SENSOR_READING_TOPIC_ROOT;
+    static const std::string EVENTS_TOPIC_ROOT;
+    static const std::string ACTUATION_STATUS_TOPIC_ROOT;
+    static const std::string CONFIGURATION_SET_RESPONSE_TOPIC_ROOT;
+    static const std::string CONFIGURATION_GET_RESPONSE_TOPIC_ROOT;
+    static const std::string DEVICE_STATUS_TOPIC_ROOT;
+    static const std::string DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT;
+    static const std::string DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT;
 
-	static const std::string ACTUATION_SET_TOPIC_ROOT;
-	static const std::string ACTUATION_GET_TOPIC_ROOT;
-	static const std::string CONFIGURATION_SET_REQUEST_TOPIC_ROOT;
-	static const std::string CONFIGURATION_GET_REQUEST_TOPIC_ROOT;
-	static const std::string DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
-	static const std::string DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT;
+    static const std::string ACTUATION_SET_TOPIC_ROOT;
+    static const std::string ACTUATION_GET_TOPIC_ROOT;
+    static const std::string CONFIGURATION_SET_REQUEST_TOPIC_ROOT;
+    static const std::string CONFIGURATION_GET_REQUEST_TOPIC_ROOT;
+    static const std::string DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
+    static const std::string DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT;
 };
-}
+}    // namespace wolkabout
 
 #endif

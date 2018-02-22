@@ -15,13 +15,13 @@
  */
 
 #include "JsonMessageFactory.h"
-#include "utilities/json.hpp"
-#include "utilities/Logger.h"
-#include "model/ActuatorSetCommand.h"
 #include "model/ActuatorGetCommand.h"
-#include "model/SensorReading.h"
-#include "model/Alarm.h"
+#include "model/ActuatorSetCommand.h"
 #include "model/ActuatorStatus.h"
+#include "model/Alarm.h"
+#include "model/SensorReading.h"
+#include "utilities/Logger.h"
+#include "utilities/json.hpp"
 
 using nlohmann::json;
 
@@ -29,174 +29,167 @@ namespace wolkabout
 {
 void from_json(const json& j, SensorReading& reading)
 {
-	const std::string value = [&]() -> std::string {
-		if (j.find("value") != j.end())
-		{
-			return j.at("value").get<std::string>();
-		}
+    const std::string value = [&]() -> std::string {
+        if (j.find("value") != j.end())
+        {
+            return j.at("value").get<std::string>();
+        }
 
-		return "";
-	}();
+        return "";
+    }();
 
-	reading = SensorReading("", value);
+    reading = SensorReading("", value);
 }
 
 void to_json(json& j, const SensorReading& p)
 {
-	if (p.getRtc() == 0)
-	{
-		j = json{{"data", p.getValue()}};
-	}
-	else
-	{
-		j = json{{"utc", p.getRtc()}, {"data", p.getValue()}};
-	}
+    if (p.getRtc() == 0)
+    {
+        j = json{{"data", p.getValue()}};
+    }
+    else
+    {
+        j = json{{"utc", p.getRtc()}, {"data", p.getValue()}};
+    }
 }
 
 void to_json(json& j, const std::shared_ptr<SensorReading>& p)
 {
-	if(!p)
-	{
-		return;
-	}
+    if (!p)
+    {
+        return;
+    }
 
-	to_json(j, *p);
+    to_json(j, *p);
 }
 
 void to_json(json& j, const Alarm& p)
 {
-	if (p.getRtc() == 0)
-	{
-		j = json{{"data", p.getValue()}};
-	}
-	else
-	{
-		j = json{{"utc", p.getRtc()}, {"data", p.getValue()}};
-	}
+    if (p.getRtc() == 0)
+    {
+        j = json{{"data", p.getValue()}};
+    }
+    else
+    {
+        j = json{{"utc", p.getRtc()}, {"data", p.getValue()}};
+    }
 }
 
 void to_json(json& j, const std::shared_ptr<Alarm>& p)
 {
-	if(!p)
-	{
-		return;
-	}
+    if (!p)
+    {
+        return;
+    }
 
-	to_json(j, *p);
+    to_json(j, *p);
 }
 
 void to_json(json& j, const ActuatorStatus& p)
 {
-	const std::string status = [&]() -> std::string {
-		if (p.getState() == ActuatorStatus::State::READY)
-		{
-			return "READY";
-		}
-		else if (p.getState() == ActuatorStatus::State::BUSY)
-		{
-			return "BUSY";
-		}
-		else if (p.getState() == ActuatorStatus::State::ERROR)
-		{
-			return "ERROR";
-		}
+    const std::string status = [&]() -> std::string {
+        if (p.getState() == ActuatorStatus::State::READY)
+        {
+            return "READY";
+        }
+        else if (p.getState() == ActuatorStatus::State::BUSY)
+        {
+            return "BUSY";
+        }
+        else if (p.getState() == ActuatorStatus::State::ERROR)
+        {
+            return "ERROR";
+        }
 
-		return "ERROR";
-	}();
+        return "ERROR";
+    }();
 
-	j = json{{"status", status}, {"value", p.getValue()}};
+    j = json{{"status", status}, {"value", p.getValue()}};
 }
 
 void to_json(json& j, const std::shared_ptr<ActuatorStatus>& p)
 {
-	if(!p)
-	{
-		return;
-	}
+    if (!p)
+    {
+        return;
+    }
 
-	to_json(j, *p);
+    to_json(j, *p);
 }
 
 void from_json(const json& j, ActuatorSetCommand& command)
 {
-	const std::string value = [&]() -> std::string {
-		if (j.find("value") != j.end())
-		{
-			return j.at("value").get<std::string>();
-		}
+    const std::string value = [&]() -> std::string {
+        if (j.find("value") != j.end())
+        {
+            return j.at("value").get<std::string>();
+        }
 
-		return "";
-	}();
+        return "";
+    }();
 
-	command = ActuatorSetCommand("", value);
+    command = ActuatorSetCommand("", value);
 }
 
-//void from_json(const json& j, ActuatorGetCommand& command)
+// void from_json(const json& j, ActuatorGetCommand& command)
 //{
 //	command = ActuatorGetCommand("");
 //}
 
 std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path,
-												  std::vector<std::shared_ptr<SensorReading>> sensorReadings)
+                                                  std::vector<std::shared_ptr<SensorReading>> sensorReadings)
 {
-	if (sensorReadings.size() == 0)
-	{
-		return nullptr;
-	}
+    if (sensorReadings.size() == 0)
+    {
+        return nullptr;
+    }
 
-	const json jPayload(sensorReadings);
-	const std::string payload = jPayload.dump();
+    const json jPayload(sensorReadings);
+    const std::string payload = jPayload.dump();
 
-	return std::make_shared<Message>(payload, path);
+    return std::make_shared<Message>(payload, path);
+}
+
+std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path, std::vector<std::shared_ptr<Alarm>> alarms)
+{
+    if (alarms.size() == 0)
+    {
+        return nullptr;
+    }
+
+    const json jPayload(alarms);
+    const std::string payload = jPayload.dump();
+
+    return std::make_shared<Message>(payload, path);
 }
 
 std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path,
-												  std::vector<std::shared_ptr<Alarm>> alarms)
+                                                  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses)
 {
-	if (alarms.size() == 0)
-	{
-		return nullptr;
-	}
+    if (actuatorStatuses.size() == 0)
+    {
+        return nullptr;
+    }
 
-	const json jPayload(alarms);
-	const std::string payload = jPayload.dump();
+    /* Currently supported protocol (JSON_SINGLE) allows only 1 ActuatorStatus per Message,
+     * hence only first element is deserialized*/
+    const json jPayload(actuatorStatuses.front());
+    const std::string payload = jPayload.dump();
 
-	return std::make_shared<Message>(payload, path);
+    return std::make_shared<Message>(payload, path);
 }
 
-std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path,
-												  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses)
+std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path, std::shared_ptr<ActuatorSetCommand> command)
 {
-	if (actuatorStatuses.size() == 0)
-	{
-		return nullptr;
-	}
-
-	/* Currently supported protocol (JSON_SINGLE) allows only 1 ActuatorStatus per Message,
-	 * hence only first element is deserialized*/
-	const json jPayload(actuatorStatuses.front());
-	const std::string payload = jPayload.dump();
-
-	return std::make_shared<Message>(payload, path);
-}
-
-std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path,
-												  std::shared_ptr<ActuatorSetCommand> command)
-{
-
 }
 
 std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path, std::shared_ptr<ActuatorGetCommand> command)
 {
-
 }
 
-std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path, const std::string& value)
-{
+std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path, const std::string& value) {}
 
-}
-
-//bool JsonMessageFactory::fromJson(const std::string& jsonString, SensorReading& reading)
+// bool JsonMessageFactory::fromJson(const std::string& jsonString, SensorReading& reading)
 //{
 //	try
 //	{
@@ -212,7 +205,7 @@ std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path, const
 //	return true;
 //}
 
-//bool JsonMessageFactory::fromJson(const std::string& jsonString, Alarm& alarm)
+// bool JsonMessageFactory::fromJson(const std::string& jsonString, Alarm& alarm)
 //{
 //	try
 //	{
@@ -228,7 +221,7 @@ std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path, const
 //	return true;
 //}
 
-//bool JsonMessageFactory::fromJson(const std::string& jsonString, ActuatorStatus& status)
+// bool JsonMessageFactory::fromJson(const std::string& jsonString, ActuatorStatus& status)
 //{
 //	try
 //	{
@@ -246,21 +239,21 @@ std::shared_ptr<Message> JsonMessageFactory::make(const std::string& path, const
 
 bool JsonMessageFactory::fromJson(const std::string& jsonString, ActuatorSetCommand& command)
 {
-	try
-	{
-		json j = json::parse(jsonString);
-		command = j;
-	}
-	catch (...)
-	{
-		LOG(DEBUG) << "Unable to parse ActuatorSetCommand: " << jsonString;
-		return false;
-	}
+    try
+    {
+        json j = json::parse(jsonString);
+        command = j;
+    }
+    catch (...)
+    {
+        LOG(DEBUG) << "Unable to parse ActuatorSetCommand: " << jsonString;
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
-//bool JsonMessageFactory::fromJson(const std::string& jsonString, ActuatorGetCommand& command)
+// bool JsonMessageFactory::fromJson(const std::string& jsonString, ActuatorGetCommand& command)
 //{
 //	try
 //	{
@@ -275,4 +268,4 @@ bool JsonMessageFactory::fromJson(const std::string& jsonString, ActuatorSetComm
 
 //	return true;
 //}
-}
+}    // namespace wolkabout

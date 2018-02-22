@@ -21,29 +21,29 @@ namespace wolkabout
 {
 ByteArray ByteUtils::toByteArray(const std::string& data)
 {
-	ByteArray array{};
+    ByteArray array{};
 
-	for(const auto& byte : data)
-	{
-		array.push_back(static_cast<Byte>(byte));
-	}
+    for (const auto& byte : data)
+    {
+        array.push_back(static_cast<Byte>(byte));
+    }
 
-	return array;
+    return array;
 }
 
 ByteArray ByteUtils::hashSHA256(const ByteArray& value)
 {
-	unsigned char digest[SHA256_DIGEST_LENGTH];
+    unsigned char digest[SHA256_DIGEST_LENGTH];
 
-	SHA256(&value[0], value.size(), reinterpret_cast<unsigned char*>(&digest));
+    SHA256(&value[0], value.size(), reinterpret_cast<unsigned char*>(&digest));
 
-	ByteArray ret{};
+    ByteArray ret{};
 
-	for(int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
-	{
-		ret.push_back(digest[i]);
-	}
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+    {
+        ret.push_back(digest[i]);
+    }
 
-	return ret;
+    return ret;
 }
-}
+}    // namespace wolkabout

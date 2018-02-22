@@ -21,14 +21,12 @@
 
 namespace wolkabout
 {
-
-template<typename T>
-class WolkOptional
+template <typename T> class WolkOptional
 {
 public:
-	WolkOptional() : m_value{}, m_null{true}
+    WolkOptional() : m_value{}, m_null{true}
     {
-		static_assert(std::is_default_constructible<T>::value, "Wrapped type must be default constructible");
+        static_assert(std::is_default_constructible<T>::value, "Wrapped type must be default constructible");
     }
 
     WolkOptional(T value) : m_value{value}, m_null{false} {}
@@ -50,6 +48,6 @@ private:
     bool m_null;
 };
 
-}
+}    // namespace wolkabout
 
-#endif // WOLKOPTIONAL_H
+#endif    // WOLKOPTIONAL_H

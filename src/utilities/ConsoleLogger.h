@@ -22,15 +22,15 @@
 
 namespace wolkabout
 {
-class ConsoleLogger: public Logger
+class ConsoleLogger : public Logger
 {
 public:
-	void logEntry(Log& log) override;
-	void setLogLevel(wolkabout::LogLevel level) override;
+    void logEntry(Log& log) override;
+    void setLogLevel(wolkabout::LogLevel level) override;
 
 private:
-	std::atomic<LogLevel> m_level;
+    std::atomic<LogLevel> m_level;
 };
-}
+}    // namespace wolkabout
 
 #endif

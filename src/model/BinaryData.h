@@ -21,61 +21,60 @@
 
 namespace wolkabout
 {
-
 class BinaryData
 {
 public:
-	BinaryData();
+    BinaryData();
 
-	/**
-	 * @brief BinaryData Constructs the object using binary data
-	 * Throws std::invalid_argument if the size of the binary data
-	 * is not big enough to contain valid data
-	 * @param value Binary data
-	 */
-	BinaryData(const ByteArray& data);
+    /**
+     * @brief BinaryData Constructs the object using binary data
+     * Throws std::invalid_argument if the size of the binary data
+     * is not big enough to contain valid data
+     * @param value Binary data
+     */
+    BinaryData(const ByteArray& data);
 
-	/**
-	 * @brief getData
-	 * @return data part of the binary packet
-	 */
-	const ByteArray& getData() const;
+    /**
+     * @brief getData
+     * @return data part of the binary packet
+     */
+    const ByteArray& getData() const;
 
-	/**
-	 * @brief getHash
-	 * @return hash part of the binary packet
-	 */
-	const ByteArray& getHash() const;
+    /**
+     * @brief getHash
+     * @return hash part of the binary packet
+     */
+    const ByteArray& getHash() const;
 
-	/**
-	 * @brief valid Validates the packet using its hash
-	 * @return true if packet is valid, false otherwise
-	 */
-	bool valid() const;
+    /**
+     * @brief valid Validates the packet using its hash
+     * @return true if packet is valid, false otherwise
+     */
+    bool valid() const;
 
-	/**
-	 * @brief validatePrevious Validates that param matches the previous hash
-	 * part of the binary packet
-	 * @param previousHash Previous hash to validate against
-	 * @return true if previous hash is valid, false otherwise
-	 */
-	bool validatePrevious(const ByteArray& previousHash) const;
+    /**
+     * @brief validatePrevious Validates that param matches the previous hash
+     * part of the binary packet
+     * @param previousHash Previous hash to validate against
+     * @return true if previous hash is valid, false otherwise
+     */
+    bool validatePrevious(const ByteArray& previousHash) const;
 
-	/**
-	 * @brief validatePrevious Validates that the previous hash part of the
-	 * binary packet matches hash of an empty string
-	 * Used when packet is first in order and no previous hash exists
-	 * @return true if previous hash is valid, false otherwise
-	 */
-	bool validatePrevious() const;
+    /**
+     * @brief validatePrevious Validates that the previous hash part of the
+     * binary packet matches hash of an empty string
+     * Used when packet is first in order and no previous hash exists
+     * @return true if previous hash is valid, false otherwise
+     */
+    bool validatePrevious() const;
 
 private:
-	ByteArray m_value;
+    ByteArray m_value;
 
-	ByteArray m_data;
-	ByteArray m_hash;
-	ByteArray m_previousHash;
+    ByteArray m_data;
+    ByteArray m_hash;
+    ByteArray m_previousHash;
 };
-}
+}    // namespace wolkabout
 
-#endif // BINARYDATA_H
+#endif    // BINARYDATA_H

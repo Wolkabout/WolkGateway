@@ -24,10 +24,10 @@ class FirmwareUpdateCommand;
 class FirmwareUpdateCommandListener
 {
 public:
-	virtual ~FirmwareUpdateCommandListener() = default;
+    virtual ~FirmwareUpdateCommandListener() = default;
 
-	virtual void handleFirmwareUpdateCommand(const FirmwareUpdateCommand& firmwareUpdateCommand) = 0;
+    virtual void handleFirmwareUpdateCommand(const FirmwareUpdateCommand& firmwareUpdateCommand) = 0;
 };
-}
+}    // namespace wolkabout
 
-#endif // FIRMWAREUPDATECOMMANDLISTENER_H
+#endif    // FIRMWAREUPDATECOMMANDLISTENER_H

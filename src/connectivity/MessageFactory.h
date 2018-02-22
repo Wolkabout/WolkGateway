@@ -33,24 +33,20 @@ class ActuatorGetCommand;
 class MessageFactory
 {
 public:
-	virtual ~MessageFactory() = default;
+    virtual ~MessageFactory() = default;
 
-	virtual std::shared_ptr<Message> make(const std::string& path,
-										  std::vector<std::shared_ptr<SensorReading>> sensorReadings) = 0;
-	virtual std::shared_ptr<Message> make(const std::string& path,
-										  std::vector<std::shared_ptr<Alarm>> alarms) = 0;
-	virtual std::shared_ptr<Message> make(const std::string& path,
-										  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses) = 0;
-	virtual std::shared_ptr<Message> make(const std::string& path,
-										  std::shared_ptr<ActuatorSetCommand> command) = 0;
-	virtual std::shared_ptr<Message> make(const std::string& path,
-										  std::shared_ptr<ActuatorGetCommand> command) = 0;
+    virtual std::shared_ptr<Message> make(const std::string& path,
+                                          std::vector<std::shared_ptr<SensorReading>> sensorReadings) = 0;
+    virtual std::shared_ptr<Message> make(const std::string& path, std::vector<std::shared_ptr<Alarm>> alarms) = 0;
+    virtual std::shared_ptr<Message> make(const std::string& path,
+                                          std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses) = 0;
+    virtual std::shared_ptr<Message> make(const std::string& path, std::shared_ptr<ActuatorSetCommand> command) = 0;
+    virtual std::shared_ptr<Message> make(const std::string& path, std::shared_ptr<ActuatorGetCommand> command) = 0;
 
-	virtual std::shared_ptr<Message> make(const std::string& path,
-										  const std::string& value) = 0;
+    virtual std::shared_ptr<Message> make(const std::string& path, const std::string& value) = 0;
 
-	virtual bool fromJson(const std::string& jsonString, ActuatorSetCommand& command) = 0;
+    virtual bool fromJson(const std::string& jsonString, ActuatorSetCommand& command) = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif

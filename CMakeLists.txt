@@ -15,6 +15,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(WolkGateway C CXX)
 
+include(out/conanbuildinfo.cmake)
+conan_basic_setup(TARGETS NO_OUTPUT_DIRS KEEP_RPATHS)
+
 set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -Weffc++ -pedantic                                           \
@@ -60,7 +63,7 @@ file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
 link_directories(${PROJECT_SOURCE_DIR}/out/lib)
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} ssl paho-mqtt pthread)
+target_link_libraries(${PROJECT_NAME} ssl paho-mqtt pthread CONAN_PKG::Poco)
 set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
 
@@ -69,4 +72,5 @@ add_subdirectory(cmake)
 # Example
 add_executable(example example/Application.cpp)
 target_link_libraries(example ${PROJECT_NAME})
+set_target_properties(example PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(example PROPERTIES LINK_FLAGS "-Wl,-rpath,./lib")

@@ -24,5 +24,6 @@ popd
 # OPENSSL_INCLUDE_DIR is absoulte path or relative path to project source directory
 
 pushd out
+conan install ..
 cmake -G "Unix Makefiles" -DOPENSSL_INCLUDE_DIR=dependencies/build/include .. -DCMAKE_BUILD_TYPE=Release ..
 popd

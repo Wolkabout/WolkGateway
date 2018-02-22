@@ -28,4 +28,4 @@ Actuator::Actuator(std::string reference, std::string dataDelimiter, unsigned ch
 : ManifestItem(std::move(reference), std::move(dataDelimiter), dataDimensions)
 {
 }
-}
+}    // namespace wolkabout

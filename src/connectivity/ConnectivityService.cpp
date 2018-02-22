@@ -22,4 +22,4 @@ void ConnectivityService::setListener(std::weak_ptr<ConnectivityServiceListener>
 {
     m_listener = listener;
 }
-}
+}    // namespace wolkabout

@@ -34,6 +34,6 @@ private:
     std::string m_dataDelimiter;
     unsigned char m_dataDimensions;
 };
-}
+}    // namespace wolkabout
 
 #endif

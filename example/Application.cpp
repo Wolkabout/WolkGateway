@@ -25,25 +25,30 @@
 
 int main(int /* argc */, char** /* argv */)
 {
-	wolkabout::Device device("device_key", "some_password", {"SW", "SL"});
+    wolkabout::DeviceManifest deviceManifest;
+    deviceManifest.addActuator(wolkabout::ActuatorManifest("Switch", "SW", "", "", "", wolkabout::ActuatorManifest::DataType::BOOLEAN,
+                                                           10, 0, 1));
+    deviceManifest.addActuator(wolkabout::ActuatorManifest("Slider", "SL", "", "", "", wolkabout::ActuatorManifest::DataType::NUMERIC,
+                                                           10, 0, 100));
+    wolkabout::Device device("device_key", "some_password", deviceManifest);
 
     static bool switchValue = false;
     static int sliderValue = 0;
 
-	class CustomFirmwareInstaller: public wolkabout::FirmwareInstaller
-	{
-	public:
-		bool install(const std::string& firmwareFile) override
-		{
-			// Mock install
-			std::cout << "Updating firmware with file " << firmwareFile << std::endl;
+    class CustomFirmwareInstaller: public wolkabout::FirmwareInstaller
+    {
+    public:
+        bool install(const std::string& firmwareFile) override
+        {
+            // Mock install
+            std::cout << "Updating firmware with file " << firmwareFile << std::endl;
 
-			// Optionally delete 'firmwareFile
-			return true;
-		}
-	};
+            // Optionally delete 'firmwareFile
+            return true;
+        }
+    };
 
-	auto installer = std::make_shared<CustomFirmwareInstaller>();
+    auto installer = std::make_shared<CustomFirmwareInstaller>();
 
     std::unique_ptr<wolkabout::Wolk> wolk =
       wolkabout::Wolk::newBuilder(device)
@@ -58,9 +63,9 @@ int main(int /* argc */, char** /* argv */)
                 sliderValue = std::stoi(value);
             } catch (...) {
                 sliderValue = 0;
-			}
-		}
-	})
+            }
+        }
+    })
             .actuatorStatusProvider([&](const std::string& reference) -> wolkabout::ActuatorStatus {
         if (reference == "SW") {
             return wolkabout::ActuatorStatus(switchValue ? "true" : "false", wolkabout::ActuatorStatus::State::READY);
@@ -70,7 +75,7 @@ int main(int /* argc */, char** /* argv */)
 
         return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
         })
-		.withFirmwareUpdate("2.1.0", installer, ".", 100 * 1024 * 1024, 1024 * 1024)
+        .withFirmwareUpdate("2.1.0", installer, ".", 100 * 1024 * 1024, 1024 * 1024)
         .build();
 
     wolk->connect();

@@ -1,0 +1,10 @@
+[requires]
+Poco/1.8.1@pocoproject/stable
+
+[generators]
+cmake
+
+[imports]
+bin, *.dll -> ./lib
+bin, *.so -> ./lib
+lib, *.dylib* -> ./lib

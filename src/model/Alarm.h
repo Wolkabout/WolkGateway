@@ -33,5 +33,5 @@ public:
 
     void acceptVisit(ReadingVisitor& visitor) override;
 };
-}
+}    // namespace wolkabout
 #endif

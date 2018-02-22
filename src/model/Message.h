@@ -24,15 +24,15 @@ namespace wolkabout
 class Message
 {
 public:
-	Message(const std::string& content, const std::string& topic);
+    Message(const std::string& content, const std::string& topic);
 
-	const std::string& getContent() const;
-	const std::string& getTopic() const;
+    const std::string& getContent() const;
+    const std::string& getTopic() const;
 
 private:
-	const std::string m_content;
-	const std::string m_topic;
+    const std::string m_content;
+    const std::string m_topic;
 };
-}
+}    // namespace wolkabout
 
 #endif

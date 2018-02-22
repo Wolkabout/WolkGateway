@@ -39,35 +39,37 @@ public:
     virtual ~Persistence() = default;
 
     /**
-	 * @brief Inserts the wolkabout::Message
+     * @brief Inserts the wolkabout::Message
      *
-	 * @param message to be inserted
+     * @param message to be inserted
      * @return {@code true} if successful, or {@code false} if
      * element can not be inserted
      */
-	virtual bool push(std::shared_ptr<Message> message) = 0;
+    virtual bool push(std::shared_ptr<Message> message) = 0;
 
     /**
-	 * @brief Retrieves, first wolkabout::Message of this storage and removes it from storage.
+     * @brief Retrieves, first wolkabout::Message of this storage and removes it from storage.
      *
-	 * @return Message {@code std::shared_ptr<Message>} or returns nullptr {@code std::shared_ptr<Message>} if this storage is empty.
+     * @return Message {@code std::shared_ptr<Message>} or returns nullptr {@code std::shared_ptr<Message>} if this
+     * storage is empty.
      */
-	virtual std::shared_ptr<Message> pop() = 0;
-
-	/**
-	 * @brief Retrieves, first wolkabout::Message of this storage without removing it from storage.
-	 *
-	 * @return Message {@code std::shared_ptr<Message>} or returns nullptr {@code std::shared_ptr<Message>} if this storage is empty.
-	 */
-	virtual std::shared_ptr<Message> front() = 0;
+    virtual std::shared_ptr<Message> pop() = 0;
 
     /**
-	 * Returns whether this storage contains any messages.
+     * @brief Retrieves, first wolkabout::Message of this storage without removing it from storage.
      *
-	 * @return {@code true} if this storage contains no wolkabout::Message
+     * @return Message {@code std::shared_ptr<Message>} or returns nullptr {@code std::shared_ptr<Message>} if this
+     * storage is empty.
      */
-	virtual bool empty() const = 0;
+    virtual std::shared_ptr<Message> front() = 0;
+
+    /**
+     * Returns whether this storage contains any messages.
+     *
+     * @return {@code true} if this storage contains no wolkabout::Message
+     */
+    virtual bool empty() const = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif

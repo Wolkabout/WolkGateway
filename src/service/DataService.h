@@ -18,9 +18,9 @@
 #define DATASERVICE_H
 
 #include "model/Message.h"
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 namespace wolkabout
 {
@@ -34,33 +34,33 @@ class ActuatorCommandListener;
 class DataService
 {
 public:
-	DataService(const std::string& gatewayKey, std::unique_ptr<MessageFactory> protocol,
-				std::shared_ptr<OutboundMessageHandler> outboundWolkaboutMessageHandler,
-				std::shared_ptr<OutboundMessageHandler> outboundModuleMessageHandler,
-				std::weak_ptr<ActuatorCommandListener> actuationHandler);
+    DataService(const std::string& gatewayKey, std::unique_ptr<MessageFactory> protocol,
+                std::shared_ptr<OutboundMessageHandler> outboundWolkaboutMessageHandler,
+                std::shared_ptr<OutboundMessageHandler> outboundModuleMessageHandler,
+                std::weak_ptr<ActuatorCommandListener> actuationHandler);
 
-	void handleSensorReading(Message reading);
-	void handleAlarm(Message alarm);
-	void handleActuatorSetCommand(Message command);
-	void handleActuatorGetCommand(Message command);
-	void handleActuatorStatus(Message status);
+    void handleSensorReading(Message reading);
+    void handleAlarm(Message alarm);
+    void handleActuatorSetCommand(Message command);
+    void handleActuatorGetCommand(Message command);
+    void handleActuatorStatus(Message status);
 
-	void addSensorReadings(std::vector<std::shared_ptr<SensorReading>> sensorReadings);
-	void addAlarms(std::vector<std::shared_ptr<Alarm>> alarms);
-	void addActuatorStatus(std::shared_ptr<ActuatorStatus> actuatorStatus);
+    void addSensorReadings(std::vector<std::shared_ptr<SensorReading>> sensorReadings);
+    void addAlarms(std::vector<std::shared_ptr<Alarm>> alarms);
+    void addActuatorStatus(std::shared_ptr<ActuatorStatus> actuatorStatus);
 
 private:
-	void routeModuleMessage(const Message& message, const std::string& topicRoot);
-	void routeWolkaboutMessage(const Message& message);
+    void routeModuleMessage(const Message& message, const std::string& topicRoot);
+    void routeWolkaboutMessage(const Message& message);
 
-	const std::string m_gatewayKey;
-	std::unique_ptr<MessageFactory> m_protocol;
+    const std::string m_gatewayKey;
+    std::unique_ptr<MessageFactory> m_protocol;
 
-	std::shared_ptr<OutboundMessageHandler> m_outboundWolkaboutMessageHandler;
-	std::shared_ptr<OutboundMessageHandler> m_outboundModuleMessageHandler;
+    std::shared_ptr<OutboundMessageHandler> m_outboundWolkaboutMessageHandler;
+    std::shared_ptr<OutboundMessageHandler> m_outboundModuleMessageHandler;
 
-	std::weak_ptr<ActuatorCommandListener> m_actuationHandler;
+    std::weak_ptr<ActuatorCommandListener> m_actuationHandler;
 };
-}
+}    // namespace wolkabout
 
 #endif

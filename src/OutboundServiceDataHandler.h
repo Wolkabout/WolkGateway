@@ -25,12 +25,12 @@ class FilePacketRequest;
 class OutboundServiceDataHandler
 {
 public:
-	virtual ~OutboundServiceDataHandler() = default;
+    virtual ~OutboundServiceDataHandler() = default;
 
-	virtual void addFirmwareUpdateResponse(const FirmwareUpdateResponse& response) = 0;
+    virtual void addFirmwareUpdateResponse(const FirmwareUpdateResponse& response) = 0;
 
-	virtual void addFilePacketRequest(const FilePacketRequest& request) = 0;
+    virtual void addFilePacketRequest(const FilePacketRequest& request) = 0;
 };
-}
+}    // namespace wolkabout
 
-#endif // OUTBOUNDSERVICEDATAHANDLER_H
+#endif    // OUTBOUNDSERVICEDATAHANDLER_H

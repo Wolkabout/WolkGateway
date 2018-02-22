@@ -27,4 +27,4 @@ ManifestItem::ManifestItem(std::string reference, std::string dataDelimiter, uns
 : m_reference(std::move(reference)), m_dataDelimiter(std::move(dataDelimiter)), m_dataDimensions(dataDimensions)
 {
 }
-}
+}    // namespace wolkabout

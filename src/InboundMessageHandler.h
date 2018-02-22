@@ -25,11 +25,11 @@ namespace wolkabout
 class InboundMessageHandler
 {
 public:
-	virtual ~InboundMessageHandler() = default;
+    virtual ~InboundMessageHandler() = default;
 
-	virtual void messageReceived(const std::string& topic, const std::string& message) = 0;
-	virtual const std::vector<std::string>& getTopics() const = 0;
+    virtual void messageReceived(const std::string& topic, const std::string& message) = 0;
+    virtual const std::vector<std::string>& getTopics() const = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif

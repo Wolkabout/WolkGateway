@@ -27,32 +27,31 @@ class BinaryData;
 class FileHandler
 {
 public:
-	enum class StatusCode
-	{
-		OK = 0,
-		PACKAGE_HASH_NOT_VALID,
-		PREVIOUS_PACKAGE_HASH_NOT_VALID,
-		FILE_HASH_NOT_VALID,
-		FILE_HANDLING_ERROR
-	};
+    enum class StatusCode
+    {
+        OK = 0,
+        PACKAGE_HASH_NOT_VALID,
+        PREVIOUS_PACKAGE_HASH_NOT_VALID,
+        FILE_HASH_NOT_VALID,
+        FILE_HANDLING_ERROR
+    };
 
-	FileHandler();
+    FileHandler();
 
-	virtual ~FileHandler() = default;
+    virtual ~FileHandler() = default;
 
-	void clear();
+    void clear();
 
-	FileHandler::StatusCode handleData(const BinaryData& binaryData);
+    FileHandler::StatusCode handleData(const BinaryData& binaryData);
 
-	FileHandler::StatusCode validateFile(const ByteArray& fileHash) const;
+    FileHandler::StatusCode validateFile(const ByteArray& fileHash) const;
 
-	FileHandler::StatusCode saveFile(const std::string& filePath) const;
+    FileHandler::StatusCode saveFile(const std::string& filePath) const;
 
 private:
-	ByteArray m_currentPacketData;
-	ByteArray m_previousPacketHash;
+    ByteArray m_currentPacketData;
+    ByteArray m_previousPacketHash;
 };
-}
+}    // namespace wolkabout
 
-
-#endif // FILEHANDLER_H
+#endif    // FILEHANDLER_H

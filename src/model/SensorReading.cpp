@@ -33,4 +33,4 @@ void SensorReading::acceptVisit(ReadingVisitor& visitor)
 {
     visitor.visit(*this);
 }
-}
+}    // namespace wolkabout

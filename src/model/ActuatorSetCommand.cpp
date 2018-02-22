@@ -24,7 +24,7 @@ namespace wolkabout
 ActuatorSetCommand::ActuatorSetCommand() : m_reference{""}, m_value{""} {}
 
 ActuatorSetCommand::ActuatorSetCommand(const std::string& reference, const std::string& value)
-	: m_reference{std::move(reference)}, m_value{std::move(value)}
+: m_reference{std::move(reference)}, m_value{std::move(value)}
 {
 }
 
@@ -37,4 +37,4 @@ const std::string& ActuatorSetCommand::getValue() const
 {
     return m_value;
 }
-}
+}    // namespace wolkabout

@@ -222,7 +222,7 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
 
     // Device manifest
     statement << "CREATE TABLE IF NOT EXISTS device_manifest (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name "
-                 "TEXT, description TEXT, protocol TEXT, firmware_update_protocol TEXT);";
+                 "TEXT, description TEXT, protocol TEXT, firmware_update_protocol TEXT, sha256 TEXT);";
 
     // Device
     statement
@@ -245,20 +245,33 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
       into(devicesWithGivenKeyCount), now;
 
     if (devicesWithGivenKeyCount != 0)
+
     {
+        // Device already exists in repository
         return;
     }
 
     const std::string deviceManifestSha256 = calculateSha256(device->getManifest());
-
     statement.reset(*m_session);
-    statement << "BEGIN TRANSACTION;";
+    Poco::UInt64 matchingDeviceManifestsCount;
+    statement << "SELECT count(*) FROM device_manifest WHERE sha256=?;", useRef(deviceManifestSha256), into(matchingDeviceManifestsCount),
+            now;
+    if (matchingDeviceManifestsCount != 0)
+    {
+        // Equivalent manifest exists
+        statement.reset(*m_session);
+        statement << "INSERT INTO device SELECT ?, ?, id FROM device_manifest WHERE device_manifest.sha256=?;",
+                     useRef(device->getKey()), useRef(device->getName()), useRef(deviceManifestSha256), now;
+        return;
+    }
 
     // Device manifest
+    statement.reset(*m_session);
+    statement << "BEGIN TRANSACTION;";
     statement
-      << "INSERT INTO device_manifest(name, description, protocol, firmware_update_protocol) VALUES(?, ?, ?, ?);",
+      << "INSERT INTO device_manifest(name, description, protocol, firmware_update_protocol, sha256) VALUES(?, ?, ?, ?, ?);",
       useRef(device->getManifest().getName()), useRef(device->getManifest().getDescription()),
-      useRef(device->getManifest().getProtocol()), useRef(device->getManifest().getFirmwareUpdateProtocol());
+      useRef(device->getManifest().getProtocol()), useRef(device->getManifest().getFirmwareUpdateProtocol()), useRef(deviceManifestSha256);
 
     Poco::UInt64 deviceManifestId;
     statement << "SELECT last_insert_rowid();", into(deviceManifestId);

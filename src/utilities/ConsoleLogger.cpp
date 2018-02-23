@@ -19,6 +19,10 @@
 
 namespace wolkabout
 {
+ConsoleLogger::ConsoleLogger() : m_level{LogLevel::ERROR}
+{
+}
+
 void ConsoleLogger::logEntry(Log& log)
 {
 	if(static_cast<int>(log.getLogLevel()) >= static_cast<int>(m_level.load()))

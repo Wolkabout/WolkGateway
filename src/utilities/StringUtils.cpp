@@ -185,4 +185,17 @@ std::string StringUtils::base64Decode(const std::string& encodedString)
 
 	return ret;
 }
+
+bool StringUtils::mqttTopicMatch(const std::string& wildcardTopic, const std::string& topic)
+{
+	if(endsWith(wildcardTopic, "/#"))
+	{
+		const std::string rootTopic = removeSubstring(wildcardTopic, "/#");
+
+		return startsWith(topic, rootTopic);
+	}
+
+	// TODO match single level wildcards
+	return wildcardTopic == topic;
+}
 }

@@ -41,6 +41,7 @@ public:
     void setLastWill(const std::string& topic, const std::string& message) override;
 
     bool subscribe(const std::string& topic) override;
+	void unsubscribe(const std::string& topic) override;
     bool publish(const std::string& topic, const std::string& message) override;
 
 private:

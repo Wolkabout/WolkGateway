@@ -26,6 +26,7 @@ const std::string Channel::PLATFORM_TO_DEVICE_DIRECTION = "p2d";
 
 const std::string Channel::GATEWAY_PATH_PREFIX = std::string{"g"} + CHANNEL_DELIMITER;
 const std::string Channel::DEVICE_PATH_PREFIX = std::string{"d"} + CHANNEL_DELIMITER;
+const std::string Channel::REFERENCE_PATH_PREFIX = std::string{"r"} + CHANNEL_DELIMITER;
 
 const std::string Channel::SENSOR_READING_TYPE = "sensor_reading";
 const std::string Channel::EVENT_TYPE = "events";

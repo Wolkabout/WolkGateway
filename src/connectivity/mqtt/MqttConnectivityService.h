@@ -19,18 +19,20 @@
 
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/mqtt/MqttClient.h"
-#include "model/Device.h"
 
 #include <atomic>
 #include <memory>
 #include <string>
+#include <vector>
+#include <mutex>
 
 namespace wolkabout
 {
 class MqttConnectivityService : public ConnectivityService
 {
 public:
-    MqttConnectivityService(std::shared_ptr<MqttClient> mqttClient, Device device, std::string host);
+	MqttConnectivityService(std::shared_ptr<MqttClient> mqttClient, const std::string& key,
+							const std::string& password, const std::string& host);
     virtual ~MqttConnectivityService() = default;
 
     bool connect() override;
@@ -40,12 +42,18 @@ public:
 
 	bool publish(std::shared_ptr<Message> outboundMessage) override;
 
+	void channelsUpdated() override;
+
 private:
     std::shared_ptr<MqttClient> m_mqttClient;
-    Device m_device;
-    std::string m_host;
 
-    std::atomic_bool m_connected;
+	const std::string m_key;
+	const std::string m_password;
+	const std::string m_host;
+
+	std::vector<std::string> m_topics;
+
+	std::mutex m_lock;
 
     static const constexpr char* LAST_WILL_TOPIC_ROOT = "lastwill/";
     static const constexpr char* TRUST_STORE = "ca.crt";

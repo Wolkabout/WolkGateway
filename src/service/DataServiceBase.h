@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef CONSOLELOGGER_H
-#define CONSOLELOGGER_H
+#ifndef DATASERVICEBASE_H
+#define DATASERVICEBASE_H
 
-#include "utilities/Logger.h"
-#include <atomic>
+#include "InboundDeviceMessageHandler.h"
+#include "InboundPlatformMessageHandler.h"
 
 namespace wolkabout
 {
-class ConsoleLogger: public Logger
+class DataServiceBase: public DeviceMessageListener, public PlatformMessageListener
 {
 public:
-	ConsoleLogger();
-
-	void logEntry(Log& log) override;
-	void setLogLevel(wolkabout::LogLevel level) override;
-
-private:
-	std::atomic<LogLevel> m_level;
+	virtual ~DataServiceBase() = default;
 };
+
 }
 
 #endif

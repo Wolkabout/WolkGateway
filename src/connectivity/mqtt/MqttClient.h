@@ -39,6 +39,7 @@ public:
     virtual void setLastWill(const std::string& topic, const std::string& message) = 0;
 
     virtual bool subscribe(const std::string& topic) = 0;
+	virtual void unsubscribe(const std::string& topic) = 0;
     virtual bool publish(const std::string& topic, const std::string& message) = 0;
 
 	void onMessageReceived(OnMessageReceivedCallback callback);

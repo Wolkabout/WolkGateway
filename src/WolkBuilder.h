@@ -17,8 +17,6 @@
 #ifndef WOLKBUILDER_H
 #define WOLKBUILDER_H
 
-#include "ActuationHandler.h"
-#include "ActuatorStatusProvider.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/Device.h"
 #include "persistence/Persistence.h"
@@ -53,36 +51,6 @@ public:
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& host(const std::string& host);
-
-    /**
-     * @brief Sets actuation handler
-     * @param actuationHandler Lambda that handles actuation requests
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& actuationHandler(
-      const std::function<void(const std::string& reference, const std::string& value)>& actuationHandler);
-
-    /**
-     * @brief Sets actuation handler
-     * @param actuationHandler Instance of wolkabout::ActuationHandler
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& actuationHandler(std::weak_ptr<ActuationHandler> actuationHandler);
-
-    /**
-     * @brief Sets actuation status provider
-     * @param actuatorStatusProvider Lambda that provides ActuatorStatus by reference of requested actuator
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& actuatorStatusProvider(
-      const std::function<ActuatorStatus(const std::string& reference)>& actuatorStatusProvider);
-
-    /**
-     * @brief Sets actuation status provider
-     * @param actuatorStatusProvider Instance of wolkabout::ActuatorStatusProvider
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& actuatorStatusProvider(std::weak_ptr<ActuatorStatusProvider> actuatorStatusProvider);
 
     /**
      * @brief Sets underlying persistence mechanism to be used<br>
@@ -136,12 +104,6 @@ public:
 private:
     std::string m_host;
     Device m_device;
-
-    std::function<void(std::string, std::string)> m_actuationHandlerLambda;
-    std::weak_ptr<ActuationHandler> m_actuationHandler;
-
-    std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
-    std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
 
     std::shared_ptr<Persistence> m_persistence;
 

@@ -25,6 +25,8 @@ namespace wolkabout
 PublishingService::PublishingService(std::shared_ptr<ConnectivityService> connectivityService, std::unique_ptr<Persistence> persistence) :
 	m_connectivityService{std::move(connectivityService)},
 	m_persistence{std::move(persistence)},
+	m_connected{false},
+	m_run{true},
 	m_worker{new std::thread(&PublishingService::run, this)}
 {
 }

@@ -16,15 +16,17 @@
 
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "model/Message.h"
+#include <algorithm>
 
 namespace wolkabout
 {
-MqttConnectivityService::MqttConnectivityService(std::shared_ptr<MqttClient> mqttClient, Device device,
-                                                 std::string host)
-: m_mqttClient(std::move(mqttClient))
-, m_device(std::move(device))
-, m_host(std::move(host))
-, m_connected(false)
+MqttConnectivityService::MqttConnectivityService(std::shared_ptr<MqttClient> mqttClient,
+												 const std::string& key, const std::string& password,
+												 const std::string& host)
+: m_mqttClient{std::move(mqttClient)}
+, m_key{key}
+, m_password{password}
+, m_host{host}
 {
 	m_mqttClient->onMessageReceived([this](std::string topic, std::string message) -> void {
 		if(auto handler = m_listener.lock())
@@ -32,22 +34,26 @@ MqttConnectivityService::MqttConnectivityService(std::shared_ptr<MqttClient> mqt
 			handler->messageReceived(topic, message);
 		}
 	});
+
+	m_mqttClient->onConnectionLost([this]() -> void {
+		if(auto handler = m_listener.lock())
+		{
+			handler->connectionLost();
+		}
+	});
 }
 
 bool MqttConnectivityService::connect()
 {
-    m_mqttClient->setLastWill(LAST_WILL_TOPIC_ROOT + m_device.getDeviceKey(), "Gone offline");
-    bool isConnected = m_mqttClient->connect(m_device.getDeviceKey(), m_device.getDevicePassword(), TRUST_STORE, m_host,
-                                             m_device.getDeviceKey());
+	m_mqttClient->setLastWill(LAST_WILL_TOPIC_ROOT + m_key, "Gone offline");
+	bool isConnected = m_mqttClient->connect(m_key, m_password, TRUST_STORE, m_host, m_key);
     if (isConnected)
     {
-		if(auto handler = m_listener.lock())
+		std::lock_guard<std::mutex> lg{m_lock};
+
+		for (const std::string& topic : m_topics)
 		{
-			const auto& topics = handler->getTopics();
-			for (const std::string& topic : topics)
-			{
-				m_mqttClient->subscribe(topic);
-			}
+			m_mqttClient->subscribe(topic);
 		}
     }
 
@@ -67,5 +73,42 @@ bool MqttConnectivityService::isConnected()
 bool MqttConnectivityService::publish(std::shared_ptr<Message> outboundMessage)
 {
     return m_mqttClient->publish(outboundMessage->getTopic(), outboundMessage->getContent());
+}
+
+void MqttConnectivityService::channelsUpdated()
+{
+	if(auto handler = m_listener.lock())
+	{
+		if(isConnected())
+		{
+			std::lock_guard<std::mutex> lg{m_lock};
+
+			const auto topics = handler->getTopics();
+			for (const std::string& topic : topics)
+			{
+				// subscribe to new topics
+				if(std::find(m_topics.begin(), m_topics.end(), topic) == m_topics.end())
+				{
+					m_mqttClient->subscribe(topic);
+				}
+			}
+
+			for(const std::string& topic : m_topics)
+			{
+				// unsibscribe from topics that are missing
+				if(std::find(topics.begin(), topics.end(), topic) == topics.end())
+				{
+					m_mqttClient->unsubscribe(topic);
+				}
+			}
+
+			m_topics = topics;
+		}
+		else
+		{
+			std::lock_guard<std::mutex> lg{m_lock};
+			m_topics = handler->getTopics();
+		}
+	}
 }
 }

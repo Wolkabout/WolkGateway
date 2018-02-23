@@ -34,6 +34,7 @@ public:
 
 	static const std::string GATEWAY_PATH_PREFIX;
 	static const std::string DEVICE_PATH_PREFIX;
+	static const std::string REFERENCE_PATH_PREFIX;
 
 	static const std::string SENSOR_READING_TYPE;
 	static const std::string EVENT_TYPE;

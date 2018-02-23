@@ -17,50 +17,100 @@
 #ifndef DATASERVICE_H
 #define DATASERVICE_H
 
+#include "DataServiceBase.h"
+#include "OutboundMessageHandler.h"
 #include "model/Message.h"
+#include "utilities/Logger.h"
+#include "utilities/StringUtils.h"
 #include <string>
 #include <vector>
 #include <memory>
 
 namespace wolkabout
 {
-class SensorReading;
-class Alarm;
-class ActuatorStatus;
-class MessageFactory;
-class OutboundMessageHandler;
-class ActuatorCommandListener;
-
-class DataService
+template<class P>
+class DataService: public DataServiceBase
 {
 public:
-	DataService(const std::string& gatewayKey, std::unique_ptr<MessageFactory> protocol,
-				std::shared_ptr<OutboundMessageHandler> outboundWolkaboutMessageHandler,
-				std::shared_ptr<OutboundMessageHandler> outboundModuleMessageHandler,
-				std::weak_ptr<ActuatorCommandListener> actuationHandler);
+	DataService(const std::string& gatewayKey,
+				std::shared_ptr<OutboundMessageHandler> outboundPlatformMessageHandler,
+				std::shared_ptr<OutboundMessageHandler> outboundDeviceMessageHandler);
 
-	void handleSensorReading(Message reading);
-	void handleAlarm(Message alarm);
-	void handleActuatorSetCommand(Message command);
-	void handleActuatorGetCommand(Message command);
-	void handleActuatorStatus(Message status);
+	void platformMessageReceived(std::shared_ptr<Message> message) override;
 
-	void addSensorReadings(std::vector<std::shared_ptr<SensorReading>> sensorReadings);
-	void addAlarms(std::vector<std::shared_ptr<Alarm>> alarms);
-	void addActuatorStatus(std::shared_ptr<ActuatorStatus> actuatorStatus);
+	void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
 private:
-	void routeModuleMessage(const Message& message, const std::string& topicRoot);
-	void routeWolkaboutMessage(const Message& message);
+	void routeDeviceMessage(std::shared_ptr<Message> message);
+	void routePlatformMessage(std::shared_ptr<Message> message);
 
 	const std::string m_gatewayKey;
-	std::unique_ptr<MessageFactory> m_protocol;
 
-	std::shared_ptr<OutboundMessageHandler> m_outboundWolkaboutMessageHandler;
-	std::shared_ptr<OutboundMessageHandler> m_outboundModuleMessageHandler;
-
-	std::weak_ptr<ActuatorCommandListener> m_actuationHandler;
+	std::shared_ptr<OutboundMessageHandler> m_outboundPlatformMessageHandler;
+	std::shared_ptr<OutboundMessageHandler> m_outboundDeviceMessageHandler;
 };
+
+
+template<class P>
+DataService<P>::DataService(const std::string& gatewayKey,
+								   std::shared_ptr<OutboundMessageHandler> outboundPlatformMessageHandler,
+								   std::shared_ptr<OutboundMessageHandler> outboundDeviceMessageHandler) :
+	m_gatewayKey{gatewayKey},
+	m_outboundPlatformMessageHandler{std::move(outboundPlatformMessageHandler)},
+	m_outboundDeviceMessageHandler{std::move(outboundDeviceMessageHandler)}
+{
+}
+
+template<class P>
+void DataService<P>::platformMessageReceived(std::shared_ptr<Message> message)
+{
+	if(P::getInstance().isGatewayMessage(message->getTopic()))
+	{
+		// if message is for gateway device just resend it
+		m_outboundDeviceMessageHandler->addMessage(message);
+	}
+	else
+	{
+		// if message is for device remove gateway info from channel
+		routePlatformMessage(message);
+	}
+}
+
+template<class P>
+void DataService<P>::deviceMessageReceived(std::shared_ptr<Message> message)
+{
+	if(P::getInstance().isGatewayMessage(message->getTopic()))
+	{
+		// if message is from gateway device just resend it
+		m_outboundPlatformMessageHandler->addMessage(message);
+	}
+	else
+	{
+		// if message is from device add gateway info to channel
+		routeDeviceMessage(message);
+	}
+}
+
+template<class P>
+void DataService<P>::routeDeviceMessage(std::shared_ptr<Message> message)
+{
+	const std::string topic = P::getInstance().routeDeviceMessage(message->getTopic(), m_gatewayKey);
+
+	const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
+
+	m_outboundPlatformMessageHandler->addMessage(routedMessage);
+}
+
+template<class P>
+void DataService<P>::routePlatformMessage(std::shared_ptr<Message> message)
+{
+	const std::string topic = P::getInstance().routePlatformMessage(message->getTopic(), m_gatewayKey);
+
+	const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
+
+	m_outboundDeviceMessageHandler->addMessage(routedMessage);
+}
+
 }
 
 #endif

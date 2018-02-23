@@ -23,12 +23,15 @@
 #include <thread>
 #include <string>
 
+#include "utilities/ConsoleLogger.h"
+
 int main(int /* argc */, char** /* argv */)
 {
-	wolkabout::Device device("device_key", "some_password", {"SW", "SL"});
+	auto logger = std::unique_ptr<wolkabout::ConsoleLogger>(new wolkabout::ConsoleLogger());
+	logger->setLogLevel(wolkabout::LogLevel::INFO);
+	wolkabout::Logger::setInstance(std::move(logger));
 
-    static bool switchValue = false;
-    static int sliderValue = 0;
+	wolkabout::Device device("device_key", "device_password");
 
 	class CustomFirmwareInstaller: public wolkabout::FirmwareInstaller
 	{
@@ -46,40 +49,11 @@ int main(int /* argc */, char** /* argv */)
 	auto installer = std::make_shared<CustomFirmwareInstaller>();
 
     std::unique_ptr<wolkabout::Wolk> wolk =
-      wolkabout::Wolk::newBuilder(device)
-            .actuationHandler([&](const std::string& reference, const std::string& value) -> void {
-        std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
-
-        if (reference == "SW") {
-            switchValue = value == "true" ? true : false;
-        }
-        else if (reference == "SL") {
-            try {
-                sliderValue = std::stoi(value);
-            } catch (...) {
-                sliderValue = 0;
-			}
-		}
-	})
-            .actuatorStatusProvider([&](const std::string& reference) -> wolkabout::ActuatorStatus {
-        if (reference == "SW") {
-            return wolkabout::ActuatorStatus(switchValue ? "true" : "false", wolkabout::ActuatorStatus::State::READY);
-        } else if (reference == "SL") {
-            return wolkabout::ActuatorStatus(std::to_string(sliderValue), wolkabout::ActuatorStatus::State::READY);
-        }
-
-        return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
-        })
+	  wolkabout::Wolk::newBuilder(device)
 		.withFirmwareUpdate("2.1.0", installer, ".", 100 * 1024 * 1024, 1024 * 1024)
         .build();
 
     wolk->connect();
-
-    wolk->addSensorReading("P", 1024);
-    wolk->addSensorReading("T", 25.6);
-    wolk->addSensorReading("H", 52);
-
-    wolk->addAlarm("HH", "High Humidity");
 
     while(true)
     {

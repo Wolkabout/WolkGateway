@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef CONSOLELOGGER_H
-#define CONSOLELOGGER_H
+#ifndef PROTOCOLMAPPER_H
+#define PROTOCOLMAPPER_H
 
-#include "utilities/Logger.h"
-#include <atomic>
+#include "connectivity/json/JsonSingleProtocol.h"
+#include <string>
 
 namespace wolkabout
 {
-class ConsoleLogger: public Logger
-{
-public:
-	ConsoleLogger();
 
-	void logEntry(Log& log) override;
-	void setLogLevel(wolkabout::LogLevel level) override;
+const std::string JSON_SINGLE_PROTOCOL = "JsonSingle";
 
-private:
-	std::atomic<LogLevel> m_level;
-};
+#define MapProtocol(name, func)	\
+	[&]{					\
+		if(name == JSON_SINGLE_PROTOCOL)	\
+			return func<JsonSingleProtocol>();	\
+		else	\
+			return func<void>();	\
+	}()	\
+
 }
 
 #endif

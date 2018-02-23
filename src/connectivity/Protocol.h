@@ -14,24 +14,37 @@
  * limitations under the License.
  */
 
-#ifndef CONSOLELOGGER_H
-#define CONSOLELOGGER_H
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
 
-#include "utilities/Logger.h"
-#include <atomic>
+#include <memory>
+#include <vector>
 
 namespace wolkabout
 {
-class ConsoleLogger: public Logger
+class Protocol
 {
 public:
-	ConsoleLogger();
+	virtual ~Protocol() = default;
 
-	void logEntry(Log& log) override;
-	void setLogLevel(wolkabout::LogLevel level) override;
+	virtual std::vector<std::string> getDeviceTopics() = 0;
+	virtual std::vector<std::string> getPlatformTopics() = 0;
+};
 
-private:
-	std::atomic<LogLevel> m_level;
+template<class Derived>
+class ProtocolBase: public Protocol
+{
+public:
+	static Derived& getInstance()
+	{
+		static Derived instance;
+		return instance;
+	}
+
+protected:
+	ProtocolBase() = default;
+	ProtocolBase(const ProtocolBase&) = delete;
+	ProtocolBase& operator=(const ProtocolBase&) = delete;
 };
 }
 

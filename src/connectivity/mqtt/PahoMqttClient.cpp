@@ -125,6 +125,22 @@ bool PahoMqttClient::subscribe(const std::string& topic)
     return true;
 }
 
+void PahoMqttClient::unsubscribe(const std::string& topic)
+{
+	if (!m_isConnected)
+	{
+		return;
+	}
+
+	try
+	{
+		m_client->unsubscribe(topic);
+	}
+	catch (mqtt::exception&)
+	{
+	}
+}
+
 bool PahoMqttClient::publish(const std::string& topic, const std::string& message)
 {
     if (!m_isConnected)

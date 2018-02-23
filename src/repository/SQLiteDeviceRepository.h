@@ -27,7 +27,7 @@ public:
     virtual std::shared_ptr<std::vector<std::string>> findAllDeviceKeys() override;
 
 private:
-    std::mutex m_mutex;
+    std::recursive_mutex m_mutex;
     std::unique_ptr<Poco::Data::Session> m_session;
 };
 }    // namespace wolkabout

@@ -285,7 +285,7 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
         return;
     }
 
-    // Device manifest
+    // Create new device manifest
     statement.reset(*m_session);
     statement << "BEGIN TRANSACTION;";
     statement << "INSERT INTO device_manifest(name, description, protocol, firmware_update_protocol, sha256) VALUES(?, "
@@ -444,171 +444,10 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
 
 void SQLiteDeviceRepository::update(std::shared_ptr<Device> device)
 {
-    Statement statement(*m_session);
+    std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    Poco::UInt64 deviceManifestId;
-    statement << "SELECT device_manifest_id FROM device WHERE device.key=?;", useRef(device->getKey()),
-      into(deviceManifestId);
-    if (statement.execute() == 0)
-    {
-        return;
-    }
-
-    statement.reset(*m_session);
-    statement << "BEGIN TRANSACTION;";
-    statement << "DELETE FROM device            WHERE device.key=?;", useRef(device->getKey());
-    statement << "DELETE FROM device_manifest   WHERE device_manifest.id=?;", useRef(deviceManifestId);
-
-    // Device manifest
-    statement
-      << "INSERT INTO device_manifest(name, description, protocol, firmware_update_protocol) VALUES(?, ?, ?, ?);",
-      useRef(device->getManifest().getName()), useRef(device->getManifest().getDescription()),
-      useRef(device->getManifest().getProtocol()), useRef(device->getManifest().getFirmwareUpdateProtocol());
-
-    statement << "SELECT last_insert_rowid();", into(deviceManifestId);
-
-    // Alarm manifests
-    for (const wolkabout::AlarmManifest& alarmManifest : device->getManifest().getAlarms())
-    {
-        const auto severity = [&]() -> std::string {
-            if (alarmManifest.getSeverity() == AlarmManifest::AlarmSeverity::ALERT)
-            {
-                return "ALERT";
-            }
-            else if (alarmManifest.getSeverity() == AlarmManifest::AlarmSeverity::CRITICAL)
-            {
-                return "CRITICAL";
-            }
-            else if (alarmManifest.getSeverity() == AlarmManifest::AlarmSeverity::ERROR)
-            {
-                return "ERROR";
-            }
-
-            return "";
-        }();
-
-        statement << "INSERT INTO alarm_manifest(reference, name, severity, message, description, device_manifest_id) "
-                     "VALUES(?, ?, ?, ?, ?, ?);",
-          useRef(alarmManifest.getReference()), useRef(alarmManifest.getName()), bind(severity),
-          useRef(alarmManifest.getMessage()), useRef(alarmManifest.getDescription()), useRef(deviceManifestId);
-    }
-
-    // Actuator manifests
-    for (const wolkabout::ActuatorManifest& actuatorManifest : device->getManifest().getActuators())
-    {
-        const auto dataType = [&]() -> std::string {
-            if (actuatorManifest.getDataType() == ActuatorManifest::DataType::BOOLEAN)
-            {
-                return "BOOLEAN";
-            }
-            else if (actuatorManifest.getDataType() == ActuatorManifest::DataType::NUMERIC)
-            {
-                return "NUMERIC";
-            }
-            else if (actuatorManifest.getDataType() == ActuatorManifest::DataType::STRING)
-            {
-                return "STRING";
-            }
-
-            return "";
-        }();
-
-        const auto precision = Poco::UInt32(actuatorManifest.getPrecision());
-        const auto minimum = actuatorManifest.getMinimum();
-        const auto maximum = actuatorManifest.getMaximum();
-        statement << "INSERT INTO actuator_manifest(reference, name, description, unit, reading_type, data_type, "
-                     "precision, minimum, maximum, delimiter, device_manifest_id) "
-                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-          useRef(actuatorManifest.getReference()), useRef(actuatorManifest.getName()),
-          useRef(actuatorManifest.getDescription()), useRef(actuatorManifest.getUnit()),
-          useRef(actuatorManifest.getReadingType()), bind(dataType), bind(precision), bind(minimum), bind(maximum),
-          useRef(actuatorManifest.getDelimiter()), useRef(deviceManifestId);
-
-        for (const std::string& label : actuatorManifest.getLabels())
-        {
-            statement << "INSERT INTO actuator_label SELECT NULL, ?, id FROM actuator_manifest WHERE "
-                         "actuator_manifest.reference=? AND actuator_manifest.device_manifest_id=?;",
-              useRef(label), useRef(actuatorManifest.getReference()), useRef(deviceManifestId);
-        }
-    }
-
-    // Sensor manifests
-    for (const wolkabout::SensorManifest& sensorManifest : device->getManifest().getSensors())
-    {
-        const auto dataType = [&]() -> std::string {
-            if (sensorManifest.getDataType() == SensorManifest::DataType::BOOLEAN)
-            {
-                return "BOOLEAN";
-            }
-            else if (sensorManifest.getDataType() == SensorManifest::DataType::NUMERIC)
-            {
-                return "NUMERIC";
-            }
-            else if (sensorManifest.getDataType() == SensorManifest::DataType::STRING)
-            {
-                return "STRING";
-            }
-
-            return "";
-        }();
-
-        const auto precision = Poco::UInt32(sensorManifest.getPrecision());
-        const auto minimum = sensorManifest.getMinimum();
-        const auto maximum = sensorManifest.getMaximum();
-        statement << "INSERT INTO sensor_manifest(reference, name, description, unit, reading_type, data_type, "
-                     "precision, minimum, maximum, delimiter, device_manifest_id) "
-                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-          useRef(sensorManifest.getReference()), useRef(sensorManifest.getName()),
-          useRef(sensorManifest.getDescription()), useRef(sensorManifest.getUnit()),
-          useRef(sensorManifest.getReadingType()), bind(dataType), bind(precision), bind(minimum), bind(maximum),
-          useRef(sensorManifest.getDelimiter()), useRef(deviceManifestId);
-
-        for (const std::string& label : sensorManifest.getLabels())
-        {
-            statement << "INSERT INTO sensor_label SELECT NULL, ?, id FROM sensor_manifest WHERE "
-                         "sensor_manifest.reference=? AND sensor_manifest.device_manifest_id=?;",
-              useRef(label), useRef(sensorManifest.getReference()), useRef(deviceManifestId);
-        }
-    }
-
-    // Configuration manifests
-    for (const wolkabout::ConfigurationManifest& configurationManifest : device->getManifest().getConfigurations())
-    {
-        const auto dataType = [&]() -> std::string {
-            if (configurationManifest.getDataType() == ConfigurationManifest::DataType::BOOLEAN)
-            {
-                return "BOOLEAN";
-            }
-            else if (configurationManifest.getDataType() == ConfigurationManifest::DataType::NUMERIC)
-            {
-                return "NUMERIC";
-            }
-            else if (configurationManifest.getDataType() == ConfigurationManifest::DataType::STRING)
-            {
-                return "STRING";
-            }
-
-            return "";
-        }();
-
-        const auto minimum = Poco::Int64(configurationManifest.getMinimum());
-        const auto maximum = Poco::Int64(configurationManifest.getMaximum());
-        const auto size = Poco::UInt64(configurationManifest.getSize());
-        const auto isOptional = Poco::UInt8(configurationManifest.isOptional() ? 1 : 0);
-        statement << "INSERT INTO configuration_manifest(reference, name, description, unit, data_type, minimum, "
-                     "maximum, size, delimiter, collapse_key, default_value, null_value, optional, device_manifest_id)"
-                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-          useRef(configurationManifest.getReference()), useRef(configurationManifest.getName()),
-          useRef(configurationManifest.getDescription()), useRef(configurationManifest.getUnit()), bind(dataType),
-          bind(minimum), bind(maximum), bind(size), useRef(configurationManifest.getDelimiter()),
-          useRef(configurationManifest.getCollapseKey()), useRef(configurationManifest.getDefaultValue()),
-          useRef(configurationManifest.getNullValue()), bind(isOptional), useRef(deviceManifestId);
-    }
-
-    // Device
-    statement << "INSERT INTO device(key, name, device_manifest_id) VALUES(?, ?, ?);", useRef(device->getKey()),
-      useRef(device->getName()), useRef(deviceManifestId);
-    statement << "COMMIT;", now;
+    remove(device->getKey());
+    save(device);
 }
 
 void SQLiteDeviceRepository::remove(const std::string& deviceKey)

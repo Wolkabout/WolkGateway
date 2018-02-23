@@ -1,8 +1,0 @@
-autoconf
-automake
-m4
-libssl
-paho.mqtt.c
-paho.mqtt.cpp
-
-build

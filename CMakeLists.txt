@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.5)
 project(WolkGateway C CXX)
 
 include(out/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS NO_OUTPUT_DIRS KEEP_RPATHS)
+conan_basic_setup(NO_OUTPUT_DIRS KEEP_RPATHS)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -39,33 +39,20 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -Weffc++ -pedantic    
                                             -Wvariadic-macros                                                          \
                                             -Wwrite-strings")
 
-# Paho MQTT
-IF (NOT OPENSSL_INCLUDE_DIR)
-    message(FATAL_ERROR
-            "OpenSSL include dir must be specified with: -DOPENSSL_INCLUDE_DIR=...")
-ENDIF (NOT OPENSSL_INCLUDE_DIR)
-
-IF (NOT IS_ABSOLUTE ${OPENSSL_INCLUDE_DIR})
-    set(OPENSSL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/${OPENSSL_INCLUDE_DIR}")
-ENDIF (NOT IS_ABSOLUTE ${OPENSSL_INCLUDE_DIR})
-
 add_definitions(-DOPENSSL)
-add_subdirectory(mqtt lib)
+add_subdirectory(mqtt)
 
 # WolkAbout c++ Connector
 include_directories("mqtt")
 include_directories("src")
-include_directories(SYSTEM "${OPENSSL_INCLUDE_DIR}")
+include_directories(SYSTEM "${CONAN_INCLUDE_DIRS_OPENSSL}")
 
 file(GLOB_RECURSE HEADER_FILES "src/*.h" "src/*.hpp")
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
 
-link_directories(${PROJECT_SOURCE_DIR}/out/lib)
-
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} ssl paho-mqtt pthread CONAN_PKG::Poco)
+target_link_libraries(${PROJECT_NAME} ${CONAN_LIBS} paho-mqtt pthread)
 set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
 
 add_subdirectory(cmake)
 

@@ -5,13 +5,13 @@
 #include "model/Device.h"
 #include "model/DeviceManifest.h"
 
+#include "Poco/Crypto/DigestEngine.h"
 #include "Poco/Data/SQLite/Connector.h"
 #include "Poco/Data/SQLite/SQLiteException.h"
 #include "Poco/Data/Session.h"
 #include "Poco/Data/Statement.h"
 #include "Poco/String.h"
 #include "Poco/Types.h"
-#include "Poco/Crypto/DigestEngine.h"
 
 #include <memory>
 #include <mutex>
@@ -28,11 +28,16 @@ std::string calculateSha256(const wolkabout::AlarmManifest& alarmManifest)
     digestEngine.update(alarmManifest.getMessage());
     digestEngine.update(alarmManifest.getDescription());
     digestEngine.update([&]() -> std::string {
-        if (alarmManifest.getSeverity() == wolkabout::AlarmManifest::AlarmSeverity::ALERT) {
+        if (alarmManifest.getSeverity() == wolkabout::AlarmManifest::AlarmSeverity::ALERT)
+        {
             return "A";
-        } else if (alarmManifest.getSeverity() == wolkabout::AlarmManifest::AlarmSeverity::CRITICAL) {
+        }
+        else if (alarmManifest.getSeverity() == wolkabout::AlarmManifest::AlarmSeverity::CRITICAL)
+        {
             return "C";
-        } else if (alarmManifest.getSeverity() == wolkabout::AlarmManifest::AlarmSeverity::ERROR) {
+        }
+        else if (alarmManifest.getSeverity() == wolkabout::AlarmManifest::AlarmSeverity::ERROR)
+        {
             return "E";
         }
 
@@ -57,11 +62,16 @@ std::string calculateSha256(const wolkabout::ActuatorManifest& actuatorManifest)
     digestEngine.update(actuatorManifest.getDelimiter());
 
     digestEngine.update([&]() -> std::string {
-        if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::BOOLEAN) {
+        if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::BOOLEAN)
+        {
             return "B";
-        } else if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::NUMERIC) {
+        }
+        else if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::NUMERIC)
+        {
             return "N";
-        } else if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::STRING) {
+        }
+        else if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::STRING)
+        {
             return "S";
         }
 
@@ -91,11 +101,16 @@ std::string calculateSha256(const wolkabout::SensorManifest& sensorManifest)
     digestEngine.update(sensorManifest.getDelimiter());
 
     digestEngine.update([&]() -> std::string {
-        if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::BOOLEAN) {
+        if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::BOOLEAN)
+        {
             return "B";
-        } else if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::NUMERIC) {
+        }
+        else if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::NUMERIC)
+        {
             return "N";
-        } else if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::STRING) {
+        }
+        else if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::STRING)
+        {
             return "S";
         }
 
@@ -128,11 +143,16 @@ std::string calculateSha256(const wolkabout::ConfigurationManifest& configuratio
     digestEngine.update(configurationManifest.isOptional());
 
     digestEngine.update([&]() -> std::string {
-        if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::BOOLEAN) {
+        if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::BOOLEAN)
+        {
             return "B";
-        } else if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::NUMERIC) {
+        }
+        else if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::NUMERIC)
+        {
             return "N";
-        } else if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::STRING) {
+        }
+        else if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::STRING)
+        {
             return "S";
         }
 
@@ -254,24 +274,25 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
     const std::string deviceManifestSha256 = calculateSha256(device->getManifest());
     statement.reset(*m_session);
     Poco::UInt64 matchingDeviceManifestsCount;
-    statement << "SELECT count(*) FROM device_manifest WHERE sha256=?;", useRef(deviceManifestSha256), into(matchingDeviceManifestsCount),
-            now;
+    statement << "SELECT count(*) FROM device_manifest WHERE sha256=?;", useRef(deviceManifestSha256),
+      into(matchingDeviceManifestsCount), now;
     if (matchingDeviceManifestsCount != 0)
     {
         // Equivalent manifest exists
         statement.reset(*m_session);
         statement << "INSERT INTO device SELECT ?, ?, id FROM device_manifest WHERE device_manifest.sha256=?;",
-                     useRef(device->getKey()), useRef(device->getName()), useRef(deviceManifestSha256), now;
+          useRef(device->getKey()), useRef(device->getName()), useRef(deviceManifestSha256), now;
         return;
     }
 
     // Device manifest
     statement.reset(*m_session);
     statement << "BEGIN TRANSACTION;";
-    statement
-      << "INSERT INTO device_manifest(name, description, protocol, firmware_update_protocol, sha256) VALUES(?, ?, ?, ?, ?);",
+    statement << "INSERT INTO device_manifest(name, description, protocol, firmware_update_protocol, sha256) VALUES(?, "
+                 "?, ?, ?, ?);",
       useRef(device->getManifest().getName()), useRef(device->getManifest().getDescription()),
-      useRef(device->getManifest().getProtocol()), useRef(device->getManifest().getFirmwareUpdateProtocol()), useRef(deviceManifestSha256);
+      useRef(device->getManifest().getProtocol()), useRef(device->getManifest().getFirmwareUpdateProtocol()),
+      useRef(deviceManifestSha256);
 
     Poco::UInt64 deviceManifestId;
     statement << "SELECT last_insert_rowid();", into(deviceManifestId);
@@ -604,10 +625,21 @@ void SQLiteDeviceRepository::remove(const std::string& deviceKey)
     }
 
     statement.reset(*m_session);
+    Poco::UInt64 numberOfDevicesReferencingManifest;
+    statement << "SELECT count(*) FROM device WHERE device_manifest_id=?;", useRef(deviceManifestId),
+      into(numberOfDevicesReferencingManifest), now;
+    if (numberOfDevicesReferencingManifest != 1)
+    {
+        statement.reset(*m_session);
+        statement << "DELETE FROM device WHERE device.key=?;", useRef(deviceKey), now;
+        return;
+    }
+
+    statement.reset(*m_session);
     statement << "BEGIN TRANSACTION;";
 
-    statement << "DELETE FROM device                    WHERE device.key=?;", useRef(deviceKey);
-    statement << "DELETE FROM device_manifest           WHERE device_manifest.id=?;", useRef(deviceManifestId);
+    statement << "DELETE FROM device          WHERE device.key=?;", useRef(deviceKey);
+    statement << "DELETE FROM device_manifest WHERE device_manifest.id=?;", useRef(deviceManifestId);
 
     statement << "COMMIT;", now;
 }

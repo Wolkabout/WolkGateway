@@ -50,9 +50,9 @@ private:
 	std::atomic_bool m_connected;
 
 	std::atomic_bool m_run;
+	std::mutex m_lock;
 	std::unique_ptr<std::thread> m_worker;
 	std::condition_variable m_condition;
-	std::mutex m_lock;
 };
 }
 

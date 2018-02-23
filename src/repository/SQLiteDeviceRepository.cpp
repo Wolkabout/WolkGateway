@@ -221,7 +221,7 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
 
     statement << "CREATE TABLE IF NOT EXISTS actuator_label (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, label "
                  "TEXT, actuator_manifest_id INTEGER, "
-                 "CONSTRAINT k FOREIGN KEY(actuator_manifest_id) REFERENCES actuator_manifest(id) ON DELETE CASCADE);";
+                 "FOREIGN KEY(actuator_manifest_id) REFERENCES actuator_manifest(id) ON DELETE CASCADE);";
 
     // Sensor manifest
     statement << "CREATE TABLE IF NOT EXISTS sensor_manifest (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, reference "
@@ -231,7 +231,7 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
 
     statement << "CREATE TABLE IF NOT EXISTS sensor_label (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, label TEXT, "
                  "sensor_manifest_id INTEGER, "
-                 "CONSTRAINT k FOREIGN KEY(sensor_manifest_id) REFERENCES sensor_manifest(id) ON DELETE CASCADE);";
+                 "FOREIGN KEY(sensor_manifest_id) REFERENCES sensor_manifest(id) ON DELETE CASCADE);";
 
     // Configuration manifest
     statement << "CREATE TABLE IF NOT EXISTS configuration_manifest (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "

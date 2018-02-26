@@ -20,11 +20,11 @@
 #include "InboundMessageHandler.h"
 #include "utilities/CommandBuffer.h"
 
+#include <map>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
-#include <map>
-#include <mutex>
-#include <memory>
 
 namespace wolkabout
 {
@@ -33,47 +33,45 @@ class Message;
 class DeviceMessageListener
 {
 public:
-	virtual ~DeviceMessageListener() = default;
-	virtual void deviceMessageReceived(std::shared_ptr<Message> message) = 0;
+    virtual ~DeviceMessageListener() = default;
+    virtual void deviceMessageReceived(std::shared_ptr<Message> message) = 0;
 };
 
-class InboundDeviceMessageHandler: public InboundMessageHandler
+class InboundDeviceMessageHandler : public InboundMessageHandler
 {
 public:
-	InboundDeviceMessageHandler();
+    InboundDeviceMessageHandler();
 
-	void messageReceived(const std::string& topic, const std::string& message) override;
+    void messageReceived(const std::string& topic, const std::string& message) override;
 
-	std::vector<std::string> getTopics() const override;
+    std::vector<std::string> getTopics() const override;
 
-	template<class P>
-	void setListener(std::weak_ptr<DeviceMessageListener> listener);
+    template <class P> void setListener(std::weak_ptr<DeviceMessageListener> listener);
 
 private:
-	void addToCommandBuffer(std::function<void()> command);
+    void addToCommandBuffer(std::function<void()> command);
 
-	std::unique_ptr<CommandBuffer> m_commandBuffer;
+    std::unique_ptr<CommandBuffer> m_commandBuffer;
 
-	std::vector<std::string> m_subscriptionList;
-	std::map<std::string, std::weak_ptr<DeviceMessageListener>> m_topicHandlers;
+    std::vector<std::string> m_subscriptionList;
+    std::map<std::string, std::weak_ptr<DeviceMessageListener>> m_topicHandlers;
 
-	mutable std::mutex m_lock;
+    mutable std::mutex m_lock;
 };
 
-template<class P>
-void InboundDeviceMessageHandler::setListener(std::weak_ptr<DeviceMessageListener> listener)
+template <class P> void InboundDeviceMessageHandler::setListener(std::weak_ptr<DeviceMessageListener> listener)
 {
-	std::unique_lock<std::mutex> locker{m_lock};
+    std::unique_lock<std::mutex> locker{m_lock};
 
-	for(auto topic : P::getInstance().getDeviceTopics())
-	{
-		m_topicHandlers[topic] = listener;
-		m_subscriptionList.push_back(topic);
-	}
+    for (auto topic : P::getInstance().getDeviceTopics())
+    {
+        m_topicHandlers[topic] = listener;
+        m_subscriptionList.push_back(topic);
+    }
 
-	locker.unlock();
+    locker.unlock();
 
-	channelsUpdated();
+    channelsUpdated();
 }
 }
 

@@ -28,7 +28,9 @@ const unsigned short PahoMqttClient::MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC = 200
 const unsigned short PahoMqttClient::MQTT_KEEP_ALIVE_SEC = 60;
 const unsigned short PahoMqttClient::MQTT_QOS = 2;
 
-PahoMqttClient::PahoMqttClient() : m_isConnected(false), m_lastWillTopic(""), m_lastWillMessage("") {}
+PahoMqttClient::PahoMqttClient() : m_isConnected(false), m_lastWillTopic(""), m_lastWillMessage("")
+{
+}
 
 bool PahoMqttClient::connect(const std::string& username, const std::string& password, const std::string& trustStore,
                              const std::string& host, const std::string& clientId)
@@ -43,15 +45,15 @@ bool PahoMqttClient::connect(const std::string& username, const std::string& pas
     m_client->set_callback(*this);
 
     mqtt::connect_options connectOptions;
-	connectOptions.set_user_name(username);
-	connectOptions.set_password(password);
+    connectOptions.set_user_name(username);
+    connectOptions.set_password(password);
     connectOptions.set_clean_session(true);
     connectOptions.set_keep_alive_interval(MQTT_KEEP_ALIVE_SEC);
 
-	mqtt::ssl_options sslOptions;
-	sslOptions.set_enable_server_cert_auth(false);
-	sslOptions.set_trust_store(trustStore);
-	connectOptions.set_ssl(sslOptions);
+    mqtt::ssl_options sslOptions;
+    sslOptions.set_enable_server_cert_auth(false);
+    sslOptions.set_trust_store(trustStore);
+    connectOptions.set_ssl(sslOptions);
 
     if (!m_lastWillTopic.empty() && !m_lastWillMessage.empty())
     {
@@ -66,7 +68,7 @@ bool PahoMqttClient::connect(const std::string& username, const std::string& pas
     try
     {
         mqtt::token_ptr token = m_client->connect(connectOptions);
-		token->wait_for(std::chrono::milliseconds(MQTT_CONNECTION_COMPLETITION_TIMEOUT_MSEC));
+        token->wait_for(std::chrono::milliseconds(MQTT_CONNECTION_COMPLETITION_TIMEOUT_MSEC));
 
         if (!token->is_complete() || !m_isConnected)
         {
@@ -110,7 +112,7 @@ bool PahoMqttClient::subscribe(const std::string& topic)
     try
     {
         mqtt::token_ptr token = m_client->subscribe(topic, MQTT_QOS);
-		token->wait_for(std::chrono::milliseconds(MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC));
+        token->wait_for(std::chrono::milliseconds(MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC));
 
         if (!token->is_complete())
         {
@@ -127,18 +129,18 @@ bool PahoMqttClient::subscribe(const std::string& topic)
 
 void PahoMqttClient::unsubscribe(const std::string& topic)
 {
-	if (!m_isConnected)
-	{
-		return;
-	}
+    if (!m_isConnected)
+    {
+        return;
+    }
 
-	try
-	{
-		m_client->unsubscribe(topic);
-	}
-	catch (mqtt::exception&)
-	{
-	}
+    try
+    {
+        m_client->unsubscribe(topic);
+    }
+    catch (mqtt::exception&)
+    {
+    }
 }
 
 bool PahoMqttClient::publish(const std::string& topic, const std::string& message)
@@ -148,17 +150,17 @@ bool PahoMqttClient::publish(const std::string& topic, const std::string& messag
         return false;
     }
 
-	std::lock_guard<std::mutex> guard{m_mutex};
+    std::lock_guard<std::mutex> guard{m_mutex};
 
     try
-	{
-		//std::cout << "sending message: " << message << ", to: " << topic << std::endl;
+    {
+        // std::cout << "sending message: " << message << ", to: " << topic << std::endl;
 
         mqtt::message_ptr pubmsg = mqtt::make_message(topic, message.c_str(), strlen(message.c_str()));
         pubmsg->set_qos(MQTT_QOS);
 
         mqtt::token_ptr token = m_client->publish(pubmsg);
-		token->wait_for(std::chrono::milliseconds(MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC));
+        token->wait_for(std::chrono::milliseconds(MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC));
 
         if (!token->is_complete() || !m_isConnected)
         {
@@ -181,7 +183,7 @@ void PahoMqttClient::connected(const mqtt::string& /* cause */)
 void PahoMqttClient::connection_lost(const mqtt::string& /* cause */)
 {
     m_isConnected = false;
-	m_onConnectionLost();
+    m_onConnectionLost();
 }
 
 void PahoMqttClient::message_arrived(mqtt::const_message_ptr msg)
@@ -189,5 +191,7 @@ void PahoMqttClient::message_arrived(mqtt::const_message_ptr msg)
     m_onMessageReceived(msg->get_topic(), msg->get_payload_str());
 }
 
-void PahoMqttClient::delivery_complete(mqtt::delivery_token_ptr /* tok */) {}
+void PahoMqttClient::delivery_complete(mqtt::delivery_token_ptr /* tok */)
+{
+}
 }

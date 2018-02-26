@@ -20,26 +20,24 @@ namespace wolkabout
 {
 void ConnectivityServiceListener::onChannelsUpdated(std::function<void()> callback)
 {
-	m_channelsUpdatedCallback = callback;
+    m_channelsUpdatedCallback = callback;
 }
 
 void ConnectivityServiceListener::channelsUpdated()
 {
-	if(m_channelsUpdatedCallback)
-	{
-		m_channelsUpdatedCallback();
-	}
+    if (m_channelsUpdatedCallback)
+    {
+        m_channelsUpdatedCallback();
+    }
 }
 
 void ConnectivityService::setListener(std::weak_ptr<ConnectivityServiceListener> listener)
 {
     m_listener = listener;
 
-	if(auto handler = listener.lock())
-	{
-		handler->onChannelsUpdated([&]{
-			this->channelsUpdated();
-		});
-	}
+    if (auto handler = listener.lock())
+    {
+        handler->onChannelsUpdated([&] { this->channelsUpdated(); });
+    }
 }
 }

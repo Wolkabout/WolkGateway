@@ -17,42 +17,43 @@
 #ifndef PUBLISHINGSERVICE_H
 #define PUBLISHINGSERVICE_H
 
-#include "OutboundMessageHandler.h"
 #include "ConnectionStatusListener.h"
-#include <memory>
+#include "OutboundMessageHandler.h"
 #include <atomic>
-#include <thread>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
+#include <thread>
 
 namespace wolkabout
 {
 class ConnectivityService;
 class Persistence;
 
-class PublishingService: public OutboundMessageHandler, public ConnectionStatusListener
+class PublishingService : public OutboundMessageHandler, public ConnectionStatusListener
 {
 public:
-	PublishingService(std::shared_ptr<ConnectivityService> connectivityService, std::unique_ptr<Persistence> persistence);
-	~PublishingService();
+    PublishingService(std::shared_ptr<ConnectivityService> connectivityService,
+                      std::unique_ptr<Persistence> persistence);
+    ~PublishingService();
 
-	void addMessage(std::shared_ptr<Message> message) override;
+    void addMessage(std::shared_ptr<Message> message) override;
 
-	void connected() override;
-	void disconnected() override;
+    void connected() override;
+    void disconnected() override;
 
 private:
-	void run();
+    void run();
 
-	std::shared_ptr<ConnectivityService> m_connectivityService;
-	std::unique_ptr<Persistence> m_persistence;
+    std::shared_ptr<ConnectivityService> m_connectivityService;
+    std::unique_ptr<Persistence> m_persistence;
 
-	std::atomic_bool m_connected;
+    std::atomic_bool m_connected;
 
-	std::atomic_bool m_run;
-	std::mutex m_lock;
-	std::condition_variable m_condition;
-	std::unique_ptr<std::thread> m_worker;
+    std::atomic_bool m_run;
+    std::mutex m_lock;
+    std::condition_variable m_condition;
+    std::unique_ptr<std::thread> m_worker;
 };
 }
 

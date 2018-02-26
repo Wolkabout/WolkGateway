@@ -24,8 +24,8 @@ namespace wolkabout
 class ActuatorGetCommand
 {
 public:
-	ActuatorGetCommand();
-	ActuatorGetCommand(const std::string& reference);
+    ActuatorGetCommand();
+    ActuatorGetCommand(const std::string& reference);
 
     const std::string& getReference() const;
 

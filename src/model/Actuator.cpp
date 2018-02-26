@@ -22,7 +22,9 @@
 
 namespace wolkabout
 {
-Actuator::Actuator(std::string reference) : ManifestItem(std::move(reference)) {}
+Actuator::Actuator(std::string reference) : ManifestItem(std::move(reference))
+{
+}
 
 Actuator::Actuator(std::string reference, std::string dataDelimiter, unsigned char dataDimensions)
 : ManifestItem(std::move(reference), std::move(dataDelimiter), dataDimensions)

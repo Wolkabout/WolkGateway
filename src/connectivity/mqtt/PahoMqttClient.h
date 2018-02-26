@@ -21,8 +21,8 @@
 #include "connectivity/mqtt/MqttClient.h"
 
 #include <atomic>
-#include <string>
 #include <mutex>
+#include <string>
 
 namespace wolkabout
 {
@@ -41,7 +41,7 @@ public:
     void setLastWill(const std::string& topic, const std::string& message) override;
 
     bool subscribe(const std::string& topic) override;
-	void unsubscribe(const std::string& topic) override;
+    void unsubscribe(const std::string& topic) override;
     bool publish(const std::string& topic, const std::string& message) override;
 
 private:
@@ -52,12 +52,12 @@ private:
 
     std::unique_ptr<mqtt::async_client> m_client;
 
-	std::mutex m_mutex;
+    std::mutex m_mutex;
 
-	static const unsigned short MQTT_CONNECTION_COMPLETITION_TIMEOUT_MSEC;
-	static const unsigned short MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC;
-	static const unsigned short MQTT_KEEP_ALIVE_SEC;
-	static const unsigned short MQTT_QOS;
+    static const unsigned short MQTT_CONNECTION_COMPLETITION_TIMEOUT_MSEC;
+    static const unsigned short MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC;
+    static const unsigned short MQTT_KEEP_ALIVE_SEC;
+    static const unsigned short MQTT_QOS;
 
     void connected(const mqtt::string& cause) override;
     void connection_lost(const mqtt::string& cause) override;

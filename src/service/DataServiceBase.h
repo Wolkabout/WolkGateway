@@ -22,12 +22,11 @@
 
 namespace wolkabout
 {
-class DataServiceBase: public DeviceMessageListener, public PlatformMessageListener
+class DataServiceBase : public DeviceMessageListener, public PlatformMessageListener
 {
 public:
-	virtual ~DataServiceBase() = default;
+    virtual ~DataServiceBase() = default;
 };
-
 }
 
 #endif

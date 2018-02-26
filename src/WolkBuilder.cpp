@@ -15,18 +15,18 @@
  */
 
 #include "WolkBuilder.h"
+#include "FileHandler.h"
+#include "InboundDeviceMessageHandler.h"
+#include "InboundPlatformMessageHandler.h"
+#include "OutboundDataService.h"
 #include "Wolk.h"
 #include "connectivity/ConnectivityService.h"
+#include "connectivity/ProtocolMapper.h"
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
-#include "InboundDeviceMessageHandler.h"
-#include "InboundPlatformMessageHandler.h"
 #include "persistence/inmemory/InMemoryPersistence.h"
-#include "OutboundDataService.h"
-#include "FileHandler.h"
 #include "service/PublishingService.h"
-#include "connectivity/ProtocolMapper.h"
 
 #include <stdexcept>
 
@@ -44,27 +44,31 @@ WolkBuilder& WolkBuilder::withPersistence(std::shared_ptr<Persistence> persisten
     return *this;
 }
 
-WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion, std::weak_ptr<FirmwareInstaller> installer,
-											 const std::string& firmwareDownloadDirectory, uint_fast64_t maxFirmwareFileSize,
-											 std::uint_fast64_t maxFirmwareFileChunkSize)
+WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion,
+                                             std::weak_ptr<FirmwareInstaller> installer,
+                                             const std::string& firmwareDownloadDirectory,
+                                             uint_fast64_t maxFirmwareFileSize,
+                                             std::uint_fast64_t maxFirmwareFileChunkSize)
 {
-	return withFirmwareUpdate(firmwareVersion, installer, firmwareDownloadDirectory, maxFirmwareFileSize,
-							  maxFirmwareFileChunkSize, std::weak_ptr<UrlFileDownloader>());
+    return withFirmwareUpdate(firmwareVersion, installer, firmwareDownloadDirectory, maxFirmwareFileSize,
+                              maxFirmwareFileChunkSize, std::weak_ptr<UrlFileDownloader>());
 }
 
-WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion, std::weak_ptr<FirmwareInstaller> installer,
-											 const std::string& firmwareDownloadDirectory, uint_fast64_t maxFirmwareFileSize,
-											 std::uint_fast64_t maxFirmwareFileChunkSize, std::weak_ptr<UrlFileDownloader> urlDownloader)
+WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion,
+                                             std::weak_ptr<FirmwareInstaller> installer,
+                                             const std::string& firmwareDownloadDirectory,
+                                             uint_fast64_t maxFirmwareFileSize,
+                                             std::uint_fast64_t maxFirmwareFileChunkSize,
+                                             std::weak_ptr<UrlFileDownloader> urlDownloader)
 {
-	m_firmwareVersion = firmwareVersion;
-	m_firmwareDownloadDirectory = firmwareDownloadDirectory;
-	m_maxFirmwareFileSize = maxFirmwareFileSize;
-	m_maxFirmwareFileChunkSize = maxFirmwareFileChunkSize;
-	m_firmwareInstaller = installer;
-	m_urlFileDownloader = urlDownloader;
-	return *this;
+    m_firmwareVersion = firmwareVersion;
+    m_firmwareDownloadDirectory = firmwareDownloadDirectory;
+    m_maxFirmwareFileSize = maxFirmwareFileSize;
+    m_maxFirmwareFileChunkSize = maxFirmwareFileChunkSize;
+    m_firmwareInstaller = installer;
+    m_urlFileDownloader = urlDownloader;
+    return *this;
 }
-
 
 std::unique_ptr<Wolk> WolkBuilder::build() const
 {
@@ -73,88 +77,98 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
         throw std::logic_error("No device key present.");
     }
 
-	auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
+    auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
 
-	wolk->m_platformConnectivityService = std::make_shared<MqttConnectivityService>(
-				std::make_shared<PahoMqttClient>(), m_device.getDeviceKey(), m_device.getDevicePassword(),
-				m_host);
+    wolk->m_platformConnectivityService = std::make_shared<MqttConnectivityService>(
+      std::make_shared<PahoMqttClient>(), m_device.getDeviceKey(), m_device.getDevicePassword(), m_host);
 
-	wolk->m_deviceConnectivityService = std::make_shared<MqttConnectivityService>(
-				std::make_shared<PahoMqttClient>(), m_device.getDeviceKey(), m_device.getDevicePassword(),
-				"tcp://127.0.0.1:1883");
+    wolk->m_deviceConnectivityService =
+      std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device.getDeviceKey(),
+                                                m_device.getDevicePassword(), "tcp://127.0.0.1:1883");
 
-	wolk->m_platformPublisher = std::make_shared<PublishingService>(wolk->m_platformConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
-	wolk->m_devicePublisher = std::make_shared<PublishingService>(wolk->m_deviceConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
+    wolk->m_platformPublisher = std::make_shared<PublishingService>(
+      wolk->m_platformConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
+    wolk->m_devicePublisher = std::make_shared<PublishingService>(
+      wolk->m_deviceConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
 
-	wolk->m_inboundPlatformMessageHandler = std::make_shared<InboundPlatformMessageHandler>(
-				m_device.getDeviceKey());
+    wolk->m_inboundPlatformMessageHandler = std::make_shared<InboundPlatformMessageHandler>(m_device.getDeviceKey());
 
-	wolk->m_inboundDeviceMessageHandler = std::make_shared<InboundDeviceMessageHandler>();
+    wolk->m_inboundDeviceMessageHandler = std::make_shared<InboundDeviceMessageHandler>();
 
-	wolk->m_platformConnectivityManager = std::make_shared<Wolk::ConnectivityFacade>(
-				*wolk->m_inboundPlatformMessageHandler, [&]{
-		wolk->m_platformPublisher->disconnected();
-		wolk->connectToPlatform();
-	});
+    wolk->m_platformConnectivityManager =
+      std::make_shared<Wolk::ConnectivityFacade>(*wolk->m_inboundPlatformMessageHandler, [&] {
+          wolk->m_platformPublisher->disconnected();
+          wolk->connectToPlatform();
+      });
 
-	wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade>(
-				*wolk->m_inboundDeviceMessageHandler, [&]{
-		wolk->m_devicePublisher->disconnected();
-		wolk->connectToDevices();
-	});
+    wolk->m_deviceConnectivityManager =
+      std::make_shared<Wolk::ConnectivityFacade>(*wolk->m_inboundDeviceMessageHandler, [&] {
+          wolk->m_devicePublisher->disconnected();
+          wolk->connectToDevices();
+      });
 
-	wolk->m_outboundServiceDataHandler = std::make_shared<OutboundDataService>(
-				m_device, wolk->m_platformConnectivityService);
+    wolk->m_outboundServiceDataHandler =
+      std::make_shared<OutboundDataService>(m_device, wolk->m_platformConnectivityService);
 
-	wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
-	wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
+    wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
+    wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
 
+    //	wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(m_maxFirmwareFileSize,
+    //m_maxFirmwareFileChunkSize,
+    //																		std::unique_ptr<FileHandler>(new
+    //FileHandler()),
+    //																		outboundServiceDataHandler);
 
-//	wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(m_maxFirmwareFileSize, m_maxFirmwareFileChunkSize,
-//																		std::unique_ptr<FileHandler>(new FileHandler()),
-//																		outboundServiceDataHandler);
+    //	if(m_firmwareInstaller.lock() != nullptr)
+    //	{
+    //		wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(m_firmwareVersion,
+    //m_firmwareDownloadDirectory,
+    //																				m_maxFirmwareFileSize,
+    //outboundServiceDataHandler,
+    //																				wolk->m_fileDownloadService,
+    //m_urlFileDownloader,
+    //																				m_firmwareInstaller);
+    //	}
 
-//	if(m_firmwareInstaller.lock() != nullptr)
-//	{
-//		wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(m_firmwareVersion, m_firmwareDownloadDirectory,
-//																				m_maxFirmwareFileSize, outboundServiceDataHandler,
-//																				wolk->m_fileDownloadService, m_urlFileDownloader,
-//																				m_firmwareInstaller);
-//	}
+    // example
+    //	if(MapProtocol(protocolName, wolk->registerDataProtocol))
+    //	{
+    //		wolk->m_dataService = wolk->m_dataServices.back();
+    //	}
 
-	// example
-//	if(MapProtocol(protocolName, wolk->registerDataProtocol))
-//	{
-//		wolk->m_dataService = wolk->m_dataServices.back();
-//	}
+    //	std::weak_ptr<FileDownloadService> fileDownloadService_weak{wolk->m_fileDownloadService};
+    //	inboundMessageHandler->setBinaryDataHandler([=](const BinaryData& binaryData) -> void {
+    //		if(auto handler = fileDownloadService_weak.lock())
+    //		{
+    //			handler->handleBinaryData(binaryData);
+    //		}
+    //	});
 
-//	std::weak_ptr<FileDownloadService> fileDownloadService_weak{wolk->m_fileDownloadService};
-//	inboundMessageHandler->setBinaryDataHandler([=](const BinaryData& binaryData) -> void {
-//		if(auto handler = fileDownloadService_weak.lock())
-//		{
-//			handler->handleBinaryData(binaryData);
-//		}
-//	});
-
-//	std::weak_ptr<FirmwareUpdateService> firmwareUpdateService_weak{wolk->m_firmwareUpdateService};
-//	inboundMessageHandler->setFirmwareUpdateCommandHandler([=](const FirmwareUpdateCommand& firmwareUpdateCommand) -> void {
-//		if(auto handler = firmwareUpdateService_weak.lock())
-//		{
-//			handler->handleFirmwareUpdateCommand(firmwareUpdateCommand);
-//		}
-//	});
+    //	std::weak_ptr<FirmwareUpdateService> firmwareUpdateService_weak{wolk->m_firmwareUpdateService};
+    //	inboundMessageHandler->setFirmwareUpdateCommandHandler([=](const FirmwareUpdateCommand& firmwareUpdateCommand)
+    //-> void {
+    //		if(auto handler = firmwareUpdateService_weak.lock())
+    //		{
+    //			handler->handleFirmwareUpdateCommand(firmwareUpdateCommand);
+    //		}
+    //	});
 
     return wolk;
 }
 
 wolkabout::WolkBuilder::operator std::unique_ptr<Wolk>() const
 {
-	return build();
+    return build();
 }
 
 WolkBuilder::WolkBuilder(Device device)
-	: m_host{WOLK_DEMO_HOST}, m_device{std::move(device)}, m_persistence{new InMemoryPersistence()},
-	  m_firmwareVersion{""}, m_firmwareDownloadDirectory{""}, m_maxFirmwareFileSize{0}, m_maxFirmwareFileChunkSize{0}
+: m_host{WOLK_DEMO_HOST}
+, m_device{std::move(device)}
+, m_persistence{new InMemoryPersistence()}
+, m_firmwareVersion{""}
+, m_firmwareDownloadDirectory{""}
+, m_maxFirmwareFileSize{0}
+, m_maxFirmwareFileChunkSize{0}
 {
 }
 }

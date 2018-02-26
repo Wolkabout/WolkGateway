@@ -25,8 +25,7 @@ ActuatorGetCommand::ActuatorGetCommand() : m_reference{""}
 {
 }
 
-ActuatorGetCommand::ActuatorGetCommand(const std::string& reference)
-	: m_reference{std::move(reference)}
+ActuatorGetCommand::ActuatorGetCommand(const std::string& reference) : m_reference{std::move(reference)}
 {
 }
 

@@ -22,38 +22,38 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
-#include <mutex>
 
 namespace wolkabout
 {
 class MqttConnectivityService : public ConnectivityService
 {
 public:
-	MqttConnectivityService(std::shared_ptr<MqttClient> mqttClient, const std::string& key,
-							const std::string& password, const std::string& host);
+    MqttConnectivityService(std::shared_ptr<MqttClient> mqttClient, const std::string& key, const std::string& password,
+                            const std::string& host);
     virtual ~MqttConnectivityService() = default;
 
     bool connect() override;
     void disconnect() override;
 
-	bool isConnected() override;
+    bool isConnected() override;
 
-	bool publish(std::shared_ptr<Message> outboundMessage) override;
+    bool publish(std::shared_ptr<Message> outboundMessage) override;
 
-	void channelsUpdated() override;
+    void channelsUpdated() override;
 
 private:
     std::shared_ptr<MqttClient> m_mqttClient;
 
-	const std::string m_key;
-	const std::string m_password;
-	const std::string m_host;
+    const std::string m_key;
+    const std::string m_password;
+    const std::string m_host;
 
-	std::vector<std::string> m_topics;
+    std::vector<std::string> m_topics;
 
-	std::mutex m_lock;
+    std::mutex m_lock;
 
     static const constexpr char* LAST_WILL_TOPIC_ROOT = "lastwill/";
     static const constexpr char* TRUST_STORE = "ca.crt";

@@ -22,8 +22,8 @@
 namespace wolkabout
 {
 static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-										"abcdefghijklmnopqrstuvwxyz"
-										"0123456789+/";
+                                        "abcdefghijklmnopqrstuvwxyz"
+                                        "0123456789+/";
 
 bool StringUtils::contains(const std::string& string, char c)
 {
@@ -38,29 +38,29 @@ bool StringUtils::contains(const std::string& string, const std::string& substri
 std::vector<std::string> StringUtils::tokenize(const std::string& string, const std::string& delimiter)
 {
     std::vector<std::string> tokens;
-	if (string.empty())
+    if (string.empty())
     {
         return tokens;
     }
 
-	std::string::size_type size = string.size();
+    std::string::size_type size = string.size();
     std::string::size_type position = 0;
-	std::string::size_type delimiterPosition = string.find(delimiter, position);
+    std::string::size_type delimiterPosition = string.find(delimiter, position);
 
-	while (std::string::npos != delimiterPosition && delimiterPosition <= size	)
+    while (std::string::npos != delimiterPosition && delimiterPosition <= size)
     {
         tokens.push_back(string.substr(position, delimiterPosition - position));
         position = delimiterPosition + 1;
-		delimiterPosition = string.find(delimiter, position);
+        delimiterPosition = string.find(delimiter, position);
     }
 
-	tokens.push_back(string.substr(position, std::string::npos));
+    tokens.push_back(string.substr(position, std::string::npos));
     return tokens;
 }
 
 bool StringUtils::startsWith(const std::string& string, const std::string& prefix)
 {
-	return string.size() >= prefix.size() && 0 == string.compare(0, prefix.size(), prefix);
+    return string.size() >= prefix.size() && 0 == string.compare(0, prefix.size(), prefix);
 }
 
 bool StringUtils::endsWith(const std::string& string, const std::string& suffix)
@@ -70,133 +70,133 @@ bool StringUtils::endsWith(const std::string& string, const std::string& suffix)
 
 void StringUtils::removeTrailingWhitespace(std::string& string)
 {
-	while(!string.empty() && std::isspace(*string.rbegin()))
-	{
-		string.erase(string.length() - 1);
-	}
+    while (!string.empty() && std::isspace(*string.rbegin()))
+    {
+        string.erase(string.length() - 1);
+    }
 }
 
 std::string StringUtils::removeSubstring(const std::string& string, const std::string& substring)
 {
-	auto pos = string.find(substring);
-	if(pos != std::string::npos)
-	{
-		std::string ret = string;
-		ret.erase(pos, substring.size());
+    auto pos = string.find(substring);
+    if (pos != std::string::npos)
+    {
+        std::string ret = string;
+        ret.erase(pos, substring.size());
 
-		return ret;
-	}
+        return ret;
+    }
 
-	return string;
+    return string;
 }
 
 bool StringUtils::isBase64(unsigned char c)
 {
-	return (isalnum(c) || (c == '+') || (c == '/'));
+    return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
 std::string StringUtils::base64Encode(const char* bytesToEncode, unsigned int len)
 {
-	std::string ret;
-	int i = 0;
-	int j = 0;
-	unsigned char char_array_3[3];
-	unsigned char char_array_4[4];
+    std::string ret;
+    int i = 0;
+    int j = 0;
+    unsigned char char_array_3[3];
+    unsigned char char_array_4[4];
 
-	while (len--)
-	{
-		char_array_3[i++] = *(bytesToEncode++);
-		if (i == 3)
-		{
-			char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-			char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-			char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-			char_array_4[3] = char_array_3[2] & 0x3f;
+    while (len--)
+    {
+        char_array_3[i++] = *(bytesToEncode++);
+        if (i == 3)
+        {
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
 
-			for (i = 0; (i < 4); i++)
-				ret += base64_chars[char_array_4[i]];
-			i = 0;
-		}
-	}
+            for (i = 0; (i < 4); i++)
+                ret += base64_chars[char_array_4[i]];
+            i = 0;
+        }
+    }
 
-	if (i)
-	{
-		for (j = i; j < 3; j++)
-			char_array_3[j] = '\0';
+    if (i)
+    {
+        for (j = i; j < 3; j++)
+            char_array_3[j] = '\0';
 
-		char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-		char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-		char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-		char_array_4[3] = char_array_3[2] & 0x3f;
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
 
-		for (j = 0; (j < i + 1); j++)
-			ret += base64_chars[char_array_4[j]];
+        for (j = 0; (j < i + 1); j++)
+            ret += base64_chars[char_array_4[j]];
 
-		while ((i++ < 3))
-			ret += '=';
-	}
+        while ((i++ < 3))
+            ret += '=';
+    }
 
-	return ret;
+    return ret;
 }
 
 std::string StringUtils::base64Decode(const std::string& encodedString)
 {
-	std::string ret;
+    std::string ret;
 
-	int in_len = encodedString.size();
-	int i = 0;
-	int j = 0;
-	int in_ = 0;
-	unsigned char char_array_4[4], char_array_3[3];
+    int in_len = encodedString.size();
+    int i = 0;
+    int j = 0;
+    int in_ = 0;
+    unsigned char char_array_4[4], char_array_3[3];
 
-	while (in_len-- && (encodedString[in_] != '=') && isBase64(encodedString[in_]))
-	{
-		char_array_4[i++] = encodedString[in_];
-		in_++;
-		if (i == 4)
-		{
-			for (i = 0; i < 4; i++)
-				char_array_4[i] = base64_chars.find(char_array_4[i]);
+    while (in_len-- && (encodedString[in_] != '=') && isBase64(encodedString[in_]))
+    {
+        char_array_4[i++] = encodedString[in_];
+        in_++;
+        if (i == 4)
+        {
+            for (i = 0; i < 4; i++)
+                char_array_4[i] = base64_chars.find(char_array_4[i]);
 
-			char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-			for (i = 0; (i < 3); i++)
-				ret += char_array_3[i];
-			i = 0;
-		}
-	}
+            for (i = 0; (i < 3); i++)
+                ret += char_array_3[i];
+            i = 0;
+        }
+    }
 
-	if (i)
-	{
-		for (j = i; j < 4; j++)
-			char_array_4[j] = 0;
+    if (i)
+    {
+        for (j = i; j < 4; j++)
+            char_array_4[j] = 0;
 
-		for (j = 0; j < 4; j++)
-			char_array_4[j] = base64_chars.find(char_array_4[j]);
+        for (j = 0; j < 4; j++)
+            char_array_4[j] = base64_chars.find(char_array_4[j]);
 
-		char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-		char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-		char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-		for (j = 0; (j < i - 1); j++)
-			ret += char_array_3[j];
-	}
+        for (j = 0; (j < i - 1); j++)
+            ret += char_array_3[j];
+    }
 
-	return ret;
+    return ret;
 }
 
 bool StringUtils::mqttTopicMatch(const std::string& wildcardTopic, const std::string& topic)
 {
-	if(endsWith(wildcardTopic, "/#"))
-	{
-		const std::string rootTopic = removeSubstring(wildcardTopic, "/#");
+    if (endsWith(wildcardTopic, "/#"))
+    {
+        const std::string rootTopic = removeSubstring(wildcardTopic, "/#");
 
-		return startsWith(topic, rootTopic);
-	}
+        return startsWith(topic, rootTopic);
+    }
 
-	// TODO match single level wildcards
-	return wildcardTopic == topic;
+    // TODO match single level wildcards
+    return wildcardTopic == topic;
 }
 }

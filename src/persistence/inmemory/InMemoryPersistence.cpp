@@ -20,29 +20,29 @@ namespace wolkabout
 {
 bool InMemoryPersistence::push(std::shared_ptr<Message> message)
 {
-	std::lock_guard<std::mutex> lg{m_lock};
-	m_queue.push(message);
-	return true;
+    std::lock_guard<std::mutex> lg{m_lock};
+    m_queue.push(message);
+    return true;
 }
 
 std::shared_ptr<Message> InMemoryPersistence::pop()
 {
-	std::lock_guard<std::mutex> lg{m_lock};
-	auto message = m_queue.front();
-	m_queue.pop();
+    std::lock_guard<std::mutex> lg{m_lock};
+    auto message = m_queue.front();
+    m_queue.pop();
 
-	return message;
+    return message;
 }
 
 std::shared_ptr<Message> InMemoryPersistence::front()
 {
-	std::lock_guard<std::mutex> lg{m_lock};
-	return m_queue.front();
+    std::lock_guard<std::mutex> lg{m_lock};
+    return m_queue.front();
 }
 
 bool InMemoryPersistence::empty() const
 {
-	std::lock_guard<std::mutex> lg{m_lock};
-	return m_queue.empty();
+    std::lock_guard<std::mutex> lg{m_lock};
+    return m_queue.empty();
 }
 }

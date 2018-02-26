@@ -20,11 +20,11 @@
 #include "InboundMessageHandler.h"
 #include "utilities/CommandBuffer.h"
 
-#include <string>
-#include <vector>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <vector>
 
 namespace wolkabout
 {
@@ -33,49 +33,47 @@ class Message;
 class PlatformMessageListener
 {
 public:
-	virtual ~PlatformMessageListener() = default;
-	virtual void platformMessageReceived(std::shared_ptr<Message> message) = 0;
+    virtual ~PlatformMessageListener() = default;
+    virtual void platformMessageReceived(std::shared_ptr<Message> message) = 0;
 };
 
-class InboundPlatformMessageHandler: public InboundMessageHandler
+class InboundPlatformMessageHandler : public InboundMessageHandler
 {
 public:
-	InboundPlatformMessageHandler(const std::string& gatewayKey);
+    InboundPlatformMessageHandler(const std::string& gatewayKey);
 
-	void messageReceived(const std::string& topic, const std::string& message) override;
+    void messageReceived(const std::string& topic, const std::string& message) override;
 
-	std::vector<std::string> getTopics() const override;
+    std::vector<std::string> getTopics() const override;
 
-	template<class P>
-	void setListener(std::weak_ptr<PlatformMessageListener> listener);
+    template <class P> void setListener(std::weak_ptr<PlatformMessageListener> listener);
 
 private:
-	void addToCommandBuffer(std::function<void()> command);
+    void addToCommandBuffer(std::function<void()> command);
 
-	std::unique_ptr<CommandBuffer> m_commandBuffer;
-	const std::string m_gatewayKey;
+    std::unique_ptr<CommandBuffer> m_commandBuffer;
+    const std::string m_gatewayKey;
 
-	std::vector<std::string> m_subscriptionList;
+    std::vector<std::string> m_subscriptionList;
 
-	std::map<std::string, std::weak_ptr<PlatformMessageListener>> m_topicHandlers;
+    std::map<std::string, std::weak_ptr<PlatformMessageListener>> m_topicHandlers;
 
-	mutable std::mutex m_lock;
+    mutable std::mutex m_lock;
 };
 
-template<class P>
-void InboundPlatformMessageHandler::setListener(std::weak_ptr<PlatformMessageListener> listener)
+template <class P> void InboundPlatformMessageHandler::setListener(std::weak_ptr<PlatformMessageListener> listener)
 {
-	std::unique_lock<std::mutex> locker{m_lock};
+    std::unique_lock<std::mutex> locker{m_lock};
 
-	for(auto topic : P::getInstance().getPlatformTopics())
-	{
-		m_topicHandlers[topic] = listener;
-		m_subscriptionList.push_back(topic);
-	}
+    for (auto topic : P::getInstance().getPlatformTopics())
+    {
+        m_topicHandlers[topic] = listener;
+        m_subscriptionList.push_back(topic);
+    }
 
-	locker.unlock();
+    locker.unlock();
 
-	channelsUpdated();
+    channelsUpdated();
 }
 }
 

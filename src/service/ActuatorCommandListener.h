@@ -25,11 +25,11 @@ class ActuatorGetCommand;
 class ActuatorCommandListener
 {
 public:
-	virtual ~ActuatorCommandListener() = default;
+    virtual ~ActuatorCommandListener() = default;
 
-	virtual void handleActuatorSetCommand(const ActuatorSetCommand& command) = 0;
-	virtual void handleActuatorGetCommand(const ActuatorGetCommand& command) = 0;
+    virtual void handleActuatorSetCommand(const ActuatorSetCommand& command) = 0;
+    virtual void handleActuatorGetCommand(const ActuatorGetCommand& command) = 0;
 };
 }
 
-#endif // ACTUATORCOMMANDLISTENER_H
+#endif    // ACTUATORCOMMANDLISTENER_H

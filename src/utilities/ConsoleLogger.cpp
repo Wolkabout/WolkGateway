@@ -25,41 +25,41 @@ ConsoleLogger::ConsoleLogger() : m_level{LogLevel::ERROR}
 
 void ConsoleLogger::logEntry(Log& log)
 {
-	if(static_cast<int>(log.getLogLevel()) >= static_cast<int>(m_level.load()))
-	{
-		switch (log.getLogLevel())
-		{
-			case LogLevel::TRACE:
-			{
-				std::cout << "[T]" << log.getMessage();
-				break;
-			}
-			case LogLevel::DEBUG:
-			{
-				std::cout << "[D]" << log.getMessage() << std::endl;
-				break;
-			}
-			case LogLevel::INFO:
-			{
-				std::cout << "[I]" << log.getMessage();
-				break;
-			}
-			case LogLevel::WARN:
-			{
-				std::cout << "[W]" << log.getMessage();
-				break;
-			}
-			case LogLevel::ERROR:
-			{
-				std::cout << "[E]" << log.getMessage();
-				break;
-			}
-		}
-	}
+    if (static_cast<int>(log.getLogLevel()) >= static_cast<int>(m_level.load()))
+    {
+        switch (log.getLogLevel())
+        {
+        case LogLevel::TRACE:
+        {
+            std::cout << "[T]" << log.getMessage();
+            break;
+        }
+        case LogLevel::DEBUG:
+        {
+            std::cout << "[D]" << log.getMessage() << std::endl;
+            break;
+        }
+        case LogLevel::INFO:
+        {
+            std::cout << "[I]" << log.getMessage();
+            break;
+        }
+        case LogLevel::WARN:
+        {
+            std::cout << "[W]" << log.getMessage();
+            break;
+        }
+        case LogLevel::ERROR:
+        {
+            std::cout << "[E]" << log.getMessage();
+            break;
+        }
+        }
+    }
 }
 
 void ConsoleLogger::setLogLevel(wolkabout::LogLevel level)
 {
-	m_level = level;
+    m_level = level;
 }
 }

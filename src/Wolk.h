@@ -17,18 +17,18 @@
 #ifndef WOLK_H
 #define WOLK_H
 
-#include "utilities/CommandBuffer.h"
-#include "utilities/StringUtils.h"
+#include "InboundDeviceMessageHandler.h"
 #include "WolkBuilder.h"
 #include "model/Device.h"
 #include "service/DataService.h"
-#include "InboundDeviceMessageHandler.h"
+#include "utilities/CommandBuffer.h"
+#include "utilities/StringUtils.h"
 
 #include <functional>
 #include <memory>
 #include <string>
-#include <vector>
 #include <typeindex>
+#include <vector>
 
 namespace wolkabout
 {
@@ -36,8 +36,8 @@ class ConnectivityService;
 class InboundMessageHandler;
 class InboundDeviceMessageHandler;
 class InboundPlatformMessageHandler;
-//class FirmwareUpdateService;
-//class FileDownloadService;
+// class FirmwareUpdateService;
+// class FileDownloadService;
 class PublishingService;
 class OutboundServiceDataHandler;
 class DataServiceBase;
@@ -67,120 +67,116 @@ public:
     void disconnect();
 
 private:
-	class ConnectivityFacade;
+    class ConnectivityFacade;
 
-	Wolk(Device device);
+    Wolk(Device device);
 
     void addToCommandBuffer(std::function<void()> command);
 
     static unsigned long long int currentRtc();
 
-	void connectToPlatform();
-	void connectToDevices();
+    void connectToPlatform();
+    void connectToDevices();
 
-	template<class P>
-	bool registerDataProtocol();
+    template <class P> bool registerDataProtocol();
 
-	Device m_device;
+    Device m_device;
 
-	std::shared_ptr<ConnectivityService> m_platformConnectivityService;
-	std::shared_ptr<ConnectivityService> m_deviceConnectivityService;
+    std::shared_ptr<ConnectivityService> m_platformConnectivityService;
+    std::shared_ptr<ConnectivityService> m_deviceConnectivityService;
     std::shared_ptr<Persistence> m_persistence;
 
-	std::shared_ptr<InboundPlatformMessageHandler> m_inboundPlatformMessageHandler;
-	std::shared_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
+    std::shared_ptr<InboundPlatformMessageHandler> m_inboundPlatformMessageHandler;
+    std::shared_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
 
-	std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
+    std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
 
-	std::shared_ptr<ConnectivityFacade> m_platformConnectivityManager;
-	std::shared_ptr<ConnectivityFacade> m_deviceConnectivityManager;
+    std::shared_ptr<ConnectivityFacade> m_platformConnectivityManager;
+    std::shared_ptr<ConnectivityFacade> m_deviceConnectivityManager;
 
-	std::shared_ptr<PublishingService> m_platformPublisher;
-	std::shared_ptr<PublishingService> m_devicePublisher;
+    std::shared_ptr<PublishingService> m_platformPublisher;
+    std::shared_ptr<PublishingService> m_devicePublisher;
 
-	//std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
-	//std::shared_ptr<FileDownloadService> m_fileDownloadService;
-	std::vector<std::shared_ptr<DataServiceBase>> m_dataServices;
+    // std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
+    // std::shared_ptr<FileDownloadService> m_fileDownloadService;
+    std::vector<std::shared_ptr<DataServiceBase>> m_dataServices;
 
     std::unique_ptr<CommandBuffer> m_commandBuffer;
 
-	std::map<std::type_index, std::vector<std::string>> m_protocolTopics;
+    std::map<std::type_index, std::vector<std::string>> m_protocolTopics;
 
-	class ConnectivityFacade: public ConnectivityServiceListener
-	{
-	public:
-		ConnectivityFacade(InboundMessageHandler& handler, std::function<void()> connectionLostHandler);
+    class ConnectivityFacade : public ConnectivityServiceListener
+    {
+    public:
+        ConnectivityFacade(InboundMessageHandler& handler, std::function<void()> connectionLostHandler);
 
-		void messageReceived(const std::string& topic, const std::string& message) override;
-		void connectionLost() override;
-		std::vector<std::string> getTopics() const override;
+        void messageReceived(const std::string& topic, const std::string& message) override;
+        void connectionLost() override;
+        std::vector<std::string> getTopics() const override;
 
-	private:
-		InboundMessageHandler& m_messageHandler;
-		std::function<void()> m_connectionLostHandler;
-	};
+    private:
+        InboundMessageHandler& m_messageHandler;
+        std::function<void()> m_connectionLostHandler;
+    };
 };
 
-template <class P>
-bool Wolk::registerDataProtocol()
+template <class P> bool Wolk::registerDataProtocol()
 {
-	// check if protocol is already registered
-	auto it = m_protocolTopics.find(typeid(P));
-	if(it != m_protocolTopics.end())
-	{
-		LOG(DEBUG) << "Protocol already registered";
-		return true;
-	}
+    // check if protocol is already registered
+    auto it = m_protocolTopics.find(typeid(P));
+    if (it != m_protocolTopics.end())
+    {
+        LOG(DEBUG) << "Protocol already registered";
+        return true;
+    }
 
-	// check if any topics are in confilict
-	for(const auto& kvp : m_protocolTopics)
-	{
-		for(const auto& registeredTopic : kvp.second)
-		{
-			for(const auto topic : P::getInstance().getDeviceTopics())
-			{
-				if(StringUtils::mqttTopicMatch(registeredTopic, topic))
-				{
-					LOG(WARN) << "Conflicted protocol topics: " << registeredTopic << ", " << topic;
-					return false;
-				}
-			}
+    // check if any topics are in confilict
+    for (const auto& kvp : m_protocolTopics)
+    {
+        for (const auto& registeredTopic : kvp.second)
+        {
+            for (const auto topic : P::getInstance().getDeviceTopics())
+            {
+                if (StringUtils::mqttTopicMatch(registeredTopic, topic))
+                {
+                    LOG(WARN) << "Conflicted protocol topics: " << registeredTopic << ", " << topic;
+                    return false;
+                }
+            }
 
-			for(const auto topic : P::getInstance().getPlatformTopics())
-			{
-				if(StringUtils::mqttTopicMatch(registeredTopic, topic))
-				{
-					LOG(WARN) << "Conflicted protocol topics: " << registeredTopic << ", " << topic;
-					return false;
-				}
-			}
-		}
-	}
+            for (const auto topic : P::getInstance().getPlatformTopics())
+            {
+                if (StringUtils::mqttTopicMatch(registeredTopic, topic))
+                {
+                    LOG(WARN) << "Conflicted protocol topics: " << registeredTopic << ", " << topic;
+                    return false;
+                }
+            }
+        }
+    }
 
-	// add topics to list
-	std::vector<std::string> newTopics = P::getInstance().getDeviceTopics();
-	const auto platformTopics = P::getInstance().getPlatformTopics();
-	newTopics.reserve(newTopics.size() + platformTopics.size());
-	newTopics.insert(newTopics.end(), platformTopics.begin(), platformTopics.end());
+    // add topics to list
+    std::vector<std::string> newTopics = P::getInstance().getDeviceTopics();
+    const auto platformTopics = P::getInstance().getPlatformTopics();
+    newTopics.reserve(newTopics.size() + platformTopics.size());
+    newTopics.insert(newTopics.end(), platformTopics.begin(), platformTopics.end());
 
-	m_protocolTopics[typeid(P)] = newTopics;
+    m_protocolTopics[typeid(P)] = newTopics;
 
-	auto dataService = std::make_shared<DataService<P>>(m_device.getDeviceKey(),
-														m_platformPublisher,
-														m_devicePublisher);
+    auto dataService =
+      std::make_shared<DataService<P>>(m_device.getDeviceKey(), m_platformPublisher, m_devicePublisher);
 
-	m_dataServices.push_back(dataService);
+    m_dataServices.push_back(dataService);
 
-	m_inboundDeviceMessageHandler->setListener<P>(dataService);
-	m_inboundPlatformMessageHandler->setListener<P>(dataService);
+    m_inboundDeviceMessageHandler->setListener<P>(dataService);
+    m_inboundPlatformMessageHandler->setListener<P>(dataService);
 
-	return true;
+    return true;
 }
 
-template <>
-inline bool Wolk::registerDataProtocol<void>()
+template <> inline bool Wolk::registerDataProtocol<void>()
 {
-	return false;
+    return false;
 }
 }
 

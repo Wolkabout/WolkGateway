@@ -19,10 +19,8 @@
 
 namespace wolkabout
 {
-
 class DeviceManifest
 {
-
 };
 }
 

@@ -25,26 +25,25 @@ namespace wolkabout
 class Protocol
 {
 public:
-	virtual ~Protocol() = default;
+    virtual ~Protocol() = default;
 
-	virtual std::vector<std::string> getDeviceTopics() = 0;
-	virtual std::vector<std::string> getPlatformTopics() = 0;
+    virtual std::vector<std::string> getDeviceTopics() = 0;
+    virtual std::vector<std::string> getPlatformTopics() = 0;
 };
 
-template<class Derived>
-class ProtocolBase: public Protocol
+template <class Derived> class ProtocolBase : public Protocol
 {
 public:
-	static Derived& getInstance()
-	{
-		static Derived instance;
-		return instance;
-	}
+    static Derived& getInstance()
+    {
+        static Derived instance;
+        return instance;
+    }
 
 protected:
-	ProtocolBase() = default;
-	ProtocolBase(const ProtocolBase&) = delete;
-	ProtocolBase& operator=(const ProtocolBase&) = delete;
+    ProtocolBase() = default;
+    ProtocolBase(const ProtocolBase&) = delete;
+    ProtocolBase& operator=(const ProtocolBase&) = delete;
 };
 }
 

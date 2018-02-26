@@ -19,8 +19,8 @@
 
 #include "connectivity/Protocol.h"
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace wolkabout
 {
@@ -31,65 +31,64 @@ class ActuatorStatus;
 class ActuatorSetCommand;
 class ActuatorGetCommand;
 
-class JsonSingleProtocol: public ProtocolBase<JsonSingleProtocol>
+class JsonSingleProtocol : public ProtocolBase<JsonSingleProtocol>
 {
 public:
-	std::vector<std::string> getDeviceTopics() override;
-	std::vector<std::string> getPlatformTopics() override;
+    std::vector<std::string> getDeviceTopics() override;
+    std::vector<std::string> getPlatformTopics() override;
 
-	std::shared_ptr<Message> make(const std::string& gatewayKey,
-										 std::vector<std::shared_ptr<SensorReading>> sensorReadings);
-	std::shared_ptr<Message> make(const std::string& gatewayKey,
-										 std::vector<std::shared_ptr<Alarm>> alarms);
-	std::shared_ptr<Message> make(const std::string& gatewayKey,
-										 std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses);
+    std::shared_ptr<Message> make(const std::string& gatewayKey,
+                                  std::vector<std::shared_ptr<SensorReading>> sensorReadings);
+    std::shared_ptr<Message> make(const std::string& gatewayKey, std::vector<std::shared_ptr<Alarm>> alarms);
+    std::shared_ptr<Message> make(const std::string& gatewayKey,
+                                  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses);
 
-	bool fromMessage(std::shared_ptr<Message> message, ActuatorSetCommand& command);
+    bool fromMessage(std::shared_ptr<Message> message, ActuatorSetCommand& command);
 
-	bool fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command);
+    bool fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command);
 
-	bool isGatewayToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
+    bool isGatewayToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
 
-	bool isPlatformToGatewayMessage(const std::string& topic, const std::string& gatewayKey);
+    bool isPlatformToGatewayMessage(const std::string& topic, const std::string& gatewayKey);
 
-	bool isDeviceToPlatformMessage(const std::string& topic);
+    bool isDeviceToPlatformMessage(const std::string& topic);
 
-	bool isPlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    bool isPlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
 
-	bool isActuatorSetMessage(const std::string& topic);
+    bool isActuatorSetMessage(const std::string& topic);
 
-	bool isActuatorGetMessage(const std::string& topic);
+    bool isActuatorGetMessage(const std::string& topic);
 
-	std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
-	std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
+    std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
 
-	std::string referenceFromTopic(std::string topic);
+    std::string referenceFromTopic(std::string topic);
 
 private:
-	friend class ProtocolBase<JsonSingleProtocol>;
+    friend class ProtocolBase<JsonSingleProtocol>;
 
-	JsonSingleProtocol();
+    JsonSingleProtocol();
 
-	const std::vector<std::string> m_devicTopics;
-	const std::vector<std::string> m_platformTopics;
+    const std::vector<std::string> m_devicTopics;
+    const std::vector<std::string> m_platformTopics;
 
-	const std::vector<std::string> m_deviceMessageTypes;
-	const std::vector<std::string> m_platformMessageTypes;
+    const std::vector<std::string> m_deviceMessageTypes;
+    const std::vector<std::string> m_platformMessageTypes;
 
-	static constexpr int DIRRECTION_POS = 0;
-	static constexpr int TYPE_POS = 1;
-	static constexpr int GATEWAY_TYPE_POS = 2;
-	static constexpr int GATEWAY_KEY_POS = 3;
-	static constexpr int DEVICE_TYPE_POS = 2;
-	static constexpr int DEVICE_KEY_POS = 3;
-	static constexpr int GATEWAY_DEVICE_TYPE_POS = 4;
-	static constexpr int GATEWAY_DEVICE_KEY_POS = 5;
-	static constexpr int GATEWAY_REFERENCE_TYPE_POS = 4;
-	static constexpr int GATEWAY_REFERENCE_VALUE_POS = 5;
-	static constexpr int DEVICE_REFERENCE_TYPE_POS = 4;
-	static constexpr int DEVICE_REFERENCE_VALUE_POS = 5;
-	static constexpr int GATEWAY_DEVICE_REFERENCE_TYPE_POS = 6;
-	static constexpr int GATEWAY_DEVICE_REFERENCE_VALUE_POS = 7;
+    static constexpr int DIRRECTION_POS = 0;
+    static constexpr int TYPE_POS = 1;
+    static constexpr int GATEWAY_TYPE_POS = 2;
+    static constexpr int GATEWAY_KEY_POS = 3;
+    static constexpr int DEVICE_TYPE_POS = 2;
+    static constexpr int DEVICE_KEY_POS = 3;
+    static constexpr int GATEWAY_DEVICE_TYPE_POS = 4;
+    static constexpr int GATEWAY_DEVICE_KEY_POS = 5;
+    static constexpr int GATEWAY_REFERENCE_TYPE_POS = 4;
+    static constexpr int GATEWAY_REFERENCE_VALUE_POS = 5;
+    static constexpr int DEVICE_REFERENCE_TYPE_POS = 4;
+    static constexpr int DEVICE_REFERENCE_VALUE_POS = 5;
+    static constexpr int GATEWAY_DEVICE_REFERENCE_TYPE_POS = 6;
+    static constexpr int GATEWAY_DEVICE_REFERENCE_VALUE_POS = 7;
 };
 }
 

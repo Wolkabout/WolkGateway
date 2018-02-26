@@ -113,7 +113,7 @@ private:
 
 		void messageReceived(const std::string& topic, const std::string& message) override;
 		void connectionLost() override;
-		const std::vector<std::string>& getTopics() const override;
+		std::vector<std::string> getTopics() const override;
 
 	private:
 		InboundMessageHandler& m_messageHandler;

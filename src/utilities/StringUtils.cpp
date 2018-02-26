@@ -35,25 +35,26 @@ bool StringUtils::contains(const std::string& string, const std::string& substri
     return string.find(substring) != std::string::npos;
 }
 
-std::vector<std::string> StringUtils::tokenize(const std::string& string, const std::string& delimiters)
+std::vector<std::string> StringUtils::tokenize(const std::string& string, const std::string& delimiter)
 {
     std::vector<std::string> tokens;
-    if (string.empty())
+	if (string.empty())
     {
         return tokens;
     }
 
+	std::string::size_type size = string.size();
     std::string::size_type position = 0;
-    std::string::size_type delimiterPosition = string.find_first_of(delimiters, position);
+	std::string::size_type delimiterPosition = string.find(delimiter, position);
 
-    while (std::string::npos != delimiterPosition)
+	while (std::string::npos != delimiterPosition && delimiterPosition <= size	)
     {
         tokens.push_back(string.substr(position, delimiterPosition - position));
         position = delimiterPosition + 1;
-        delimiterPosition = string.find_first_of(delimiters, position);
+		delimiterPosition = string.find(delimiter, position);
     }
 
-    tokens.push_back(string.substr(position, string.size() - position));
+	tokens.push_back(string.substr(position, std::string::npos));
     return tokens;
 }
 

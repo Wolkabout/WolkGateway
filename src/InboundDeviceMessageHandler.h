@@ -44,7 +44,7 @@ public:
 
 	void messageReceived(const std::string& topic, const std::string& message) override;
 
-	const std::vector<std::string>& getTopics() const override;
+	std::vector<std::string> getTopics() const override;
 
 	template<class P>
 	void setListener(std::weak_ptr<DeviceMessageListener> listener);
@@ -63,13 +63,15 @@ private:
 template<class P>
 void InboundDeviceMessageHandler::setListener(std::weak_ptr<DeviceMessageListener> listener)
 {
-	std::lock_guard<std::mutex> lg{m_lock};
+	std::unique_lock<std::mutex> locker{m_lock};
 
 	for(auto topic : P::getInstance().getDeviceTopics())
 	{
 		m_topicHandlers[topic] = listener;
 		m_subscriptionList.push_back(topic);
 	}
+
+	locker.unlock();
 
 	channelsUpdated();
 }

@@ -44,7 +44,7 @@ public:
 
 	void messageReceived(const std::string& topic, const std::string& message) override;
 
-	const std::vector<std::string>& getTopics() const override;
+	std::vector<std::string> getTopics() const override;
 
 	template<class P>
 	void setListener(std::weak_ptr<PlatformMessageListener> listener);
@@ -65,13 +65,15 @@ private:
 template<class P>
 void InboundPlatformMessageHandler::setListener(std::weak_ptr<PlatformMessageListener> listener)
 {
-	std::lock_guard<std::mutex> lg{m_lock};
+	std::unique_lock<std::mutex> locker{m_lock};
 
 	for(auto topic : P::getInstance().getPlatformTopics())
 	{
 		m_topicHandlers[topic] = listener;
 		m_subscriptionList.push_back(topic);
 	}
+
+	locker.unlock();
 
 	channelsUpdated();
 }

@@ -48,7 +48,13 @@ public:
 
 	bool fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command);
 
-	bool isGatewayMessage(const std::string& topic);
+	bool isGatewayToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
+
+	bool isPlatformToGatewayMessage(const std::string& topic, const std::string& gatewayKey);
+
+	bool isDeviceToPlatformMessage(const std::string& topic);
+
+	bool isPlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
 
 	bool isActuatorSetMessage(const std::string& topic);
 
@@ -66,6 +72,24 @@ private:
 
 	const std::vector<std::string> m_devicTopics;
 	const std::vector<std::string> m_platformTopics;
+
+	const std::vector<std::string> m_deviceMessageTypes;
+	const std::vector<std::string> m_platformMessageTypes;
+
+	static constexpr int DIRRECTION_POS = 0;
+	static constexpr int TYPE_POS = 1;
+	static constexpr int GATEWAY_TYPE_POS = 2;
+	static constexpr int GATEWAY_KEY_POS = 3;
+	static constexpr int DEVICE_TYPE_POS = 2;
+	static constexpr int DEVICE_KEY_POS = 3;
+	static constexpr int GATEWAY_DEVICE_TYPE_POS = 4;
+	static constexpr int GATEWAY_DEVICE_KEY_POS = 5;
+	static constexpr int GATEWAY_REFERENCE_TYPE_POS = 4;
+	static constexpr int GATEWAY_REFERENCE_VALUE_POS = 5;
+	static constexpr int DEVICE_REFERENCE_TYPE_POS = 4;
+	static constexpr int DEVICE_REFERENCE_VALUE_POS = 5;
+	static constexpr int GATEWAY_DEVICE_REFERENCE_TYPE_POS = 6;
+	static constexpr int GATEWAY_DEVICE_REFERENCE_VALUE_POS = 7;
 };
 }
 

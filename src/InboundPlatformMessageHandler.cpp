@@ -42,10 +42,13 @@ void InboundPlatformMessageHandler::messageReceived(const std::string& topic, co
 
 	if(it != m_topicHandlers.end())
 	{
-		if(auto handler = it->second.lock())
-		{
-			handler->platformMessageReceived(std::make_shared<Message>(message, topic));
-		}
+		auto topicHandler = it->second;
+		addToCommandBuffer([=]{
+			if(auto handler = topicHandler.lock())
+			{
+				handler->platformMessageReceived(std::make_shared<Message>(message, topic));
+			}
+		});
 	}
 	else
 	{
@@ -53,7 +56,7 @@ void InboundPlatformMessageHandler::messageReceived(const std::string& topic, co
 	}
 }
 
-const std::vector<std::string>& InboundPlatformMessageHandler::getTopics() const
+std::vector<std::string> InboundPlatformMessageHandler::getTopics() const
 {
 	std::lock_guard<std::mutex> lg{m_lock};
 	return m_subscriptionList;

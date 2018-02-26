@@ -41,10 +41,13 @@ void InboundDeviceMessageHandler::messageReceived(const std::string& topic, cons
 
 	if(it != m_topicHandlers.end())
 	{
-		if(auto handler = it->second.lock())
-		{
-			handler->deviceMessageReceived(std::make_shared<Message>(message, topic));
-		}
+		auto topicHandler = it->second;
+		addToCommandBuffer([=]{
+			if(auto handler = topicHandler.lock())
+			{
+				handler->deviceMessageReceived(std::make_shared<Message>(message, topic));
+			}
+		});
 	}
 	else
 	{
@@ -52,7 +55,7 @@ void InboundDeviceMessageHandler::messageReceived(const std::string& topic, cons
 	}
 }
 
-const std::vector<std::string>& InboundDeviceMessageHandler::getTopics() const
+std::vector<std::string> InboundDeviceMessageHandler::getTopics() const
 {
 	std::lock_guard<std::mutex> lg{m_lock};
 	return m_subscriptionList;

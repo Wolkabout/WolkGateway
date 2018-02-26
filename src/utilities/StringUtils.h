@@ -31,7 +31,7 @@ public:
 
     static bool contains(const std::string& string, const std::string& substring);
 
-    static std::vector<std::string> tokenize(const std::string& string, const std::string& delimiters);
+	static std::vector<std::string> tokenize(const std::string& string, const std::string& delimiter);
 
 	static bool startsWith(const std::string& string, const std::string& prefix);
 

@@ -112,7 +112,7 @@ void Wolk::ConnectivityFacade::connectionLost()
 	m_connectionLostHandler();
 }
 
-const std::vector<std::string>& Wolk::ConnectivityFacade::getTopics() const
+std::vector<std::string> Wolk::ConnectivityFacade::getTopics() const
 {
 	return m_messageHandler.getTopics();
 }

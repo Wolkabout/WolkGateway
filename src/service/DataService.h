@@ -64,30 +64,38 @@ DataService<P>::DataService(const std::string& gatewayKey,
 template<class P>
 void DataService<P>::platformMessageReceived(std::shared_ptr<Message> message)
 {
-	if(P::getInstance().isGatewayMessage(message->getTopic()))
+	if(P::getInstance().isPlatformToGatewayMessage(message->getTopic(), m_gatewayKey))
 	{
 		// if message is for gateway device just resend it
 		m_outboundDeviceMessageHandler->addMessage(message);
 	}
-	else
+	else if(P::getInstance().isPlatformToDeviceMessage(message->getTopic(), m_gatewayKey))
 	{
 		// if message is for device remove gateway info from channel
 		routePlatformMessage(message);
+	}
+	else
+	{
+		LOG(WARN) << "Message channel not parsed: " << message->getTopic();
 	}
 }
 
 template<class P>
 void DataService<P>::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-	if(P::getInstance().isGatewayMessage(message->getTopic()))
+	if(P::getInstance().isGatewayToPlatformMessage(message->getTopic(), m_gatewayKey))
 	{
 		// if message is from gateway device just resend it
 		m_outboundPlatformMessageHandler->addMessage(message);
 	}
-	else
+	else if(P::getInstance().isDeviceToPlatformMessage(message->getTopic()))
 	{
 		// if message is from device add gateway info to channel
 		routeDeviceMessage(message);
+	}
+	else
+	{
+		LOG(WARN) << "Message channel not parsed: " << message->getTopic();
 	}
 }
 

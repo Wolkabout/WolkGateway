@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(WolkGateway C CXX)
 
-include(out/conanbuildinfo.cmake)
+include(${CMAKE_CURRENT_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(NO_OUTPUT_DIRS KEEP_RPATHS)
 
 set(CMAKE_CXX_STANDARD 11)

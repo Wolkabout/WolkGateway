@@ -163,7 +163,7 @@ std::string calculateSha256(const wolkabout::ConfigurationManifest& configuratio
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
 
-std::string calculateSha256(const wolkabout::DeviceManifest deviceManifest)
+std::string calculateSha256(const wolkabout::DeviceManifest& deviceManifest)
 {
     Poco::Crypto::DigestEngine digestEngine("SHA256");
     digestEngine.update(deviceManifest.getName());
@@ -694,10 +694,10 @@ std::shared_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
         }();
 
         deviceManifest->addConfiguration(ConfigurationManifest(
-          configurationName, configurationReference, configurationDescription, configurationUnit, configurationDataType,
-          configurationMinimum, configurationMaximum, configurationCollapseKey, configurationDefaultValue,
-          configurationNullValue, configurationIsOptional != 0 ? true : false, configurationSize,
-          configurationDelimiter));
+                configurationName, configurationReference, configurationDescription, configurationUnit, configurationDataType,
+                configurationMinimum, configurationMaximum, configurationCollapseKey, configurationDefaultValue,
+                configurationNullValue, configurationIsOptional != 0, configurationSize,
+                configurationDelimiter));
     }
 
     return std::make_shared<Device>(deviceName, deviceKey, *deviceManifest);

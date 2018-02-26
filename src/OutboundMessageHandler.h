@@ -29,6 +29,6 @@ public:
     virtual ~OutboundMessageHandler() = default;
     virtual void addMessage(std::shared_ptr<Message> message) = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif

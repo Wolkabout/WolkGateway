@@ -31,6 +31,6 @@ public:
 
     virtual ~Sensor() = default;
 };
-}
+}    // namespace wolkabout
 
 #endif

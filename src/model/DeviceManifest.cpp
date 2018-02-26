@@ -1,21 +1,90 @@
-/*
- * Copyright 2018 WolkAbout Technology s.r.o.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+#include "model/DeviceManifest.h"
+#include "model/ActuatorManifest.h"
+#include "model/AlarmManifest.h"
+#include "model/ConfigurationManifest.h"
+#include "model/SensorManifest.h"
 
-#include "DeviceManifest.h"
+#include <string>
+#include <vector>
 
-namespace wolkabout
+wolkabout::DeviceManifest::DeviceManifest(std::string name, std::string description, std::string protocol,
+                                          std::string firmwareUpdateProtocol,
+                                          std::vector<wolkabout::ConfigurationManifest> configurations,
+                                          std::vector<wolkabout::SensorManifest> sensors,
+                                          std::vector<wolkabout::AlarmManifest> alarms,
+                                          std::vector<wolkabout::ActuatorManifest> actuators)
+: m_name(std::move(name))
+, m_description(std::move(description))
+, m_protocol(std::move(protocol))
+, m_firmwareUpdateProtocol(std::move(firmwareUpdateProtocol))
+, m_configurations(std::move(configurations))
+, m_sensors(std::move(sensors))
+, m_alarms(std::move(alarms))
+, m_actuators(std::move(actuators))
 {
+}
+
+wolkabout::DeviceManifest& wolkabout::DeviceManifest::addConfiguration(
+  const wolkabout::ConfigurationManifest& configurationManifest)
+{
+    m_configurations.push_back(configurationManifest);
+    return *this;
+}
+
+wolkabout::DeviceManifest& wolkabout::DeviceManifest::addSensor(const wolkabout::SensorManifest& sensorManifest)
+{
+    m_sensors.push_back(sensorManifest);
+    return *this;
+}
+
+wolkabout::DeviceManifest& wolkabout::DeviceManifest::addAlarm(const wolkabout::AlarmManifest& alarmManifest)
+{
+    m_alarms.push_back(alarmManifest);
+    return *this;
+}
+
+wolkabout::DeviceManifest& wolkabout::DeviceManifest::addActuator(const wolkabout::ActuatorManifest& actuatorManifest)
+{
+    m_actuators.push_back(actuatorManifest);
+    return *this;
+}
+
+const std::vector<wolkabout::ConfigurationManifest>& wolkabout::DeviceManifest::getConfigurations() const
+{
+    return m_configurations;
+}
+
+const std::vector<wolkabout::SensorManifest>& wolkabout::DeviceManifest::getSensors() const
+{
+    return m_sensors;
+}
+
+const std::vector<wolkabout::AlarmManifest>& wolkabout::DeviceManifest::getAlarms() const
+{
+    return m_alarms;
+}
+
+const std::vector<wolkabout::ActuatorManifest>& wolkabout::DeviceManifest::getActuators() const
+{
+    return m_actuators;
+}
+
+const std::string& wolkabout::DeviceManifest::getName() const
+{
+    return m_name;
+}
+
+const std::string& wolkabout::DeviceManifest::getDescription() const
+{
+    return m_description;
+}
+
+const std::string& wolkabout::DeviceManifest::getFirmwareUpdateProtocol() const
+{
+    return m_firmwareUpdateProtocol;
+}
+
+const std::string& wolkabout::DeviceManifest::getProtocol() const
+{
+    return m_protocol;
 }

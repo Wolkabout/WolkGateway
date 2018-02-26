@@ -48,4 +48,4 @@ void OutboundDataService::addFilePacketRequest(const FilePacketRequest& request)
     //		std::cout << "Message sent " << outboundMessage->getContent();
     //	}
 }
-}
+}    // namespace wolkabout

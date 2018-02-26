@@ -20,9 +20,7 @@
 
 namespace wolkabout
 {
-FileHandler::FileHandler() : m_currentPacketData{}, m_previousPacketHash{}
-{
-}
+FileHandler::FileHandler() : m_currentPacketData{}, m_previousPacketHash{} {}
 
 void FileHandler::clear()
 {
@@ -77,4 +75,4 @@ FileHandler::StatusCode FileHandler::saveFile(const std::string& filePath) const
 
     return FileHandler::StatusCode::FILE_HANDLING_ERROR;
 }
-}
+}    // namespace wolkabout

@@ -72,7 +72,7 @@ WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion,
 
 std::unique_ptr<Wolk> WolkBuilder::build() const
 {
-    if (m_device.getDeviceKey().empty())
+    if (m_device.getKey().empty())
     {
         throw std::logic_error("No device key present.");
     }
@@ -80,18 +80,18 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
     auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
 
     wolk->m_platformConnectivityService = std::make_shared<MqttConnectivityService>(
-      std::make_shared<PahoMqttClient>(), m_device.getDeviceKey(), m_device.getDevicePassword(), m_host);
+	  std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_host);
 
     wolk->m_deviceConnectivityService =
-      std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device.getDeviceKey(),
-                                                m_device.getDevicePassword(), "tcp://127.0.0.1:1883");
+	  std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device.getKey(),
+												m_device.getPassword(), "tcp://127.0.0.1:1883");
 
     wolk->m_platformPublisher = std::make_shared<PublishingService>(
       wolk->m_platformConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
     wolk->m_devicePublisher = std::make_shared<PublishingService>(
       wolk->m_deviceConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
 
-    wolk->m_inboundPlatformMessageHandler = std::make_shared<InboundPlatformMessageHandler>(m_device.getDeviceKey());
+	wolk->m_inboundPlatformMessageHandler = std::make_shared<InboundPlatformMessageHandler>(m_device.getKey());
 
     wolk->m_inboundDeviceMessageHandler = std::make_shared<InboundDeviceMessageHandler>();
 
@@ -146,7 +146,7 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     //	std::weak_ptr<FirmwareUpdateService> firmwareUpdateService_weak{wolk->m_firmwareUpdateService};
     //	inboundMessageHandler->setFirmwareUpdateCommandHandler([=](const FirmwareUpdateCommand& firmwareUpdateCommand)
-    //-> void {
+	//-> void {
     //		if(auto handler = firmwareUpdateService_weak.lock())
     //		{
     //			handler->handleFirmwareUpdateCommand(firmwareUpdateCommand);
@@ -171,4 +171,4 @@ WolkBuilder::WolkBuilder(Device device)
 , m_maxFirmwareFileChunkSize{0}
 {
 }
-}
+}    // namespace wolkabout

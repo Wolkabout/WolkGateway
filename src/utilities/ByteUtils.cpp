@@ -46,4 +46,4 @@ ByteArray ByteUtils::hashSHA256(const ByteArray& value)
 
     return ret;
 }
-}
+}    // namespace wolkabout

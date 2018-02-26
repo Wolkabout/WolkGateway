@@ -191,7 +191,5 @@ void PahoMqttClient::message_arrived(mqtt::const_message_ptr msg)
     m_onMessageReceived(msg->get_topic(), msg->get_payload_str());
 }
 
-void PahoMqttClient::delivery_complete(mqtt::delivery_token_ptr /* tok */)
-{
-}
-}
+void PahoMqttClient::delivery_complete(mqtt::delivery_token_ptr /* tok */) {}
+}    // namespace wolkabout

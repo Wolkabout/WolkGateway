@@ -56,6 +56,6 @@ private:
     FirmwareUpdateResponse::Status m_status;
     WolkOptional<FirmwareUpdateResponse::ErrorCode> m_errorCode;
 };
-}
+}    // namespace wolkabout
 
 #endif    // FIRMWAREUPDATERESPONSE_H

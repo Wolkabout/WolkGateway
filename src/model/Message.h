@@ -33,6 +33,6 @@ private:
     const std::string m_content;
     const std::string m_topic;
 };
-}
+}    // namespace wolkabout
 
 #endif

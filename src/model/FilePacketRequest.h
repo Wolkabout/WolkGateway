@@ -37,6 +37,6 @@ private:
     const unsigned m_chunkIndex;
     const uint_fast64_t m_chunkSize;
 };
-}
+}    // namespace wolkabout
 
 #endif    // FILEPACKETREQUEST_H

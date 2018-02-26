@@ -29,4 +29,4 @@ void MqttClient::onConnectionLost(MqttClient::OnConnectionLostCallback callback)
 {
     m_onConnectionLost = std::move(callback);
 }
-}
+}    // namespace wolkabout

@@ -58,6 +58,6 @@ public:
      */
     virtual void abort() = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif    // WOLKABOUTFILEDOWNLOADER_H

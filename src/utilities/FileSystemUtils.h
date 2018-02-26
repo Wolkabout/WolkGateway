@@ -47,6 +47,6 @@ public:
 
     static std::vector<std::string> listFiles(std::string directoryPath);
 };
-}
+}    // namespace wolkabout
 
 #endif

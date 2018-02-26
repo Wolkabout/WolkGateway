@@ -31,22 +31,23 @@ int main(int /* argc */, char** /* argv */)
 	logger->setLogLevel(wolkabout::LogLevel::INFO);
 	wolkabout::Logger::setInstance(std::move(logger));
 
-	wolkabout::Device device("device_key", "device_password");
+	wolkabout::DeviceManifest deviceManifest;
+	wolkabout::Device device("device_key", "device_password", deviceManifest);
 
-	class CustomFirmwareInstaller: public wolkabout::FirmwareInstaller
-	{
-	public:
-		bool install(const std::string& firmwareFile) override
-		{
-			// Mock install
-			std::cout << "Updating firmware with file " << firmwareFile << std::endl;
+    class CustomFirmwareInstaller: public wolkabout::FirmwareInstaller
+    {
+    public:
+        bool install(const std::string& firmwareFile) override
+        {
+            // Mock install
+            std::cout << "Updating firmware with file " << firmwareFile << std::endl;
 
-			// Optionally delete 'firmwareFile
-			return true;
-		}
-	};
+            // Optionally delete 'firmwareFile
+            return true;
+        }
+    };
 
-	auto installer = std::make_shared<CustomFirmwareInstaller>();
+    auto installer = std::make_shared<CustomFirmwareInstaller>();
 
     std::unique_ptr<wolkabout::Wolk> wolk =
 	  wolkabout::Wolk::newBuilder(device)

@@ -41,6 +41,6 @@ private:
     std::condition_variable m_condition;
     std::unique_ptr<std::thread> m_worker;
 };
-}
+}    // namespace wolkabout
 
 #endif    // TIMER_H

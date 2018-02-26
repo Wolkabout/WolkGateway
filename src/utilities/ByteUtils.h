@@ -36,6 +36,6 @@ public:
 
     static const short SHA_256_HASH_BYTE_LENGTH = 32;
 };
-}
+}    // namespace wolkabout
 
 #endif    // BYTE_H

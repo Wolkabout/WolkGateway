@@ -45,4 +45,4 @@ bool InMemoryPersistence::empty() const
     std::lock_guard<std::mutex> lg{m_lock};
     return m_queue.empty();
 }
-}
+}    // namespace wolkabout

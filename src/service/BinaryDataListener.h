@@ -27,6 +27,6 @@ public:
     virtual ~BinaryDataListener() = default;
     virtual void handleBinaryData(const BinaryData& binaryData) = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif    // BINARYDATALISTENER_H

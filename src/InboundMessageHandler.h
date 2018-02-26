@@ -30,7 +30,9 @@ public:
 
     virtual void messageReceived(const std::string& topic, const std::string& message) = 0;
     virtual std::vector<std::string> getTopics() const = 0;
+
     inline void onChannelsUpdated(std::function<void()> callback) { m_channelsUpdatedCallback = callback; }
+
 protected:
     inline void channelsUpdated()
     {
@@ -42,6 +44,6 @@ protected:
 
     std::function<void()> m_channelsUpdatedCallback;
 };
-}
+}    // namespace wolkabout
 
 #endif

@@ -63,6 +63,6 @@ public:
     static const std::string DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
     static const std::string DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT;
 };
-}
+}    // namespace wolkabout
 
 #endif

@@ -105,6 +105,7 @@ private:
 
     std::map<std::type_index, std::vector<std::string>> m_protocolTopics;
 
+
     class ConnectivityFacade : public ConnectivityServiceListener
     {
     public:
@@ -163,8 +164,8 @@ template <class P> bool Wolk::registerDataProtocol()
 
     m_protocolTopics[typeid(P)] = newTopics;
 
-    auto dataService =
-      std::make_shared<DataService<P>>(m_device.getDeviceKey(), m_platformPublisher, m_devicePublisher);
+	auto dataService =
+			std::make_shared<DataService<P>>(m_device.getKey(), m_platformPublisher, m_devicePublisher);
 
     m_dataServices.push_back(dataService);
 
@@ -178,6 +179,6 @@ template <> inline bool Wolk::registerDataProtocol<void>()
 {
     return false;
 }
-}
+}    // namespace wolkabout
 
 #endif

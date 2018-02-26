@@ -199,4 +199,4 @@ bool StringUtils::mqttTopicMatch(const std::string& wildcardTopic, const std::st
     // TODO match single level wildcards
     return wildcardTopic == topic;
 }
-}
+}    // namespace wolkabout

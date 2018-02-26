@@ -37,4 +37,4 @@ unsigned long long Reading::getRtc() const
 {
     return m_rtc;
 }
-}
+}    // namespace wolkabout

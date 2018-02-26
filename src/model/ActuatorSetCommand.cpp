@@ -39,4 +39,4 @@ const std::string& ActuatorSetCommand::getValue() const
 {
     return m_value;
 }
-}
+}    // namespace wolkabout

@@ -18,9 +18,7 @@
 
 namespace wolkabout
 {
-Timer::Timer() : m_isRunning(false)
-{
-}
+Timer::Timer() : m_isRunning(false) {}
 
 Timer::~Timer()
 {
@@ -71,4 +69,4 @@ bool Timer::running() const
 {
     return m_isRunning || (m_worker && m_worker->joinable());
 }
-}
+}    // namespace wolkabout

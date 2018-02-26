@@ -129,6 +129,6 @@ private:
 
     static const unsigned short PACKET_REQUEST_TIMEOUT_MSEC = 60000;
 };
-}
+}    // namespace wolkabout
 
 #endif    // FILEDOWNLOADSERVICE_H

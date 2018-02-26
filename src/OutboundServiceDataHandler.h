@@ -31,6 +31,6 @@ public:
 
     virtual void addFilePacketRequest(const FilePacketRequest& request) = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif    // OUTBOUNDSERVICEDATAHANDLER_H

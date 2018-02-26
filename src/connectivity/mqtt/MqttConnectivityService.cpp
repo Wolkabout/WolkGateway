@@ -107,4 +107,4 @@ void MqttConnectivityService::channelsUpdated()
         }
     }
 }
-}
+}    // namespace wolkabout

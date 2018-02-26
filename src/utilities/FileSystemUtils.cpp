@@ -161,4 +161,4 @@ std::vector<std::string> FileSystemUtils::listFiles(std::string directoryPath)
 
     return result;
 }
-}
+}    // namespace wolkabout

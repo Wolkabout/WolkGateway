@@ -28,6 +28,6 @@ public:
 
     virtual void handleFirmwareUpdateCommand(const FirmwareUpdateCommand& firmwareUpdateCommand) = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif    // FIRMWAREUPDATECOMMANDLISTENER_H

@@ -74,4 +74,4 @@ void PublishingService::run()
         m_condition.wait(locker);
     }
 }
-}
+}    // namespace wolkabout

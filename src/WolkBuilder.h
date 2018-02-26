@@ -118,6 +118,6 @@ private:
 
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
 };
-}
+}    // namespace wolkabout
 
 #endif

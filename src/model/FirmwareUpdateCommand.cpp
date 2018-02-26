@@ -71,4 +71,4 @@ FirmwareUpdateCommand::Type FirmwareUpdateCommand::getType() const
 {
     return m_type;
 }
-}
+}    // namespace wolkabout

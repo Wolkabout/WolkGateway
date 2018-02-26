@@ -37,9 +37,7 @@ Logger* Logger::getInstance()
     return m_instance.get();
 }
 
-Log::Log(LogLevel level) : m_level{level}, m_message{""}
-{
-}
+Log::Log(LogLevel level) : m_level{level}, m_message{""} {}
 
 LogLevel Log::getLogLevel() const
 {
@@ -76,4 +74,4 @@ wolkabout::LogLevel from_string(std::string level)
         return wolkabout::LogLevel::ERROR;
     }
 }
-}
+}    // namespace wolkabout

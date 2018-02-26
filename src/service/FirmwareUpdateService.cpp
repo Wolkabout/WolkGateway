@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef FIRMWAREUPDATESERVICE_CPP
-#define FIRMWAREUPDATESERVICE_CPP
-
 #include "FirmwareUpdateService.h"
 #include "FirmwareInstaller.h"
 #include "OutboundDataService.h"
@@ -524,6 +521,4 @@ void FirmwareUpdateService::clear()
     m_autoInstall = false;
     m_currentState = m_idleState.get();
 }
-}
-
-#endif    // FIRMWAREUPDATESERVICE_CPP
+}    // namespace wolkabout

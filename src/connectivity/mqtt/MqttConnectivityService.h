@@ -58,6 +58,6 @@ private:
     static const constexpr char* LAST_WILL_TOPIC_ROOT = "lastwill/";
     static const constexpr char* TRUST_STORE = "ca.crt";
 };
-}
+}    // namespace wolkabout
 
 #endif

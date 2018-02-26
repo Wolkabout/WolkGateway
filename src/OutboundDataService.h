@@ -38,6 +38,6 @@ private:
 
     std::shared_ptr<ConnectivityService> m_connectivityService;
 };
-}
+}    // namespace wolkabout
 
 #endif    // OUTBOUNDDATASERVICE_H

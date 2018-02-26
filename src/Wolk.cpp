@@ -113,4 +113,4 @@ std::vector<std::string> Wolk::ConnectivityFacade::getTopics() const
 {
     return m_messageHandler.getTopics();
 }
-}
+}    // namespace wolkabout

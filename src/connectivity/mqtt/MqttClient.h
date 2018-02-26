@@ -50,6 +50,6 @@ protected:
     OnMessageReceivedCallback m_onMessageReceived;
     OnConnectionLostCallback m_onConnectionLost;
 };
-}
+}    // namespace wolkabout
 
 #endif

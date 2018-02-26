@@ -35,6 +35,6 @@ private:
     mutable std::mutex m_lock;
     std::queue<std::shared_ptr<Message>> m_queue;
 };
-}
+}    // namespace wolkabout
 
 #endif

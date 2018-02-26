@@ -37,6 +37,6 @@ public:
 
     virtual ~ActuatorStatusProvider() = default;
 };
-}
+}    // namespace wolkabout
 
 #endif

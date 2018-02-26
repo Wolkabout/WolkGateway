@@ -18,9 +18,7 @@
 
 namespace wolkabout
 {
-Message::Message(const std::string& content, const std::string& topic) : m_content{content}, m_topic{topic}
-{
-}
+Message::Message(const std::string& content, const std::string& topic) : m_content{content}, m_topic{topic} {}
 
 const std::string& Message::getContent() const
 {
@@ -31,4 +29,4 @@ const std::string& Message::getTopic() const
 {
     return m_topic;
 }
-}
+}    // namespace wolkabout

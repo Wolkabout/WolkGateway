@@ -33,6 +33,6 @@ public:
      */
     virtual bool install(const std::string& firmwareFile) = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif    // FIRMWAREINSTALLER_H

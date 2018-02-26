@@ -14,15 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Obtain, and build dependencies
-pushd dependencies
-./download.sh
-./make.sh
-popd
-
-# Note
-# OPENSSL_INCLUDE_DIR is absoulte path or relative path to project source directory
-
 pushd out
-cmake -G "Unix Makefiles" -DOPENSSL_INCLUDE_DIR=dependencies/build/include .. -DCMAKE_BUILD_TYPE=Release ..
+conan install ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
 popd

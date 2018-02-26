@@ -30,6 +30,6 @@ public:
     virtual void handleActuatorSetCommand(const ActuatorSetCommand& command) = 0;
     virtual void handleActuatorGetCommand(const ActuatorGetCommand& command) = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif    // ACTUATORCOMMANDLISTENER_H

@@ -46,6 +46,6 @@ public:
 private:
     ActuatorStatus::State m_state;
 };
-}
+}    // namespace wolkabout
 
 #endif

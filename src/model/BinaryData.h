@@ -75,6 +75,6 @@ private:
     ByteArray m_hash;
     ByteArray m_previousHash;
 };
-}
+}    // namespace wolkabout
 
 #endif    // BINARYDATA_H

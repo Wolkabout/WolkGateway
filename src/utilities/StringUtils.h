@@ -49,6 +49,6 @@ public:
 
     static bool mqttTopicMatch(const std::string& wildcardTopic, const std::string& topic);
 };
-}
+}    // namespace wolkabout
 
 #endif

@@ -32,6 +32,6 @@ public:
 private:
     std::string m_reference;
 };
-}
+}    // namespace wolkabout
 
 #endif

@@ -34,4 +34,4 @@ void Alarm::acceptVisit(ReadingVisitor& visitor)
 {
     visitor.visit(*this);
 }
-}
+}    // namespace wolkabout

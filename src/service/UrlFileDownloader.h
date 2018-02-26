@@ -52,6 +52,6 @@ public:
      */
     virtual void abort() = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif    // URLFILEDOWNLOADER_H

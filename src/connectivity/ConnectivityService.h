@@ -63,6 +63,6 @@ public:
 protected:
     std::weak_ptr<ConnectivityServiceListener> m_listener;
 };
-}
+}    // namespace wolkabout
 
 #endif

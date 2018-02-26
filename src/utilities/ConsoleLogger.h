@@ -33,6 +33,6 @@ public:
 private:
     std::atomic<LogLevel> m_level;
 };
-}
+}    // namespace wolkabout
 
 #endif

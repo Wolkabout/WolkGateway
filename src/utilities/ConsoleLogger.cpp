@@ -62,4 +62,4 @@ void ConsoleLogger::setLogLevel(wolkabout::LogLevel level)
 {
     m_level = level;
 }
-}
+}    // namespace wolkabout

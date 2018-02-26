@@ -65,6 +65,6 @@ private:
 
     WolkOptional<bool> m_autoInstall;
 };
-}
+}    // namespace wolkabout
 
 #endif

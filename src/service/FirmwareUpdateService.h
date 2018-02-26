@@ -56,21 +56,21 @@ public:
 private:
     void addToCommandBuffer(std::function<void()> command);
 
-    void sendResponse(const FirmwareUpdateResponse& response);
+	void sendResponse(const FirmwareUpdateResponse& response);
 
-    void onFirmwareFileDownloadSuccess(const std::string& filePath);
+	void onFirmwareFileDownloadSuccess(const std::string& filePath);
 
-    void onFirmwareFileDownloadFail(WolkaboutFileDownloader::Error errorCode);
+	void onFirmwareFileDownloadFail(WolkaboutFileDownloader::Error errorCode);
 
-    void onFirmwareFileDownloadFail(UrlFileDownloader::Error errorCode);
+	void onFirmwareFileDownloadFail(UrlFileDownloader::Error errorCode);
 
-    void downloadFirmware(const std::string& name, std::uint_fast64_t size, const ByteArray& hash);
+	void downloadFirmware(const std::string& name, std::uint_fast64_t size, const ByteArray& hash);
 
-    void downloadFirmware(const std::string& url);
+	void downloadFirmware(const std::string& url);
 
-    void install();
+	void install();
 
-    void clear();
+	void clear();
 
     class FirmwareUpdateServiceState
     {
@@ -149,6 +149,6 @@ private:
 
     static const constexpr char* FIRMWARE_VERSION_FILE = ".dfu-version";
 };
-}
+}    // namespace wolkabout
 
 #endif    // FIRMWAREUPDATESERVICE_H

@@ -52,6 +52,6 @@ private:
     ByteArray m_currentPacketData;
     ByteArray m_previousPacketHash;
 };
-}
+}    // namespace wolkabout
 
 #endif    // FILEHANDLER_H

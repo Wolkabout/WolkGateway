@@ -40,4 +40,4 @@ void ConnectivityService::setListener(std::weak_ptr<ConnectivityServiceListener>
         handler->onChannelsUpdated([&] { this->channelsUpdated(); });
     }
 }
-}
+}    // namespace wolkabout

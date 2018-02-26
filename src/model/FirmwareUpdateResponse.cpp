@@ -18,9 +18,7 @@
 
 namespace wolkabout
 {
-FirmwareUpdateResponse::FirmwareUpdateResponse() : m_status{FirmwareUpdateResponse::Status::ERROR}, m_errorCode{}
-{
-}
+FirmwareUpdateResponse::FirmwareUpdateResponse() : m_status{FirmwareUpdateResponse::Status::ERROR}, m_errorCode{} {}
 
 FirmwareUpdateResponse::FirmwareUpdateResponse(FirmwareUpdateResponse::Status status) : m_status{status}, m_errorCode{}
 {
@@ -41,4 +39,4 @@ const WolkOptional<FirmwareUpdateResponse::ErrorCode>& FirmwareUpdateResponse::g
 {
     return m_errorCode;
 }
-}
+}    // namespace wolkabout

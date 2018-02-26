@@ -102,4 +102,4 @@ void CommandBuffer::run()
         processCommands();
     }
 }
-}
+}    // namespace wolkabout

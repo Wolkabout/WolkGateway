@@ -30,4 +30,4 @@ Sensor::Sensor(std::string reference, std::string dataDelimiter, unsigned char d
 : ManifestItem(std::move(reference), std::move(dataDelimiter), dataDimensions)
 {
 }
-}
+}    // namespace wolkabout

@@ -128,6 +128,8 @@ template <typename T> Log& Log::operator<<(T value)
     return *this;
 }
 
+#define METHOD_INFO __FILE__ << ":" << __func__ << ":" << __LINE__;
+
 #define PREPEND_NAMED_SCOPE(logLevel) wolkabout::LogLevel::logLevel
 
 #define LOG_(level)                       \

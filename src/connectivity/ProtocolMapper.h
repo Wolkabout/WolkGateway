@@ -24,13 +24,13 @@ namespace wolkabout
 {
 const std::string JSON_SINGLE_PROTOCOL = "JsonSingle";
 
-#define MapProtocol(name, func)                \
-    [&] {                                      \
+#define MapProtocol(func)                      \
+    [&](const std::string& name) {             \
         if (name == JSON_SINGLE_PROTOCOL)      \
             return func<JsonSingleProtocol>(); \
         else                                   \
             return func<void>();               \
-    }()
+    }
 }
 
 #endif

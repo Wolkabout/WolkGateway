@@ -17,6 +17,7 @@
 #ifndef WOLK_H
 #define WOLK_H
 
+#include "DeviceManager.h"
 #include "InboundDeviceMessageHandler.h"
 #include "WolkBuilder.h"
 #include "model/Device.h"
@@ -38,9 +39,11 @@ class InboundDeviceMessageHandler;
 class InboundPlatformMessageHandler;
 // class FirmwareUpdateService;
 // class FileDownloadService;
+class DeviceManager;
 class PublishingService;
 class OutboundServiceDataHandler;
 class DataServiceBase;
+class DeviceRegistrationService;
 
 class Wolk
 {
@@ -82,6 +85,8 @@ private:
 
     Device m_device;
 
+    std::unique_ptr<DeviceManager> m_deviceManager;
+
     std::shared_ptr<ConnectivityService> m_platformConnectivityService;
     std::shared_ptr<ConnectivityService> m_deviceConnectivityService;
     std::shared_ptr<Persistence> m_persistence;
@@ -101,10 +106,11 @@ private:
     // std::shared_ptr<FileDownloadService> m_fileDownloadService;
     std::vector<std::shared_ptr<DataServiceBase>> m_dataServices;
 
+    std::shared_ptr<DeviceRegistrationService> m_deviceRegistrationService;
+
     std::unique_ptr<CommandBuffer> m_commandBuffer;
 
     std::map<std::type_index, std::vector<std::string>> m_protocolTopics;
-
 
     class ConnectivityFacade : public ConnectivityServiceListener
     {
@@ -164,8 +170,7 @@ template <class P> bool Wolk::registerDataProtocol()
 
     m_protocolTopics[typeid(P)] = newTopics;
 
-	auto dataService =
-			std::make_shared<DataService<P>>(m_device.getKey(), m_platformPublisher, m_devicePublisher);
+    auto dataService = std::make_shared<DataService<P>>(m_device.getKey(), m_platformPublisher, m_devicePublisher);
 
     m_dataServices.push_back(dataService);
 

@@ -230,6 +230,11 @@ bool JsonSingleProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorG
     {
         const auto reference = referenceFromTopic(message->getTopic());
 
+        if (reference.empty())
+        {
+            return false;
+        }
+
         command = ActuatorGetCommand(reference);
     }
     catch (...)

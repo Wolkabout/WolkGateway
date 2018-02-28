@@ -14,21 +14,30 @@
  * limitations under the License.
  */
 
-#include "Message.h"
+#ifndef DEVICEMANAGER_H
+#define DEVICEMANAGER_H
+
+#include "repository/DeviceRepository.h"
+#include <memory>
 
 namespace wolkabout
 {
-Message::Message(const std::string& content, const std::string& topic) : m_content{content}, m_topic{topic}
+class Device;
+
+class DeviceManager
 {
+public:
+    DeviceManager(std::unique_ptr<DeviceRepository> repository,
+                  std::function<void(const std::string&)> protocolRegistrator);
+
+    void registerDevice(std::shared_ptr<Device> device);
+
+    std::string getProtocolForDevice(const std::string& deviceKey);
+
+private:
+    std::unique_ptr<DeviceRepository> m_deviceRepository;
+    std::function<void(const std::string&)> m_protocolRegistrator;
+};
 }
 
-const std::string& Message::getContent() const
-{
-    return m_content;
-}
-
-const std::string& Message::getTopic() const
-{
-    return m_topic;
-}
-}    // namespace wolkabout
+#endif

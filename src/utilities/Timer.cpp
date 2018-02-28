@@ -18,7 +18,9 @@
 
 namespace wolkabout
 {
-Timer::Timer() : m_isRunning(false) {}
+Timer::Timer() : m_isRunning(false)
+{
+}
 
 Timer::~Timer()
 {

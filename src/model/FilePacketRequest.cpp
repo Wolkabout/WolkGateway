@@ -18,7 +18,9 @@
 
 namespace wolkabout
 {
-FilePacketRequest::FilePacketRequest() : m_fileName{""}, m_chunkIndex{0}, m_chunkSize{0} {}
+FilePacketRequest::FilePacketRequest() : m_fileName{""}, m_chunkIndex{0}, m_chunkSize{0}
+{
+}
 
 FilePacketRequest::FilePacketRequest(const std::string& fileName, unsigned chunkIndex, uint_fast64_t chunkSize)
 : m_fileName{fileName}, m_chunkIndex{chunkIndex}, m_chunkSize{chunkSize}

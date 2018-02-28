@@ -15,6 +15,7 @@
  */
 
 #include "WolkBuilder.h"
+#include "DeviceManager.h"
 #include "FileHandler.h"
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
@@ -22,10 +23,13 @@
 #include "Wolk.h"
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/ProtocolMapper.h"
+#include "connectivity/json/RegistrationProtocol.h"
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
 #include "persistence/inmemory/InMemoryPersistence.h"
+#include "repository/SQLiteDeviceRepository.h"
+#include "service/DeviceRegistrationService.h"
 #include "service/PublishingService.h"
 
 #include <stdexcept>
@@ -79,19 +83,21 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
 
-    wolk->m_platformConnectivityService = std::make_shared<MqttConnectivityService>(
-	  std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_host);
+    wolk->m_deviceManager.reset(new DeviceManager(std::unique_ptr<DeviceRepository>(new SQLiteDeviceRepository()),
+                                                  MapProtocol(wolk->registerDataProtocol)));
 
-    wolk->m_deviceConnectivityService =
-	  std::make_shared<MqttConnectivityService>(std::make_shared<PahoMqttClient>(), m_device.getKey(),
-												m_device.getPassword(), "tcp://127.0.0.1:1883");
+    wolk->m_platformConnectivityService = std::make_shared<MqttConnectivityService>(
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_host);
+
+    wolk->m_deviceConnectivityService = std::make_shared<MqttConnectivityService>(
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), "tcp://127.0.0.1:1883");
 
     wolk->m_platformPublisher = std::make_shared<PublishingService>(
       wolk->m_platformConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
     wolk->m_devicePublisher = std::make_shared<PublishingService>(
       wolk->m_deviceConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
 
-	wolk->m_inboundPlatformMessageHandler = std::make_shared<InboundPlatformMessageHandler>(m_device.getKey());
+    wolk->m_inboundPlatformMessageHandler = std::make_shared<InboundPlatformMessageHandler>(m_device.getKey());
 
     wolk->m_inboundDeviceMessageHandler = std::make_shared<InboundDeviceMessageHandler>();
 
@@ -113,28 +119,33 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
     wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
 
+    wolk->m_deviceRegistrationService = std::make_shared<DeviceRegistrationService>(
+      m_device.getKey(), *wolk->m_deviceManager, wolk->m_platformPublisher, wolk->m_devicePublisher);
+
+    wolk->m_inboundDeviceMessageHandler->setListener<RegistrationProtocol>(wolk->m_deviceRegistrationService);
+    wolk->m_inboundPlatformMessageHandler->setListener<RegistrationProtocol>(wolk->m_deviceRegistrationService);
+
     //	wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(m_maxFirmwareFileSize,
-    //m_maxFirmwareFileChunkSize,
+    // m_maxFirmwareFileChunkSize,
     //																		std::unique_ptr<FileHandler>(new
-    //FileHandler()),
+    // FileHandler()),
     //																		outboundServiceDataHandler);
 
     //	if(m_firmwareInstaller.lock() != nullptr)
     //	{
     //		wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(m_firmwareVersion,
-    //m_firmwareDownloadDirectory,
+    // m_firmwareDownloadDirectory,
     //																				m_maxFirmwareFileSize,
-    //outboundServiceDataHandler,
+    // outboundServiceDataHandler,
     //																				wolk->m_fileDownloadService,
-    //m_urlFileDownloader,
+    // m_urlFileDownloader,
     //																				m_firmwareInstaller);
     //	}
 
     // example
-    //	if(MapProtocol(protocolName, wolk->registerDataProtocol))
-    //	{
-    //		wolk->m_dataService = wolk->m_dataServices.back();
-    //	}
+    if (MapProtocol(wolk->registerDataProtocol)("JsonSingle"))
+    {
+    }
 
     //	std::weak_ptr<FileDownloadService> fileDownloadService_weak{wolk->m_fileDownloadService};
     //	inboundMessageHandler->setBinaryDataHandler([=](const BinaryData& binaryData) -> void {
@@ -146,7 +157,7 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     //	std::weak_ptr<FirmwareUpdateService> firmwareUpdateService_weak{wolk->m_firmwareUpdateService};
     //	inboundMessageHandler->setFirmwareUpdateCommandHandler([=](const FirmwareUpdateCommand& firmwareUpdateCommand)
-	//-> void {
+    //-> void {
     //		if(auto handler = firmwareUpdateService_weak.lock())
     //		{
     //			handler->handleFirmwareUpdateCommand(firmwareUpdateCommand);

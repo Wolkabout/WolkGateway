@@ -32,7 +32,6 @@ public:
     virtual std::vector<std::string> getTopics() const = 0;
 
     inline void onChannelsUpdated(std::function<void()> callback) { m_channelsUpdatedCallback = callback; }
-
 protected:
     inline void channelsUpdated()
     {

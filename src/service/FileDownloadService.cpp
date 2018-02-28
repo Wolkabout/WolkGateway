@@ -116,7 +116,9 @@ void FileDownloadService::clear()
     m_retryCount = 0;
 }
 
-void FileDownloadService::IdleState::handleBinaryData(const BinaryData&) {}
+void FileDownloadService::IdleState::handleBinaryData(const BinaryData&)
+{
+}
 
 void FileDownloadService::IdleState::download(
   const std::string& fileName, uint_fast64_t fileSize, const ByteArray& fileHash, const std::string& downloadDirectory,
@@ -161,7 +163,9 @@ void FileDownloadService::IdleState::download(
     m_service.m_currentState = m_service.m_downloadState.get();
 }
 
-void FileDownloadService::IdleState::abort() {}
+void FileDownloadService::IdleState::abort()
+{
+}
 
 void FileDownloadService::DownloadState::handleBinaryData(const BinaryData& binaryData)
 {

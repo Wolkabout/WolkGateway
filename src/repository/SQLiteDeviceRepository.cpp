@@ -5,6 +5,8 @@
 #include "model/Device.h"
 #include "model/DeviceManifest.h"
 
+#include "utilities/Logger.h"
+
 #include "Poco/Crypto/DigestEngine.h"
 #include "Poco/Data/SQLite/Connector.h"
 #include "Poco/Data/SQLite/SQLiteException.h"
@@ -694,10 +696,9 @@ std::shared_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
         }();
 
         deviceManifest->addConfiguration(ConfigurationManifest(
-                configurationName, configurationReference, configurationDescription, configurationUnit, configurationDataType,
-                configurationMinimum, configurationMaximum, configurationCollapseKey, configurationDefaultValue,
-                configurationNullValue, configurationIsOptional != 0, configurationSize,
-                configurationDelimiter));
+          configurationName, configurationReference, configurationDescription, configurationUnit, configurationDataType,
+          configurationMinimum, configurationMaximum, configurationCollapseKey, configurationDefaultValue,
+          configurationNullValue, configurationIsOptional != 0, configurationSize, configurationDelimiter));
     }
 
     return std::make_shared<Device>(deviceName, deviceKey, *deviceManifest);

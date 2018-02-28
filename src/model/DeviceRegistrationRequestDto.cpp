@@ -13,7 +13,9 @@ DeviceRegistrationRequestDto::DeviceRegistrationRequestDto(std::string deviceNam
 {
 }
 
-DeviceRegistrationRequestDto::DeviceRegistrationRequestDto(Device device) : m_device(std::move(device)) {}
+DeviceRegistrationRequestDto::DeviceRegistrationRequestDto(Device device) : m_device(std::move(device))
+{
+}
 
 const std::string& DeviceRegistrationRequestDto::getDeviceName() const
 {

@@ -60,12 +60,12 @@ DataService<P>::DataService(const std::string& gatewayKey,
 
 template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    if (P::getInstance().isPlatformToGatewayMessage(message->getTopic(), m_gatewayKey))
+    if (P::getInstance().isPlatformToGatewayMessage(message->getTopic()))
     {
         // if message is for gateway device just resend it
         m_outboundDeviceMessageHandler->addMessage(message);
     }
-    else if (P::getInstance().isPlatformToDeviceMessage(message->getTopic(), m_gatewayKey))
+    else if (P::getInstance().isPlatformToDeviceMessage(message->getTopic()))
     {
         // if message is for device remove gateway info from channel
         routePlatformMessage(message);
@@ -78,7 +78,7 @@ template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<
 
 template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    if (P::getInstance().isGatewayToPlatformMessage(message->getTopic(), m_gatewayKey))
+    if (P::getInstance().isGatewayToPlatformMessage(message->getTopic()))
     {
         // if message is from gateway device just resend it
         m_outboundPlatformMessageHandler->addMessage(message);

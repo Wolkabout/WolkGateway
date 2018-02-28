@@ -18,6 +18,7 @@
 #include "InboundMessageHandler.h"
 #include "WolkBuilder.h"
 #include "connectivity/ConnectivityService.h"
+#include "connectivity/ProtocolMapper.h"
 #include "model/Device.h"
 #include "service/DataService.h"
 #include "service/FirmwareUpdateService.h"
@@ -90,6 +91,21 @@ void Wolk::connectToDevices()
             connectToDevices();
         }
     });
+}
+
+bool Wolk::registerDataProtocol(const std::string& protocol)
+{
+    return MapProtocol(this->registerDataProtocol)(protocol);
+}
+
+void Wolk::routePlatformData(const std::string& protocol, std::shared_ptr<Message> message)
+{
+    return MapProtocol(this->routePlatformData, message)(protocol);
+}
+
+void Wolk::routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message)
+{
+    return MapProtocol(this->routeDeviceData, message)(protocol);
 }
 
 Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler& handler,

@@ -246,7 +246,7 @@ bool JsonSingleProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorG
     return true;
 }
 
-bool JsonSingleProtocol::isGatewayToPlatformMessage(const std::string& topic, const std::string& gatewayKey)
+bool JsonSingleProtocol::isGatewayToPlatformMessage(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
@@ -275,12 +275,6 @@ bool JsonSingleProtocol::isGatewayToPlatformMessage(const std::string& topic, co
         return false;
     }
 
-    if (tokens[GATEWAY_KEY_POS] != gatewayKey)
-    {
-        LOG(DEBUG) << "Gateway key does not match in path: " << topic;
-        return false;
-    }
-
     if (tokens[GATEWAY_REFERENCE_TYPE_POS] != Channel::REFERENCE_PATH_PREFIX)
     {
         LOG(DEBUG) << "Reference perfix missing in path: " << topic;
@@ -290,7 +284,7 @@ bool JsonSingleProtocol::isGatewayToPlatformMessage(const std::string& topic, co
     return true;
 }
 
-bool JsonSingleProtocol::isPlatformToGatewayMessage(const std::string& topic, const std::string& gatewayKey)
+bool JsonSingleProtocol::isPlatformToGatewayMessage(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
@@ -316,12 +310,6 @@ bool JsonSingleProtocol::isPlatformToGatewayMessage(const std::string& topic, co
     if (tokens[GATEWAY_TYPE_POS] != Channel::GATEWAY_PATH_PREFIX)
     {
         LOG(DEBUG) << "Gateway perfix missing in path: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_KEY_POS] != gatewayKey)
-    {
-        LOG(DEBUG) << "Gateway key does not match in path: " << topic;
         return false;
     }
 
@@ -372,7 +360,7 @@ bool JsonSingleProtocol::isDeviceToPlatformMessage(const std::string& topic)
     return true;
 }
 
-bool JsonSingleProtocol::isPlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey)
+bool JsonSingleProtocol::isPlatformToDeviceMessage(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
@@ -398,12 +386,6 @@ bool JsonSingleProtocol::isPlatformToDeviceMessage(const std::string& topic, con
     if (tokens[GATEWAY_TYPE_POS] != Channel::GATEWAY_PATH_PREFIX)
     {
         LOG(DEBUG) << "Gateway perfix missing in path: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_KEY_POS] != gatewayKey)
-    {
-        LOG(DEBUG) << "Gateway key does not match in path: " << topic;
         return false;
     }
 
@@ -464,18 +446,51 @@ std::string JsonSingleProtocol::routeDeviceMessage(const std::string& topic, con
       Channel::GATEWAY_PATH_PREFIX + Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER);
 }
 
-std::string JsonSingleProtocol::referenceFromTopic(std::string topic)
+std::string JsonSingleProtocol::referenceFromTopic(const std::string& topic)
 {
-    if (topic.back() == '/')
+    std::string top{topic};
+
+    if (top.back() == '/')
     {
-        topic.pop_back();
+        top.pop_back();
     }
 
-    auto pos = topic.rfind("/r/");
+    auto pos = top.rfind("/r/");
 
     if (pos != std::string::npos)
     {
-        return topic.substr(pos + 3, std::string::npos);
+        return top.substr(pos + 3, std::string::npos);
+    }
+
+    return "";
+}
+
+std::string JsonSingleProtocol::deviceKeyFromTopic(const std::string& topic)
+{
+    auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
+
+    if (tokens.size() < GATEWAY_KEY_POS + 1 || tokens.size() < DEVICE_KEY_POS + 1)
+    {
+        LOG(DEBUG) << "Token count mismatch in path: " << topic;
+        return "";
+    }
+
+    if (tokens.size() > GATEWAY_DEVICE_KEY_POS)
+    {
+        if (tokens[GATEWAY_TYPE_POS] == Channel::GATEWAY_PATH_PREFIX &&
+            tokens[GATEWAY_DEVICE_TYPE_POS] == Channel::DEVICE_PATH_PREFIX)
+        {
+            return tokens[GATEWAY_DEVICE_KEY_POS];
+        }
+    }
+
+    if (tokens[GATEWAY_TYPE_POS] == Channel::GATEWAY_PATH_PREFIX)
+    {
+        return tokens[GATEWAY_KEY_POS];
+    }
+    else if (tokens[DEVICE_TYPE_POS] == Channel::DEVICE_PATH_PREFIX)
+    {
+        return tokens[DEVICE_KEY_POS];
     }
 
     return "";

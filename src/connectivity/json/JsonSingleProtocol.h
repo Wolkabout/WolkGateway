@@ -47,13 +47,13 @@ public:
 
     bool fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command);
 
-    bool isGatewayToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
+    bool isGatewayToPlatformMessage(const std::string& topic);
 
-    bool isPlatformToGatewayMessage(const std::string& topic, const std::string& gatewayKey);
+    bool isPlatformToGatewayMessage(const std::string& topic);
 
     bool isDeviceToPlatformMessage(const std::string& topic);
 
-    bool isPlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    bool isPlatformToDeviceMessage(const std::string& topic);
 
     bool isActuatorSetMessage(const std::string& topic);
 
@@ -62,7 +62,8 @@ public:
     std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
     std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
 
-    std::string referenceFromTopic(std::string topic);
+    std::string referenceFromTopic(const std::string& topic);
+    std::string deviceKeyFromTopic(const std::string& topic);
 
 private:
     friend class ProtocolBase<JsonSingleProtocol>;

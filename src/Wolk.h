@@ -17,6 +17,7 @@
 #ifndef WOLK_H
 #define WOLK_H
 
+#include "ChannelProtocolResolver.h"
 #include "DeviceManager.h"
 #include "InboundDeviceMessageHandler.h"
 #include "WolkBuilder.h"
@@ -26,6 +27,7 @@
 #include "utilities/StringUtils.h"
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <typeindex>
@@ -81,7 +83,13 @@ private:
     void connectToPlatform();
     void connectToDevices();
 
+    bool registerDataProtocol(const std::string& protocol);
+    void routePlatformData(const std::string& protocol, std::shared_ptr<Message> message);
+    void routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message);
+
     template <class P> bool registerDataProtocol();
+    template <class P> void routePlatformData(std::shared_ptr<Message> message);
+    template <class P> void routeDeviceData(std::shared_ptr<Message> message);
 
     Device m_device;
 
@@ -104,13 +112,13 @@ private:
 
     // std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
     // std::shared_ptr<FileDownloadService> m_fileDownloadService;
-    std::vector<std::shared_ptr<DataServiceBase>> m_dataServices;
+    std::map<std::type_index, std::tuple<std::shared_ptr<DataServiceBase>, std::shared_ptr<ChannelProtocolResolver>>>
+      m_dataServices;
 
     std::shared_ptr<DeviceRegistrationService> m_deviceRegistrationService;
 
+    std::mutex m_lock;
     std::unique_ptr<CommandBuffer> m_commandBuffer;
-
-    std::map<std::type_index, std::vector<std::string>> m_protocolTopics;
 
     class ConnectivityFacade : public ConnectivityServiceListener
     {
@@ -129,53 +137,25 @@ private:
 
 template <class P> bool Wolk::registerDataProtocol()
 {
-    // check if protocol is already registered
-    auto it = m_protocolTopics.find(typeid(P));
-    if (it != m_protocolTopics.end())
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
+
+    if (auto it = m_dataServices.find(typeid(P)) != m_dataServices.end())
     {
-        LOG(DEBUG) << "Protocol already registered";
+        LOG(INFO) << "Data protocol already registered";
         return true;
     }
 
-    // check if any topics are in confilict
-    for (const auto& kvp : m_protocolTopics)
-    {
-        for (const auto& registeredTopic : kvp.second)
-        {
-            for (const auto topic : P::getInstance().getDeviceTopics())
-            {
-                if (StringUtils::mqttTopicMatch(registeredTopic, topic))
-                {
-                    LOG(WARN) << "Conflicted protocol topics: " << registeredTopic << ", " << topic;
-                    return false;
-                }
-            }
-
-            for (const auto topic : P::getInstance().getPlatformTopics())
-            {
-                if (StringUtils::mqttTopicMatch(registeredTopic, topic))
-                {
-                    LOG(WARN) << "Conflicted protocol topics: " << registeredTopic << ", " << topic;
-                    return false;
-                }
-            }
-        }
-    }
-
-    // add topics to list
-    std::vector<std::string> newTopics = P::getInstance().getDeviceTopics();
-    const auto platformTopics = P::getInstance().getPlatformTopics();
-    newTopics.reserve(newTopics.size() + platformTopics.size());
-    newTopics.insert(newTopics.end(), platformTopics.begin(), platformTopics.end());
-
-    m_protocolTopics[typeid(P)] = newTopics;
-
     auto dataService = std::make_shared<DataService<P>>(m_device.getKey(), m_platformPublisher, m_devicePublisher);
 
-    m_dataServices.push_back(dataService);
+    auto protocolResolver = std::make_shared<ChannelProtocolResolverImpl<P>>(
+      *m_deviceManager,
+      [&](const std::string& protocol, std::shared_ptr<Message> message) { routePlatformData(protocol, message); },
+      [&](const std::string& protocol, std::shared_ptr<Message> message) { routeDeviceData(protocol, message); });
 
-    m_inboundDeviceMessageHandler->setListener<P>(dataService);
-    m_inboundPlatformMessageHandler->setListener<P>(dataService);
+    m_dataServices[typeid(P)] = std::make_pair(dataService, protocolResolver);
+
+    m_inboundDeviceMessageHandler->setListener<P>(protocolResolver);
+    m_inboundPlatformMessageHandler->setListener<P>(protocolResolver);
 
     return true;
 }
@@ -184,6 +164,47 @@ template <> inline bool Wolk::registerDataProtocol<void>()
 {
     return false;
 }
+
+template <class P> void Wolk::routePlatformData(std::shared_ptr<Message> message)
+{
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
+
+    auto it = m_dataServices.find(typeid(P));
+    if (it != m_dataServices.end())
+    {
+        std::get<0>(it->second)->platformMessageReceived(message);
+    }
+    else
+    {
+        LOG(WARN) << "Message protocol not found for: " << message->getTopic();
+    }
+}
+
+template <> inline void Wolk::routePlatformData<void>(std::shared_ptr<Message> message)
+{
+    LOG(WARN) << "Message protocol not found for: " << message->getTopic();
+}
+
+template <class P> void Wolk::routeDeviceData(std::shared_ptr<Message> message)
+{
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
+
+    auto it = m_dataServices.find(typeid(P));
+    if (it != m_dataServices.end())
+    {
+        std::get<0>(it->second)->deviceMessageReceived(message);
+    }
+    else
+    {
+        LOG(WARN) << "Message protocol not found for: " << message->getTopic();
+    }
+}
+
+template <> inline void Wolk::routeDeviceData<void>(std::shared_ptr<Message> message)
+{
+    LOG(WARN) << "Message protocol not found for: " << message->getTopic();
+}
+
 }    // namespace wolkabout
 
 #endif

@@ -24,12 +24,24 @@ namespace wolkabout
 {
 const std::string JSON_SINGLE_PROTOCOL = "JsonSingle";
 
-#define MapProtocol(func)                      \
-    [&](const std::string& name) {             \
-        if (name == JSON_SINGLE_PROTOCOL)      \
-            return func<JsonSingleProtocol>(); \
-        else                                   \
-            return func<void>();               \
+#define FIRST_ARG(...) FIRST_ARG_(__VA_ARGS__, ignored)
+#define FIRST_ARG_(first, ...) first
+
+#define REST_ARGS_1(ignored)
+#define REST_ARGS_2_OR_MORE(ignored, ...) __VA_ARGS__
+
+#define GET_4TH_ARG(arg1, arg2, arg3, arg4, ...) arg4
+#define GET_REST_ARGS_OVERRIDE(...) \
+    GET_4TH_ARG(__VA_ARGS__, REST_ARGS_2_OR_MORE, REST_ARGS_2_OR_MORE, REST_ARGS_1, ignored)
+
+#define REST_ARGS(...) GET_REST_ARGS_OVERRIDE(__VA_ARGS__)(__VA_ARGS__)
+
+#define MapProtocol(...)                                                               \
+    [&](const std::string& name) {                                                     \
+        if (name == JSON_SINGLE_PROTOCOL)                                              \
+            return FIRST_ARG(__VA_ARGS__)<JsonSingleProtocol>(REST_ARGS(__VA_ARGS__)); \
+        else                                                                           \
+            return FIRST_ARG(__VA_ARGS__)<void>(REST_ARGS(__VA_ARGS__));               \
     }
 }
 

@@ -180,6 +180,12 @@ ActuatorManifest& ActuatorManifest::setLabels(std::initializer_list<std::string>
     return *this;
 }
 
+ActuatorManifest& ActuatorManifest::setLabels(const std::vector<std::string>& labels)
+{
+    m_labels = labels;
+    return *this;
+}
+
 bool ActuatorManifest::operator==(ActuatorManifest& rhs) const
 {
     if (m_name != rhs.m_name || m_reference != rhs.m_reference || m_description != rhs.m_description ||

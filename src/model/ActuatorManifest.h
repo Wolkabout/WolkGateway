@@ -77,6 +77,7 @@ public:
 
     const std::vector<std::string>& getLabels() const;
     ActuatorManifest& setLabels(std::initializer_list<std::string> labels);
+    ActuatorManifest& setLabels(const std::vector<std::string>& labels);
 
     bool operator==(ActuatorManifest& rhs) const;
     bool operator!=(ActuatorManifest& rhs) const;

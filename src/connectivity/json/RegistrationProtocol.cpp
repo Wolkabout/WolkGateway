@@ -268,13 +268,13 @@ void from_json(const json& j, ActuatorManifest& actuatorManifest)
     }();
 
     actuatorManifest = ActuatorManifest(
-      j.at("dataType").get<std::string>(), j.at("reference").get<std::string>(), j.at("description").get<std::string>(),
+      j.at("name").get<std::string>(), j.at("reference").get<std::string>(), j.at("description").get<std::string>(),
       j.at("unit").get<std::string>(), j.at("readingType").get<std::string>(), dataType,
       j.at("precision").get<unsigned int>(), j.at("minimum").get<long long>(), j.at("maximum").get<long long>());
 
-    // TODO: String utils get labels and delimiter
-    std::initializer_list<std::string> labels = {};
-    std::string delimiter = "_";
+    std::string delimiter = j.at("delimiter").get<std::string>();
+    std::string labelsStr = j.at("labels").get<std::string>();
+    std::vector<std::string> labels = StringUtils::tokenize(labelsStr, delimiter);
 
     if (labels.size() > 0)
     {
@@ -363,13 +363,13 @@ void from_json(const json& j, SensorManifest& sensorManifest)
     }();
 
     sensorManifest = SensorManifest(
-      j.at("dataType").get<std::string>(), j.at("reference").get<std::string>(), j.at("description").get<std::string>(),
+      j.at("name").get<std::string>(), j.at("reference").get<std::string>(), j.at("description").get<std::string>(),
       j.at("unit").get<std::string>(), j.at("readingType").get<std::string>(), dataType,
       j.at("precision").get<unsigned int>(), j.at("minimum").get<long long>(), j.at("maximum").get<long long>());
 
-    // TODO: String utils get labels and delimiter
-    std::initializer_list<std::string> labels = {};
-    std::string delimiter = "_";
+    std::string delimiter = j.at("delimiter").get<std::string>();
+    std::string labelsStr = j.at("labels").get<std::string>();
+    std::vector<std::string> labels = StringUtils::tokenize(labelsStr, delimiter);
 
     if (labels.size() > 0)
     {
@@ -422,8 +422,8 @@ void to_json(json& j, const DeviceRegistrationRequestDto& dto)
 
 void from_json(const json& j, DeviceRegistrationRequestDto& dto)
 {
-    dto = DeviceRegistrationRequestDto(
-      j.at("name").get<std::string>(), j.at("key").get<std::string>(), j.at("manifest").get<DeviceManifest>());
+    dto = DeviceRegistrationRequestDto(j.at("name").get<std::string>(), j.at("key").get<std::string>(),
+                                       j.at("manifest").get<DeviceManifest>());
 }
 /*** DEVICE REGISTRATION REQUEST DTO ***/
 

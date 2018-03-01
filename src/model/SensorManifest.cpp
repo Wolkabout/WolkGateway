@@ -177,6 +177,12 @@ SensorManifest& SensorManifest::setLabels(std::initializer_list<std::string> lab
     return *this;
 }
 
+SensorManifest& SensorManifest::setLabels(const std::vector<std::string>& labels)
+{
+    m_labels = labels;
+    return *this;
+}
+
 bool SensorManifest::operator==(SensorManifest& rhs) const
 {
     if (m_name != rhs.m_name || m_reference != rhs.m_reference || m_description != rhs.m_description ||

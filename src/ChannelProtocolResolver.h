@@ -19,9 +19,9 @@
 
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
-#include "model/Message.h"
 #include "model/Device.h"
 #include "model/DeviceManifest.h"
+#include "model/Message.h"
 #include "repository/DeviceRepository.h"
 #include <functional>
 #include <memory>
@@ -91,6 +91,6 @@ template <class P> void ChannelProtocolResolverImpl<P>::deviceMessageReceived(st
     const std::string protocol = device->getManifest().getProtocol();
     m_deviceMessageHandler(protocol, message);
 }
-}
+}    // namespace wolkabout
 
 #endif    // CHANNELPROTOCOLRESOLVER_H

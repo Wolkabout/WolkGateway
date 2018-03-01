@@ -57,13 +57,13 @@ public:
     const std::string& getUnit() const;
     SensorManifest& setUnit(const std::string& unit);
 
-    const std::string& getReadingType() const;    // TODO: @N. Antic
+    const std::string& getReadingType() const;
     SensorManifest& setReadingType(const std::string& readingType);
 
     SensorManifest::DataType getDataType() const;
     SensorManifest& setDataType(SensorManifest::DataType dataType);
 
-    unsigned int getPrecision() const;    // TODO: @N. Antic
+    unsigned int getPrecision() const;
     SensorManifest& setPrecision(unsigned int precision);
 
     double getMinimum() const;
@@ -77,6 +77,7 @@ public:
 
     const std::vector<std::string>& getLabels() const;
     SensorManifest& setLabels(std::initializer_list<std::string> labels);
+    SensorManifest& setLabels(const std::vector<std::string>& labels);
 
     bool operator==(SensorManifest& rhs) const;
     bool operator!=(SensorManifest& rhs) const;

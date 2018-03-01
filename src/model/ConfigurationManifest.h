@@ -54,19 +54,19 @@ public:
     ConfigurationManifest::DataType getDataType() const;
     ConfigurationManifest& setDataType(ConfigurationManifest::DataType dataType);
 
-    double getMinimum() const;    // TODO: @N. Antic
+    double getMinimum() const;
     ConfigurationManifest& setMinimum(double minimum);
 
-    double getMaximum() const;    // TODO: @N. Antic
+    double getMaximum() const;
     ConfigurationManifest& setMaximum(double maximum);
 
     unsigned int getSize() const;
     ConfigurationManifest& setSize(unsigned int size);
 
-    const std::string& getDelimiter() const;    // TODO: @N. Antic: WTH delimiter in configuration filed ?
+    const std::string& getDelimiter() const;
     ConfigurationManifest& setDelimiter(const std::string delimiter);
 
-    const std::string& getCollapseKey() const;    // TODO: @N. Antic
+    const std::string& getCollapseKey() const;
     ConfigurationManifest& setCollapseKey(const std::string& collapseKey);
 
     const std::string& getDefaultValue() const;

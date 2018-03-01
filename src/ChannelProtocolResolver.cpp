@@ -27,4 +27,4 @@ ChannelProtocolResolver::ChannelProtocolResolver(
 , m_deviceMessageHandler{deviceMessageHandler}
 {
 }
-}
+}    // namespace wolkabout

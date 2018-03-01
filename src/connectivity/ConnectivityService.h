@@ -33,14 +33,7 @@ public:
 
     virtual void connectionLost() = 0;
 
-    virtual std::vector<std::string> getTopics() const = 0;
-
-    void onChannelsUpdated(std::function<void()> callback);
-
-protected:
-    void channelsUpdated();
-
-    std::function<void()> m_channelsUpdatedCallback;
+    virtual const std::vector<std::string>& getTopics() const = 0;
 };
 
 class Message;
@@ -55,8 +48,6 @@ public:
     virtual bool isConnected() = 0;
 
     virtual bool publish(std::shared_ptr<Message> outboundMessage) = 0;
-
-    virtual void channelsUpdated() = 0;
 
     void setListener(std::weak_ptr<ConnectivityServiceListener> listener);
 

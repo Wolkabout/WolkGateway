@@ -14,12 +14,29 @@
  * limitations under the License.
  */
 
-#include "connectivity/ConnectivityService.h"
+#ifndef DEVICESTATUSRESPONSE_H
+#define DEVICESTATUSRESPONSE_H
 
 namespace wolkabout
 {
-void ConnectivityService::setListener(std::weak_ptr<ConnectivityServiceListener> listener)
+class DeviceStatusResponse
 {
-    m_listener = listener;
+public:
+    enum class Status
+    {
+        CONNECTED,
+        OFFLINE,
+        SLEEP,
+        SERVICE
+    };
+
+    DeviceStatusResponse(DeviceStatusResponse::Status status);
+
+    DeviceStatusResponse::Status getStatus() const;
+
+private:
+    DeviceStatusResponse::Status m_status;
+};
 }
-}    // namespace wolkabout
+
+#endif    // DEVICESTATUSRESPONSE_H

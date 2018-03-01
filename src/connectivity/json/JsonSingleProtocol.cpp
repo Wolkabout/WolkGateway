@@ -434,7 +434,7 @@ std::string JsonSingleProtocol::routeDeviceMessage(const std::string& topic, con
         return "";
     }
 
-    auto secondPos = topic.find(Channel::CHANNEL_DELIMITER, firstPos + 1);
+    auto secondPos = topic.find(Channel::CHANNEL_DELIMITER, firstPos + Channel::CHANNEL_DELIMITER.length());
     if (secondPos == std::string::npos)
     {
         return "";

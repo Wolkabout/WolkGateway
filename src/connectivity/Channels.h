@@ -36,6 +36,8 @@ public:
     static const std::string DEVICE_PATH_PREFIX;
     static const std::string REFERENCE_PATH_PREFIX;
 
+    static const std::string LAST_WILL_TYPE;
+
     static const std::string SENSOR_READING_TYPE;
     static const std::string EVENT_TYPE;
     static const std::string ACTUATION_STATUS_TYPE;
@@ -47,12 +49,15 @@ public:
     static const std::string REGISTER_DEVICE_TYPE;
     static const std::string REREGISTER_DEVICE_TYPE;
 
+    static const std::string LAST_WILL_TOPIC_ROOT;
+
     static const std::string SENSOR_READING_TOPIC_ROOT;
     static const std::string EVENTS_TOPIC_ROOT;
     static const std::string ACTUATION_STATUS_TOPIC_ROOT;
     static const std::string CONFIGURATION_SET_RESPONSE_TOPIC_ROOT;
     static const std::string CONFIGURATION_GET_RESPONSE_TOPIC_ROOT;
-    static const std::string DEVICE_STATUS_TOPIC_ROOT;
+    static const std::string DEVICE_STATUS_REQUEST_TOPIC_ROOT;
+    static const std::string DEVICE_STATUS_RESPONSE_TOPIC_ROOT;
     static const std::string DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT;
     static const std::string DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT;
 

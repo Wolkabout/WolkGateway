@@ -76,6 +76,32 @@ void StringUtils::removeTrailingWhitespace(std::string& string)
     }
 }
 
+std::string StringUtils::removePrefix(const std::string& string, const std::string& prefix)
+{
+    if (startsWith(string, prefix))
+    {
+        std::string ret = string;
+        ret.erase(0, prefix.size());
+
+        return ret;
+    }
+
+    return string;
+}
+
+std::string StringUtils::removeSufix(const std::string& string, const std::string& sufix)
+{
+    if (endsWith(string, sufix))
+    {
+        std::string ret = string;
+        ret.erase(string.size() - sufix.size(), std::string::npos);
+
+        return ret;
+    }
+
+    return string;
+}
+
 std::string StringUtils::removeSubstring(const std::string& string, const std::string& substring)
 {
     auto pos = string.find(substring);

@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-#include "connectivity/ConnectivityService.h"
+#include "model/DeviceStatusResponse.h"
 
 namespace wolkabout
 {
-void ConnectivityService::setListener(std::weak_ptr<ConnectivityServiceListener> listener)
+DeviceStatusResponse::DeviceStatusResponse(DeviceStatusResponse::Status status) : m_status{status} {}
+
+DeviceStatusResponse::Status DeviceStatusResponse::getStatus() const
 {
-    m_listener = listener;
+    return m_status;
 }
-}    // namespace wolkabout
+}

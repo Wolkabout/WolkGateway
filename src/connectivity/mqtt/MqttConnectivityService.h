@@ -20,11 +20,8 @@
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/mqtt/MqttClient.h"
 
-#include <atomic>
 #include <memory>
-#include <mutex>
 #include <string>
-#include <vector>
 
 namespace wolkabout
 {
@@ -42,18 +39,12 @@ public:
 
     bool publish(std::shared_ptr<Message> outboundMessage) override;
 
-    void channelsUpdated() override;
-
 private:
     std::shared_ptr<MqttClient> m_mqttClient;
 
     const std::string m_key;
     const std::string m_password;
     const std::string m_host;
-
-    std::vector<std::string> m_topics;
-
-    std::mutex m_lock;
 
     static const constexpr char* LAST_WILL_TOPIC_ROOT = "lastwill/";
     static const constexpr char* TRUST_STORE = "ca.crt";

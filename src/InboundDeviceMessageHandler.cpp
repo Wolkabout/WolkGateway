@@ -52,7 +52,7 @@ void InboundDeviceMessageHandler::messageReceived(const std::string& topic, cons
     }
 }
 
-std::vector<std::string> InboundDeviceMessageHandler::getTopics() const
+const std::vector<std::string>& InboundDeviceMessageHandler::getTopics() const
 {
     std::lock_guard<std::mutex> lg{m_lock};
     return m_subscriptionList;

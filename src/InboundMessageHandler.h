@@ -29,20 +29,8 @@ public:
     virtual ~InboundMessageHandler() = default;
 
     virtual void messageReceived(const std::string& topic, const std::string& message) = 0;
-    virtual std::vector<std::string> getTopics() const = 0;
 
-    inline void onChannelsUpdated(std::function<void()> callback) { m_channelsUpdatedCallback = callback; }
-
-protected:
-    inline void channelsUpdated()
-    {
-        if (m_channelsUpdatedCallback)
-        {
-            m_channelsUpdatedCallback();
-        }
-    }
-
-    std::function<void()> m_channelsUpdatedCallback;
+    virtual const std::vector<std::string>& getTopics() const = 0;
 };
 }    // namespace wolkabout
 

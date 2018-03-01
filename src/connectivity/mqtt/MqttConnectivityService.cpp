@@ -45,11 +45,13 @@ bool MqttConnectivityService::connect()
     bool isConnected = m_mqttClient->connect(m_key, m_password, TRUST_STORE, m_host, m_key);
     if (isConnected)
     {
-        std::lock_guard<std::mutex> lg{m_lock};
-
-        for (const std::string& topic : m_topics)
+        if (auto handler = m_listener.lock())
         {
-            m_mqttClient->subscribe(topic);
+            const auto& topics = handler->getTopics();
+            for (const std::string& topic : topics)
+            {
+                m_mqttClient->subscribe(topic);
+            }
         }
     }
 
@@ -69,42 +71,5 @@ bool MqttConnectivityService::isConnected()
 bool MqttConnectivityService::publish(std::shared_ptr<Message> outboundMessage)
 {
     return m_mqttClient->publish(outboundMessage->getChannel(), outboundMessage->getContent());
-}
-
-void MqttConnectivityService::channelsUpdated()
-{
-    if (auto handler = m_listener.lock())
-    {
-        if (isConnected())
-        {
-            std::lock_guard<std::mutex> lg{m_lock};
-
-            const auto topics = handler->getTopics();
-            for (const std::string& topic : topics)
-            {
-                // subscribe to new topics
-                if (std::find(m_topics.begin(), m_topics.end(), topic) == m_topics.end())
-                {
-                    m_mqttClient->subscribe(topic);
-                }
-            }
-
-            for (const std::string& topic : m_topics)
-            {
-                // unsibscribe from topics that are missing
-                if (std::find(topics.begin(), topics.end(), topic) == topics.end())
-                {
-                    m_mqttClient->unsubscribe(topic);
-                }
-            }
-
-            m_topics = topics;
-        }
-        else
-        {
-            std::lock_guard<std::mutex> lg{m_lock};
-            m_topics = handler->getTopics();
-        }
-    }
 }
 }    // namespace wolkabout

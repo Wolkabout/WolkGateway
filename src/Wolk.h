@@ -46,6 +46,7 @@ class PublishingService;
 class OutboundServiceDataHandler;
 class DataServiceBase;
 class DeviceRegistrationService;
+class DeviceStatusService;
 
 class Wolk
 {
@@ -116,6 +117,7 @@ private:
       m_dataServices;
 
     std::shared_ptr<DeviceRegistrationService> m_deviceRegistrationService;
+    std::shared_ptr<DeviceStatusService> m_deviceStatusService;
 
     std::mutex m_lock;
     std::unique_ptr<CommandBuffer> m_commandBuffer;
@@ -127,7 +129,7 @@ private:
 
         void messageReceived(const std::string& topic, const std::string& message) override;
         void connectionLost() override;
-        std::vector<std::string> getTopics() const override;
+        const std::vector<std::string>& getTopics() const override;
 
     private:
         InboundMessageHandler& m_messageHandler;

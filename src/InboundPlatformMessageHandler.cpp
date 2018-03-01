@@ -55,7 +55,7 @@ void InboundPlatformMessageHandler::messageReceived(const std::string& topic, co
     }
 }
 
-std::vector<std::string> InboundPlatformMessageHandler::getTopics() const
+const std::vector<std::string>& InboundPlatformMessageHandler::getTopics() const
 {
     std::lock_guard<std::mutex> lg{m_lock};
     return m_subscriptionList;

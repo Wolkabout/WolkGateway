@@ -113,7 +113,6 @@ Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler& handler,
                                              std::function<void()> connectionLostHandler)
 : m_messageHandler{handler}, m_connectionLostHandler{connectionLostHandler}
 {
-    m_messageHandler.onChannelsUpdated([&] { channelsUpdated(); });
 }
 
 void Wolk::ConnectivityFacade::messageReceived(const std::string& topic, const std::string& message)
@@ -126,7 +125,7 @@ void Wolk::ConnectivityFacade::connectionLost()
     m_connectionLostHandler();
 }
 
-std::vector<std::string> Wolk::ConnectivityFacade::getTopics() const
+const std::vector<std::string>& Wolk::ConnectivityFacade::getTopics() const
 {
     return m_messageHandler.getTopics();
 }

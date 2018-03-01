@@ -465,11 +465,13 @@ RegistrationProtocol::RegistrationProtocol()
 
 std::vector<std::string> RegistrationProtocol::getDeviceTopics()
 {
+    LOG(DEBUG) << METHOD_INFO;
     return m_devicTopics;
 }
 
 std::vector<std::string> RegistrationProtocol::getPlatformTopics()
 {
+    LOG(DEBUG) << METHOD_INFO;
     return m_platformTopics;
 }
 
@@ -668,9 +670,9 @@ bool RegistrationProtocol::isPlatformToGatewayMessage(const std::string& topic, 
 
 bool RegistrationProtocol::isDeviceToPlatformMessage(const std::string& topic)
 {
-    LOG(DEBUG) << METHOD_INFO
+    LOG(DEBUG) << METHOD_INFO;
 
-      auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
+    auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
     if (tokens.size() != 4)
     {

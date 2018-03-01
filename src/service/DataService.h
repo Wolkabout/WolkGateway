@@ -60,6 +60,8 @@ DataService<P>::DataService(const std::string& gatewayKey,
 
 template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<Message> message)
 {
+    LOG(DEBUG) << METHOD_INFO;
+
     if (P::getInstance().isPlatformToGatewayMessage(message->getChannel()))
     {
         // if message is for gateway device just resend it
@@ -78,6 +80,8 @@ template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<
 
 template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Message> message)
 {
+    LOG(DEBUG) << METHOD_INFO;
+
     if (P::getInstance().isGatewayToPlatformMessage(message->getChannel()))
     {
         // if message is from gateway device just resend it
@@ -96,7 +100,14 @@ template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Me
 
 template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Message> message)
 {
+    LOG(DEBUG) << METHOD_INFO;
+
     const std::string topic = P::getInstance().routeDeviceMessage(message->getChannel(), m_gatewayKey);
+    if (topic.empty())
+    {
+        LOG(WARN) << "Failed to route device message: " << message->getChannel();
+        return;
+    }
 
     const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
 
@@ -105,7 +116,14 @@ template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Messa
 
 template <class P> void DataService<P>::routePlatformMessage(std::shared_ptr<Message> message)
 {
+    LOG(DEBUG) << METHOD_INFO;
+
     const std::string topic = P::getInstance().routePlatformMessage(message->getChannel(), m_gatewayKey);
+    if (topic.empty())
+    {
+        LOG(WARN) << "Failed to route platform message: " << message->getChannel();
+        return;
+    }
 
     const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
 

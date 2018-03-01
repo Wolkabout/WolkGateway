@@ -23,12 +23,14 @@
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/ProtocolMapper.h"
 #include "connectivity/json/RegistrationProtocol.h"
+#include "connectivity/json/StatusProtocol.h"
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
 #include "persistence/inmemory/InMemoryPersistence.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DeviceRegistrationService.h"
+#include "service/DeviceStatusService.h"
 #include "service/PublishingService.h"
 
 #include <stdexcept>
@@ -123,6 +125,12 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     wolk->m_inboundDeviceMessageHandler->setListener<RegistrationProtocol>(wolk->m_deviceRegistrationService);
     wolk->m_inboundPlatformMessageHandler->setListener<RegistrationProtocol>(wolk->m_deviceRegistrationService);
+
+    wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
+      m_device.getKey(), *wolk->m_deviceRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+
+    wolk->m_inboundDeviceMessageHandler->setListener<StatusProtocol>(wolk->m_deviceStatusService);
+    wolk->m_inboundPlatformMessageHandler->setListener<StatusProtocol>(wolk->m_deviceStatusService);
 
     //	wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(m_maxFirmwareFileSize,
     // m_maxFirmwareFileChunkSize,

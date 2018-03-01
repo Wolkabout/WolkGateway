@@ -39,6 +39,10 @@ public:
 
     static void removeTrailingWhitespace(std::string& string);
 
+    static std::string removePrefix(const std::string& string, const std::string& prefix);
+
+    static std::string removeSufix(const std::string& string, const std::string& sufix);
+
     static std::string removeSubstring(const std::string& string, const std::string& substring);
 
     static bool isBase64(unsigned char c);

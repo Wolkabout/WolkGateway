@@ -73,6 +73,6 @@ template <class P> void InboundDeviceMessageHandler::setListener(std::weak_ptr<D
 
     channelsUpdated();
 }
-}
+}    // namespace wolkabout
 
 #endif

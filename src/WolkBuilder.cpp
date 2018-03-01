@@ -15,7 +15,6 @@
  */
 
 #include "WolkBuilder.h"
-#include "DeviceManager.h"
 #include "FileHandler.h"
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
@@ -83,9 +82,7 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
 
-    wolk->m_deviceManager.reset(
-      new DeviceManager(std::unique_ptr<DeviceRepository>(new SQLiteDeviceRepository()),
-                        [&](const std::string& protocol) { wolk->registerDataProtocol(protocol); }));
+    wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
 
     wolk->m_platformConnectivityService = std::make_shared<MqttConnectivityService>(
       std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_host);
@@ -122,7 +119,7 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     // Setup registration service
     wolk->m_deviceRegistrationService = std::make_shared<DeviceRegistrationService>(
-      m_device.getKey(), *wolk->m_deviceManager, wolk->m_platformPublisher, wolk->m_devicePublisher);
+      m_device.getKey(), *wolk->m_deviceRepository, *wolk->m_platformPublisher);
 
     wolk->m_inboundDeviceMessageHandler->setListener<RegistrationProtocol>(wolk->m_deviceRegistrationService);
     wolk->m_inboundPlatformMessageHandler->setListener<RegistrationProtocol>(wolk->m_deviceRegistrationService);

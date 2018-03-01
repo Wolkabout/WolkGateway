@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 WolkAbout Technology s.r.o.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "repository/SQLiteDeviceRepository.h"
 #include "model/ActuatorManifest.h"
 #include "model/AlarmManifest.h"
@@ -256,14 +272,14 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
     statement.execute();
 }
 
-void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
+void SQLiteDeviceRepository::save(const Device& device)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
     Statement statement(*m_session);
 
     Poco::UInt64 devicesWithGivenKeyCount;
-    statement << "SELECT count(*) FROM device WHERE device.key=?;", useRef(device->getKey()),
+    statement << "SELECT count(*) FROM device WHERE device.key=?;", useRef(device.getKey()),
       into(devicesWithGivenKeyCount), now;
 
     if (devicesWithGivenKeyCount != 0)
@@ -273,7 +289,7 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
         return;
     }
 
-    const std::string deviceManifestSha256 = calculateSha256(device->getManifest());
+    const std::string deviceManifestSha256 = calculateSha256(device.getManifest());
     statement.reset(*m_session);
     Poco::UInt64 matchingDeviceManifestsCount;
     statement << "SELECT count(*) FROM device_manifest WHERE sha256=?;", useRef(deviceManifestSha256),
@@ -283,7 +299,7 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
         // Equivalent manifest exists
         statement.reset(*m_session);
         statement << "INSERT INTO device SELECT ?, ?, id FROM device_manifest WHERE device_manifest.sha256=?;",
-          useRef(device->getKey()), useRef(device->getName()), useRef(deviceManifestSha256), now;
+          useRef(device.getKey()), useRef(device.getName()), useRef(deviceManifestSha256), now;
         return;
     }
 
@@ -292,15 +308,15 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
     statement << "BEGIN TRANSACTION;";
     statement << "INSERT INTO device_manifest(name, description, protocol, firmware_update_protocol, sha256) VALUES(?, "
                  "?, ?, ?, ?);",
-      useRef(device->getManifest().getName()), useRef(device->getManifest().getDescription()),
-      useRef(device->getManifest().getProtocol()), useRef(device->getManifest().getFirmwareUpdateProtocol()),
+      useRef(device.getManifest().getName()), useRef(device.getManifest().getDescription()),
+      useRef(device.getManifest().getProtocol()), useRef(device.getManifest().getFirmwareUpdateProtocol()),
       useRef(deviceManifestSha256);
 
     Poco::UInt64 deviceManifestId;
     statement << "SELECT last_insert_rowid();", into(deviceManifestId);
 
     // Alarm manifests
-    for (const wolkabout::AlarmManifest& alarmManifest : device->getManifest().getAlarms())
+    for (const wolkabout::AlarmManifest& alarmManifest : device.getManifest().getAlarms())
     {
         const auto severity = [&]() -> std::string {
             if (alarmManifest.getSeverity() == AlarmManifest::AlarmSeverity::ALERT)
@@ -326,7 +342,7 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
     }
 
     // Actuator manifests
-    for (const wolkabout::ActuatorManifest& actuatorManifest : device->getManifest().getActuators())
+    for (const wolkabout::ActuatorManifest& actuatorManifest : device.getManifest().getActuators())
     {
         const auto dataType = [&]() -> std::string {
             if (actuatorManifest.getDataType() == ActuatorManifest::DataType::BOOLEAN)
@@ -365,7 +381,7 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
     }
 
     // Sensor manifests
-    for (const wolkabout::SensorManifest& sensorManifest : device->getManifest().getSensors())
+    for (const wolkabout::SensorManifest& sensorManifest : device.getManifest().getSensors())
     {
         const auto dataType = [&]() -> std::string {
             if (sensorManifest.getDataType() == SensorManifest::DataType::BOOLEAN)
@@ -404,7 +420,7 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
     }
 
     // Configuration manifests
-    for (const wolkabout::ConfigurationManifest& configurationManifest : device->getManifest().getConfigurations())
+    for (const wolkabout::ConfigurationManifest& configurationManifest : device.getManifest().getConfigurations())
     {
         const auto dataType = [&]() -> std::string {
             if (configurationManifest.getDataType() == ConfigurationManifest::DataType::BOOLEAN)
@@ -439,16 +455,16 @@ void SQLiteDeviceRepository::save(std::shared_ptr<Device> device)
     }
 
     // Device
-    statement << "INSERT INTO device(key, name, device_manifest_id) VALUES(?, ?, ?);", useRef(device->getKey()),
-      useRef(device->getName()), useRef(deviceManifestId);
+    statement << "INSERT INTO device(key, name, device_manifest_id) VALUES(?, ?, ?);", useRef(device.getKey()),
+      useRef(device.getName()), useRef(deviceManifestId);
     statement << "COMMIT;", now;
 }
 
-void SQLiteDeviceRepository::update(std::shared_ptr<Device> device)
+void SQLiteDeviceRepository::update(const Device& device)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    remove(device->getKey());
+    remove(device.getKey());
     save(device);
 }
 
@@ -715,4 +731,15 @@ std::shared_ptr<std::vector<std::string>> SQLiteDeviceRepository::findAllDeviceK
 
     return deviceKeys;
 }
+
+bool SQLiteDeviceRepository::containsDeviceWithKey(const std::string& deviceKey)
+{
+    std::lock_guard<decltype(m_mutex)> l(m_mutex);
+
+    Poco::UInt64 deviceCount;
+    Statement statement(*m_session);
+    statement << "SELECT count(*) FROM device WHERE device.key=?;", useRef(deviceKey), into(deviceCount), now;
+    return deviceCount != 0 ? true : false;
+}
+
 }    // namespace wolkabout

@@ -91,6 +91,6 @@ private:
     static constexpr int GATEWAY_DEVICE_REFERENCE_TYPE_POS = 6;
     static constexpr int GATEWAY_DEVICE_REFERENCE_VALUE_POS = 7;
 };
-}
+}    // namespace wolkabout
 
 #endif

@@ -14,25 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef MESSAGE_H
-#define MESSAGE_H
-
-#include <string>
+#ifndef DEVICEREREGISTRATIONRESPONSEDTO_H
+#define DEVICEREREGISTRATIONRESPONSEDTO_H
 
 namespace wolkabout
 {
-class Message
+class DeviceReregistrationResponseDto
 {
 public:
-    Message(const std::string& content, const std::string& channel);
+    enum class Result
+    {
+        OK
+    };
 
-    const std::string& getChannel() const;
-    const std::string& getContent() const;
+    DeviceReregistrationResponseDto() = default;
+    DeviceReregistrationResponseDto(DeviceReregistrationResponseDto::Result result);
+
+    virtual ~DeviceReregistrationResponseDto() = default;
+
+    DeviceReregistrationResponseDto::Result getResult() const;
 
 private:
-    const std::string m_content;
-    const std::string m_channel;
+    DeviceReregistrationResponseDto::Result m_result;
 };
 }    // namespace wolkabout
 
-#endif
+#endif    // DEVICEREREGISTRATIONRESPONSEDTO_H

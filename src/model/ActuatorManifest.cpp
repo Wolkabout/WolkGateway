@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 WolkAbout Technology s.r.o.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "ActuatorManifest.h"
 
 #include <initializer_list>
@@ -162,5 +178,45 @@ ActuatorManifest& ActuatorManifest::setLabels(std::initializer_list<std::string>
 {
     m_labels = labels;
     return *this;
+}
+
+bool ActuatorManifest::operator==(ActuatorManifest& rhs) const
+{
+    if (m_name != rhs.m_name || m_reference != rhs.m_reference || m_description != rhs.m_description ||
+        m_unit != rhs.m_unit || m_readingType != rhs.m_readingType || m_dataType != rhs.m_dataType ||
+        m_precision != rhs.m_precision)
+    {
+        return false;
+    }
+
+    if (m_minimum != rhs.m_minimum || m_maximum != rhs.m_maximum)
+    {
+        return false;
+    }
+
+    if (m_delimiter != rhs.m_delimiter)
+    {
+        return false;
+    }
+
+    if (m_labels.size() != rhs.m_labels.size())
+    {
+        return false;
+    }
+
+    for (unsigned long long int i = 0; i < m_labels.size(); ++i)
+    {
+        if (m_labels[i] != rhs.m_labels[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool ActuatorManifest::operator!=(ActuatorManifest& rhs) const
+{
+    return !(*this == rhs);
 }
 }    // namespace wolkabout

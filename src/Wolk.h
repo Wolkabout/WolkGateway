@@ -18,10 +18,10 @@
 #define WOLK_H
 
 #include "ChannelProtocolResolver.h"
-#include "DeviceManager.h"
 #include "InboundDeviceMessageHandler.h"
 #include "WolkBuilder.h"
 #include "model/Device.h"
+#include "repository/DeviceRepository.h"
 #include "service/DataService.h"
 #include "utilities/CommandBuffer.h"
 #include "utilities/StringUtils.h"
@@ -93,7 +93,7 @@ private:
 
     Device m_device;
 
-    std::unique_ptr<DeviceManager> m_deviceManager;
+    std::unique_ptr<DeviceRepository> m_deviceRepository;
 
     std::shared_ptr<ConnectivityService> m_platformConnectivityService;
     std::shared_ptr<ConnectivityService> m_deviceConnectivityService;
@@ -148,7 +148,7 @@ template <class P> bool Wolk::registerDataProtocol()
     auto dataService = std::make_shared<DataService<P>>(m_device.getKey(), m_platformPublisher, m_devicePublisher);
 
     auto protocolResolver = std::make_shared<ChannelProtocolResolverImpl<P>>(
-      *m_deviceManager,
+      *m_deviceRepository,
       [&](const std::string& protocol, std::shared_ptr<Message> message) { routePlatformData(protocol, message); },
       [&](const std::string& protocol, std::shared_ptr<Message> message) { routeDeviceData(protocol, message); });
 
@@ -176,13 +176,13 @@ template <class P> void Wolk::routePlatformData(std::shared_ptr<Message> message
     }
     else
     {
-        LOG(WARN) << "Message protocol not found for: " << message->getTopic();
+        LOG(WARN) << "Message protocol not found for: " << message->getChannel();
     }
 }
 
 template <> inline void Wolk::routePlatformData<void>(std::shared_ptr<Message> message)
 {
-    LOG(WARN) << "Message protocol not found for: " << message->getTopic();
+    LOG(WARN) << "Message protocol not found for: " << message->getChannel();
 }
 
 template <class P> void Wolk::routeDeviceData(std::shared_ptr<Message> message)
@@ -196,13 +196,13 @@ template <class P> void Wolk::routeDeviceData(std::shared_ptr<Message> message)
     }
     else
     {
-        LOG(WARN) << "Message protocol not found for: " << message->getTopic();
+        LOG(WARN) << "Message protocol not found for: " << message->getChannel();
     }
 }
 
 template <> inline void Wolk::routeDeviceData<void>(std::shared_ptr<Message> message)
 {
-    LOG(WARN) << "Message protocol not found for: " << message->getTopic();
+    LOG(WARN) << "Message protocol not found for: " << message->getChannel();
 }
 
 }    // namespace wolkabout

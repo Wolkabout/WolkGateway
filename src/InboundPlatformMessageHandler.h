@@ -75,6 +75,6 @@ template <class P> void InboundPlatformMessageHandler::setListener(std::weak_ptr
 
     channelsUpdated();
 }
-}
+}    // namespace wolkabout
 
 #endif

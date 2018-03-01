@@ -1,5 +1,22 @@
+/*
+ * Copyright 2018 WolkAbout Technology s.r.o.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "ConfigurationManifest.h"
 
+#include <cmath>
 #include <string>
 #include <utility>
 
@@ -167,6 +184,37 @@ ConfigurationManifest& ConfigurationManifest::setIsOptional(bool isOptional)
 {
     m_isOptional = isOptional;
     return *this;
+}
+
+bool ConfigurationManifest::operator==(ConfigurationManifest& rhs) const
+{
+    if (m_name != rhs.m_name || m_reference != rhs.m_reference || m_description != rhs.m_description ||
+        m_unit != rhs.m_unit || m_dataType != rhs.m_dataType)
+    {
+        return false;
+    }
+
+    if (m_minimum != rhs.m_minimum || m_maximum != rhs.m_maximum)
+    {
+        return false;
+    }
+
+    if (m_size != rhs.m_size || m_delimiter != rhs.m_delimiter || m_collapseKey != rhs.m_collapseKey)
+    {
+        return false;
+    }
+
+    if (m_defaultValue != rhs.m_defaultValue || m_nullValue != rhs.m_nullValue || m_isOptional != rhs.m_isOptional)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool ConfigurationManifest::operator!=(ConfigurationManifest& rhs) const
+{
+    return !(*this == rhs);
 }
 
 }    // namespace wolkabout

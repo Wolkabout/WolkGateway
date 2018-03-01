@@ -68,7 +68,7 @@ bool MqttConnectivityService::isConnected()
 
 bool MqttConnectivityService::publish(std::shared_ptr<Message> outboundMessage)
 {
-    return m_mqttClient->publish(outboundMessage->getTopic(), outboundMessage->getContent());
+    return m_mqttClient->publish(outboundMessage->getChannel(), outboundMessage->getContent());
 }
 
 void MqttConnectivityService::channelsUpdated()

@@ -19,9 +19,7 @@
 
 namespace wolkabout
 {
-ConsoleLogger::ConsoleLogger() : m_level{LogLevel::ERROR}
-{
-}
+ConsoleLogger::ConsoleLogger() : m_level{LogLevel::ERROR} {}
 
 void ConsoleLogger::logEntry(Log& log)
 {

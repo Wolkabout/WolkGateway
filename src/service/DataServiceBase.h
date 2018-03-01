@@ -27,6 +27,6 @@ class DataServiceBase : public DeviceMessageListener, public PlatformMessageList
 public:
     virtual ~DataServiceBase() = default;
 };
-}
+}    // namespace wolkabout
 
 #endif

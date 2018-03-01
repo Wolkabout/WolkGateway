@@ -19,9 +19,7 @@
 
 namespace wolkabout
 {
-BinaryData::BinaryData() : m_value{}, m_data{}, m_hash{}, m_previousHash{}
-{
-}
+BinaryData::BinaryData() : m_value{}, m_data{}, m_hash{}, m_previousHash{} {}
 
 BinaryData::BinaryData(const ByteArray& value) : m_value{value}, m_data{}, m_hash{}, m_previousHash{}
 {

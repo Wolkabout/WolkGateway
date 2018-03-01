@@ -65,4 +65,4 @@ void InboundPlatformMessageHandler::addToCommandBuffer(std::function<void()> com
 {
     m_commandBuffer->pushCommand(std::make_shared<std::function<void()>>(command));
 }
-}
+}    // namespace wolkabout

@@ -60,43 +60,43 @@ DataService<P>::DataService(const std::string& gatewayKey,
 
 template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    if (P::getInstance().isPlatformToGatewayMessage(message->getTopic()))
+    if (P::getInstance().isPlatformToGatewayMessage(message->getChannel()))
     {
         // if message is for gateway device just resend it
         m_outboundDeviceMessageHandler->addMessage(message);
     }
-    else if (P::getInstance().isPlatformToDeviceMessage(message->getTopic()))
+    else if (P::getInstance().isPlatformToDeviceMessage(message->getChannel()))
     {
         // if message is for device remove gateway info from channel
         routePlatformMessage(message);
     }
     else
     {
-        LOG(WARN) << "Message channel not parsed: " << message->getTopic();
+        LOG(WARN) << "Message channel not parsed: " << message->getChannel();
     }
 }
 
 template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    if (P::getInstance().isGatewayToPlatformMessage(message->getTopic()))
+    if (P::getInstance().isGatewayToPlatformMessage(message->getChannel()))
     {
         // if message is from gateway device just resend it
         m_outboundPlatformMessageHandler->addMessage(message);
     }
-    else if (P::getInstance().isDeviceToPlatformMessage(message->getTopic()))
+    else if (P::getInstance().isDeviceToPlatformMessage(message->getChannel()))
     {
         // if message is from device add gateway info to channel
         routeDeviceMessage(message);
     }
     else
     {
-        LOG(WARN) << "Message channel not parsed: " << message->getTopic();
+        LOG(WARN) << "Message channel not parsed: " << message->getChannel();
     }
 }
 
 template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Message> message)
 {
-    const std::string topic = P::getInstance().routeDeviceMessage(message->getTopic(), m_gatewayKey);
+    const std::string topic = P::getInstance().routeDeviceMessage(message->getChannel(), m_gatewayKey);
 
     const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
 
@@ -105,12 +105,12 @@ template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Messa
 
 template <class P> void DataService<P>::routePlatformMessage(std::shared_ptr<Message> message)
 {
-    const std::string topic = P::getInstance().routePlatformMessage(message->getTopic(), m_gatewayKey);
+    const std::string topic = P::getInstance().routePlatformMessage(message->getChannel(), m_gatewayKey);
 
     const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
 
     m_outboundDeviceMessageHandler->addMessage(routedMessage);
 }
-}
+}    // namespace wolkabout
 
 #endif

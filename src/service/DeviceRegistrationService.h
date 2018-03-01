@@ -19,12 +19,15 @@
 
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
+
+#include <map>
 #include <memory>
 #include <string>
 
 namespace wolkabout
 {
-class DeviceManager;
+class Device;
+class DeviceRepository;
 class OutboundMessageHandler;
 class Message;
 class DeviceRegistrationRequestDto;
@@ -33,26 +36,26 @@ class DeviceRegistrationResponseDto;
 class DeviceRegistrationService : public DeviceMessageListener, public PlatformMessageListener
 {
 public:
-    DeviceRegistrationService(std::string gatewayKey, DeviceManager& deviceManager,
-                              std::shared_ptr<OutboundMessageHandler> outboundPlatformMessageHandler,
-                              std::shared_ptr<OutboundMessageHandler> outboundDeviceMessageHandler);
+    DeviceRegistrationService(std::string gatewayKey, DeviceRepository& deviceRepository,
+                              OutboundMessageHandler& outboundPlatformMessageHandler);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
 private:
-    void handleDeviceRegistrationRequest(std::shared_ptr<DeviceRegistrationRequestDto> request);
-    void handleGatewayRegistrationRequest(std::shared_ptr<DeviceRegistrationRequestDto> request);
-    void handleDeviceRegistrationResponse(std::shared_ptr<DeviceRegistrationResponseDto> response);
-    void handleGatewayRegistrationResponse(std::shared_ptr<DeviceRegistrationResponseDto> response);
+    void handleRegistrationRequest(const std::string& deviceKey, const DeviceRegistrationRequestDto& request);
+    void handleRegistrationResponse(const std::string& deviceKey, const DeviceRegistrationResponseDto& response);
+
+    void handleReregistrationRequest();
 
     const std::string m_gatewayKey;
 
-    DeviceManager& m_deviceManager;
-    std::shared_ptr<OutboundMessageHandler> m_outboundPlatformMessageHandler;
-    std::shared_ptr<OutboundMessageHandler> m_outboundDeviceMessageHandler;
+    DeviceRepository& m_deviceRepository;
+    OutboundMessageHandler& m_outboundPlatformMessageHandler;
+
+    std::map<std::string, std::unique_ptr<Device>> m_pendingRegistrationDevices;
 };
-}
+}    // namespace wolkabout
 
 #endif

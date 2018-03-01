@@ -37,9 +37,7 @@ Logger* Logger::getInstance()
     return m_instance.get();
 }
 
-Log::Log(LogLevel level) : m_level{level}, m_message{""}
-{
-}
+Log::Log(LogLevel level) : m_level{level}, m_message{""} {}
 
 LogLevel Log::getLogLevel() const
 {

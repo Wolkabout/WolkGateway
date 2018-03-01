@@ -20,6 +20,7 @@
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/ProtocolMapper.h"
 #include "model/Device.h"
+#include "repository/DeviceRepository.h"
 #include "service/DataService.h"
 #include "service/FirmwareUpdateService.h"
 #include "service/PublishingService.h"

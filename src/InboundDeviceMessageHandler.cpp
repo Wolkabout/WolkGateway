@@ -23,9 +23,7 @@
 
 namespace wolkabout
 {
-InboundDeviceMessageHandler::InboundDeviceMessageHandler() : m_commandBuffer{new CommandBuffer()}
-{
-}
+InboundDeviceMessageHandler::InboundDeviceMessageHandler() : m_commandBuffer{new CommandBuffer()} {}
 
 void InboundDeviceMessageHandler::messageReceived(const std::string& topic, const std::string& message)
 {
@@ -64,4 +62,4 @@ void InboundDeviceMessageHandler::addToCommandBuffer(std::function<void()> comma
 {
     m_commandBuffer->pushCommand(std::make_shared<std::function<void()>>(command));
 }
-}
+}    // namespace wolkabout

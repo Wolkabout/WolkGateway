@@ -21,13 +21,9 @@
 
 namespace wolkabout
 {
-ActuatorGetCommand::ActuatorGetCommand() : m_reference{""}
-{
-}
+ActuatorGetCommand::ActuatorGetCommand() : m_reference{""} {}
 
-ActuatorGetCommand::ActuatorGetCommand(const std::string& reference) : m_reference{std::move(reference)}
-{
-}
+ActuatorGetCommand::ActuatorGetCommand(const std::string& reference) : m_reference{std::move(reference)} {}
 
 const std::string& ActuatorGetCommand::getReference() const
 {

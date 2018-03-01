@@ -14,30 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef DEVICEMANAGER_H
-#define DEVICEMANAGER_H
-
-#include "repository/DeviceRepository.h"
-#include <memory>
+#include "DeviceReregistrationResponseDto.h"
 
 namespace wolkabout
 {
-class Device;
-
-class DeviceManager
+DeviceReregistrationResponseDto::DeviceReregistrationResponseDto(DeviceReregistrationResponseDto::Result result)
+: m_result{result}
 {
-public:
-    DeviceManager(std::unique_ptr<DeviceRepository> repository,
-                  std::function<void(const std::string&)> protocolRegistrator);
-
-    void registerDevice(std::shared_ptr<Device> device);
-
-    std::string getProtocolForDevice(const std::string& deviceKey);
-
-private:
-    std::unique_ptr<DeviceRepository> m_deviceRepository;
-    std::function<void(const std::string&)> m_protocolRegistrator;
-};
 }
 
-#endif
+DeviceReregistrationResponseDto::Result DeviceReregistrationResponseDto::getResult() const
+{
+    return m_result;
+}
+}    // namespace wolkabout

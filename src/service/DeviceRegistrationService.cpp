@@ -14,153 +14,211 @@
  * limitations under the License.
  */
 
-#include "DeviceRegistrationService.h"
-#include "DeviceManager.h"
+#include "service/DeviceRegistrationService.h"
+#include "OutboundMessageHandler.h"
+#include "Poco/Bugcheck.h"
 #include "connectivity/json/RegistrationProtocol.h"
+#include "model/Device.h"
 #include "model/DeviceRegistrationRequestDto.h"
 #include "model/DeviceRegistrationResponseDto.h"
+#include "model/DeviceReregistrationResponseDto.h"
 #include "model/Message.h"
+#include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
+
+#include <map>
+#include <memory>
+#include <string>
 
 namespace wolkabout
 {
-DeviceRegistrationService::DeviceRegistrationService(
-  std::string gatewayKey, DeviceManager& deviceManager,
-  std::shared_ptr<OutboundMessageHandler> outboundPlatformMessageHandler,
-  std::shared_ptr<OutboundMessageHandler> outboundDeviceMessageHandler)
+DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey, DeviceRepository& deviceRepository,
+                                                     OutboundMessageHandler& outboundPlatformMessageHandler)
 : m_gatewayKey{std::move(gatewayKey)}
-, m_deviceManager{deviceManager}
-, m_outboundPlatformMessageHandler{std::move(outboundPlatformMessageHandler)}
-, m_outboundDeviceMessageHandler{std::move(outboundDeviceMessageHandler)}
+, m_deviceRepository{deviceRepository}
+, m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 {
 }
 
 void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << "Registration service: Platfom message received: " << message->getTopic() << " , "
+    LOG(DEBUG) << METHOD_INFO;
+
+    LOG(DEBUG) << "Device registration service: Platfom message received: " << message->getChannel() << " , "
                << message->getContent();
 
-    if (RegistrationProtocol::getInstance().isPlatformToDeviceMessage(message->getTopic(), m_gatewayKey))
+    if (RegistrationProtocol::getInstance().isMessageFromPlatform(message->getChannel(), m_gatewayKey))
     {
-        if (RegistrationProtocol::getInstance().isRegistrationResponse(message))
-        {
-            auto response = RegistrationProtocol::getInstance().makeRegistrationResponse(message);
-
-            if (!response)
-            {
-                LOG(WARN) << "DeviceRegistrationResponse could not be parsed: " << message->getTopic() << " , "
-                          << message->getContent();
-                return;
-            }
-
-            handleDeviceRegistrationResponse(response);
-        }
-        else
-        {
-            LOG(WARN) << "Incorrect registration channel from platform: " << message->getTopic();
-        }
+        LOG(WARN) << "Device registration service: Ignoring message on channel '" << message->getChannel();
+        return;
     }
-    else if (RegistrationProtocol::getInstance().isPlatformToGatewayMessage(message->getTopic(), m_gatewayKey))
+
+    if (RegistrationProtocol::getInstance().isRegistrationResponse(message))
     {
-        if (RegistrationProtocol::getInstance().isRegistrationResponse(message))
+        auto response = RegistrationProtocol::getInstance().makeRegistrationResponse(message);
+        if (!response)
         {
-            auto response = RegistrationProtocol::getInstance().makeRegistrationResponse(message);
-
-            if (!response)
-            {
-                LOG(WARN) << "DeviceRegistrationResponse could not be parsed: " << message->getTopic() << " , "
-                          << message->getContent();
-                return;
-            }
-
-            handleGatewayRegistrationResponse(response);
+            LOG(ERROR) << "Device registration service: Device registration response could not be parsed. "
+                       << "Channel: '" << message->getChannel() << "' Content: '" << message->getContent() << "'";
+            return;
         }
-        else
-        {
-            LOG(WARN) << "Incorrect registration channel from platform: " << message->getTopic();
-        }
+
+        auto deviceKey = RegistrationProtocol::getInstance().getDeviceKeyFromChannel(message->getChannel());
+        handleRegistrationResponse(deviceKey, *response);
+    }
+    else if (RegistrationProtocol::getInstance().isReregistrationRequest(message))
+    {
+        LOG(INFO) << "Device registration service: Reregisteding devices";
+
+        handleReregistrationRequest();
     }
     else
     {
-        LOG(WARN) << "Message channel not parsed: " << message->getTopic();
+        LOG(WARN) << "Device registration service: Unhandled message on channel '" << message->getChannel()
+                  << "'. Unsupported message type";
     }
 }
 
 void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << "Registration service: Device message received: " << message->getTopic() << " , "
+    LOG(DEBUG) << METHOD_INFO;
+
+    LOG(DEBUG) << "Device registration service: Device message received: " << message->getChannel() << " , "
                << message->getContent();
 
-    if (RegistrationProtocol::getInstance().isDeviceToPlatformMessage(message->getTopic()))
+    if (!RegistrationProtocol::getInstance().isMessageToPlatform(message->getChannel(), m_gatewayKey))
     {
-        if (RegistrationProtocol::getInstance().isRegistrationRequest(message))
-        {
-            auto request = RegistrationProtocol::getInstance().makeRegistrationRequest(message);
-
-            if (!request)
-            {
-                LOG(WARN) << "DeviceRegistrationRequest could not be parsed: " << message->getTopic() << " , "
-                          << message->getContent();
-                return;
-            }
-
-            handleDeviceRegistrationRequest(request);
-        }
-        else
-        {
-            LOG(WARN) << "Incorrect registration channel from device: " << message->getTopic();
-        }
+        LOG(WARN) << "Device registration service: Ignoring message received on channel '" << message->getChannel();
+        return;
     }
-    else if (RegistrationProtocol::getInstance().isGatewayToPlatformMessage(message->getTopic(), m_gatewayKey))
+
+    if (RegistrationProtocol::getInstance().isRegistrationRequest(message))
     {
-        if (RegistrationProtocol::getInstance().isRegistrationRequest(message))
+        auto request = RegistrationProtocol::getInstance().makeRegistrationRequest(message);
+        if (!request)
         {
-            auto request = RegistrationProtocol::getInstance().makeRegistrationRequest(message);
-
-            if (!request)
-            {
-                LOG(WARN) << "DeviceRegistrationRequest could not be parsed: " << message->getTopic() << " , "
-                          << message->getContent();
-                return;
-            }
-
-            handleGatewayRegistrationRequest(request);
+            LOG(WARN) << "Device registration service: Device registration request could not be parsed: "
+                      << message->getChannel() << " , " << message->getContent();
+            return;
         }
-        else
+
+        auto deviceKey = RegistrationProtocol::getInstance().getDeviceKeyFromChannel(message->getChannel());
+        if (!m_deviceRepository.containsDeviceWithKey(deviceKey))
         {
-            LOG(WARN) << "Incorrect registration channel from gateway: " << message->getTopic();
+            LOG(INFO) << "Device registration service: Handling registration of new device with key '" << deviceKey
+                      << "'";
+            handleRegistrationRequest(deviceKey, *request);
+            return;
+        }
+
+        auto savedDevice = m_deviceRepository.findByDeviceKey(deviceKey);
+        auto deviceRequestingRegistration =
+          std::make_shared<Device>(request->getDeviceName(), request->getDeviceKey(), request->getManifest());
+        if (*savedDevice != *deviceRequestingRegistration)
+        {
+            LOG(INFO) << "Device registration service: Handling registration of existing device with key '" << deviceKey
+                      << "' - Device/Manifest change";
+            handleRegistrationRequest(deviceKey, *request);
         }
     }
     else
     {
-        LOG(WARN) << "Message channel not parsed: " << message->getTopic();
+        LOG(WARN) << "Device registration service: unhandled message on channel '" << message->getChannel()
+                  << "'. Unsupported message type";
     }
 }
 
-void DeviceRegistrationService::handleDeviceRegistrationRequest(std::shared_ptr<DeviceRegistrationRequestDto> request)
+void DeviceRegistrationService::handleRegistrationRequest(const std::string& deviceKey,
+                                                          const DeviceRegistrationRequestDto& request)
 {
-    //	if(m_deviceRepository.deviceExists(request->getDeviceKey()))
-    //	{
+    LOG(DEBUG) << METHOD_INFO;
 
-    //	}
-    //	else
-    //	{
-    //		m_deviceRepository.save(std::make_shared<Device>(request->getDeviceKey(), request->getDeviceName(),
-    //														 request->getManifest()));
-    //	}
-}
+    LOG(INFO) << "Device registration service: Handling registration request for device with key '" << deviceKey << "'";
 
-void DeviceRegistrationService::handleGatewayRegistrationRequest(std::shared_ptr<DeviceRegistrationRequestDto> request)
-{
+    auto device =
+      std::unique_ptr<Device>(new Device(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
+    m_pendingRegistrationDevices[deviceKey] = std::move(device);
+
+    auto registrationRequest = RegistrationProtocol::getInstance().make(m_gatewayKey, deviceKey, request);
+    m_outboundPlatformMessageHandler.addMessage(registrationRequest);
 }
 
-void DeviceRegistrationService::handleDeviceRegistrationResponse(
-  std::shared_ptr<DeviceRegistrationResponseDto> response)
+void DeviceRegistrationService::handleRegistrationResponse(const std::string& deviceKey,
+                                                           const DeviceRegistrationResponseDto& response)
 {
+    LOG(DEBUG) << METHOD_INFO;
+
+    if (m_pendingRegistrationDevices.find(deviceKey) == m_pendingRegistrationDevices.end())
+    {
+        LOG(ERROR)
+          << "Device registration service: Ignoring unexpected device registration response for device with key '"
+          << deviceKey << "'";
+        return;
+    }
+
+    auto registrationResult = response.getResult();
+    if (registrationResult == DeviceRegistrationResponseDto::Result::OK)
+    {
+        LOG(INFO) << "Device registration service: Device with key '" << deviceKey
+                  << "' successfully registered on platform";
+
+        const auto& device = *m_pendingRegistrationDevices.at(deviceKey);
+        LOG(DEBUG) << "Device registration service: Saving device with key '" << device.getKey()
+                   << "' to device repository";
+
+        if (m_deviceRepository.containsDeviceWithKey(device.getKey()))
+        {
+            m_deviceRepository.update(device);
+        }
+        else
+        {
+            m_deviceRepository.save(device);
+        }
+    }
+    else
+    {
+        auto registrationFailureReason = [&]() -> std::string {
+            if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_KEY_CONFLICT)
+            {
+                return "Device with given key already registered";
+            }
+            else if (registrationResult ==
+                     DeviceRegistrationResponseDto::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED)
+            {
+                return "Maximum number of devices registered";
+            }
+            else if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_READING_PAYLOAD)
+            {
+                return "Rejected registration DTO";
+            }
+            else if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_MANIFEST_CONFLICT)
+            {
+                return "Manifest conflict";
+            }
+            else if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_NO_GATEWAY_MANIFEST)
+            {
+                return "Gateway has been deleted on platform";
+            }
+            else if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_GATEWAY_NOT_FOUND)
+            {
+                return "Gateway has been deleted on platform";
+            }
+
+            poco_assert_dbg(false);
+            return "Unknown";
+        }();
+
+        LOG(ERROR) << "Device registration service: Unable to register device with key '" << deviceKey
+                   << "'. Reason: " << registrationFailureReason;
+    }
+
+    m_pendingRegistrationDevices.erase(deviceKey);
 }
 
-void DeviceRegistrationService::handleGatewayRegistrationResponse(
-  std::shared_ptr<DeviceRegistrationResponseDto> response)
+void DeviceRegistrationService::handleReregistrationRequest()
 {
+    LOG(DEBUG) << METHOD_INFO;
+
+    // m_outboundPlatformMessageHandler.addMessage(std::make_shared<Message>("contenxt", "channel"));
 }
-}
+}    // namespace wolkabout

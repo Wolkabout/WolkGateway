@@ -27,6 +27,7 @@ namespace wolkabout
 class Message;
 class DeviceRegistrationRequestDto;
 class DeviceRegistrationResponseDto;
+class DeviceReregistrationResponseDto;
 
 class RegistrationProtocol : public ProtocolBase<RegistrationProtocol>
 {
@@ -34,25 +35,29 @@ public:
     std::vector<std::string> getDeviceTopics() override;
     std::vector<std::string> getPlatformTopics() override;
 
-    std::shared_ptr<Message> make(const std::string& gatewayKey, std::shared_ptr<DeviceRegistrationRequestDto> request);
-    std::shared_ptr<Message> make(const std::string& gatewayKey,
-                                  std::shared_ptr<DeviceRegistrationResponseDto> response);
+    std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
+                                  const DeviceRegistrationRequestDto& request);
+    std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
+                                  const DeviceReregistrationResponseDto& response);
 
     std::shared_ptr<DeviceRegistrationRequestDto> makeRegistrationRequest(std::shared_ptr<Message> message);
-
     std::shared_ptr<DeviceRegistrationResponseDto> makeRegistrationResponse(std::shared_ptr<Message> message);
 
     bool isGatewayToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
+    bool isDeviceToPlatformMessage(const std::string& topic);
+    bool isMessageToPlatform(const std::string& topic, const std::string& gatewayKey);
 
     bool isPlatformToGatewayMessage(const std::string& topic, const std::string& gatewayKey);
-
-    bool isDeviceToPlatformMessage(const std::string& topic);
-
     bool isPlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    bool isMessageFromPlatform(const std::string& topic, const std::string& gatewayKey);
 
     bool isRegistrationRequest(std::shared_ptr<Message> message);
-
     bool isRegistrationResponse(std::shared_ptr<Message> message);
+
+    bool isReregistrationRequest(std::shared_ptr<Message> message);
+    bool isReregistrationResponse(std::shared_ptr<Message> message);
+
+    std::string getDeviceKeyFromChannel(const std::string& channel);
 
 private:
     friend class ProtocolBase<RegistrationProtocol>;
@@ -66,9 +71,12 @@ private:
     const std::vector<std::string> m_platformMessageTypes;
 
     static const std::string REGISTRATION_RESPONSE_OK;
-    static const std::string REGISTRATION_RESPONSE_KEY_CONFLICT;
-    static const std::string REGISTRATION_RESPONSE_KEY_AND_MANIFEST_CONFLICT;
-    static const std::string REGISTRATION_RESPONSE_MAX_NUMBER_OF_DEVICES_EXCEEDED;
+    static const std::string REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT;
+    static const std::string REGISTRATION_RESPONSE_ERROR_MANIFEST_CONFLICT;
+    static const std::string REGISTRATION_RESPONSE_ERROR_MAX_NUMBER_OF_DEVICES_EXCEEDED;
+    static const std::string REGISTRATION_RESPONSE_ERROR_READING_PAYLOAD;
+    static const std::string REGISTRATION_RESPONSE_ERROR_GATEWAY_NOT_FOUND;
+    static const std::string REGISTRATION_RESPONSE_ERROR_NO_GATEWAY_MANIFEST;
 
     static constexpr int DIRRECTION_POS = 0;
     static constexpr int TYPE_POS = 1;
@@ -85,6 +93,6 @@ private:
     static constexpr int GATEWAY_DEVICE_REFERENCE_TYPE_POS = 6;
     static constexpr int GATEWAY_DEVICE_REFERENCE_VALUE_POS = 7;
 };
-}
+}    // namespace wolkabout
 
 #endif

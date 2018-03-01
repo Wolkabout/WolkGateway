@@ -43,6 +43,6 @@ const std::string JSON_SINGLE_PROTOCOL = "JsonSingle";
         else                                                                           \
             return FIRST_ARG(__VA_ARGS__)<void>(REST_ARGS(__VA_ARGS__));               \
     }
-}
+}    // namespace wolkabout
 
 #endif

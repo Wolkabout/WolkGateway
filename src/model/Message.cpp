@@ -18,17 +18,15 @@
 
 namespace wolkabout
 {
-Message::Message(const std::string& content, const std::string& topic) : m_content{content}, m_topic{topic}
-{
-}
+Message::Message(const std::string& content, const std::string& channel) : m_content{content}, m_channel{channel} {}
 
 const std::string& Message::getContent() const
 {
     return m_content;
 }
 
-const std::string& Message::getTopic() const
+const std::string& Message::getChannel() const
 {
-    return m_topic;
+    return m_channel;
 }
 }    // namespace wolkabout

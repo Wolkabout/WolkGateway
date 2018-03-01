@@ -20,9 +20,7 @@
 
 namespace wolkabout
 {
-FileHandler::FileHandler() : m_currentPacketData{}, m_previousPacketHash{}
-{
-}
+FileHandler::FileHandler() : m_currentPacketData{}, m_previousPacketHash{} {}
 
 void FileHandler::clear()
 {

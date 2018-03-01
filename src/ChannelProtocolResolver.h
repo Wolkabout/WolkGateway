@@ -17,28 +17,28 @@
 #ifndef CHANNELPROTOCOLRESOLVER_H
 #define CHANNELPROTOCOLRESOLVER_H
 
-#include "DeviceManager.h"
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
 #include "model/Message.h"
+#include "model/Device.h"
+#include "model/DeviceManifest.h"
+#include "repository/DeviceRepository.h"
 #include <functional>
 #include <memory>
 #include <string>
 
 namespace wolkabout
 {
-class DeviceManager;
-
 class ChannelProtocolResolver : public PlatformMessageListener, public DeviceMessageListener
 {
 public:
     virtual ~ChannelProtocolResolver() = default;
-    ChannelProtocolResolver(DeviceManager& deviceManager,
+    ChannelProtocolResolver(DeviceRepository& deviceRepository,
                             std::function<void(const std::string&, std::shared_ptr<Message>)> platformMessageHandler,
                             std::function<void(const std::string&, std::shared_ptr<Message>)> deviceMessageHandler);
 
 protected:
-    DeviceManager& m_deviceManger;
+    DeviceRepository& m_deviceRepository;
 
     std::function<void(const std::string&, std::shared_ptr<Message>)> m_platformMessageHandler;
     std::function<void(const std::string&, std::shared_ptr<Message>)> m_deviceMessageHandler;
@@ -48,7 +48,7 @@ template <class P> class ChannelProtocolResolverImpl : public ChannelProtocolRes
 {
 public:
     ChannelProtocolResolverImpl(
-      DeviceManager& deviceManager,
+      DeviceRepository& deviceRepository,
       std::function<void(const std::string&, std::shared_ptr<Message>)> platformMessageHandler,
       std::function<void(const std::string&, std::shared_ptr<Message>)> deviceMessageHandler);
 
@@ -59,28 +59,36 @@ public:
 
 template <class P>
 ChannelProtocolResolverImpl<P>::ChannelProtocolResolverImpl(
-  DeviceManager& deviceManager,
+  DeviceRepository& deviceRepository,
   std::function<void(const std::string&, std::shared_ptr<Message>)> platformMessageHandler,
   std::function<void(const std::string&, std::shared_ptr<Message>)> deviceMessageHandler)
-: ChannelProtocolResolver(deviceManager, platformMessageHandler, deviceMessageHandler)
+: ChannelProtocolResolver(deviceRepository, platformMessageHandler, deviceMessageHandler)
 {
 }
 
 template <class P> void ChannelProtocolResolverImpl<P>::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    const std::string deviceKey = P::getInstance().deviceKeyFromTopic(message->getTopic());
+    const std::string deviceKey = P::getInstance().deviceKeyFromTopic(message->getChannel());
+    std::shared_ptr<Device> device = m_deviceRepository.findByDeviceKey(deviceKey);
+    if (!device)
+    {
+        return;
+    }
 
-    const std::string protocol = m_deviceManger.getProtocolForDevice(deviceKey);
-
+    const std::string protocol = device->getManifest().getProtocol();
     m_platformMessageHandler(protocol, message);
 }
 
 template <class P> void ChannelProtocolResolverImpl<P>::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    const std::string deviceKey = P::getInstance().deviceKeyFromTopic(message->getTopic());
+    const std::string deviceKey = P::getInstance().deviceKeyFromTopic(message->getChannel());
+    std::shared_ptr<Device> device = m_deviceRepository.findByDeviceKey(deviceKey);
+    if (!device)
+    {
+        return;
+    }
 
-    const std::string protocol = m_deviceManger.getProtocolForDevice(deviceKey);
-
+    const std::string protocol = device->getManifest().getProtocol();
     m_deviceMessageHandler(protocol, message);
 }
 }

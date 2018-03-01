@@ -19,10 +19,10 @@
 namespace wolkabout
 {
 ChannelProtocolResolver::ChannelProtocolResolver(
-  DeviceManager& deviceManager,
+  DeviceRepository& deviceRepository,
   std::function<void(const std::string&, std::shared_ptr<Message>)> platformMessageHandler,
   std::function<void(const std::string&, std::shared_ptr<Message>)> deviceMessageHandler)
-: m_deviceManger{deviceManager}
+: m_deviceRepository{deviceRepository}
 , m_platformMessageHandler{platformMessageHandler}
 , m_deviceMessageHandler{deviceMessageHandler}
 {

@@ -40,6 +40,7 @@ public:
 
     operator T() const { return m_value; }
     bool null() const { return m_null; }
+
 private:
     T m_value;
     bool m_null;

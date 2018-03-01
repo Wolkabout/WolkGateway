@@ -211,7 +211,7 @@ bool JsonSingleProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorS
             return "";
         }();
 
-        const auto reference = referenceFromTopic(message->getTopic());
+        const auto reference = referenceFromTopic(message->getChannel());
 
         command = ActuatorSetCommand(reference, value);
     }
@@ -228,7 +228,7 @@ bool JsonSingleProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorG
 {
     try
     {
-        const auto reference = referenceFromTopic(message->getTopic());
+        const auto reference = referenceFromTopic(message->getChannel());
 
         if (reference.empty())
         {
@@ -495,4 +495,4 @@ std::string JsonSingleProtocol::deviceKeyFromTopic(const std::string& topic)
 
     return "";
 }
-}
+}    // namespace wolkabout

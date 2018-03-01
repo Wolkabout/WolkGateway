@@ -45,6 +45,6 @@ protected:
     ProtocolBase(const ProtocolBase&) = delete;
     ProtocolBase& operator=(const ProtocolBase&) = delete;
 };
-}
+}    // namespace wolkabout
 
 #endif

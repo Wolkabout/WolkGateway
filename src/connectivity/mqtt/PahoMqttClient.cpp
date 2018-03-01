@@ -28,9 +28,7 @@ const unsigned short PahoMqttClient::MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC = 200
 const unsigned short PahoMqttClient::MQTT_KEEP_ALIVE_SEC = 60;
 const unsigned short PahoMqttClient::MQTT_QOS = 2;
 
-PahoMqttClient::PahoMqttClient() : m_isConnected(false), m_lastWillTopic(""), m_lastWillMessage("")
-{
-}
+PahoMqttClient::PahoMqttClient() : m_isConnected(false), m_lastWillTopic(""), m_lastWillMessage("") {}
 
 bool PahoMqttClient::connect(const std::string& username, const std::string& password, const std::string& trustStore,
                              const std::string& host, const std::string& clientId)
@@ -191,7 +189,5 @@ void PahoMqttClient::message_arrived(mqtt::const_message_ptr msg)
     m_onMessageReceived(msg->get_topic(), msg->get_payload_str());
 }
 
-void PahoMqttClient::delivery_complete(mqtt::delivery_token_ptr /* tok */)
-{
-}
+void PahoMqttClient::delivery_complete(mqtt::delivery_token_ptr /* tok */) {}
 }    // namespace wolkabout

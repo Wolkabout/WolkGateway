@@ -402,4 +402,4 @@ std::vector<std::string> StatusProtocol::deviceKeysFromContent(const std::string
         return {};
     }
 }
-}
+}    // namespace wolkabout

@@ -501,7 +501,7 @@ void SQLiteDeviceRepository::remove(const std::string& deviceKey)
     statement << "COMMIT;", now;
 }
 
-std::shared_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::string& deviceKey)
+std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::string& deviceKey)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
@@ -717,14 +717,14 @@ std::shared_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
           configurationNullValue, configurationIsOptional != 0, configurationSize, configurationDelimiter));
     }
 
-    return std::make_shared<Device>(deviceName, deviceKey, *deviceManifest);
+    return std::unique_ptr<Device>(new Device(deviceName, deviceKey, *deviceManifest));
 }
 
-std::shared_ptr<std::vector<std::string>> SQLiteDeviceRepository::findAllDeviceKeys()
+std::unique_ptr<std::vector<std::string>> SQLiteDeviceRepository::findAllDeviceKeys()
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    auto deviceKeys = std::make_shared<std::vector<std::string>>();
+    auto deviceKeys = std::unique_ptr<std::vector<std::string>>();
 
     Statement statement(*m_session);
     statement << "SELECT key FROM device;", into(*deviceKeys), now;

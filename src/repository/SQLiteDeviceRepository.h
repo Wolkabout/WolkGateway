@@ -38,9 +38,9 @@ public:
 
     virtual void remove(const std::string& deviceKey) override;
 
-    virtual std::shared_ptr<Device> findByDeviceKey(const std::string& deviceKey) override;
+    virtual std::unique_ptr<Device> findByDeviceKey(const std::string& deviceKey) override;
 
-    virtual std::shared_ptr<std::vector<std::string>> findAllDeviceKeys() override;
+    virtual std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override;
 
     virtual bool containsDeviceWithKey(const std::string& deviceKey) override;
 

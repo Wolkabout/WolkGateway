@@ -8,3 +8,4 @@ COPY mosquitto.conf /etc/mosquitto/mosquitto.conf
 EXPOSE 1883
 ENV PATH /usr/sbin:$PATH
 ENTRYPOINT ["/usr/sbin/mosquitto"]
+

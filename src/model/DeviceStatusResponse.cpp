@@ -24,4 +24,4 @@ DeviceStatusResponse::Status DeviceStatusResponse::getStatus() const
 {
     return m_status;
 }
-}
+}    // namespace wolkabout

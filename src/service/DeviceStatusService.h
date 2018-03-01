@@ -51,6 +51,6 @@ private:
 
     std::weak_ptr<ConnectionStatusListener> m_gatewayModuleConnectionStatusListener;
 };
-}
+}    // namespace wolkabout
 
 #endif    // DEVICESTATUSSERVICE_H

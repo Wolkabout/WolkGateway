@@ -19,9 +19,11 @@
 
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
+#include "model/DeviceRegistrationRequestDto.h"
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace wolkabout
@@ -30,7 +32,6 @@ class Device;
 class DeviceRepository;
 class OutboundMessageHandler;
 class Message;
-class DeviceRegistrationRequestDto;
 class DeviceRegistrationResponseDto;
 
 class DeviceRegistrationService : public DeviceMessageListener, public PlatformMessageListener
@@ -46,19 +47,26 @@ public:
     void onGatewayRegistered(std::function<void()> callback);
 
 private:
-    void handleRegistrationRequest(const std::string& deviceKey, const DeviceRegistrationRequestDto& request);
-    void handleRegistrationResponse(const std::string& deviceKey, const DeviceRegistrationResponseDto& response);
+    void handleDeviceRegistrationRequest(const std::string& deviceKey, const DeviceRegistrationRequestDto& request);
+    void handleDeviceReregistrationRequest();
 
-    void handleReregistrationRequest();
+    void handleDeviceRegistrationResponse(const std::string& deviceKey, const DeviceRegistrationResponseDto& response);
+
+    void addToPostponedDeviceRegistartionRequests(const std::string& deviceKey,
+                                                  const DeviceRegistrationRequestDto& request);
 
     const std::string m_gatewayKey;
 
     DeviceRepository& m_deviceRepository;
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
 
-    std::map<std::string, std::unique_ptr<Device>> m_pendingRegistrationDevices;
-
     std::function<void()> m_gatewayRegisteredCallback;
+
+    std::mutex m_devicesAwaitingRegistrationResponseMutex;
+    std::map<std::string, std::unique_ptr<Device>> m_devicesAwaitingRegistrationResponse;
+
+    std::mutex m_devicesWithPostponedRegistrationMutex;
+    std::map<std::string, std::unique_ptr<DeviceRegistrationRequestDto>> m_devicesWithPostponedRegistration;
 };
 }    // namespace wolkabout
 

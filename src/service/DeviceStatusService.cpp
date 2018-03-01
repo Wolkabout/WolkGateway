@@ -216,4 +216,4 @@ void DeviceStatusService::routePlatformMessage(std::shared_ptr<Message> message)
 
     m_outboundDeviceMessageHandler.addMessage(routedMessage);
 }
-}
+}    // namespace wolkabout

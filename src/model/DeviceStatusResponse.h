@@ -37,6 +37,6 @@ public:
 private:
     DeviceStatusResponse::Status m_status;
 };
-}
+}    // namespace wolkabout
 
 #endif    // DEVICESTATUSRESPONSE_H

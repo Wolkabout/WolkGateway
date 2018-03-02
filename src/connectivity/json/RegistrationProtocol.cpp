@@ -248,16 +248,16 @@ void to_json(json& j, const ActuatorManifest& actuatorManfiest)
 void from_json(const json& j, ActuatorManifest& actuatorManifest)
 {
     auto dataType = [&]() -> ActuatorManifest::DataType {
-        std::string dataType = j.at("dataType").get<std::string>();
-        if (dataType == "STRING")
+        std::string dataTypeStr = j.at("dataType").get<std::string>();
+        if (dataTypeStr == "STRING")
         {
             return ActuatorManifest::DataType::STRING;
         }
-        else if (dataType == "NUMERIC")
+        else if (dataTypeStr == "NUMERIC")
         {
             return ActuatorManifest::DataType::NUMERIC;
         }
-        else if (dataType == "BOOLEAN")
+        else if (dataTypeStr == "BOOLEAN")
         {
             return ActuatorManifest::DataType::BOOLEAN;
         }

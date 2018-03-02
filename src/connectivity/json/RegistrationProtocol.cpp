@@ -343,16 +343,16 @@ void to_json(json& j, const SensorManifest& sensorManifest)
 void from_json(const json& j, SensorManifest& sensorManifest)
 {
     auto dataType = [&]() -> SensorManifest::DataType {
-        std::string dataType = j.at("dataType").get<std::string>();
-        if (dataType == "STRING")
+        std::string dataTypeStr = j.at("dataType").get<std::string>();
+        if (dataTypeStr == "STRING")
         {
             return SensorManifest::DataType::STRING;
         }
-        else if (dataType == "NUMERIC")
+        else if (dataTypeStr == "NUMERIC")
         {
             return SensorManifest::DataType::NUMERIC;
         }
-        else if (dataType == "BOOLEAN")
+        else if (dataTypeStr == "BOOLEAN")
         {
             return SensorManifest::DataType::BOOLEAN;
         }

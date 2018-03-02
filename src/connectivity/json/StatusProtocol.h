@@ -18,6 +18,7 @@
 #define STATUSPROTOCOL_H
 
 #include "connectivity/Protocol.h"
+#include "model/DeviceStatusResponse.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -25,7 +26,6 @@
 namespace wolkabout
 {
 class Message;
-class DeviceStatusResponse;
 
 class StatusProtocol : public ProtocolBase<StatusProtocol>
 {
@@ -33,8 +33,13 @@ public:
     std::vector<std::string> getDeviceTopics() override;
     std::vector<std::string> getPlatformTopics() override;
 
-    std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
-                                  std::shared_ptr<DeviceStatusResponse> response);
+    std::shared_ptr<Message> messageFromDeviceStatusResponse(const std::string& gatewayKey,
+                                                             const std::string& deviceKey,
+                                                             std::shared_ptr<DeviceStatusResponse> response);
+
+    std::shared_ptr<Message> messageFromDeviceStatusResponse(const std::string& gatewayKey,
+                                                             const std::string& deviceKey,
+                                                             const DeviceStatusResponse::Status& response);
 
     std::shared_ptr<Message> messageFromDeviceStatusRequest(const std::string& deviceKey);
 
@@ -54,6 +59,8 @@ public:
     std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
 
     std::string deviceKeyFromTopic(const std::string& topic);
+    std::string gatewayKeyFromTopic(const std::string& topic);
+    std::vector<std::string> deviceKeysFromContent(const std::string& content);
 
     static const std::string STATUS_RESPONSE_STATE_FIELD;
     static const std::string STATUS_RESPONSE_STATUS_CONNECTED;

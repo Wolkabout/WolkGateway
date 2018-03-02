@@ -43,6 +43,8 @@ public:
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
+    void onGatewayRegistered(std::function<void()> callback);
+
 private:
     void handleRegistrationRequest(const std::string& deviceKey, const DeviceRegistrationRequestDto& request);
     void handleRegistrationResponse(const std::string& deviceKey, const DeviceRegistrationResponseDto& response);
@@ -55,6 +57,8 @@ private:
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
 
     std::map<std::string, std::unique_ptr<Device>> m_pendingRegistrationDevices;
+
+    std::function<void()> m_gatewayRegisteredCallback;
 };
 }    // namespace wolkabout
 

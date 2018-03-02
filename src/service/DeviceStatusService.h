@@ -23,6 +23,7 @@
 namespace wolkabout
 {
 class DeviceRepository;
+class ConnectionStatusListener;
 class OutboundMessageHandler;
 
 class DeviceStatusService : public DeviceMessageListener, public PlatformMessageListener
@@ -36,6 +37,8 @@ public:
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
+    void setGatewayModuleConnectionStatusListener(std::weak_ptr<ConnectionStatusListener> listener);
+
 private:
     void routeDeviceMessage(std::shared_ptr<Message> message);
     void routePlatformMessage(std::shared_ptr<Message> message);
@@ -45,6 +48,8 @@ private:
 
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;
+
+    std::weak_ptr<ConnectionStatusListener> m_gatewayModuleConnectionStatusListener;
 };
 }
 

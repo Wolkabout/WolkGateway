@@ -178,19 +178,27 @@ std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
 }
 
 std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
-                                                  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses)
+                                                  std::shared_ptr<ActuatorStatus> actuatorStatuses)
 {
-    if (actuatorStatuses.size() == 0)
-    {
-        return nullptr;
-    }
-
-    /* JSON_SINGLE allows only 1 ActuatorStatus per Message, hence only first element is deserialized*/
-    const json jPayload(actuatorStatuses.front());
+    // JSON_SINGLE allows only 1 ActuatorStatus per Message
+    const json jPayload(actuatorStatuses);
     const std::string topic = Channel::ACTUATION_STATUS_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
                               Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER +
                               Channel::REFERENCE_PATH_PREFIX + Channel::CHANNEL_DELIMITER +
-                              actuatorStatuses.front()->getReference();
+                              actuatorStatuses->getReference();
+    const std::string payload = jPayload.dump();
+
+    return std::make_shared<Message>(payload, topic);
+}
+
+std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey, const ActuatorStatus& actuatorStatuses)
+{
+    // JSON_SINGLE allows only 1 ActuatorStatus per Message
+    const json jPayload(actuatorStatuses);
+    const std::string topic = Channel::ACTUATION_STATUS_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
+                              Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER +
+                              Channel::REFERENCE_PATH_PREFIX + Channel::CHANNEL_DELIMITER +
+                              actuatorStatuses.getReference();
     const std::string payload = jPayload.dump();
 
     return std::make_shared<Message>(payload, topic);

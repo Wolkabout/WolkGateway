@@ -23,6 +23,7 @@
 #include "model/Device.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
+#include "service/DeviceStatusService.h"
 #include "utilities/CommandBuffer.h"
 #include "utilities/StringUtils.h"
 
@@ -88,9 +89,13 @@ private:
     void routePlatformData(const std::string& protocol, std::shared_ptr<Message> message);
     void routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message);
 
+    void gatewayRegistered();
+
     template <class P> bool registerDataProtocol();
     template <class P> void routePlatformData(std::shared_ptr<Message> message);
     template <class P> void routeDeviceData(std::shared_ptr<Message> message);
+
+    template <class P> void setupGatewayListeners();
 
     Device m_device;
 
@@ -147,7 +152,8 @@ template <class P> bool Wolk::registerDataProtocol()
         return true;
     }
 
-    auto dataService = std::make_shared<DataService<P>>(m_device.getKey(), m_platformPublisher, m_devicePublisher);
+    auto dataService = std::make_shared<DataService<P>>(m_device.getKey(), *m_deviceRepository, *m_platformPublisher,
+                                                        *m_devicePublisher);
 
     auto protocolResolver = std::make_shared<ChannelProtocolResolverImpl<P>>(
       *m_deviceRepository,
@@ -205,6 +211,26 @@ template <class P> void Wolk::routeDeviceData(std::shared_ptr<Message> message)
 template <> inline void Wolk::routeDeviceData<void>(std::shared_ptr<Message> message)
 {
     LOG(WARN) << "Message protocol not found for: " << message->getChannel();
+}
+
+template <class P> void Wolk::setupGatewayListeners()
+{
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
+
+    auto it = m_dataServices.find(typeid(P));
+    if (it != m_dataServices.end())
+    {
+        m_deviceStatusService->setGatewayModuleConnectionStatusListener(std::get<0>(it->second));
+    }
+    else
+    {
+        LOG(WARN) << "Message protocol not found for gateway";
+    }
+}
+
+template <> inline void Wolk::setupGatewayListeners<void>()
+{
+    LOG(WARN) << "Data protocol not found for gateway";
 }
 
 }    // namespace wolkabout

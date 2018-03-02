@@ -40,8 +40,8 @@ public:
     std::shared_ptr<Message> make(const std::string& gatewayKey,
                                   std::vector<std::shared_ptr<SensorReading>> sensorReadings);
     std::shared_ptr<Message> make(const std::string& gatewayKey, std::vector<std::shared_ptr<Alarm>> alarms);
-    std::shared_ptr<Message> make(const std::string& gatewayKey,
-                                  std::vector<std::shared_ptr<ActuatorStatus>> actuatorStatuses);
+    std::shared_ptr<Message> make(const std::string& gatewayKey, std::shared_ptr<ActuatorStatus> actuatorStatuses);
+    std::shared_ptr<Message> make(const std::string& gatewayKey, const ActuatorStatus& actuatorStatuses);
 
     bool fromMessage(std::shared_ptr<Message> message, ActuatorSetCommand& command);
 

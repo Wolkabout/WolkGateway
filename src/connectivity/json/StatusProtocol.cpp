@@ -81,20 +81,21 @@ StatusProtocol::StatusProtocol()
 
 std::vector<std::string> StatusProtocol::getDeviceTopics()
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
     return m_deviceTopics;
 }
 
 std::vector<std::string> StatusProtocol::getPlatformTopics()
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
     return m_platformTopics;
 }
 
-std::shared_ptr<Message> StatusProtocol::make(const std::string& gatewayKey, const std::string& deviceKey,
-                                              std::shared_ptr<DeviceStatusResponse> response)
+std::shared_ptr<Message> StatusProtocol::messageFromDeviceStatusResponse(const std::string& gatewayKey,
+                                                                         const std::string& deviceKey,
+                                                                         std::shared_ptr<DeviceStatusResponse> response)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const json jPayload(response);
     const std::string topic = Channel::DEVICE_STATUS_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
@@ -106,9 +107,25 @@ std::shared_ptr<Message> StatusProtocol::make(const std::string& gatewayKey, con
     return std::make_shared<Message>(payload, topic);
 }
 
+std::shared_ptr<Message> StatusProtocol::messageFromDeviceStatusResponse(const std::string& gatewayKey,
+                                                                         const std::string& deviceKey,
+                                                                         const DeviceStatusResponse::Status& response)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    const json jPayload(DeviceStatusResponse{response});
+    const std::string topic = Channel::DEVICE_STATUS_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
+                              Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER +
+                              Channel::DEVICE_PATH_PREFIX + deviceKey + Channel::CHANNEL_DELIMITER;
+
+    const std::string payload = jPayload.dump();
+
+    return std::make_shared<Message>(payload, topic);
+}
+
 std::shared_ptr<Message> StatusProtocol::messageFromDeviceStatusRequest(const std::string& deviceKey)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const std::string topic =
       Channel::DEVICE_STATUS_REQUEST_TOPIC_ROOT + Channel::DEVICE_PATH_PREFIX + deviceKey + Channel::CHANNEL_DELIMITER;
@@ -120,7 +137,7 @@ std::shared_ptr<Message> StatusProtocol::messageFromDeviceStatusRequest(const st
 
 std::shared_ptr<DeviceStatusResponse> StatusProtocol::makeDeviceStatusResponse(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     try
     {
@@ -153,39 +170,32 @@ std::shared_ptr<DeviceStatusResponse> StatusProtocol::makeDeviceStatusResponse(s
     }
     catch (...)
     {
-        LOG(DEBUG) << "Status protocol: Unable to parse DeviceRegistrationResponseDto: " << message->getContent();
+        LOG(TRACE) << "Status protocol: Unable to parse DeviceRegistrationResponseDto: " << message->getContent();
         return nullptr;
     }
 }
 
 bool StatusProtocol::isGatewayToPlatformMessage(const std::string& topic)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
-    if (tokens.size() != 4)
+    if (tokens.size() < GATEWAY_KEY_POS + 1)
     {
-        LOG(DEBUG) << "Status protocol: Token count mismatch in path: " << topic;
+        LOG(TRACE) << "Status protocol: Token count mismatch in path: " << topic;
         return false;
     }
 
     if (tokens[DIRRECTION_POS] != Channel::DEVICE_TO_PLATFORM_DIRECTION)
     {
-        LOG(DEBUG) << "Status protocol: Device message dirrection not valid: " << topic;
-        return false;
-    }
-
-    if (std::find(m_deviceMessageTypes.begin(), m_deviceMessageTypes.end(), tokens[TYPE_POS]) ==
-        m_deviceMessageTypes.end())
-    {
-        LOG(DEBUG) << "Status protocol: Device message type not supported: " << topic;
+        LOG(TRACE) << "Status protocol: Device message dirrection not valid: " << topic;
         return false;
     }
 
     if (tokens[GATEWAY_TYPE_POS] != Channel::GATEWAY_PATH_PREFIX)
     {
-        LOG(DEBUG) << "Status protocol: Gateway perfix missing in path: " << topic;
+        LOG(TRACE) << "Status protocol: Gateway perfix missing in path: " << topic;
         return false;
     }
 
@@ -194,32 +204,25 @@ bool StatusProtocol::isGatewayToPlatformMessage(const std::string& topic)
 
 bool StatusProtocol::isDeviceToPlatformMessage(const std::string& topic)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
-    if (tokens.size() != 4)
+    if (tokens.size() < DEVICE_KEY_POS + 1)
     {
-        LOG(DEBUG) << "Status protocol: Token count mismatch in path: " << topic;
+        LOG(TRACE) << "Status protocol: Token count mismatch in path: " << topic;
         return false;
     }
 
     if (tokens[DIRRECTION_POS] != Channel::DEVICE_TO_PLATFORM_DIRECTION)
     {
-        LOG(DEBUG) << "Status protocol: Device message dirrection not valid: " << topic;
-        return false;
-    }
-
-    if (std::find(m_deviceMessageTypes.begin(), m_deviceMessageTypes.end(), tokens[TYPE_POS]) ==
-        m_deviceMessageTypes.end())
-    {
-        LOG(DEBUG) << "Status protocol: Device message type not supported: " << topic;
+        LOG(TRACE) << "Status protocol: Device message dirrection not valid: " << topic;
         return false;
     }
 
     if (tokens[DEVICE_TYPE_POS] != Channel::DEVICE_PATH_PREFIX)
     {
-        LOG(DEBUG) << "Status protocol: Device perfix missing in path: " << topic;
+        LOG(TRACE) << "Status protocol: Device perfix missing in path: " << topic;
         return false;
     }
 
@@ -228,11 +231,11 @@ bool StatusProtocol::isDeviceToPlatformMessage(const std::string& topic)
 
 bool StatusProtocol::isPlatformToDeviceMessage(const std::string& topic)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
-    if (tokens.size() != 6)
+    if (tokens.size() <= GATEWAY_DEVICE_KEY_POS + 1)
     {
         LOG(TRACE) << "Status protocol: Token count mismatch in path: " << topic;
         return false;
@@ -244,13 +247,6 @@ bool StatusProtocol::isPlatformToDeviceMessage(const std::string& topic)
         return false;
     }
 
-    if (std::find(m_platformMessageTypes.begin(), m_platformMessageTypes.end(), tokens[TYPE_POS]) ==
-        m_platformMessageTypes.end())
-    {
-        LOG(TRACE) << "Status protocol: Device message type not supported: " << topic;
-        return false;
-    }
-
     if (tokens[GATEWAY_TYPE_POS] != Channel::GATEWAY_PATH_PREFIX)
     {
         LOG(TRACE) << "Status protocol: Gateway perfix missing in path: " << topic;
@@ -259,7 +255,7 @@ bool StatusProtocol::isPlatformToDeviceMessage(const std::string& topic)
 
     if (tokens[GATEWAY_DEVICE_TYPE_POS] != Channel::DEVICE_PATH_PREFIX)
     {
-        LOG(DEBUG) << "Status protocol: Device perfix missing in path: " << topic;
+        LOG(TRACE) << "Status protocol: Device perfix missing in path: " << topic;
         return false;
     }
 
@@ -268,40 +264,40 @@ bool StatusProtocol::isPlatformToDeviceMessage(const std::string& topic)
 
 bool StatusProtocol::isStatusResponseMessage(const std::string& topic)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(topic, Channel::DEVICE_STATUS_RESPONSE_TOPIC_ROOT);
 }
 
 bool StatusProtocol::isStatusRequestMessage(const std::string& topic)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(topic, Channel::DEVICE_STATUS_REQUEST_TOPIC_ROOT);
 }
 
 bool StatusProtocol::isLastWillMessage(const std::string& topic)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(topic, Channel::LAST_WILL_TOPIC_ROOT);
 }
 
 std::string StatusProtocol::routeDeviceMessage(const std::string& topic, const std::string& gatewayKey)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     auto firstPos = topic.find(Channel::CHANNEL_DELIMITER);
     if (firstPos == std::string::npos)
     {
-        LOG(DEBUG) << "Status protocol: Channel delimiter missing in path: " << topic;
+        LOG(TRACE) << "Status protocol: Channel delimiter missing in path: " << topic;
         return "";
     }
 
     auto secondPos = topic.find(Channel::CHANNEL_DELIMITER, firstPos + Channel::CHANNEL_DELIMITER.length());
     if (secondPos == std::string::npos)
     {
-        LOG(DEBUG) << "Status protocol: Channel delimiter missing in path: " << topic;
+        LOG(TRACE) << "Status protocol: Channel delimiter missing in path: " << topic;
         return "";
     }
 
@@ -313,6 +309,8 @@ std::string StatusProtocol::routeDeviceMessage(const std::string& topic, const s
 
 std::string StatusProtocol::routePlatformMessage(const std::string& topic, const std::string& gatewayKey)
 {
+    LOG(TRACE) << METHOD_INFO;
+
     const std::string gwTopicPart =
       Channel::GATEWAY_PATH_PREFIX + Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER;
     if (topic.find(gwTopicPart) != std::string::npos)
@@ -325,39 +323,83 @@ std::string StatusProtocol::routePlatformMessage(const std::string& topic, const
 
 std::string StatusProtocol::deviceKeyFromTopic(const std::string& topic)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     if (isLastWillMessage(topic))
     {
         return StringUtils::removePrefix(topic, Channel::LAST_WILL_TOPIC_ROOT);
     }
 
-    auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
+    const std::string devicePathPrefix = Channel::DEVICE_PATH_PREFIX + Channel::CHANNEL_DELIMITER;
 
-    if (tokens.size() < GATEWAY_KEY_POS + 1 || tokens.size() < DEVICE_KEY_POS + 1)
+    const auto keyStartPosition = topic.find(devicePathPrefix);
+    if (keyStartPosition == std::string::npos)
     {
-        LOG(DEBUG) << "Status protocol: Token count mismatch in path: " << topic;
+        LOG(TRACE) << "Status Protocol: Channel does not cointain device path prefix: " << topic;
         return "";
     }
 
-    if (tokens.size() > GATEWAY_DEVICE_KEY_POS)
+    const auto keyEndPosition = topic.find(Channel::CHANNEL_DELIMITER, keyStartPosition + devicePathPrefix.size());
+    if (keyEndPosition == std::string::npos)
     {
-        if (tokens[GATEWAY_TYPE_POS] == Channel::GATEWAY_PATH_PREFIX &&
-            tokens[GATEWAY_DEVICE_TYPE_POS] == Channel::DEVICE_PATH_PREFIX)
+        return topic.substr(keyStartPosition + devicePathPrefix.size(), std::string::npos);
+    }
+
+    return topic.substr(keyStartPosition + devicePathPrefix.size(), keyEndPosition);
+}
+
+std::string StatusProtocol::gatewayKeyFromTopic(const std::string& topic)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    if (isLastWillMessage(topic))
+    {
+        return StringUtils::removePrefix(topic, Channel::LAST_WILL_TOPIC_ROOT);
+    }
+
+    const std::string gatewayPathPrefix = Channel::GATEWAY_PATH_PREFIX + Channel::CHANNEL_DELIMITER;
+
+    const auto keyStartPosition = topic.find(gatewayPathPrefix);
+    if (keyStartPosition == std::string::npos)
+    {
+        LOG(TRACE) << "Status Protocol: Channel does not cointain gateway path prefix: " << topic;
+        return "";
+    }
+
+    const auto keyEndPosition = topic.find(Channel::CHANNEL_DELIMITER, keyStartPosition + gatewayPathPrefix.size());
+    if (keyEndPosition == std::string::npos)
+    {
+        return topic.substr(keyStartPosition + gatewayPathPrefix.size(), std::string::npos);
+    }
+
+    return topic.substr(keyStartPosition + gatewayPathPrefix.size(), keyEndPosition);
+}
+
+std::vector<std::string> StatusProtocol::deviceKeysFromContent(const std::string& content)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    try
+    {
+        const json j = json::parse(content);
+        if (!j.is_array())
         {
-            return tokens[GATEWAY_DEVICE_KEY_POS];
+            throw std::logic_error("");
         }
-    }
 
-    if (tokens[GATEWAY_TYPE_POS] == Channel::GATEWAY_PATH_PREFIX)
-    {
-        return tokens[GATEWAY_KEY_POS];
-    }
-    else if (tokens[DEVICE_TYPE_POS] == Channel::DEVICE_PATH_PREFIX)
-    {
-        return tokens[DEVICE_KEY_POS];
-    }
+        std::vector<std::string> keys;
 
-    return "";
+        for (const auto& key : j)
+        {
+            keys.push_back(key);
+        }
+
+        return keys;
+    }
+    catch (...)
+    {
+        LOG(TRACE) << "Status protocol: Unable to parse content: " << content;
+        return {};
+    }
 }
 }

@@ -109,6 +109,20 @@ void Wolk::routeDeviceData(const std::string& protocol, std::shared_ptr<Message>
     return MapProtocol(this->routeDeviceData, message)(protocol);
 }
 
+void Wolk::gatewayRegistered()
+{
+    auto gatewayDevice = m_deviceRepository->findByDeviceKey(m_device.getKey());
+    if (!gatewayDevice)
+    {
+        LOG(WARN) << "Gateway device not found in repository";
+        return;
+    }
+
+    const std::string gatewayProtocol = gatewayDevice->getManifest().getProtocol();
+
+    return MapProtocol(this->setupGatewayListeners)(gatewayProtocol);
+}
+
 Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler& handler,
                                              std::function<void()> connectionLostHandler)
 : m_messageHandler{handler}, m_connectionLostHandler{connectionLostHandler}

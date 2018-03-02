@@ -17,12 +17,13 @@
 #ifndef DATASERVICEBASE_H
 #define DATASERVICEBASE_H
 
+#include "ConnectionStatusListener.h"
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
 
 namespace wolkabout
 {
-class DataServiceBase : public DeviceMessageListener, public PlatformMessageListener
+class DataServiceBase : public DeviceMessageListener, public PlatformMessageListener, public ConnectionStatusListener
 {
 public:
     virtual ~DataServiceBase() = default;

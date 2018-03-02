@@ -126,6 +126,9 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
     wolk->m_inboundDeviceMessageHandler->setListener<RegistrationProtocol>(wolk->m_deviceRegistrationService);
     wolk->m_inboundPlatformMessageHandler->setListener<RegistrationProtocol>(wolk->m_deviceRegistrationService);
 
+    wolk->m_deviceRegistrationService->onGatewayRegistered([&] { wolk->gatewayRegistered(); });
+
+    // Setup device status service
     wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
       m_device.getKey(), *wolk->m_deviceRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher);
 

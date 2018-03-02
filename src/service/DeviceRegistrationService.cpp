@@ -128,6 +128,11 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
     }
 }
 
+void DeviceRegistrationService::onGatewayRegistered(std::function<void()> callback)
+{
+    m_gatewayRegisteredCallback = callback;
+}
+
 void DeviceRegistrationService::handleRegistrationRequest(const std::string& deviceKey,
                                                           const DeviceRegistrationRequestDto& request)
 {
@@ -173,6 +178,11 @@ void DeviceRegistrationService::handleRegistrationResponse(const std::string& de
         else
         {
             m_deviceRepository.save(device);
+        }
+
+        if (deviceKey == m_gatewayKey && m_gatewayRegisteredCallback)
+        {
+            m_gatewayRegisteredCallback();
         }
     }
     else

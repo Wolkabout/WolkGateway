@@ -24,6 +24,7 @@
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
 #include "service/DeviceStatusService.h"
+#include "service/PublishingService.h"
 #include "utilities/CommandBuffer.h"
 #include "utilities/StringUtils.h"
 
@@ -43,11 +44,9 @@ class InboundPlatformMessageHandler;
 // class FirmwareUpdateService;
 // class FileDownloadService;
 class DeviceManager;
-class PublishingService;
 class OutboundServiceDataHandler;
 class DataServiceBase;
 class DeviceRegistrationService;
-class DeviceStatusService;
 
 class Wolk
 {
@@ -101,20 +100,20 @@ private:
 
     std::unique_ptr<DeviceRepository> m_deviceRepository;
 
-    std::shared_ptr<ConnectivityService> m_platformConnectivityService;
-    std::shared_ptr<ConnectivityService> m_deviceConnectivityService;
+    std::unique_ptr<ConnectivityService> m_platformConnectivityService;
+    std::unique_ptr<ConnectivityService> m_deviceConnectivityService;
     std::shared_ptr<Persistence> m_persistence;
 
-    std::shared_ptr<InboundPlatformMessageHandler> m_inboundPlatformMessageHandler;
-    std::shared_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
+    std::unique_ptr<InboundPlatformMessageHandler> m_inboundPlatformMessageHandler;
+    std::unique_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
 
-    std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
+    // std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
 
     std::shared_ptr<ConnectivityFacade> m_platformConnectivityManager;
     std::shared_ptr<ConnectivityFacade> m_deviceConnectivityManager;
 
-    std::shared_ptr<PublishingService> m_platformPublisher;
-    std::shared_ptr<PublishingService> m_devicePublisher;
+    std::unique_ptr<PublishingService> m_platformPublisher;
+    std::unique_ptr<PublishingService> m_devicePublisher;
 
     // std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
     // std::shared_ptr<FileDownloadService> m_fileDownloadService;

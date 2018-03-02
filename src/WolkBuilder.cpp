@@ -86,20 +86,19 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
 
-    wolk->m_platformConnectivityService = std::make_shared<MqttConnectivityService>(
-      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_host);
+    wolk->m_platformConnectivityService.reset(new MqttConnectivityService(
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_host));
 
-    wolk->m_deviceConnectivityService = std::make_shared<MqttConnectivityService>(
-      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), "tcp://127.0.0.1:1883");
+    wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), "tcp://127.0.0.1:1883"));
 
-    wolk->m_platformPublisher = std::make_shared<PublishingService>(
-      wolk->m_platformConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
-    wolk->m_devicePublisher = std::make_shared<PublishingService>(
-      wolk->m_deviceConnectivityService, std::unique_ptr<Persistence>(new InMemoryPersistence()));
+    wolk->m_platformPublisher.reset(new PublishingService(*wolk->m_platformConnectivityService,
+                                                          std::unique_ptr<Persistence>(new InMemoryPersistence())));
+    wolk->m_devicePublisher.reset(new PublishingService(*wolk->m_deviceConnectivityService,
+                                                        std::unique_ptr<Persistence>(new InMemoryPersistence())));
 
-    wolk->m_inboundPlatformMessageHandler = std::make_shared<InboundPlatformMessageHandler>(m_device.getKey());
-
-    wolk->m_inboundDeviceMessageHandler = std::make_shared<InboundDeviceMessageHandler>();
+    wolk->m_inboundPlatformMessageHandler.reset(new InboundPlatformMessageHandler(m_device.getKey()));
+    wolk->m_inboundDeviceMessageHandler.reset(new InboundDeviceMessageHandler());
 
     wolk->m_platformConnectivityManager =
       std::make_shared<Wolk::ConnectivityFacade>(*wolk->m_inboundPlatformMessageHandler, [&] {
@@ -113,8 +112,8 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
           wolk->connectToDevices();
       });
 
-    wolk->m_outboundServiceDataHandler =
-      std::make_shared<OutboundDataService>(m_device, wolk->m_platformConnectivityService);
+    //    wolk->m_outboundServiceDataHandler =
+    //      std::make_shared<OutboundDataService>(m_device, wolk->m_platformConnectivityService);
 
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
     wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);

@@ -33,8 +33,7 @@ class Persistence;
 class PublishingService : public OutboundMessageHandler, public ConnectionStatusListener
 {
 public:
-    PublishingService(std::shared_ptr<ConnectivityService> connectivityService,
-                      std::unique_ptr<Persistence> persistence);
+    PublishingService(ConnectivityService& connectivityService, std::unique_ptr<Persistence> persistence);
     ~PublishingService();
 
     void addMessage(std::shared_ptr<Message> message) override;
@@ -45,7 +44,7 @@ public:
 private:
     void run();
 
-    std::shared_ptr<ConnectivityService> m_connectivityService;
+    ConnectivityService& m_connectivityService;
     std::unique_ptr<Persistence> m_persistence;
 
     std::atomic_bool m_connected;

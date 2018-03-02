@@ -22,9 +22,8 @@
 
 namespace wolkabout
 {
-PublishingService::PublishingService(std::shared_ptr<ConnectivityService> connectivityService,
-                                     std::unique_ptr<Persistence> persistence)
-: m_connectivityService{std::move(connectivityService)}
+PublishingService::PublishingService(ConnectivityService& connectivityService, std::unique_ptr<Persistence> persistence)
+: m_connectivityService{connectivityService}
 , m_persistence{std::move(persistence)}
 , m_connected{false}
 , m_run{true}
@@ -64,7 +63,7 @@ void PublishingService::run()
         while (m_connected && !m_persistence->empty())
         {
             const auto message = m_persistence->front();
-            if (m_connectivityService->publish(message))
+            if (m_connectivityService.publish(message))
             {
                 m_persistence->pop();
             }

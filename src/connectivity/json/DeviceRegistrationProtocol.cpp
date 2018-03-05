@@ -420,6 +420,54 @@ void from_json(const json& j, DeviceRegistrationRequestDto& dto)
 }
 /*** DEVICE REGISTRATION REQUEST DTO ***/
 
+/*** DEVICE REGISTRATION RESPONSE DTO ***/
+void to_json(json& j, const DeviceRegistrationResponseDto& dto)
+{
+    auto resultStr = [&]() -> std::string {
+        switch (dto.getResult())
+        {
+        case DeviceRegistrationResponseDto::Result::OK:
+            return "OK";
+            break;
+
+        case DeviceRegistrationResponseDto::Result::ERROR_GATEWAY_NOT_FOUND:
+            return "ERROR_GATEWAY_NOT_FOUND";
+            break;
+
+        case DeviceRegistrationResponseDto::Result::ERROR_KEY_CONFLICT:
+            return "ERROR_KEY_CONFLICT";
+            break;
+
+        case DeviceRegistrationResponseDto::Result::ERROR_MANIFEST_CONFLICT:
+            return "ERROR_MANIFEST_CONFLICT";
+            break;
+
+        case DeviceRegistrationResponseDto::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED:
+            return "ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED";
+            break;
+
+        case DeviceRegistrationResponseDto::Result::ERROR_NO_GATEWAY_MANIFEST:
+            return "ERROR_NO_GATEWAY_MANIFEST";
+            break;
+
+        case DeviceRegistrationResponseDto::Result::ERROR_READING_PAYLOAD:
+            return "ERROR_READING_PAYLOAD";
+            break;
+
+        default:
+            poco_assert_dbg(false);
+            throw std::invalid_argument("Unhandled result");
+        }
+    }();
+
+    // clang-format off
+    j = {
+        {"result", resultStr}
+    };
+    // clang-format on
+}
+/*** DEVICE REGISTRATION RESPONSE DTO ***/
+
 /*** DEVICE REREGISTRATION RESPONSE DTO ***/
 void to_json(json& j, const DeviceReregistrationResponseDto& dto)
 {
@@ -472,15 +520,52 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::make(const std::string& gat
     try
     {
         const json jsonPayload(request);
-        const std::string channel = Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
-                                    Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER +
-                                    Channel::DEVICE_PATH_PREFIX + Channel::CHANNEL_DELIMITER + deviceKey;
+        const auto channel = [&]() -> std::string {
+            if (deviceKey == gatewayKey)
+            {
+                return Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
+                       Channel::CHANNEL_DELIMITER + gatewayKey;
+            }
+
+            return Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
+                   Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER + Channel::DEVICE_PATH_PREFIX +
+                   Channel::CHANNEL_DELIMITER + deviceKey;
+        }();
 
         return std::make_shared<Message>(jsonPayload.dump(), channel);
     }
     catch (std::exception& e)
     {
         LOG(ERROR) << "Device registration protocol: Unable to serialize device registration request: " << e.what();
+        return nullptr;
+    }
+}
+
+std::shared_ptr<Message> DeviceRegistrationProtocol::make(const std::string& gatewayKey, const std::string& deviceKey,
+                                                          const wolkabout::DeviceRegistrationResponseDto& response)
+{
+    LOG(DEBUG) << METHOD_INFO;
+
+    try
+    {
+        const json jsonPayload(response);
+        const auto channel = [&]() -> std::string {
+            if (deviceKey == gatewayKey)
+            {
+                return Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
+                       Channel::CHANNEL_DELIMITER + gatewayKey;
+            }
+
+            return Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
+                   Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER + Channel::DEVICE_PATH_PREFIX +
+                   Channel::CHANNEL_DELIMITER + deviceKey;
+        }();
+
+        return std::make_shared<Message>(jsonPayload.dump(), channel);
+    }
+    catch (std::exception& e)
+    {
+        LOG(ERROR) << "Device registration protocol: Unable to serialize device registration response: " << e.what();
         return nullptr;
     }
 }

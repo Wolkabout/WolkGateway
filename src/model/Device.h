@@ -28,6 +28,7 @@ class Device
 public:
     Device() = default;
     Device(std::string name, std::string key, DeviceManifest deviceManifest);
+    Device(std::string name, std::string key, std::string password);
     Device(std::string name, std::string key, std::string password, DeviceManifest deviceManifest);
 
     virtual ~Device() = default;

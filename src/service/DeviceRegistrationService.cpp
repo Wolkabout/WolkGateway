@@ -48,7 +48,7 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
     LOG(DEBUG) << "Device registration service: Platfom message received: " << message->getChannel() << " , "
                << message->getContent();
 
-    if (DeviceRegistrationProtocol::getInstance().isMessageFromPlatform(message->getChannel()))
+    if (!DeviceRegistrationProtocol::getInstance().isMessageFromPlatform(message->getChannel()))
     {
         LOG(WARN) << "Device registration service: Ignoring message on channel '" << message->getChannel()
                   << "'. Message not from platform.";
@@ -110,11 +110,7 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
     }
 
     auto deviceKey = DeviceRegistrationProtocol::getInstance().extractDeviceKeyFromChannel(message->getChannel());
-    if (m_deviceRepository.containsDeviceWithKey(m_gatewayKey))
-    {
-        handleDeviceRegistrationRequest(deviceKey, *request);
-    }
-    else
+    if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey))
     {
         if (deviceKey == m_gatewayKey)
         {
@@ -124,12 +120,25 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
         {
             addToPostponedDeviceRegistartionRequests(deviceKey, *request);
         }
+
+        return;
     }
+
+    handleDeviceRegistrationRequest(deviceKey, *request);
 }
 
-void DeviceRegistrationService::onGatewayRegistered(std::function<void()> callback)
+void DeviceRegistrationService::onDeviceRegistered(
+  std::function<void(const std::string& deviceKey, bool isGateway)> onDeviceRegistered)
 {
-    m_gatewayRegisteredCallback = callback;
+    m_onDeviceRegistered = onDeviceRegistered;
+}
+
+void DeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const
+{
+    if (m_onDeviceRegistered)
+    {
+        m_onDeviceRegistered(deviceKey, isGateway);
+    }
 }
 
 void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::string& deviceKey,
@@ -138,6 +147,15 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
     LOG(DEBUG) << METHOD_INFO;
 
     LOG(INFO) << "Device registration service: Handling registration request for device with key '" << deviceKey << "'";
+
+    auto gateway = m_deviceRepository.findByDeviceKey(m_gatewayKey);
+    if (gateway && gateway->getManifest().getProtocol() != request.getManifest().getProtocol())
+    {
+        LOG(DEBUG) << "Device registration service: Ignoring device registration request for device with key '"
+                   << deviceKey << "'. Gateway uses protocol '" << gateway->getManifest().getProtocol()
+                   << "' but device wants to register with protocol '" << request.getManifest().getProtocol() << "'";
+        return;
+    }
 
     auto savedDevice = m_deviceRepository.findByDeviceKey(deviceKey);
     auto deviceRequestingRegistration =
@@ -219,6 +237,8 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
         {
             m_deviceRepository.save(device);
         }
+
+        invokeOnDeviceRegisteredListener(deviceKey, deviceKey == m_gatewayKey);
 
         if (device.getKey() == m_gatewayKey)
         {

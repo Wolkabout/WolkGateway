@@ -26,6 +26,11 @@ Device::Device(std::string name, std::string key, DeviceManifest deviceManifest)
 {
 }
 
+Device::Device(std::string name, std::string key, std::string password)
+: m_name(std::move(name)), m_key(std::move(key)), m_password(std::move(password))
+{
+}
+
 Device::Device(std::string name, std::string key, std::string password, DeviceManifest deviceManifest)
 : m_name(std::move(name))
 , m_key(std::move(key))

@@ -22,8 +22,8 @@
 #include "Wolk.h"
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/ProtocolMapper.h"
-#include "connectivity/json/StatusProtocol.h"
 #include "connectivity/json/DeviceRegistrationProtocol.h"
+#include "connectivity/json/StatusProtocol.h"
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
@@ -125,7 +125,12 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
     wolk->m_inboundDeviceMessageHandler->setListener<DeviceRegistrationProtocol>(wolk->m_deviceRegistrationService);
     wolk->m_inboundPlatformMessageHandler->setListener<DeviceRegistrationProtocol>(wolk->m_deviceRegistrationService);
 
-    wolk->m_deviceRegistrationService->onGatewayRegistered([&] { wolk->gatewayRegistered(); });
+    wolk->m_deviceRegistrationService->onDeviceRegistered([&](const std::string& /* deviceKey */, bool isGateway) {
+        if (isGateway)
+        {
+            wolk->gatewayRegistered();
+        }
+    });
 
     // Setup device status service
     wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(

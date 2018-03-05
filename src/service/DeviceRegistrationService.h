@@ -44,7 +44,10 @@ public:
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    void onGatewayRegistered(std::function<void()> callback);
+    void onDeviceRegistered(std::function<void(const std::string& deviceKey, bool isGateway)> onDeviceRegistered);
+
+protected:
+    void invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const;
 
 private:
     void handleDeviceRegistrationRequest(const std::string& deviceKey, const DeviceRegistrationRequestDto& request);
@@ -60,9 +63,9 @@ private:
     DeviceRepository& m_deviceRepository;
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
 
-    std::function<void()> m_gatewayRegisteredCallback;
+    std::function<void(const std::string& deviceKey, bool isGateway)> m_onDeviceRegistered;
 
-    std::mutex m_devicesAwaitingRegistrationResponseMutex;
+    std::recursive_mutex m_devicesAwaitingRegistrationResponseMutex;
     std::map<std::string, std::unique_ptr<Device>> m_devicesAwaitingRegistrationResponse;
 
     std::mutex m_devicesWithPostponedRegistrationMutex;

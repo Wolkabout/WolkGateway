@@ -543,7 +543,10 @@ std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
 
     while (!statement.done())
     {
-        statement.execute();
+        if (statement.execute() == 0)
+        {
+            break;
+        }
 
         const auto alarmSeverity = [&]() -> AlarmManifest::AlarmSeverity {
             if (alarmSeverityStr == "ALERT")
@@ -587,7 +590,10 @@ std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
 
     while (!statement.done())
     {
-        statement.execute();
+        if (statement.execute() == 0)
+        {
+            break;
+        }
 
         const auto actuatorDataType = [&]() -> ActuatorManifest::DataType {
             if (actuatorDataTypeStr == "BOOLEAN")
@@ -638,7 +644,10 @@ std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
 
     while (!statement.done())
     {
-        statement.execute();
+        if (statement.execute() == 0)
+        {
+            break;
+        }
 
         const auto sensorDataType = [&]() -> SensorManifest::DataType {
             if (sensorDataTypeStr == "BOOLEAN")
@@ -692,7 +701,10 @@ std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
 
     while (!statement.done())
     {
-        statement.execute();
+        if (statement.execute() == 0)
+        {
+            break;
+        }
 
         const auto configurationDataType = [&]() -> ConfigurationManifest::DataType {
             if (configurationDataTypeStr == "STRING")

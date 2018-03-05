@@ -229,15 +229,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
         LOG(DEBUG) << "Device registration service: Saving device with key '" << device.getKey()
                    << "' to device repository";
 
-        if (m_deviceRepository.containsDeviceWithKey(device.getKey()))
-        {
-            m_deviceRepository.update(device);
-        }
-        else
-        {
-            m_deviceRepository.save(device);
-        }
-
+        m_deviceRepository.save(device);
         invokeOnDeviceRegisteredListener(deviceKey, deviceKey == m_gatewayKey);
 
         if (device.getKey() == m_gatewayKey)

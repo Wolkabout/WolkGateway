@@ -32,19 +32,19 @@ public:
     SQLiteDeviceRepository(const std::string& connectionString = "deviceRepository.db");
     virtual ~SQLiteDeviceRepository() = default;
 
-    virtual void save(const Device& device) override;
+    void save(const Device& device) override;
 
-    virtual void update(const Device& device) override;
+    void remove(const std::string& deviceKey) override;
 
-    virtual void remove(const std::string& deviceKey) override;
+    std::unique_ptr<Device> findByDeviceKey(const std::string& deviceKey) override;
 
-    virtual std::unique_ptr<Device> findByDeviceKey(const std::string& deviceKey) override;
+    std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override;
 
-    virtual std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override;
-
-    virtual bool containsDeviceWithKey(const std::string& deviceKey) override;
+    bool containsDeviceWithKey(const std::string& deviceKey) override;
 
 private:
+    void update(const Device& device);
+
     std::recursive_mutex m_mutex;
     std::unique_ptr<Poco::Data::Session> m_session;
 };

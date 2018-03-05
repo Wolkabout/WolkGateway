@@ -31,8 +31,6 @@ public:
 
     virtual void save(const Device& device) = 0;
 
-    virtual void update(const Device& device) = 0;
-
     virtual void remove(const std::string& devicekey) = 0;
 
     virtual std::unique_ptr<Device> findByDeviceKey(const std::string& key) = 0;

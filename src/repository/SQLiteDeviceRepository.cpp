@@ -283,9 +283,8 @@ void SQLiteDeviceRepository::save(const Device& device)
       into(devicesWithGivenKeyCount), now;
 
     if (devicesWithGivenKeyCount != 0)
-
     {
-        // Device already exists in repository
+        update(device);
         return;
     }
 

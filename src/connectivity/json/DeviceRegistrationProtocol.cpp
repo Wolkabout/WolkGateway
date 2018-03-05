@@ -15,7 +15,6 @@
  */
 
 #include "DeviceRegistrationProtocol.h"
-#include "Poco/Bugcheck.h"
 #include "connectivity/Channels.h"
 #include "model/DeviceRegistrationRequestDto.h"
 #include "model/DeviceRegistrationResponseDto.h"
@@ -26,6 +25,7 @@
 #include "utilities/json.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <stdexcept>
 #include <vector>
 
@@ -49,7 +49,7 @@ void to_json(json& j, const ConfigurationManifest& configurationManifest)
             return "STRING";
 
         default:
-            poco_assert_dbg(false);
+            assert(false);
             throw std::invalid_argument("Invalid data type");
         }
     }();
@@ -132,7 +132,7 @@ void to_json(json& j, const AlarmManifest& alarmManfiest)
             return "ERROR";
 
         default:
-            poco_assert_dbg(false);
+            assert(false);
             throw std::invalid_argument("Invalid alarm severity");
         }
     }();
@@ -197,7 +197,7 @@ void to_json(json& j, const ActuatorManifest& actuatorManfiest)
             return "STRING";
 
         default:
-            poco_assert_dbg(false);
+            assert(false);
             throw std::invalid_argument("Invalid data type");
         }
     }();
@@ -292,7 +292,7 @@ void to_json(json& j, const SensorManifest& sensorManifest)
             return "STRING";
 
         default:
-            poco_assert_dbg(false);
+            assert(false);
             throw std::invalid_argument("Invalid data type");
         }
     }();
@@ -455,7 +455,7 @@ void to_json(json& j, const DeviceRegistrationResponseDto& dto)
             break;
 
         default:
-            poco_assert_dbg(false);
+            assert(false);
             throw std::invalid_argument("Unhandled result");
         }
     }();
@@ -479,7 +479,7 @@ void to_json(json& j, const DeviceReregistrationResponseDto& dto)
             break;
 
         default:
-            poco_assert_dbg(false);
+            assert(false);
             throw std::invalid_argument("Unhandled result");
         }
     }();
@@ -651,7 +651,7 @@ std::shared_ptr<DeviceRegistrationResponseDto> DeviceRegistrationProtocol::makeR
                 return DeviceRegistrationResponseDto::Result::ERROR_NO_GATEWAY_MANIFEST;
             }
 
-            poco_assert_dbg(false);
+            assert(false);
             throw std::logic_error("");
         }();
 

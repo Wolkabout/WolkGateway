@@ -172,7 +172,7 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
       std::unique_ptr<Device>(new Device(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
     m_devicesAwaitingRegistrationResponse[deviceKey] = std::move(device);
 
-    auto registrationRequest = DeviceRegistrationProtocol::getInstance().make(m_gatewayKey, deviceKey, request);
+    auto registrationRequest = DeviceRegistrationProtocol::getInstance().makeMessage(m_gatewayKey, deviceKey, request);
     m_outboundPlatformMessageHandler.addMessage(registrationRequest);
 }
 
@@ -184,7 +184,7 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
 
     DeviceReregistrationResponseDto reregistrationResponse(DeviceReregistrationResponseDto::Result::OK);
     m_outboundPlatformMessageHandler.addMessage(
-      DeviceRegistrationProtocol::getInstance().make(m_gatewayKey, reregistrationResponse));
+      DeviceRegistrationProtocol::getInstance().makeMessage(m_gatewayKey, reregistrationResponse));
 
     auto registeredDevicesKeys = m_deviceRepository.findAllDeviceKeys();
     for (const std::string& deviceKey : *registeredDevicesKeys)
@@ -201,7 +201,7 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
         m_deviceRepository.remove(deviceKey);
 
         m_outboundPlatformMessageHandler.addMessage(
-          DeviceRegistrationProtocol::getInstance().make(m_gatewayKey, deviceKey, *deviceRegistrationRequest));
+          DeviceRegistrationProtocol::getInstance().makeMessage(m_gatewayKey, deviceKey, *deviceRegistrationRequest));
     }
 }
 

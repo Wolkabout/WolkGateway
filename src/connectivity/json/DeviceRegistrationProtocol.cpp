@@ -512,7 +512,7 @@ std::vector<std::string> DeviceRegistrationProtocol::getPlatformTopics()
     return m_platformTopics;
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::make(const std::string& gatewayKey, const std::string& deviceKey,
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                                           const DeviceRegistrationRequestDto& request)
 {
     LOG(DEBUG) << METHOD_INFO;
@@ -541,7 +541,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::make(const std::string& gat
     }
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::make(const std::string& gatewayKey, const std::string& deviceKey,
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                                           const wolkabout::DeviceRegistrationResponseDto& response)
 {
     LOG(DEBUG) << METHOD_INFO;
@@ -570,7 +570,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::make(const std::string& gat
     }
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::make(const std::string& gatewayKey,
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
                                                           const DeviceReregistrationResponseDto& response)
 {
     LOG(DEBUG) << METHOD_INFO;

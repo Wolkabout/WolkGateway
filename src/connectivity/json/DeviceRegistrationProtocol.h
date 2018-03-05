@@ -38,11 +38,11 @@ public:
     std::vector<std::string> getDeviceTopics() override;
     std::vector<std::string> getPlatformTopics() override;
 
-    std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
+    std::shared_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                   const DeviceRegistrationRequestDto& request);
-    std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
+    std::shared_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                   const DeviceRegistrationResponseDto& response);
-    std::shared_ptr<Message> make(const std::string& gatewayKey, const DeviceReregistrationResponseDto& response);
+    std::shared_ptr<Message> makeMessage(const std::string& gatewayKey, const DeviceReregistrationResponseDto& response);
 
     std::shared_ptr<DeviceRegistrationRequestDto> makeRegistrationRequest(std::shared_ptr<Message> message);
     std::shared_ptr<DeviceRegistrationResponseDto> makeRegistrationResponse(std::shared_ptr<Message> message);

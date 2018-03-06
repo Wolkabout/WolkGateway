@@ -43,7 +43,7 @@ DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey, Dev
 
 void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     LOG(DEBUG) << "DeviceRegistrationService: Platfom message received: " << message->getChannel() << " , "
                << message->getContent();
@@ -82,7 +82,7 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
 
 void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     LOG(DEBUG) << "DeviceRegistrationService: Device message received: " << message->getChannel() << " , "
                << message->getContent();
@@ -144,7 +144,7 @@ void DeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::stri
 void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::string& deviceKey,
                                                                 const DeviceRegistrationRequestDto& request)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     LOG(INFO) << "DeviceRegistrationService: Handling registration request for device with key '" << deviceKey << "'";
 
@@ -178,7 +178,7 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
 
 void DeviceRegistrationService::handleDeviceReregistrationRequest()
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     LOG(INFO) << "DeviceRegistrationService: Reregistering devices connected to gateway";
 
@@ -208,7 +208,7 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
 void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::string& deviceKey,
                                                                  const DeviceRegistrationResponseDto& response)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     std::lock_guard<decltype(m_devicesAwaitingRegistrationResponseMutex)> l(m_devicesAwaitingRegistrationResponseMutex);
     if (m_devicesAwaitingRegistrationResponse.find(deviceKey) == m_devicesAwaitingRegistrationResponse.end())
@@ -290,7 +290,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
 void DeviceRegistrationService::addToPostponedDeviceRegistartionRequests(
   const std::string& deviceKey, const wolkabout::DeviceRegistrationRequestDto& request)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     LOG(INFO) << "DeviceRegistrationService: Postponing registration of device with key '" << deviceKey
               << "'. Waiting for gateway to be registered";

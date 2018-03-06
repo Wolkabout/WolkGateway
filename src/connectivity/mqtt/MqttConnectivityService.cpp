@@ -43,7 +43,7 @@ MqttConnectivityService::MqttConnectivityService(std::shared_ptr<MqttClient> mqt
 
 bool MqttConnectivityService::connect()
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     LOG(INFO) << "MqttConnectivityService: Connecting to " << m_host;
 
@@ -68,7 +68,7 @@ bool MqttConnectivityService::connect()
 
 void MqttConnectivityService::disconnect()
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     LOG(INFO) << "MqttConnectivityService: Disconnecting from " << m_host;
     m_mqttClient->disconnect();
@@ -76,14 +76,14 @@ void MqttConnectivityService::disconnect()
 
 bool MqttConnectivityService::isConnected()
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return m_mqttClient->isConnected();
 }
 
 bool MqttConnectivityService::publish(std::shared_ptr<Message> outboundMessage)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     LOG(TRACE) << "MqttConnectivityService: Publishing message '" << outboundMessage->getContent() << "' on channel '"
                << outboundMessage->getChannel() << "' to " << m_host;

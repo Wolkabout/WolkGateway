@@ -516,7 +516,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
                                                                  const std::string& deviceKey,
                                                                  const DeviceRegistrationRequestDto& request)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     try
     {
@@ -545,7 +545,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
 std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(
   const std::string& gatewayKey, const std::string& deviceKey, const wolkabout::DeviceRegistrationResponseDto& response)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     try
     {
@@ -574,7 +574,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(
 std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
                                                                  const DeviceReregistrationResponseDto& response)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     try
     {
@@ -594,7 +594,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
 std::shared_ptr<DeviceRegistrationRequestDto> DeviceRegistrationProtocol::makeRegistrationRequest(
   std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     try
     {
@@ -613,7 +613,7 @@ std::shared_ptr<DeviceRegistrationRequestDto> DeviceRegistrationProtocol::makeRe
 std::shared_ptr<DeviceRegistrationResponseDto> DeviceRegistrationProtocol::makeRegistrationResponse(
   std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     try
     {
@@ -666,49 +666,49 @@ std::shared_ptr<DeviceRegistrationResponseDto> DeviceRegistrationProtocol::makeR
 
 bool DeviceRegistrationProtocol::isMessageToPlatform(const std::string& channel)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(channel, Channel::DEVICE_TO_PLATFORM_DIRECTION);
 }
 
 bool DeviceRegistrationProtocol::isMessageFromPlatform(const std::string& channel)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(channel, Channel::PLATFORM_TO_DEVICE_DIRECTION);
 }
 
 bool DeviceRegistrationProtocol::isRegistrationRequest(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(message->getChannel(), Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT);
 }
 
 bool DeviceRegistrationProtocol::isRegistrationResponse(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(message->getChannel(), Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT);
 }
 
 bool DeviceRegistrationProtocol::isReregistrationRequest(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(message->getChannel(), Channel::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT);
 }
 
 bool DeviceRegistrationProtocol::isReregistrationResponse(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(message->getChannel(), Channel::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT);
 }
 
 std::string DeviceRegistrationProtocol::extractDeviceKeyFromChannel(const std::string& channel)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     std::string previousToken;
     for (std::string token : StringUtils::tokenize(channel, "/"))

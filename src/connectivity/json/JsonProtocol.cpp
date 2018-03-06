@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "connectivity/json/JsonSingleProtocol.h"
+#include "connectivity/json/JsonProtocol.h"
 #include "connectivity/Channels.h"
 #include "model/ActuatorGetCommand.h"
 #include "model/ActuatorSetCommand.h"
@@ -31,22 +31,22 @@ using nlohmann::json;
 
 namespace wolkabout
 {
-const std::string JsonSingleProtocol::m_name = "JsonProtocol";
+const std::string JsonProtocol::m_name = "JsonProtocol";
 
-const std::vector<std::string> JsonSingleProtocol::m_devicTopics = {
+const std::vector<std::string> JsonProtocol::m_devicTopics = {
   Channel::SENSOR_READING_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
   Channel::EVENTS_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
   Channel::ACTUATION_STATUS_TOPIC_ROOT + Channel::CHANNEL_WILDCARD};
 
-const std::vector<std::string> JsonSingleProtocol::m_platformTopics = {
+const std::vector<std::string> JsonProtocol::m_platformTopics = {
   Channel::ACTUATION_GET_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
   Channel::ACTUATION_SET_TOPIC_ROOT + Channel::CHANNEL_WILDCARD};
 
-const std::vector<std::string> JsonSingleProtocol::m_deviceMessageTypes = {
-  Channel::SENSOR_READING_TYPE, Channel::EVENT_TYPE, Channel::ACTUATION_STATUS_TYPE};
+const std::vector<std::string> JsonProtocol::m_deviceMessageTypes = {Channel::SENSOR_READING_TYPE, Channel::EVENT_TYPE,
+                                                                     Channel::ACTUATION_STATUS_TYPE};
 
-const std::vector<std::string> JsonSingleProtocol::m_platformMessageTypes = {Channel::ACTUATION_GET_TYPE,
-                                                                             Channel::ACTUATION_SET_TYPE};
+const std::vector<std::string> JsonProtocol::m_platformMessageTypes = {Channel::ACTUATION_GET_TYPE,
+                                                                       Channel::ACTUATION_SET_TYPE};
 
 void from_json(const json& j, SensorReading& reading)
 {
@@ -138,23 +138,23 @@ void to_json(json& j, const std::shared_ptr<ActuatorStatus>& p)
     to_json(j, *p);
 }
 
-const std::string& JsonSingleProtocol::getName()
+const std::string& JsonProtocol::getName()
 {
     return m_name;
 }
 
-const std::vector<std::string>& JsonSingleProtocol::getDeviceTopics()
+const std::vector<std::string>& JsonProtocol::getDeviceTopics()
 {
     return m_devicTopics;
 }
 
-const std::vector<std::string>& JsonSingleProtocol::getPlatformTopics()
+const std::vector<std::string>& JsonProtocol::getPlatformTopics()
 {
     return m_platformTopics;
 }
 
-std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
-                                                  std::vector<std::shared_ptr<SensorReading>> sensorReadings)
+std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey,
+                                            std::vector<std::shared_ptr<SensorReading>> sensorReadings)
 {
     if (sensorReadings.size() == 0)
     {
@@ -171,8 +171,7 @@ std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
     return std::make_shared<Message>(payload, topic);
 }
 
-std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
-                                                  std::vector<std::shared_ptr<Alarm>> alarms)
+std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey, std::vector<std::shared_ptr<Alarm>> alarms)
 {
     if (alarms.size() == 0)
     {
@@ -188,8 +187,8 @@ std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
     return std::make_shared<Message>(payload, topic);
 }
 
-std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
-                                                  std::shared_ptr<ActuatorStatus> actuatorStatuses)
+std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey,
+                                            std::shared_ptr<ActuatorStatus> actuatorStatuses)
 {
     // JSON_SINGLE allows only 1 ActuatorStatus per Message
     const json jPayload(actuatorStatuses);
@@ -202,7 +201,7 @@ std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
     return std::make_shared<Message>(payload, topic);
 }
 
-std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey, const ActuatorStatus& actuatorStatuses)
+std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey, const ActuatorStatus& actuatorStatuses)
 {
     // JSON_SINGLE allows only 1 ActuatorStatus per Message
     const json jPayload(actuatorStatuses);
@@ -215,7 +214,7 @@ std::shared_ptr<Message> JsonSingleProtocol::make(const std::string& gatewayKey,
     return std::make_shared<Message>(payload, topic);
 }
 
-bool JsonSingleProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorSetCommand& command)
+bool JsonProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorSetCommand& command)
 {
     try
     {
@@ -243,7 +242,7 @@ bool JsonSingleProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorS
     return true;
 }
 
-bool JsonSingleProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command)
+bool JsonProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command)
 {
     try
     {
@@ -265,7 +264,7 @@ bool JsonSingleProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorG
     return true;
 }
 
-bool JsonSingleProtocol::isGatewayToPlatformMessage(const std::string& topic)
+bool JsonProtocol::isGatewayToPlatformMessage(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
@@ -303,7 +302,7 @@ bool JsonSingleProtocol::isGatewayToPlatformMessage(const std::string& topic)
     return true;
 }
 
-bool JsonSingleProtocol::isPlatformToGatewayMessage(const std::string& topic)
+bool JsonProtocol::isPlatformToGatewayMessage(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
@@ -341,7 +340,7 @@ bool JsonSingleProtocol::isPlatformToGatewayMessage(const std::string& topic)
     return true;
 }
 
-bool JsonSingleProtocol::isDeviceToPlatformMessage(const std::string& topic)
+bool JsonProtocol::isDeviceToPlatformMessage(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
@@ -379,7 +378,7 @@ bool JsonSingleProtocol::isDeviceToPlatformMessage(const std::string& topic)
     return true;
 }
 
-bool JsonSingleProtocol::isPlatformToDeviceMessage(const std::string& topic)
+bool JsonProtocol::isPlatformToDeviceMessage(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
@@ -423,17 +422,17 @@ bool JsonSingleProtocol::isPlatformToDeviceMessage(const std::string& topic)
     return true;
 }
 
-bool JsonSingleProtocol::isActuatorSetMessage(const std::string& topic)
+bool JsonProtocol::isActuatorSetMessage(const std::string& topic)
 {
     return StringUtils::startsWith(topic, Channel::ACTUATION_SET_TOPIC_ROOT);
 }
 
-bool JsonSingleProtocol::isActuatorGetMessage(const std::string& topic)
+bool JsonProtocol::isActuatorGetMessage(const std::string& topic)
 {
     return StringUtils::startsWith(topic, Channel::ACTUATION_GET_TOPIC_ROOT);
 }
 
-std::string JsonSingleProtocol::routePlatformMessage(const std::string& topic, const std::string& gatewayKey)
+std::string JsonProtocol::routePlatformMessage(const std::string& topic, const std::string& gatewayKey)
 {
     const std::string gwTopicPart =
       Channel::GATEWAY_PATH_PREFIX + Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER;
@@ -445,7 +444,7 @@ std::string JsonSingleProtocol::routePlatformMessage(const std::string& topic, c
     return "";
 }
 
-std::string JsonSingleProtocol::routeDeviceMessage(const std::string& topic, const std::string& gatewayKey)
+std::string JsonProtocol::routeDeviceMessage(const std::string& topic, const std::string& gatewayKey)
 {
     auto firstPos = topic.find(Channel::CHANNEL_DELIMITER);
     if (firstPos == std::string::npos)
@@ -465,7 +464,7 @@ std::string JsonSingleProtocol::routeDeviceMessage(const std::string& topic, con
       Channel::GATEWAY_PATH_PREFIX + Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER);
 }
 
-std::string JsonSingleProtocol::referenceFromTopic(const std::string& topic)
+std::string JsonProtocol::referenceFromTopic(const std::string& topic)
 {
     std::string top{topic};
 
@@ -484,7 +483,7 @@ std::string JsonSingleProtocol::referenceFromTopic(const std::string& topic)
     return "";
 }
 
-std::string JsonSingleProtocol::deviceKeyFromTopic(const std::string& topic)
+std::string JsonProtocol::deviceKeyFromTopic(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 

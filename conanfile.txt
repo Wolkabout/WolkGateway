@@ -1,10 +1,14 @@
 [requires]
 Poco/1.8.1@pocoproject/stable
+gtest/1.8.0@bincrafters/stable
 
 [generators]
 cmake
 
+[options]
+Poco:shared=True
+
 [imports]
-bin, *.dll -> ./lib
-bin, *.so -> ./lib
-lib, *.dylib* -> ./lib
+bin, *.dll -> ./
+bin, *.so -> ./
+lib, *.dylib* -> ./

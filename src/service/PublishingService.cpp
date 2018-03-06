@@ -40,7 +40,8 @@ PublishingService::~PublishingService()
 
 void PublishingService::addMessage(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << "Message added " << message->getChannel() << " " << message->getContent();
+    LOG(TRACE) << "PublishingService: Message added. Channel: '" << message->getChannel() << "' Payload: '"
+               << message->getContent() << "'";
     m_persistence->push(message);
     m_condition.notify_one();
 }

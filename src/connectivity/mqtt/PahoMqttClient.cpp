@@ -17,6 +17,7 @@
 #include "PahoMqttClient.h"
 #include "MqttClient.h"
 #include "async_client.h"
+#include "utilities/Logger.h"
 
 #include <atomic>
 #include <string>
@@ -152,7 +153,7 @@ bool PahoMqttClient::publish(const std::string& topic, const std::string& messag
 
     try
     {
-        // std::cout << "sending message: " << message << ", to: " << topic << std::endl;
+        LOG(DEBUG) << "PahoMqttClient: Publishing message on topic '" << topic << "' : " << message;
 
         mqtt::message_ptr pubmsg = mqtt::make_message(topic, message.c_str(), strlen(message.c_str()));
         pubmsg->set_qos(MQTT_QOS);
@@ -165,8 +166,9 @@ bool PahoMqttClient::publish(const std::string& topic, const std::string& messag
             return false;
         }
     }
-    catch (mqtt::exception&)
+    catch (mqtt::exception& e)
     {
+        LOG(DEBUG) << "PahoMqttClient: Failed to publish message on topic '" << topic << "' : " << e.what();
         return false;
     }
 

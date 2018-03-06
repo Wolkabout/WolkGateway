@@ -78,7 +78,7 @@ DataService<P>::DataService(const std::string& gatewayKey, DeviceRepository& dev
 
 template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     if (P::isPlatformToGatewayMessage(message->getChannel()))
     {
@@ -105,7 +105,7 @@ template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<
 
 template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     if (P::isGatewayToPlatformMessage(message->getChannel()))
     {
@@ -138,7 +138,7 @@ template <class P> void DataService<P>::disconnected()
 
 template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = P::routeDeviceMessage(message->getChannel(), m_gatewayKey);
     if (topic.empty())
@@ -154,7 +154,7 @@ template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Messa
 
 template <class P> void DataService<P>::routePlatformMessage(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = P::routePlatformMessage(message->getChannel(), m_gatewayKey);
     if (topic.empty())
@@ -170,7 +170,7 @@ template <class P> void DataService<P>::routePlatformMessage(std::shared_ptr<Mes
 
 template <class P> void DataService<P>::handleGatewayOfflineMessage(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const std::string ref = P::referenceFromTopic(message->getChannel());
     if (ref.empty())

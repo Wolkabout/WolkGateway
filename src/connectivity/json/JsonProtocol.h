@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef JSONSINGLEPROTOCOL_H
-#define JSONSINGLEPROTOCOL_H
+#ifndef JSONPROTOCOL_H
+#define JSONPROTOCOL_H
 
 #include <memory>
 #include <string>
@@ -30,7 +30,7 @@ class ActuatorStatus;
 class ActuatorSetCommand;
 class ActuatorGetCommand;
 
-class JsonSingleProtocol
+class JsonProtocol
 {
 public:
     static const std::string& getName();

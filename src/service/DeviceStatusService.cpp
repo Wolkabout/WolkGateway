@@ -37,7 +37,7 @@ DeviceStatusService::DeviceStatusService(std::string gatewayKey, DeviceRepositor
 
 void DeviceStatusService::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = message->getChannel();
 
@@ -60,7 +60,7 @@ void DeviceStatusService::platformMessageReceived(std::shared_ptr<Message> messa
 
 void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = message->getChannel();
 
@@ -187,7 +187,7 @@ void DeviceStatusService::setGatewayModuleConnectionStatusListener(std::weak_ptr
 
 void DeviceStatusService::routeDeviceMessage(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = StatusProtocol::routeDeviceMessage(message->getChannel(), m_gatewayKey);
     if (topic.empty())
@@ -203,7 +203,7 @@ void DeviceStatusService::routeDeviceMessage(std::shared_ptr<Message> message)
 
 void DeviceStatusService::routePlatformMessage(std::shared_ptr<Message> message)
 {
-    LOG(DEBUG) << METHOD_INFO;
+    LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = StatusProtocol::routePlatformMessage(message->getChannel(), m_gatewayKey);
     if (topic.empty())
@@ -216,4 +216,4 @@ void DeviceStatusService::routePlatformMessage(std::shared_ptr<Message> message)
 
     m_outboundDeviceMessageHandler.addMessage(routedMessage);
 }
-}
+}    // namespace wolkabout

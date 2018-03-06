@@ -89,6 +89,6 @@ private:
     static constexpr int GATEWAY_DEVICE_TYPE_POS = 4;
     static constexpr int GATEWAY_DEVICE_KEY_POS = 5;
 };
-}
+}    // namespace wolkabout
 
 #endif    // STATUSPROTOCOL_H

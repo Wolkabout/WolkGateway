@@ -26,25 +26,37 @@
 
 namespace wolkabout
 {
+class AlarmManifest;
+class ActuatorManifest;
+class SensorManifest;
+class ConfigurationManifest;
+class DeviceManifest;
+
 class SQLiteDeviceRepository : public DeviceRepository
 {
 public:
     SQLiteDeviceRepository(const std::string& connectionString = "deviceRepository.db");
     virtual ~SQLiteDeviceRepository() = default;
 
-    virtual void save(const Device& device) override;
+    void save(const Device& device) override;
 
-    virtual void update(const Device& device) override;
+    void remove(const std::string& deviceKey) override;
 
-    virtual void remove(const std::string& deviceKey) override;
+    std::unique_ptr<Device> findByDeviceKey(const std::string& deviceKey) override;
 
-    virtual std::shared_ptr<Device> findByDeviceKey(const std::string& deviceKey) override;
+    std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override;
 
-    virtual std::shared_ptr<std::vector<std::string>> findAllDeviceKeys() override;
-
-    virtual bool containsDeviceWithKey(const std::string& deviceKey) override;
+    bool containsDeviceWithKey(const std::string& deviceKey) override;
 
 private:
+    static std::string calculateSha256(const AlarmManifest& alarmManifest);
+    static std::string calculateSha256(const ActuatorManifest& actuatorManifest);
+    static std::string calculateSha256(const SensorManifest& sensorManifest);
+    static std::string calculateSha256(const ConfigurationManifest& configurationManifest);
+    static std::string calculateSha256(const DeviceManifest& deviceManifest);
+
+    void update(const Device& device);
+
     std::recursive_mutex m_mutex;
     std::unique_ptr<Poco::Data::Session> m_session;
 };

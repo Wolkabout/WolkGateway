@@ -28,15 +28,16 @@ InboundPlatformMessageHandler::InboundPlatformMessageHandler(const std::string& 
 {
 }
 
-void InboundPlatformMessageHandler::messageReceived(const std::string& topic, const std::string& message)
+void InboundPlatformMessageHandler::messageReceived(const std::string& channel, const std::string& payload)
 {
-    LOG(DEBUG) << "Platform message received: " << topic << ", " << message;
+    LOG(TRACE) << "InboundPlatformMessageHandler: Message received on channel: '" << channel << "' : '" << payload
+               << "'";
 
     std::lock_guard<std::mutex> lg{m_lock};
 
     auto it = std::find_if(m_topicHandlers.begin(), m_topicHandlers.end(),
                            [&](const std::pair<std::string, std::weak_ptr<PlatformMessageListener>>& kvp) {
-                               return StringUtils::mqttTopicMatch(kvp.first, topic);
+                               return StringUtils::mqttTopicMatch(kvp.first, channel);
                            });
 
     if (it != m_topicHandlers.end())
@@ -45,13 +46,13 @@ void InboundPlatformMessageHandler::messageReceived(const std::string& topic, co
         addToCommandBuffer([=] {
             if (auto handler = topicHandler.lock())
             {
-                handler->platformMessageReceived(std::make_shared<Message>(message, topic));
+                handler->platformMessageReceived(std::make_shared<Message>(payload, channel));
             }
         });
     }
     else
     {
-        LOG(INFO) << "Handler for device topic not found: " << topic;
+        LOG(INFO) << "Handler for device topic not found: " << channel;
     }
 }
 

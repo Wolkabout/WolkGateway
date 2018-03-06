@@ -16,6 +16,8 @@
 
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "model/Message.h"
+#include "utilities/Logger.h"
+
 #include <algorithm>
 
 namespace wolkabout
@@ -41,10 +43,16 @@ MqttConnectivityService::MqttConnectivityService(std::shared_ptr<MqttClient> mqt
 
 bool MqttConnectivityService::connect()
 {
+    LOG(TRACE) << METHOD_INFO;
+
+    LOG(INFO) << "MqttConnectivityService: Connecting to " << m_host;
+
     m_mqttClient->setLastWill(LAST_WILL_TOPIC_ROOT + m_key, "Gone offline");
     bool isConnected = m_mqttClient->connect(m_key, m_password, TRUST_STORE, m_host, m_key);
     if (isConnected)
     {
+        LOG(INFO) << "MqttConnectivityService: Connected to " << m_host;
+
         if (auto handler = m_listener.lock())
         {
             const auto& topics = handler->getTopics();
@@ -60,16 +68,26 @@ bool MqttConnectivityService::connect()
 
 void MqttConnectivityService::disconnect()
 {
+    LOG(TRACE) << METHOD_INFO;
+
+    LOG(INFO) << "MqttConnectivityService: Disconnecting from " << m_host;
     m_mqttClient->disconnect();
 }
 
 bool MqttConnectivityService::isConnected()
 {
+    LOG(TRACE) << METHOD_INFO;
+
     return m_mqttClient->isConnected();
 }
 
 bool MqttConnectivityService::publish(std::shared_ptr<Message> outboundMessage)
 {
+    LOG(TRACE) << METHOD_INFO;
+
+    LOG(TRACE) << "MqttConnectivityService: Publishing message '" << outboundMessage->getContent() << "' on channel '"
+               << outboundMessage->getChannel() << "' to " << m_host;
+
     return m_mqttClient->publish(outboundMessage->getChannel(), outboundMessage->getContent());
 }
 }    // namespace wolkabout

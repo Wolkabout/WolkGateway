@@ -104,17 +104,9 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
     }
 
     auto deviceKey = DeviceRegistrationProtocol::getInstance().extractDeviceKeyFromChannel(message->getChannel());
-    if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey))
+    if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
     {
-        if (deviceKey == m_gatewayKey)
-        {
-            handleDeviceRegistrationRequest(deviceKey, *request);
-        }
-        else
-        {
-            addToPostponedDeviceRegistartionRequests(deviceKey, *request);
-        }
-
+        addToPostponedDeviceRegistartionRequests(deviceKey, *request);
         return;
     }
 

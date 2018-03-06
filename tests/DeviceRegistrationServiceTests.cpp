@@ -154,7 +154,7 @@ TEST_F(DeviceRegistrationService, Given_ThatDeviceIsRegistered_When_AlreadyRegis
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
 }
 
-TEST_F(DeviceRegistrationService, Given_GatewayRegistredWithJsonProtocol_When_DeviceWithProtocolOtherThanJsonSingleRequestsRegistration_Then_RegistrationRequestNotIsForwardedToPlatform)
+TEST_F(DeviceRegistrationService, Given_GatewayRegisteredWithJsonDataProtocol_When_DeviceWithProtocolOtherThanJsonRequestsRegistration_Then_RegistrationRequestNotIsForwardedToPlatform)
 {
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol", "DFUProtocol");
@@ -174,7 +174,7 @@ TEST_F(DeviceRegistrationService, Given_GatewayRegistredWithJsonProtocol_When_De
     ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
 }
 
-TEST_F(DeviceRegistrationService, Given_GatewayRegistredWithJsonProtocol_When_DeviceWithProtocolJsonSingleRequestsRegistration_Then_RegistrationRequestIsForwardedToPlatform)
+TEST_F(DeviceRegistrationService, Given_GatewayRegisteredWithJsonDataProtocol_When_DeviceWithProtocolJsonRequestsRegistration_Then_RegistrationRequestIsForwardedToPlatform)
 {
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol", "DFUProtocol");

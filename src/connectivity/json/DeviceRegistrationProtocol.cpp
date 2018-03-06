@@ -493,7 +493,7 @@ void to_json(json& j, const DeviceReregistrationResponseDto& dto)
 /*** DEVICE REREGISTRATION RESPONSE DTO ***/
 
 DeviceRegistrationProtocol::DeviceRegistrationProtocol()
-: m_deviceTopics{Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
+: m_deviceTopics{Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::DEVICE_PATH_PREFIX +
                  Channel::CHANNEL_DELIMITER + Channel::CHANNEL_WILDCARD}
 , m_platformTopics{Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
                      Channel::CHANNEL_DELIMITER + Channel::CHANNEL_WILDCARD,

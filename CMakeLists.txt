@@ -46,6 +46,7 @@ add_subdirectory(mqtt)
 include_directories("mqtt")
 include_directories("src")
 include_directories(SYSTEM "${CONAN_INCLUDE_DIRS_OPENSSL}")
+include_directories(SYSTEM "${CONAN_INCLUDE_DIRS_POCO}")
 
 file(GLOB_RECURSE HEADER_FILES "src/*.h" "src/*.hpp")
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")

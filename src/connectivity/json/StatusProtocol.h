@@ -17,7 +17,6 @@
 #ifndef STATUSPROTOCOL_H
 #define STATUSPROTOCOL_H
 
-#include "connectivity/Protocol.h"
 #include "model/DeviceStatusResponse.h"
 #include <memory>
 #include <string>
@@ -27,40 +26,44 @@ namespace wolkabout
 {
 class Message;
 
-class StatusProtocol : public ProtocolBase<StatusProtocol>
+class StatusProtocol
 {
 public:
-    std::vector<std::string> getDeviceTopics() override;
-    std::vector<std::string> getPlatformTopics() override;
+    ~StatusProtocol() = delete;
 
-    std::shared_ptr<Message> messageFromDeviceStatusResponse(const std::string& gatewayKey,
-                                                             const std::string& deviceKey,
-                                                             std::shared_ptr<DeviceStatusResponse> response);
+    static const std::string& getName();
 
-    std::shared_ptr<Message> messageFromDeviceStatusResponse(const std::string& gatewayKey,
-                                                             const std::string& deviceKey,
-                                                             const DeviceStatusResponse::Status& response);
+    static const std::vector<std::string>& getDeviceTopics();
+    static const std::vector<std::string>& getPlatformTopics();
 
-    std::shared_ptr<Message> messageFromDeviceStatusRequest(const std::string& deviceKey);
+    static std::shared_ptr<Message> messageFromDeviceStatusResponse(const std::string& gatewayKey,
+                                                                    const std::string& deviceKey,
+                                                                    std::shared_ptr<DeviceStatusResponse> response);
 
-    std::shared_ptr<DeviceStatusResponse> makeDeviceStatusResponse(std::shared_ptr<Message> message);
+    static std::shared_ptr<Message> messageFromDeviceStatusResponse(const std::string& gatewayKey,
+                                                                    const std::string& deviceKey,
+                                                                    const DeviceStatusResponse::Status& response);
 
-    bool isGatewayToPlatformMessage(const std::string& topic);
+    static std::shared_ptr<Message> messageFromDeviceStatusRequest(const std::string& deviceKey);
 
-    bool isDeviceToPlatformMessage(const std::string& topic);
+    static std::shared_ptr<DeviceStatusResponse> makeDeviceStatusResponse(std::shared_ptr<Message> message);
 
-    bool isPlatformToDeviceMessage(const std::string& topic);
+    static bool isGatewayToPlatformMessage(const std::string& topic);
 
-    bool isStatusResponseMessage(const std::string& topic);
-    bool isStatusRequestMessage(const std::string& topic);
-    bool isLastWillMessage(const std::string& topic);
+    static bool isDeviceToPlatformMessage(const std::string& topic);
 
-    std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
-    std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
+    static bool isPlatformToDeviceMessage(const std::string& topic);
 
-    std::string deviceKeyFromTopic(const std::string& topic);
-    std::string gatewayKeyFromTopic(const std::string& topic);
-    std::vector<std::string> deviceKeysFromContent(const std::string& content);
+    static bool isStatusResponseMessage(const std::string& topic);
+    static bool isStatusRequestMessage(const std::string& topic);
+    static bool isLastWillMessage(const std::string& topic);
+
+    static std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    static std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
+
+    static std::string deviceKeyFromTopic(const std::string& topic);
+    static std::string gatewayKeyFromTopic(const std::string& topic);
+    static std::vector<std::string> deviceKeysFromContent(const std::string& content);
 
     static const std::string STATUS_RESPONSE_STATE_FIELD;
     static const std::string STATUS_RESPONSE_STATUS_CONNECTED;
@@ -69,15 +72,13 @@ public:
     static const std::string STATUS_RESPONSE_STATUS_OFFLINE;
 
 private:
-    friend class ProtocolBase<StatusProtocol>;
+    static const std::string m_name;
 
-    StatusProtocol();
+    static const std::vector<std::string> m_deviceTopics;
+    static const std::vector<std::string> m_platformTopics;
 
-    const std::vector<std::string> m_deviceTopics;
-    const std::vector<std::string> m_platformTopics;
-
-    const std::vector<std::string> m_deviceMessageTypes;
-    const std::vector<std::string> m_platformMessageTypes;
+    static const std::vector<std::string> m_deviceMessageTypes;
+    static const std::vector<std::string> m_platformMessageTypes;
 
     static constexpr int DIRRECTION_POS = 0;
     static constexpr int TYPE_POS = 1;

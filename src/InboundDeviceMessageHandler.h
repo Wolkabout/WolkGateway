@@ -63,7 +63,7 @@ template <class P> void InboundDeviceMessageHandler::setListener(std::weak_ptr<D
 {
     std::lock_guard<std::mutex> locker{m_lock};
 
-    for (auto topic : P::getInstance().getDeviceTopics())
+    for (auto topic : P::getDeviceTopics())
     {
         m_topicHandlers[topic] = listener;
         m_subscriptionList.push_back(topic);

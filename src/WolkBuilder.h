@@ -50,7 +50,14 @@ public:
      * @param host Server URI
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& host(const std::string& host);
+    WolkBuilder& platformHost(const std::string& host);
+
+    /**
+     * @brief Allows passing of URI to custom local message bus
+     * @param host Message Bus URI
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& gatewayHost(const std::string& host);
 
     /**
      * @brief Sets underlying persistence mechanism to be used<br>
@@ -104,7 +111,8 @@ public:
     operator std::unique_ptr<Wolk>() const;
 
 private:
-    std::string m_host;
+    std::string m_platformHost;
+    std::string m_gatewayHost;
     Device m_device;
 
     std::shared_ptr<Persistence> m_persistence;
@@ -117,6 +125,7 @@ private:
     std::weak_ptr<UrlFileDownloader> m_urlFileDownloader;
 
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
+    static const constexpr char* MESSAGE_BUS_HOST = "tcp://localhost:1883";
 };
 }    // namespace wolkabout
 

@@ -17,7 +17,6 @@
 #ifndef REGISTRATIONPROTOCOL_H
 #define REGISTRATIONPROTOCOL_H
 
-#include "connectivity/Protocol.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -29,46 +28,48 @@ class DeviceRegistrationRequestDto;
 class DeviceRegistrationResponseDto;
 class DeviceReregistrationResponseDto;
 
-class RegistrationProtocol : public ProtocolBase<RegistrationProtocol>
+class RegistrationProtocol
 {
 public:
-    std::vector<std::string> getDeviceTopics() override;
-    std::vector<std::string> getPlatformTopics() override;
+    ~RegistrationProtocol() = delete;
 
-    std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
-                                  const DeviceRegistrationRequestDto& request);
-    std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
-                                  const DeviceReregistrationResponseDto& response);
+    static const std::string& getName();
 
-    std::shared_ptr<DeviceRegistrationRequestDto> makeRegistrationRequest(std::shared_ptr<Message> message);
-    std::shared_ptr<DeviceRegistrationResponseDto> makeRegistrationResponse(std::shared_ptr<Message> message);
+    static const std::vector<std::string>& getDeviceTopics();
+    static const std::vector<std::string>& getPlatformTopics();
 
-    bool isGatewayToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
-    bool isDeviceToPlatformMessage(const std::string& topic);
-    bool isMessageToPlatform(const std::string& topic, const std::string& gatewayKey);
+    static std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
+                                         const DeviceRegistrationRequestDto& request);
+    static std::shared_ptr<Message> make(const std::string& gatewayKey, const std::string& deviceKey,
+                                         const DeviceReregistrationResponseDto& response);
 
-    bool isPlatformToGatewayMessage(const std::string& topic, const std::string& gatewayKey);
-    bool isPlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
-    bool isMessageFromPlatform(const std::string& topic, const std::string& gatewayKey);
+    static std::shared_ptr<DeviceRegistrationRequestDto> makeRegistrationRequest(std::shared_ptr<Message> message);
+    static std::shared_ptr<DeviceRegistrationResponseDto> makeRegistrationResponse(std::shared_ptr<Message> message);
 
-    bool isRegistrationRequest(std::shared_ptr<Message> message);
-    bool isRegistrationResponse(std::shared_ptr<Message> message);
+    static bool isGatewayToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
+    static bool isDeviceToPlatformMessage(const std::string& topic);
+    static bool isMessageToPlatform(const std::string& topic, const std::string& gatewayKey);
 
-    bool isReregistrationRequest(std::shared_ptr<Message> message);
-    bool isReregistrationResponse(std::shared_ptr<Message> message);
+    static bool isPlatformToGatewayMessage(const std::string& topic, const std::string& gatewayKey);
+    static bool isPlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    static bool isMessageFromPlatform(const std::string& topic, const std::string& gatewayKey);
 
-    std::string getDeviceKeyFromChannel(const std::string& channel);
+    static bool isRegistrationRequest(std::shared_ptr<Message> message);
+    static bool isRegistrationResponse(std::shared_ptr<Message> message);
+
+    static bool isReregistrationRequest(std::shared_ptr<Message> message);
+    static bool isReregistrationResponse(std::shared_ptr<Message> message);
+
+    static std::string getDeviceKeyFromChannel(const std::string& channel);
 
 private:
-    friend class ProtocolBase<RegistrationProtocol>;
+    static const std::string m_name;
 
-    RegistrationProtocol();
+    static const std::vector<std::string> m_devicTopics;
+    static const std::vector<std::string> m_platformTopics;
 
-    const std::vector<std::string> m_devicTopics;
-    const std::vector<std::string> m_platformTopics;
-
-    const std::vector<std::string> m_deviceMessageTypes;
-    const std::vector<std::string> m_platformMessageTypes;
+    static const std::vector<std::string> m_deviceMessageTypes;
+    static const std::vector<std::string> m_platformMessageTypes;
 
     static const std::string REGISTRATION_RESPONSE_OK;
     static const std::string REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT;

@@ -80,7 +80,7 @@ template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<
 {
     LOG(DEBUG) << METHOD_INFO;
 
-    if (P::getInstance().isPlatformToGatewayMessage(message->getChannel()))
+    if (P::isPlatformToGatewayMessage(message->getChannel()))
     {
         if (m_gatewayModuleConnected)
         {
@@ -92,7 +92,7 @@ template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<
             handleGatewayOfflineMessage(message);
         }
     }
-    else if (P::getInstance().isPlatformToDeviceMessage(message->getChannel()))
+    else if (P::isPlatformToDeviceMessage(message->getChannel()))
     {
         // if message is for device remove gateway info from channel
         routePlatformMessage(message);
@@ -107,7 +107,7 @@ template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Me
 {
     LOG(DEBUG) << METHOD_INFO;
 
-    if (P::getInstance().isGatewayToPlatformMessage(message->getChannel()))
+    if (P::isGatewayToPlatformMessage(message->getChannel()))
     {
         // if message is from gateway device just resend it
         m_outboundPlatformMessageHandler.addMessage(message);
@@ -115,7 +115,7 @@ template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Me
         // gateway module is connected
         m_gatewayModuleConnected = true;
     }
-    else if (P::getInstance().isDeviceToPlatformMessage(message->getChannel()))
+    else if (P::isDeviceToPlatformMessage(message->getChannel()))
     {
         // if message is from device add gateway info to channel
         routeDeviceMessage(message);
@@ -140,7 +140,7 @@ template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Messa
 {
     LOG(DEBUG) << METHOD_INFO;
 
-    const std::string topic = P::getInstance().routeDeviceMessage(message->getChannel(), m_gatewayKey);
+    const std::string topic = P::routeDeviceMessage(message->getChannel(), m_gatewayKey);
     if (topic.empty())
     {
         LOG(WARN) << "Failed to route device message: " << message->getChannel();
@@ -156,7 +156,7 @@ template <class P> void DataService<P>::routePlatformMessage(std::shared_ptr<Mes
 {
     LOG(DEBUG) << METHOD_INFO;
 
-    const std::string topic = P::getInstance().routePlatformMessage(message->getChannel(), m_gatewayKey);
+    const std::string topic = P::routePlatformMessage(message->getChannel(), m_gatewayKey);
     if (topic.empty())
     {
         LOG(WARN) << "Failed to route platform message: " << message->getChannel();
@@ -172,7 +172,7 @@ template <class P> void DataService<P>::handleGatewayOfflineMessage(std::shared_
 {
     LOG(DEBUG) << METHOD_INFO;
 
-    const std::string ref = P::getInstance().referenceFromTopic(message->getChannel());
+    const std::string ref = P::referenceFromTopic(message->getChannel());
     if (ref.empty())
     {
         LOG(INFO) << "Data Service: Unable to get reference from topic: " << message->getChannel();
@@ -190,7 +190,7 @@ template <class P> void DataService<P>::handleGatewayOfflineMessage(std::shared_
     if (auto it = std::find(actuatorReferences.begin(), actuatorReferences.end(), ref) != actuatorReferences.end())
     {
         ActuatorStatus status{"", ref, ActuatorStatus::State::ERROR};
-        auto statusMessage = P::getInstance().make(m_gatewayKey, status);
+        auto statusMessage = P::make(m_gatewayKey, status);
 
         if (!statusMessage)
         {

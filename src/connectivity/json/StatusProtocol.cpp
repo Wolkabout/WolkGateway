@@ -27,6 +27,19 @@ using nlohmann::json;
 
 namespace wolkabout
 {
+const std::string StatusProtocol::m_name = "StatusProtocol";
+
+const std::vector<std::string> StatusProtocol::m_deviceTopics = {
+  Channel::DEVICE_STATUS_RESPONSE_TOPIC_ROOT + Channel::CHANNEL_WILDCARD, Channel::LAST_WILL_TOPIC_ROOT};
+
+const std::vector<std::string> StatusProtocol::m_platformTopics = {Channel::DEVICE_STATUS_REQUEST_TOPIC_ROOT +
+                                                                   Channel::CHANNEL_WILDCARD};
+
+const std::vector<std::string> StatusProtocol::m_deviceMessageTypes = {Channel::DEVICE_STATUS_TYPE,
+                                                                       Channel::LAST_WILL_TYPE};
+
+const std::vector<std::string> StatusProtocol::m_platformMessageTypes = {Channel::DEVICE_STATUS_TYPE};
+
 const std::string StatusProtocol::STATUS_RESPONSE_STATE_FIELD = "state";
 const std::string StatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED = "CONNECTED";
 const std::string StatusProtocol::STATUS_RESPONSE_STATUS_SLEEP = "SLEEP";
@@ -71,21 +84,13 @@ void to_json(json& j, const std::shared_ptr<DeviceStatusResponse>& p)
     to_json(j, *p);
 }
 
-StatusProtocol::StatusProtocol()
-: m_deviceTopics{Channel::DEVICE_STATUS_RESPONSE_TOPIC_ROOT + Channel::CHANNEL_WILDCARD, Channel::LAST_WILL_TOPIC_ROOT}
-, m_platformTopics{Channel::DEVICE_STATUS_REQUEST_TOPIC_ROOT + Channel::CHANNEL_WILDCARD}
-, m_deviceMessageTypes{Channel::DEVICE_STATUS_TYPE, Channel::LAST_WILL_TYPE}
-, m_platformMessageTypes{Channel::DEVICE_STATUS_TYPE}
-{
-}
-
-std::vector<std::string> StatusProtocol::getDeviceTopics()
+const std::vector<std::string>& StatusProtocol::getDeviceTopics()
 {
     LOG(TRACE) << METHOD_INFO;
     return m_deviceTopics;
 }
 
-std::vector<std::string> StatusProtocol::getPlatformTopics()
+const std::vector<std::string>& StatusProtocol::getPlatformTopics()
 {
     LOG(TRACE) << METHOD_INFO;
     return m_platformTopics;

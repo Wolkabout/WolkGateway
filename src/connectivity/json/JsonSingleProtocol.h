@@ -17,7 +17,6 @@
 #ifndef JSONSINGLEPROTOCOL_H
 #define JSONSINGLEPROTOCOL_H
 
-#include "connectivity/Protocol.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,50 +30,51 @@ class ActuatorStatus;
 class ActuatorSetCommand;
 class ActuatorGetCommand;
 
-class JsonSingleProtocol : public ProtocolBase<JsonSingleProtocol>
+class JsonSingleProtocol
 {
 public:
-    std::vector<std::string> getDeviceTopics() override;
-    std::vector<std::string> getPlatformTopics() override;
+    static const std::string& getName();
 
-    std::shared_ptr<Message> make(const std::string& gatewayKey,
-                                  std::vector<std::shared_ptr<SensorReading>> sensorReadings);
-    std::shared_ptr<Message> make(const std::string& gatewayKey, std::vector<std::shared_ptr<Alarm>> alarms);
-    std::shared_ptr<Message> make(const std::string& gatewayKey, std::shared_ptr<ActuatorStatus> actuatorStatuses);
-    std::shared_ptr<Message> make(const std::string& gatewayKey, const ActuatorStatus& actuatorStatuses);
+    static const std::vector<std::string>& getDeviceTopics();
+    static const std::vector<std::string>& getPlatformTopics();
 
-    bool fromMessage(std::shared_ptr<Message> message, ActuatorSetCommand& command);
+    static std::shared_ptr<Message> make(const std::string& gatewayKey,
+                                         std::vector<std::shared_ptr<SensorReading>> sensorReadings);
+    static std::shared_ptr<Message> make(const std::string& gatewayKey, std::vector<std::shared_ptr<Alarm>> alarms);
+    static std::shared_ptr<Message> make(const std::string& gatewayKey,
+                                         std::shared_ptr<ActuatorStatus> actuatorStatuses);
+    static std::shared_ptr<Message> make(const std::string& gatewayKey, const ActuatorStatus& actuatorStatuses);
 
-    bool fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command);
+    static bool fromMessage(std::shared_ptr<Message> message, ActuatorSetCommand& command);
 
-    bool isGatewayToPlatformMessage(const std::string& topic);
+    static bool fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command);
 
-    bool isPlatformToGatewayMessage(const std::string& topic);
+    static bool isGatewayToPlatformMessage(const std::string& topic);
 
-    bool isDeviceToPlatformMessage(const std::string& topic);
+    static bool isPlatformToGatewayMessage(const std::string& topic);
 
-    bool isPlatformToDeviceMessage(const std::string& topic);
+    static bool isDeviceToPlatformMessage(const std::string& topic);
 
-    bool isActuatorSetMessage(const std::string& topic);
+    static bool isPlatformToDeviceMessage(const std::string& topic);
 
-    bool isActuatorGetMessage(const std::string& topic);
+    static bool isActuatorSetMessage(const std::string& topic);
 
-    std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
-    std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    static bool isActuatorGetMessage(const std::string& topic);
 
-    std::string referenceFromTopic(const std::string& topic);
-    std::string deviceKeyFromTopic(const std::string& topic);
+    static std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
+    static std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+
+    static std::string referenceFromTopic(const std::string& topic);
+    static std::string deviceKeyFromTopic(const std::string& topic);
 
 private:
-    friend class ProtocolBase<JsonSingleProtocol>;
+    static const std::string m_name;
 
-    JsonSingleProtocol();
+    static const std::vector<std::string> m_devicTopics;
+    static const std::vector<std::string> m_platformTopics;
 
-    const std::vector<std::string> m_devicTopics;
-    const std::vector<std::string> m_platformTopics;
-
-    const std::vector<std::string> m_deviceMessageTypes;
-    const std::vector<std::string> m_platformMessageTypes;
+    static const std::vector<std::string> m_deviceMessageTypes;
+    static const std::vector<std::string> m_platformMessageTypes;
 
     static constexpr int DIRRECTION_POS = 0;
     static constexpr int TYPE_POS = 1;

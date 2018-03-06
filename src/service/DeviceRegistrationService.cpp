@@ -47,15 +47,15 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
     LOG(DEBUG) << "Device registration service: Platfom message received: " << message->getChannel() << " , "
                << message->getContent();
 
-    if (RegistrationProtocol::getInstance().isMessageFromPlatform(message->getChannel(), m_gatewayKey))
+    if (RegistrationProtocol::isMessageFromPlatform(message->getChannel(), m_gatewayKey))
     {
         LOG(WARN) << "Device registration service: Ignoring message on channel '" << message->getChannel();
         return;
     }
 
-    if (RegistrationProtocol::getInstance().isRegistrationResponse(message))
+    if (RegistrationProtocol::isRegistrationResponse(message))
     {
-        auto response = RegistrationProtocol::getInstance().makeRegistrationResponse(message);
+        auto response = RegistrationProtocol::makeRegistrationResponse(message);
         if (!response)
         {
             LOG(ERROR) << "Device registration service: Device registration response could not be parsed. "
@@ -63,10 +63,10 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
             return;
         }
 
-        auto deviceKey = RegistrationProtocol::getInstance().getDeviceKeyFromChannel(message->getChannel());
+        auto deviceKey = RegistrationProtocol::getDeviceKeyFromChannel(message->getChannel());
         handleRegistrationResponse(deviceKey, *response);
     }
-    else if (RegistrationProtocol::getInstance().isReregistrationRequest(message))
+    else if (RegistrationProtocol::isReregistrationRequest(message))
     {
         LOG(INFO) << "Device registration service: Reregisteding devices";
 
@@ -86,15 +86,15 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
     LOG(DEBUG) << "Device registration service: Device message received: " << message->getChannel() << " , "
                << message->getContent();
 
-    if (!RegistrationProtocol::getInstance().isMessageToPlatform(message->getChannel(), m_gatewayKey))
+    if (!RegistrationProtocol::isMessageToPlatform(message->getChannel(), m_gatewayKey))
     {
         LOG(WARN) << "Device registration service: Ignoring message received on channel '" << message->getChannel();
         return;
     }
 
-    if (RegistrationProtocol::getInstance().isRegistrationRequest(message))
+    if (RegistrationProtocol::isRegistrationRequest(message))
     {
-        auto request = RegistrationProtocol::getInstance().makeRegistrationRequest(message);
+        auto request = RegistrationProtocol::makeRegistrationRequest(message);
         if (!request)
         {
             LOG(WARN) << "Device registration service: Device registration request could not be parsed: "
@@ -102,7 +102,7 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
             return;
         }
 
-        auto deviceKey = RegistrationProtocol::getInstance().getDeviceKeyFromChannel(message->getChannel());
+        auto deviceKey = RegistrationProtocol::getDeviceKeyFromChannel(message->getChannel());
         if (!m_deviceRepository.containsDeviceWithKey(deviceKey))
         {
             LOG(INFO) << "Device registration service: Handling registration of new device with key '" << deviceKey
@@ -144,7 +144,7 @@ void DeviceRegistrationService::handleRegistrationRequest(const std::string& dev
       std::unique_ptr<Device>(new Device(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
     m_pendingRegistrationDevices[deviceKey] = std::move(device);
 
-    auto registrationRequest = RegistrationProtocol::getInstance().make(m_gatewayKey, deviceKey, request);
+    auto registrationRequest = RegistrationProtocol::make(m_gatewayKey, deviceKey, request);
     m_outboundPlatformMessageHandler.addMessage(registrationRequest);
 }
 

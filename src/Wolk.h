@@ -72,6 +72,11 @@ public:
      */
     void disconnect();
 
+    /**
+     *
+     */
+    template <class P> void registerDataProtocol();
+
 private:
     class ConnectivityFacade;
 
@@ -84,17 +89,11 @@ private:
     void connectToPlatform();
     void connectToDevices();
 
-    bool registerDataProtocol(const std::string& protocol);
     void routePlatformData(const std::string& protocol, std::shared_ptr<Message> message);
     void routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message);
 
     void gatewayRegistered();
-
-    template <class P> bool registerDataProtocol();
-    template <class P> void routePlatformData(std::shared_ptr<Message> message);
-    template <class P> void routeDeviceData(std::shared_ptr<Message> message);
-
-    template <class P> void setupGatewayListeners();
+    void setupGatewayListeners(const std::string& protocol);
 
     Device m_device;
 
@@ -117,7 +116,7 @@ private:
 
     // std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
     // std::shared_ptr<FileDownloadService> m_fileDownloadService;
-    std::map<std::type_index, std::tuple<std::shared_ptr<DataServiceBase>, std::shared_ptr<ChannelProtocolResolver>>>
+    std::map<std::string, std::tuple<std::shared_ptr<DataServiceBase>, std::shared_ptr<ChannelProtocolResolver>>>
       m_dataServices;
 
     std::shared_ptr<DeviceRegistrationService> m_deviceRegistrationService;
@@ -141,14 +140,14 @@ private:
     };
 };
 
-template <class P> bool Wolk::registerDataProtocol()
+template <class P> void Wolk::registerDataProtocol()
 {
     std::lock_guard<decltype(m_lock)> lg{m_lock};
 
-    if (auto it = m_dataServices.find(typeid(P)) != m_dataServices.end())
+    if (auto it = m_dataServices.find(P::getName()) != m_dataServices.end())
     {
         LOG(INFO) << "Data protocol already registered";
-        return true;
+        return;
     }
 
     auto dataService = std::make_shared<DataService<P>>(m_device.getKey(), *m_deviceRepository, *m_platformPublisher,
@@ -159,79 +158,11 @@ template <class P> bool Wolk::registerDataProtocol()
       [&](const std::string& protocol, std::shared_ptr<Message> message) { routePlatformData(protocol, message); },
       [&](const std::string& protocol, std::shared_ptr<Message> message) { routeDeviceData(protocol, message); });
 
-    m_dataServices[typeid(P)] = std::make_pair(dataService, protocolResolver);
+    m_dataServices[P::getName()] = std::make_pair(dataService, protocolResolver);
 
     m_inboundDeviceMessageHandler->setListener<P>(protocolResolver);
     m_inboundPlatformMessageHandler->setListener<P>(protocolResolver);
-
-    return true;
 }
-
-template <> inline bool Wolk::registerDataProtocol<void>()
-{
-    return false;
-}
-
-template <class P> void Wolk::routePlatformData(std::shared_ptr<Message> message)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(typeid(P));
-    if (it != m_dataServices.end())
-    {
-        std::get<0>(it->second)->platformMessageReceived(message);
-    }
-    else
-    {
-        LOG(WARN) << "Message protocol not found for: " << message->getChannel();
-    }
-}
-
-template <> inline void Wolk::routePlatformData<void>(std::shared_ptr<Message> message)
-{
-    LOG(WARN) << "Message protocol not found for: " << message->getChannel();
-}
-
-template <class P> void Wolk::routeDeviceData(std::shared_ptr<Message> message)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(typeid(P));
-    if (it != m_dataServices.end())
-    {
-        std::get<0>(it->second)->deviceMessageReceived(message);
-    }
-    else
-    {
-        LOG(WARN) << "Message protocol not found for: " << message->getChannel();
-    }
-}
-
-template <> inline void Wolk::routeDeviceData<void>(std::shared_ptr<Message> message)
-{
-    LOG(WARN) << "Message protocol not found for: " << message->getChannel();
-}
-
-template <class P> void Wolk::setupGatewayListeners()
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(typeid(P));
-    if (it != m_dataServices.end())
-    {
-        m_deviceStatusService->setGatewayModuleConnectionStatusListener(std::get<0>(it->second));
-    }
-    else
-    {
-        LOG(WARN) << "Message protocol not found for gateway";
-    }
-}
-
-template <> inline void Wolk::setupGatewayListeners<void>()
-{
-    LOG(WARN) << "Data protocol not found for gateway";
-}
-
 }    // namespace wolkabout
 
 #endif

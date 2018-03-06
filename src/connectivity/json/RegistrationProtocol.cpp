@@ -15,7 +15,6 @@
  */
 
 #include "RegistrationProtocol.h"
-#include "Poco/Bugcheck.h"
 #include "connectivity/Channels.h"
 #include "model/DeviceRegistrationRequestDto.h"
 #include "model/DeviceRegistrationResponseDto.h"
@@ -32,6 +31,22 @@ using nlohmann::json;
 
 namespace wolkabout
 {
+const std::string RegistrationProtocol::m_name = "RegistrationProtocol";
+
+const std::vector<std::string> RegistrationProtocol::m_devicTopics = {
+  Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
+  Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::CHANNEL_WILDCARD};
+
+const std::vector<std::string> RegistrationProtocol::m_platformTopics = {
+  Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
+  Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::CHANNEL_WILDCARD};
+
+const std::vector<std::string> RegistrationProtocol::m_deviceMessageTypes = {
+  Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT, Channel::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT};
+
+const std::vector<std::string> RegistrationProtocol::m_platformMessageTypes = {
+  Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT, Channel::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT};
+
 const std::string RegistrationProtocol::REGISTRATION_RESPONSE_OK = "OK";
 const std::string RegistrationProtocol::REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT = "ERROR_KEY_CONFLICT";
 const std::string RegistrationProtocol::REGISTRATION_RESPONSE_ERROR_MANIFEST_CONFLICT = "ERROR_MANIFEST_CONFLICT";
@@ -57,7 +72,6 @@ void to_json(json& j, const ConfigurationManifest& configurationManifest)
             return "STRING";
 
         default:
-            poco_assert_dbg(false);
             throw std::invalid_argument("Invalid data type");
         }
     }();
@@ -140,7 +154,6 @@ void to_json(json& j, const AlarmManifest& alarmManfiest)
             return "ERROR";
 
         default:
-            poco_assert_dbg(false);
             throw std::invalid_argument("Invalid alarm severity");
         }
     }();
@@ -205,7 +218,6 @@ void to_json(json& j, const ActuatorManifest& actuatorManfiest)
             return "STRING";
 
         default:
-            poco_assert_dbg(false);
             throw std::invalid_argument("Invalid data type");
         }
     }();
@@ -300,7 +312,6 @@ void to_json(json& j, const SensorManifest& sensorManifest)
             return "STRING";
 
         default:
-            poco_assert_dbg(false);
             throw std::invalid_argument("Invalid data type");
         }
     }();
@@ -438,7 +449,6 @@ void to_json(json& j, const DeviceReregistrationResponseDto& dto)
             break;
 
         default:
-            poco_assert_dbg(false);
             throw std::invalid_argument("Unhandled result");
         }
     }();
@@ -451,25 +461,13 @@ void to_json(json& j, const DeviceReregistrationResponseDto& dto)
 }
 /*** DEVICE REREGISTRATION RESPONSE DTO ***/
 
-RegistrationProtocol::RegistrationProtocol()
-: m_devicTopics{Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
-                Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::CHANNEL_WILDCARD}
-, m_platformTopics{Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
-                   Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::CHANNEL_WILDCARD}
-, m_deviceMessageTypes{Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT,
-                       Channel::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT}
-, m_platformMessageTypes{Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT,
-                         Channel::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT}
-{
-}
-
-std::vector<std::string> RegistrationProtocol::getDeviceTopics()
+const std::vector<std::string>& RegistrationProtocol::getDeviceTopics()
 {
     LOG(DEBUG) << METHOD_INFO;
     return m_devicTopics;
 }
 
-std::vector<std::string> RegistrationProtocol::getPlatformTopics()
+const std::vector<std::string>& RegistrationProtocol::getPlatformTopics()
 {
     LOG(DEBUG) << METHOD_INFO;
     return m_platformTopics;
@@ -575,7 +573,6 @@ std::shared_ptr<DeviceRegistrationResponseDto> RegistrationProtocol::makeRegistr
                 return DeviceRegistrationResponseDto::Result::ERROR_NO_GATEWAY_MANIFEST;
             }
 
-            poco_assert_dbg(false);
             throw std::logic_error("");
         }();
 

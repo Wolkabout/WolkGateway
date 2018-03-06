@@ -31,6 +31,23 @@ using nlohmann::json;
 
 namespace wolkabout
 {
+const std::string JsonSingleProtocol::m_name = "JsonProtocol";
+
+const std::vector<std::string> JsonSingleProtocol::m_devicTopics = {
+  Channel::SENSOR_READING_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
+  Channel::EVENTS_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
+  Channel::ACTUATION_STATUS_TOPIC_ROOT + Channel::CHANNEL_WILDCARD};
+
+const std::vector<std::string> JsonSingleProtocol::m_platformTopics = {
+  Channel::ACTUATION_GET_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
+  Channel::ACTUATION_SET_TOPIC_ROOT + Channel::CHANNEL_WILDCARD};
+
+const std::vector<std::string> JsonSingleProtocol::m_deviceMessageTypes = {
+  Channel::SENSOR_READING_TYPE, Channel::EVENT_TYPE, Channel::ACTUATION_STATUS_TYPE};
+
+const std::vector<std::string> JsonSingleProtocol::m_platformMessageTypes = {Channel::ACTUATION_GET_TYPE,
+                                                                             Channel::ACTUATION_SET_TYPE};
+
 void from_json(const json& j, SensorReading& reading)
 {
     const std::string value = [&]() -> std::string {
@@ -121,23 +138,17 @@ void to_json(json& j, const std::shared_ptr<ActuatorStatus>& p)
     to_json(j, *p);
 }
 
-JsonSingleProtocol::JsonSingleProtocol()
-: m_devicTopics{Channel::SENSOR_READING_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
-                Channel::EVENTS_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
-                Channel::ACTUATION_STATUS_TOPIC_ROOT + Channel::CHANNEL_WILDCARD}
-, m_platformTopics{Channel::ACTUATION_GET_TOPIC_ROOT + Channel::CHANNEL_WILDCARD,
-                   Channel::ACTUATION_SET_TOPIC_ROOT + Channel::CHANNEL_WILDCARD}
-, m_deviceMessageTypes{Channel::SENSOR_READING_TYPE, Channel::EVENT_TYPE, Channel::ACTUATION_STATUS_TYPE}
-, m_platformMessageTypes{Channel::ACTUATION_GET_TYPE, Channel::ACTUATION_SET_TYPE}
+const std::string& JsonSingleProtocol::getName()
 {
+    return m_name;
 }
 
-std::vector<std::string> JsonSingleProtocol::getDeviceTopics()
+const std::vector<std::string>& JsonSingleProtocol::getDeviceTopics()
 {
     return m_devicTopics;
 }
 
-std::vector<std::string> JsonSingleProtocol::getPlatformTopics()
+const std::vector<std::string>& JsonSingleProtocol::getPlatformTopics()
 {
     return m_platformTopics;
 }
@@ -334,7 +345,7 @@ bool JsonSingleProtocol::isDeviceToPlatformMessage(const std::string& topic)
 {
     auto tokens = StringUtils::tokenize(topic, Channel::CHANNEL_DELIMITER);
 
-    if (tokens.size() != 6)
+    if (tokens.size() < 6)
     {
         LOG(DEBUG) << "Token count mismatch in path: " << topic;
         return false;

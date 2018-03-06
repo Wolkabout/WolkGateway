@@ -21,7 +21,6 @@
 #include "OutboundDataService.h"
 #include "Wolk.h"
 #include "connectivity/ConnectivityService.h"
-#include "connectivity/ProtocolMapper.h"
 #include "connectivity/json/RegistrationProtocol.h"
 #include "connectivity/json/StatusProtocol.h"
 #include "connectivity/mqtt/MqttConnectivityService.h"
@@ -37,9 +36,15 @@
 
 namespace wolkabout
 {
-WolkBuilder& WolkBuilder::host(const std::string& host)
+WolkBuilder& WolkBuilder::platformHost(const std::string& host)
 {
-    m_host = host;
+    m_platformHost = host;
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::gatewayHost(const std::string& host)
+{
+    m_gatewayHost = host;
     return *this;
 }
 
@@ -87,10 +92,10 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
     wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
 
     wolk->m_platformConnectivityService.reset(new MqttConnectivityService(
-      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_host));
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_platformHost));
 
     wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
-      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), "tcp://127.0.0.1:1883"));
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_gatewayHost));
 
     wolk->m_platformPublisher.reset(new PublishingService(*wolk->m_platformConnectivityService,
                                                           std::unique_ptr<Persistence>(new InMemoryPersistence())));
@@ -177,7 +182,8 @@ wolkabout::WolkBuilder::operator std::unique_ptr<Wolk>() const
 }
 
 WolkBuilder::WolkBuilder(Device device)
-: m_host{WOLK_DEMO_HOST}
+: m_platformHost{WOLK_DEMO_HOST}
+, m_gatewayHost{MESSAGE_BUS_HOST}
 , m_device{std::move(device)}
 , m_persistence{new InMemoryPersistence()}
 , m_firmwareVersion{""}

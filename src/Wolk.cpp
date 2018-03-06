@@ -18,7 +18,6 @@
 #include "InboundMessageHandler.h"
 #include "WolkBuilder.h"
 #include "connectivity/ConnectivityService.h"
-#include "connectivity/ProtocolMapper.h"
 #include "model/Device.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
@@ -94,19 +93,34 @@ void Wolk::connectToDevices()
     });
 }
 
-bool Wolk::registerDataProtocol(const std::string& protocol)
-{
-    return MapProtocol(this->registerDataProtocol)(protocol);
-}
-
 void Wolk::routePlatformData(const std::string& protocol, std::shared_ptr<Message> message)
 {
-    return MapProtocol(this->routePlatformData, message)(protocol);
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
+
+    auto it = m_dataServices.find(protocol);
+    if (it != m_dataServices.end())
+    {
+        std::get<0>(it->second)->platformMessageReceived(message);
+    }
+    else
+    {
+        LOG(WARN) << "Data service not found for protocol: " << protocol;
+    }
 }
 
 void Wolk::routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message)
 {
-    return MapProtocol(this->routeDeviceData, message)(protocol);
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
+
+    auto it = m_dataServices.find(protocol);
+    if (it != m_dataServices.end())
+    {
+        std::get<0>(it->second)->deviceMessageReceived(message);
+    }
+    else
+    {
+        LOG(WARN) << "Data service not found for protocol: " << protocol;
+    }
 }
 
 void Wolk::gatewayRegistered()
@@ -120,7 +134,28 @@ void Wolk::gatewayRegistered()
 
     const std::string gatewayProtocol = gatewayDevice->getManifest().getProtocol();
 
-    return MapProtocol(this->setupGatewayListeners)(gatewayProtocol);
+    if (gatewayProtocol.empty())
+    {
+        LOG(WARN) << "Gateway protocol not set";
+        return;
+    }
+
+    setupGatewayListeners(gatewayProtocol);
+}
+
+void Wolk::setupGatewayListeners(const std::string& protocol)
+{
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
+
+    auto it = m_dataServices.find(protocol);
+    if (it != m_dataServices.end())
+    {
+        m_deviceStatusService->setGatewayModuleConnectionStatusListener(std::get<0>(it->second));
+    }
+    else
+    {
+        LOG(WARN) << "Message protocol not found for gateway";
+    }
 }
 
 Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler& handler,

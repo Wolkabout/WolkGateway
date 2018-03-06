@@ -65,7 +65,7 @@ template <class P> void InboundPlatformMessageHandler::setListener(std::weak_ptr
 {
     std::lock_guard<std::mutex> locker{m_lock};
 
-    for (auto topic : P::getInstance().getPlatformTopics())
+    for (auto topic : P::getPlatformTopics())
     {
         m_topicHandlers[topic] = listener;
         m_subscriptionList.push_back(topic);

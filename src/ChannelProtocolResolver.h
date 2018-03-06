@@ -23,6 +23,7 @@
 #include "model/DeviceManifest.h"
 #include "model/Message.h"
 #include "repository/DeviceRepository.h"
+#include "utilities/Logger.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -68,10 +69,11 @@ ChannelProtocolResolverImpl<P>::ChannelProtocolResolverImpl(
 
 template <class P> void ChannelProtocolResolverImpl<P>::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    const std::string deviceKey = P::getInstance().deviceKeyFromTopic(message->getChannel());
+    const std::string deviceKey = P::deviceKeyFromTopic(message->getChannel());
     std::shared_ptr<Device> device = m_deviceRepository.findByDeviceKey(deviceKey);
     if (!device)
     {
+        LOG(DEBUG) << "Protocol Resolver: Device not found for " << message->getChannel();
         return;
     }
 
@@ -81,10 +83,11 @@ template <class P> void ChannelProtocolResolverImpl<P>::platformMessageReceived(
 
 template <class P> void ChannelProtocolResolverImpl<P>::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    const std::string deviceKey = P::getInstance().deviceKeyFromTopic(message->getChannel());
+    const std::string deviceKey = P::deviceKeyFromTopic(message->getChannel());
     std::shared_ptr<Device> device = m_deviceRepository.findByDeviceKey(deviceKey);
     if (!device)
     {
+        LOG(DEBUG) << "Protocol Resolver: Device not found for " << message->getChannel();
         return;
     }
 

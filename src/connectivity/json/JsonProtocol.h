@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef JSONSINGLEPROTOCOL_H
-#define JSONSINGLEPROTOCOL_H
+#ifndef JSONPROTOCOL_H
+#define JSONPROTOCOL_H
 
 #include "connectivity/Protocol.h"
 #include <memory>
@@ -31,7 +31,7 @@ class ActuatorStatus;
 class ActuatorSetCommand;
 class ActuatorGetCommand;
 
-class JsonSingleProtocol : public ProtocolBase<JsonSingleProtocol>
+class JsonProtocol : public ProtocolBase<JsonProtocol>
 {
 public:
     std::vector<std::string> getDeviceTopics() override;
@@ -66,9 +66,9 @@ public:
     std::string deviceKeyFromTopic(const std::string& topic);
 
 private:
-    friend class ProtocolBase<JsonSingleProtocol>;
+    friend class ProtocolBase<JsonProtocol>;
 
-    JsonSingleProtocol();
+    JsonProtocol();
 
     const std::vector<std::string> m_devicTopics;
     const std::vector<std::string> m_platformTopics;

@@ -17,12 +17,12 @@
 #ifndef PROTOCOLMAPPER_H
 #define PROTOCOLMAPPER_H
 
-#include "connectivity/json/JsonSingleProtocol.h"
+#include "connectivity/json/JsonProtocol.h"
 #include <string>
 
 namespace wolkabout
 {
-const std::string JSON_SINGLE_PROTOCOL = "JsonSingle";
+const std::string JSON_PROTOCOL = "JsonProtocol";
 
 #define FIRST_ARG(...) FIRST_ARG_(__VA_ARGS__, ignored)
 #define FIRST_ARG_(first, ...) first
@@ -38,8 +38,8 @@ const std::string JSON_SINGLE_PROTOCOL = "JsonSingle";
 
 #define MapProtocol(...)                                                               \
     [&](const std::string& name) {                                                     \
-        if (name == JSON_SINGLE_PROTOCOL)                                              \
-            return FIRST_ARG(__VA_ARGS__)<JsonSingleProtocol>(REST_ARGS(__VA_ARGS__)); \
+        if (name == JSON_PROTOCOL)                                              \
+            return FIRST_ARG(__VA_ARGS__)<JsonProtocol>(REST_ARGS(__VA_ARGS__)); \
         else                                                                           \
             return FIRST_ARG(__VA_ARGS__)<void>(REST_ARGS(__VA_ARGS__));               \
     }

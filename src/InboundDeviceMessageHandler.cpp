@@ -25,15 +25,15 @@ namespace wolkabout
 {
 InboundDeviceMessageHandler::InboundDeviceMessageHandler() : m_commandBuffer{new CommandBuffer()} {}
 
-void InboundDeviceMessageHandler::messageReceived(const std::string& topic, const std::string& message)
+void InboundDeviceMessageHandler::messageReceived(const std::string& channel, const std::string& payload)
 {
-    LOG(DEBUG) << "Device message received: " << topic << ", " << message;
+    LOG(TRACE) << "InboundDeviceMessageHandler: Received message on channel: '" << channel << "'. Payload: '" << payload << "'";
 
     std::lock_guard<std::mutex> lg{m_lock};
 
     auto it = std::find_if(m_topicHandlers.begin(), m_topicHandlers.end(),
                            [&](const std::pair<std::string, std::weak_ptr<DeviceMessageListener>>& kvp) {
-                               return StringUtils::mqttTopicMatch(kvp.first, topic);
+                               return StringUtils::mqttTopicMatch(kvp.first, channel);
                            });
 
     if (it != m_topicHandlers.end())
@@ -42,13 +42,13 @@ void InboundDeviceMessageHandler::messageReceived(const std::string& topic, cons
         addToCommandBuffer([=] {
             if (auto handler = topicHandler.lock())
             {
-                handler->deviceMessageReceived(std::make_shared<Message>(message, topic));
+                handler->deviceMessageReceived(std::make_shared<Message>(payload, channel));
             }
         });
     }
     else
     {
-        LOG(INFO) << "Handler for device topic not found: " << topic;
+        LOG(ERROR) << "InboundDeviceMessageHandler: Handler for device topic not found: " << channel;
     }
 }
 

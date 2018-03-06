@@ -34,7 +34,7 @@ void ConsoleLogger::logEntry(Log& log)
         }
         case LogLevel::DEBUG:
         {
-            std::cout << "[D] " << log.getMessage() << std::endl;
+            std::cout << "[D] " << log.getMessage();
             break;
         }
         case LogLevel::INFO:

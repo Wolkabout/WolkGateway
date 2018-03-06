@@ -8,4 +8,5 @@ file(GLOB_RECURSE PAHO_MQTT_SRC "./*.c" "./*.cpp")
 
 add_library(paho-mqtt SHARED ${PAHO_MQTT_SRC})
 target_link_libraries(paho-mqtt ${CONAN_LIBS} pthread)
+set_target_properties(paho-mqtt PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set_target_properties(paho-mqtt PROPERTIES LINK_FLAGS "-Wl,-rpath,./")

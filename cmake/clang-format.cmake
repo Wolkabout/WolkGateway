@@ -13,7 +13,7 @@
 # limitations under the License.
 
 add_custom_target(format
-                  COMMAND "clang-format" -i -sort-includes -style=file ${HEADER_FILES} ${SOURCE_FILES}
+                  COMMAND "clang-format" -i -sort-includes -style=file ${BIN_HEADER_FILES} ${BIN_SOURCE_FILES} ${LIB_HEADER_FILES} ${LIB_SOURCE_FILES}
                   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                   COMMENT "[Formatting source code]"
                   VERBATIM)

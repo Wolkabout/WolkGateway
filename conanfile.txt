@@ -11,4 +11,5 @@ Poco:shared=True
 [imports]
 bin, *.dll -> ./
 bin, *.so -> ./
+lib, *.so* -> ./
 lib, *.dylib* -> ./

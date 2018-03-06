@@ -48,7 +48,7 @@ bool MqttConnectivityService::connect()
     LOG(INFO) << "MqttConnectivityService: Connecting to " << m_host;
 
     m_mqttClient->setLastWill(LAST_WILL_TOPIC_ROOT + m_key, "Gone offline");
-    bool isConnected = m_mqttClient->connect(m_key, m_password, TRUST_STORE, m_host, m_key);
+    bool isConnected = m_mqttClient->connect(m_key, m_password, TRUST_STORE, m_host, "Gateway-" + m_key);
     if (isConnected)
     {
         LOG(INFO) << "MqttConnectivityService: Connected to " << m_host;

@@ -45,9 +45,6 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
 {
     LOG(TRACE) << METHOD_INFO;
 
-    LOG(DEBUG) << "DeviceRegistrationService: Platfom message received: " << message->getChannel() << " , "
-               << message->getContent();
-
     if (!DeviceRegistrationProtocol::getInstance().isMessageFromPlatform(message->getChannel()))
     {
         LOG(WARN) << "DeviceRegistrationService: Ignoring message on channel '" << message->getChannel()
@@ -83,9 +80,6 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
 void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
-
-    LOG(DEBUG) << "DeviceRegistrationService: Device message received: " << message->getChannel() << " , "
-               << message->getContent();
 
     if (!DeviceRegistrationProtocol::getInstance().isMessageToPlatform(message->getChannel()))
     {

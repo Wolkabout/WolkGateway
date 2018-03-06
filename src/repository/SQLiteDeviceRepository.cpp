@@ -571,11 +571,11 @@ bool SQLiteDeviceRepository::containsDeviceWithKey(const std::string& deviceKey)
 void SQLiteDeviceRepository::update(const Device& device)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
-    
+
     remove(device.getKey());
     save(device);
 }
-    
+
 std::string SQLiteDeviceRepository::calculateSha256(const AlarmManifest& alarmManifest)
 {
     Poco::Crypto::DigestEngine digestEngine("SHA256");
@@ -596,11 +596,11 @@ std::string SQLiteDeviceRepository::calculateSha256(const AlarmManifest& alarmMa
         {
             return "E";
         }
-        
+
         poco_assert(false);
         return "";
     }());
-    
+
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
 
@@ -616,7 +616,7 @@ std::string SQLiteDeviceRepository::calculateSha256(const ActuatorManifest& actu
     digestEngine.update(std::to_string(actuatorManifest.getMinimum()));
     digestEngine.update(std::to_string(actuatorManifest.getMaximum()));
     digestEngine.update(actuatorManifest.getDelimiter());
-    
+
     digestEngine.update([&]() -> std::string {
         if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::BOOLEAN)
         {
@@ -630,16 +630,16 @@ std::string SQLiteDeviceRepository::calculateSha256(const ActuatorManifest& actu
         {
             return "S";
         }
-        
+
         poco_assert(false);
         return "";
     }());
-    
+
     for (const std::string& label : actuatorManifest.getLabels())
     {
         digestEngine.update(label);
     }
-    
+
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
 
@@ -655,7 +655,7 @@ std::string SQLiteDeviceRepository::calculateSha256(const SensorManifest& sensor
     digestEngine.update(std::to_string(sensorManifest.getMinimum()));
     digestEngine.update(std::to_string(sensorManifest.getMaximum()));
     digestEngine.update(sensorManifest.getDelimiter());
-    
+
     digestEngine.update([&]() -> std::string {
         if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::BOOLEAN)
         {
@@ -669,16 +669,16 @@ std::string SQLiteDeviceRepository::calculateSha256(const SensorManifest& sensor
         {
             return "S";
         }
-        
+
         poco_assert(false);
         return "";
     }());
-    
+
     for (const std::string& label : sensorManifest.getLabels())
     {
         digestEngine.update(label);
     }
-    
+
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
 
@@ -697,7 +697,7 @@ std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationManifest&
     digestEngine.update(configurationManifest.getDefaultValue());
     digestEngine.update(configurationManifest.getNullValue());
     digestEngine.update(configurationManifest.isOptional());
-    
+
     digestEngine.update([&]() -> std::string {
         if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::BOOLEAN)
         {
@@ -711,11 +711,11 @@ std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationManifest&
         {
             return "S";
         }
-        
+
         poco_assert(false);
         return "";
     }());
-    
+
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
 
@@ -726,28 +726,28 @@ std::string SQLiteDeviceRepository::calculateSha256(const DeviceManifest& device
     digestEngine.update(deviceManifest.getDescription());
     digestEngine.update(deviceManifest.getProtocol());
     digestEngine.update(deviceManifest.getFirmwareUpdateProtocol());
-    
+
     for (const wolkabout::AlarmManifest& alarmManifest : deviceManifest.getAlarms())
     {
         digestEngine.update(calculateSha256(alarmManifest));
     }
-    
+
     for (const wolkabout::ActuatorManifest& actuatorManifest : deviceManifest.getActuators())
     {
         digestEngine.update(calculateSha256(actuatorManifest));
     }
-    
+
     for (const wolkabout::SensorManifest& sensorManifest : deviceManifest.getSensors())
     {
         digestEngine.update(calculateSha256(sensorManifest));
     }
-    
+
     for (const wolkabout::ConfigurationManifest& configurationManifest : deviceManifest.getConfigurations())
     {
         digestEngine.update(calculateSha256(configurationManifest));
     }
-    
+
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
-    
+
 }    // namespace wolkabout

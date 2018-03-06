@@ -321,4 +321,3 @@ TEST_F(DeviceRegistrationService, Given_ThatGatewayIsNotRegisteredAndListOfDevic
     // Then
     ASSERT_EQ(2, platformOutboundMessageHandler->getMessages().size());
 }
-

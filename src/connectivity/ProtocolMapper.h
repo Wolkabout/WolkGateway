@@ -36,12 +36,12 @@ const std::string JSON_PROTOCOL = "JsonProtocol";
 
 #define REST_ARGS(...) GET_REST_ARGS_OVERRIDE(__VA_ARGS__)(__VA_ARGS__)
 
-#define MapProtocol(...)                                                               \
-    [&](const std::string& name) {                                                     \
-        if (name == JSON_PROTOCOL)                                              \
+#define MapProtocol(...)                                                         \
+    [&](const std::string& name) {                                               \
+        if (name == JSON_PROTOCOL)                                               \
             return FIRST_ARG(__VA_ARGS__)<JsonProtocol>(REST_ARGS(__VA_ARGS__)); \
-        else                                                                           \
-            return FIRST_ARG(__VA_ARGS__)<void>(REST_ARGS(__VA_ARGS__));               \
+        else                                                                     \
+            return FIRST_ARG(__VA_ARGS__)<void>(REST_ARGS(__VA_ARGS__));         \
     }
 }    // namespace wolkabout
 

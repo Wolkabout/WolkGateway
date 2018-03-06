@@ -143,7 +143,7 @@ std::vector<std::string> JsonProtocol::getPlatformTopics()
 }
 
 std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey,
-                                                  std::vector<std::shared_ptr<SensorReading>> sensorReadings)
+                                            std::vector<std::shared_ptr<SensorReading>> sensorReadings)
 {
     if (sensorReadings.size() == 0)
     {
@@ -160,8 +160,7 @@ std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey,
     return std::make_shared<Message>(payload, topic);
 }
 
-std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey,
-                                                  std::vector<std::shared_ptr<Alarm>> alarms)
+std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey, std::vector<std::shared_ptr<Alarm>> alarms)
 {
     if (alarms.size() == 0)
     {
@@ -178,7 +177,7 @@ std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey,
 }
 
 std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey,
-                                                  std::shared_ptr<ActuatorStatus> actuatorStatuses)
+                                            std::shared_ptr<ActuatorStatus> actuatorStatuses)
 {
     // JSON_SINGLE allows only 1 ActuatorStatus per Message
     const json jPayload(actuatorStatuses);

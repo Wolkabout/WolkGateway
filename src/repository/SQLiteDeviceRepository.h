@@ -31,7 +31,7 @@ class ActuatorManifest;
 class SensorManifest;
 class ConfigurationManifest;
 class DeviceManifest;
-    
+
 class SQLiteDeviceRepository : public DeviceRepository
 {
 public:
@@ -54,7 +54,7 @@ private:
     static std::string calculateSha256(const SensorManifest& sensorManifest);
     static std::string calculateSha256(const ConfigurationManifest& configurationManifest);
     static std::string calculateSha256(const DeviceManifest& deviceManifest);
-    
+
     void update(const Device& device);
 
     std::recursive_mutex m_mutex;

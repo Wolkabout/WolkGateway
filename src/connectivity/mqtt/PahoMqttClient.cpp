@@ -153,7 +153,7 @@ bool PahoMqttClient::publish(const std::string& topic, const std::string& messag
 
     try
     {
-        LOG(DEBUG) << "PahoMqttClient: Publishing message on topic '" <<  topic << "' : " << message;
+        LOG(DEBUG) << "PahoMqttClient: Publishing message on topic '" << topic << "' : " << message;
 
         mqtt::message_ptr pubmsg = mqtt::make_message(topic, message.c_str(), strlen(message.c_str()));
         pubmsg->set_qos(MQTT_QOS);
@@ -168,7 +168,7 @@ bool PahoMqttClient::publish(const std::string& topic, const std::string& messag
     }
     catch (mqtt::exception& e)
     {
-        LOG(DEBUG) << "PahoMqttClient: Failed to publish message on topic '" <<  topic << "' : " << e.what();
+        LOG(DEBUG) << "PahoMqttClient: Failed to publish message on topic '" << topic << "' : " << e.what();
         return false;
     }
 

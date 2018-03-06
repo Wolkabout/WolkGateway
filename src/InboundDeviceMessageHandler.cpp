@@ -27,7 +27,8 @@ InboundDeviceMessageHandler::InboundDeviceMessageHandler() : m_commandBuffer{new
 
 void InboundDeviceMessageHandler::messageReceived(const std::string& channel, const std::string& payload)
 {
-    LOG(TRACE) << "InboundDeviceMessageHandler: Received message on channel: '" << channel << "'. Payload: '" << payload << "'";
+    LOG(TRACE) << "InboundDeviceMessageHandler: Received message on channel: '" << channel << "'. Payload: '" << payload
+               << "'";
 
     std::lock_guard<std::mutex> lg{m_lock};
 

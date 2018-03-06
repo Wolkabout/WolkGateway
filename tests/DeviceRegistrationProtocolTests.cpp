@@ -2,6 +2,9 @@
 #include "model/Message.h"
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include <string>
+#include <vector>
 
 TEST(DeviceRegistrationProtocol, Given_RegistrationRequestChannelForGateway_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToGatewayKey)
 {
@@ -149,4 +152,18 @@ TEST(DeviceRegistrationProtocol, Given_MessageToPlatform_When_MessageDirectionIs
 
     // Then
     ASSERT_TRUE(isMessageToPlatform);
+}
+
+TEST(DeviceRegistrationProtocol, VerifyDeviceTopics)
+{
+    std::vector<std::string> deviceTopics = wolkabout::DeviceRegistrationProtocol::getInstance().getDeviceTopics();
+
+    ASSERT_THAT(deviceTopics, ::testing::ElementsAre("d2p/register_device/d/#"));
+}
+
+TEST(DeviceRegistrationProtocol, VerifyPlatformTopics)
+{
+    std::vector<std::string> platformTopics = wolkabout::DeviceRegistrationProtocol::getInstance().getPlatformTopics();
+    
+    ASSERT_THAT(platformTopics, ::testing::ElementsAre("p2d/register_device/g/#", "p2d/reregister_device/g/#"));
 }

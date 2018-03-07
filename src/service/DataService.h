@@ -172,7 +172,7 @@ template <class P> void DataService<P>::handleGatewayOfflineMessage(std::shared_
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string ref = P::referenceFromTopic(message->getChannel());
+    const std::string ref = P::extractReferenceFromChannel(message->getChannel());
     if (ref.empty())
     {
         LOG(INFO) << "Data Service: Unable to get reference from topic: " << message->getChannel();

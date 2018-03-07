@@ -15,6 +15,6 @@
 # limitations under the License.
 
 pushd out
-conan install ..
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+conan install --build=missing ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
 popd

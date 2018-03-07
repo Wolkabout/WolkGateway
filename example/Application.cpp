@@ -28,7 +28,7 @@
 int main(int /* argc */, char** /* argv */)
 {
     auto logger = std::unique_ptr<wolkabout::ConsoleLogger>(new wolkabout::ConsoleLogger());
-    logger->setLogLevel(wolkabout::LogLevel::INFO);
+	logger->setLogLevel(wolkabout::LogLevel::INFO);
     wolkabout::Logger::setInstance(std::move(logger));
 
     wolkabout::DeviceManifest deviceManifest;
@@ -37,9 +37,8 @@ int main(int /* argc */, char** /* argv */)
     std::unique_ptr<wolkabout::Wolk> wolk =
 	  wolkabout::Wolk::newBuilder(device)
 		.platformHost("tcp://localhost:1885")
-        .build();
-
-	wolk->registerDataProtocol<wolkabout::JsonProtocol>();
+		.withDataProtocol<wolkabout::JsonProtocol>()
+		.build();
 
     wolk->connect();
 

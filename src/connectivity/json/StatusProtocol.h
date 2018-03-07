@@ -48,11 +48,8 @@ public:
 
     static std::shared_ptr<DeviceStatusResponse> makeDeviceStatusResponse(std::shared_ptr<Message> message);
 
-    static bool isGatewayToPlatformMessage(const std::string& topic);
-
-    static bool isDeviceToPlatformMessage(const std::string& topic);
-
-    static bool isPlatformToDeviceMessage(const std::string& topic);
+    static bool isMessageToPlatform(const std::string& channel);
+    static bool isMessageFromPlatform(const std::string& channel);
 
     static bool isStatusResponseMessage(const std::string& topic);
     static bool isStatusRequestMessage(const std::string& topic);
@@ -61,8 +58,7 @@ public:
     static std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
     static std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
 
-    static std::string deviceKeyFromTopic(const std::string& topic);
-    static std::string gatewayKeyFromTopic(const std::string& topic);
+    static std::string extractDeviceKeyFromChannel(const std::string& topic);
     static std::vector<std::string> deviceKeysFromContent(const std::string& content);
 
     static const std::string STATUS_RESPONSE_STATE_FIELD;
@@ -72,22 +68,21 @@ public:
     static const std::string STATUS_RESPONSE_STATUS_OFFLINE;
 
 private:
-    static const std::string m_name;
+    static const std::string NAME;
 
-    static const std::vector<std::string> m_deviceTopics;
-    static const std::vector<std::string> m_platformTopics;
+    static const std::string CHANNEL_DELIMITER;
+    static const std::string CHANNEL_WILDCARD;
+    static const std::string GATEWAY_PATH_PREFIX;
+    static const std::string DEVICE_PATH_PREFIX;
+    static const std::string DEVICE_TO_PLATFORM_DIRECTION;
+    static const std::string PLATFORM_TO_DEVICE_DIRECTION;
 
-    static const std::vector<std::string> m_deviceMessageTypes;
-    static const std::vector<std::string> m_platformMessageTypes;
+    static const std::string LAST_WILL_TOPIC_ROOT;
+    static const std::string DEVICE_STATUS_REQUEST_TOPIC_ROOT;
+    static const std::string DEVICE_STATUS_RESPONSE_TOPIC_ROOT;
 
-    static constexpr int DIRRECTION_POS = 0;
-    static constexpr int TYPE_POS = 1;
-    static constexpr int GATEWAY_TYPE_POS = 2;
-    static constexpr int GATEWAY_KEY_POS = 3;
-    static constexpr int DEVICE_TYPE_POS = 2;
-    static constexpr int DEVICE_KEY_POS = 3;
-    static constexpr int GATEWAY_DEVICE_TYPE_POS = 4;
-    static constexpr int GATEWAY_DEVICE_KEY_POS = 5;
+    static const std::vector<std::string> DEVICE_TOPICS;
+    static const std::vector<std::string> PLATFORM_TOPICS;
 };
 }    // namespace wolkabout
 

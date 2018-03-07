@@ -61,10 +61,22 @@ public:
     static std::string extractDeviceKeyFromChannel(const std::string& channel);
 
 private:
-    static const std::string m_name;
+    static const std::string NAME;
 
-    static const std::vector<std::string> m_deviceTopics;
-    static const std::vector<std::string> m_platformTopics;
+    static const std::string CHANNEL_DELIMITER;
+    static const std::string CHANNEL_WILDCARD;
+    static const std::string GATEWAY_PATH_PREFIX;
+    static const std::string DEVICE_PATH_PREFIX;
+    static const std::string DEVICE_TO_PLATFORM_DIRECTION;
+    static const std::string PLATFORM_TO_DEVICE_DIRECTION;
+
+    static const std::string DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT;
+    static const std::string DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
+    static const std::string DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT;
+    static const std::string DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT;
+
+    static const std::vector<std::string> DEVICE_TOPICS;
+    static const std::vector<std::string> PLATFORM_TOPICS;
 
     static const std::string REGISTRATION_RESPONSE_OK;
     static const std::string REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT;

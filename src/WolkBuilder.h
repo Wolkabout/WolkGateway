@@ -31,14 +31,11 @@ namespace wolkabout
 class Wolk;
 class UrlFileDownloader;
 class FirmwareInstaller;
+class ProtocolHolder;
 
 class WolkBuilder final
 {
 public:
-    ~WolkBuilder() = default;
-
-    WolkBuilder(WolkBuilder&&) = default;
-
     /**
      * @brief WolkBuilder Initiates wolkabout::Wolk builder
      * @param device Device for which wolkabout::WolkBuilder is instantiated
@@ -95,6 +92,13 @@ public:
                                     std::weak_ptr<UrlFileDownloader> urlDownloader);
 
     /**
+     * @brief withDataProtocol Defines which data protocol to use
+     * @tparam Protocol protocol type to register (must be declared in WolkBuilder.cpp)
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    template <class Protocol> WolkBuilder& withDataProtocol();
+
+    /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
      *
@@ -116,6 +120,8 @@ private:
     Device m_device;
 
     std::shared_ptr<Persistence> m_persistence;
+
+    std::shared_ptr<ProtocolHolder> m_protocolHolder;
 
     std::string m_firmwareVersion;
     std::string m_firmwareDownloadDirectory;

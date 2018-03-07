@@ -41,16 +41,16 @@ void DeviceStatusService::platformMessageReceived(std::shared_ptr<Message> messa
 
     const std::string topic = message->getChannel();
 
-    if (StatusProtocol::isPlatformToDeviceMessage(topic))
+    if (!StatusProtocol::isMessageFromPlatform(topic))
     {
-        if (StatusProtocol::isStatusRequestMessage(topic))
-        {
-            routePlatformMessage(message);
-        }
-        else
-        {
-            LOG(WARN) << "Incorrect status channel from platform: " << topic;
-        }
+        LOG(WARN) << "DeviceRegistrationService: Ignoring message on channel '" << topic
+                  << "'. Message not from platform.";
+        return;
+    }
+
+    if (StatusProtocol::isStatusRequestMessage(topic))
+    {
+        routePlatformMessage(message);
     }
     else
     {
@@ -64,16 +64,28 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
 
     const std::string topic = message->getChannel();
 
-    if (StatusProtocol::isDeviceToPlatformMessage(topic))
+    if (!StatusProtocol::isMessageToPlatform(topic))
     {
-        if (StatusProtocol::isStatusResponseMessage(topic))
+        LOG(WARN) << "DeviceStatusService: Ignoring message on channel '" << topic
+                  << "'. Message not intended for platform.";
+        return;
+    }
+
+    const std::string deviceKey = StatusProtocol::extractDeviceKeyFromChannel(topic);
+
+    if (StatusProtocol::isLastWillMessage(topic))
+    {
+        if (!deviceKey.empty())
         {
-            routeDeviceMessage(message);
-        }
-        else if (StatusProtocol::isLastWillMessage(topic))
-        {
-            const std::string deviceKey = StatusProtocol::deviceKeyFromTopic(topic);
-            if (!deviceKey.empty())
+            if (deviceKey == m_gatewayKey)
+            {
+                LOG(INFO) << "Device Status Service: Gateway module got disconnected";
+                if (auto handler = m_gatewayModuleConnectionStatusListener.lock())
+                {
+                    handler->disconnected();
+                }
+            }
+            else
             {
                 LOG(INFO) << "Device Status Service: Device got disconnected: " << deviceKey;
                 // offline status if last will topic contains device key
@@ -88,43 +100,35 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
 
                 m_outboundPlatformMessageHandler.addMessage(statusMessage);
             }
-            else    // check for list of key in payload
+        }
+        else    // check for list of key in payload
+        {
+            const auto deviceKeys = StatusProtocol::deviceKeysFromContent(topic);
+
+            for (const auto& key : deviceKeys)
             {
-                const auto deviceKeys = StatusProtocol::deviceKeysFromContent(topic);
+                LOG(INFO) << "Device Status Service: Device got disconnected: " << key;
+                auto statusMessage = StatusProtocol::messageFromDeviceStatusResponse(
+                  m_gatewayKey, key, DeviceStatusResponse::Status::OFFLINE);
 
-                for (const auto& key : deviceKeys)
+                if (!statusMessage)
                 {
-                    LOG(INFO) << "Device Status Service: Device got disconnected: " << key;
-                    auto statusMessage = StatusProtocol::messageFromDeviceStatusResponse(
-                      m_gatewayKey, key, DeviceStatusResponse::Status::OFFLINE);
-
-                    if (!statusMessage)
-                    {
-                        LOG(WARN) << "Failed to create device status message: " << topic << ", "
-                                  << message->getContent();
-                        return;
-                    }
-
-                    m_outboundPlatformMessageHandler.addMessage(statusMessage);
+                    LOG(WARN) << "Failed to create device status message: " << topic << ", " << message->getContent();
+                    return;
                 }
+
+                m_outboundPlatformMessageHandler.addMessage(statusMessage);
             }
         }
-        else
-        {
-            LOG(WARN) << "Device Status Service: Incorrect status channel from device: " << topic;
-        }
     }
-    else if (StatusProtocol::isGatewayToPlatformMessage(topic))
+    else if (StatusProtocol::isStatusResponseMessage(topic))
     {
-        const std::string key = StatusProtocol::gatewayKeyFromTopic(topic);
-
-        if (key != m_gatewayKey)
+        if (deviceKey.empty())
         {
-            LOG(WARN) << "Device Status Service: Gateway key from channel does not match gateway: " << topic;
             return;
         }
 
-        if (StatusProtocol::isStatusResponseMessage(topic))
+        if (deviceKey == m_gatewayKey)
         {
             auto deviceStatusResponse = StatusProtocol::makeDeviceStatusResponse(message);
             if (!deviceStatusResponse)
@@ -161,17 +165,9 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
             }
             }
         }
-        else if (StatusProtocol::isLastWillMessage(topic))
-        {
-            if (auto handler = m_gatewayModuleConnectionStatusListener.lock())
-            {
-                LOG(INFO) << "Device Status Service: Gateway module got disconnected";
-                handler->disconnected();
-            }
-        }
         else
         {
-            LOG(WARN) << "Device Status Service: Incorrect status channel from gateway: " << topic;
+            routeDeviceMessage(message);
         }
     }
     else

@@ -110,6 +110,8 @@ bool PahoMqttClient::subscribe(const std::string& topic)
 
     try
     {
+        LOG(DEBUG) << "PahoMqttClient: Subscribing to topic: " << topic;
+
         mqtt::token_ptr token = m_client->subscribe(topic, MQTT_QOS);
         token->wait_for(std::chrono::milliseconds(MQTT_ACTION_COMPLETITION_TIMEOUT_MSEC));
 

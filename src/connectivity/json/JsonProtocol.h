@@ -33,17 +33,15 @@ class ActuatorGetCommand;
 class JsonProtocol
 {
 public:
+    ~JsonProtocol() = delete;
+
     static const std::string& getName();
 
     static const std::vector<std::string>& getDeviceTopics();
     static const std::vector<std::string>& getPlatformTopics();
 
-    static std::shared_ptr<Message> make(const std::string& gatewayKey,
-                                         std::vector<std::shared_ptr<SensorReading>> sensorReadings);
-    static std::shared_ptr<Message> make(const std::string& gatewayKey, std::vector<std::shared_ptr<Alarm>> alarms);
-    static std::shared_ptr<Message> make(const std::string& gatewayKey,
-                                         std::shared_ptr<ActuatorStatus> actuatorStatuses);
-    static std::shared_ptr<Message> make(const std::string& gatewayKey, const ActuatorStatus& actuatorStatuses);
+    static std::shared_ptr<Message> make(const std::string& gatewayKey, std::shared_ptr<ActuatorStatus> actuatorStatus);
+    static std::shared_ptr<Message> make(const std::string& gatewayKey, const ActuatorStatus& actuatorStatus);
 
     static bool fromMessage(std::shared_ptr<Message> message, ActuatorSetCommand& command);
 
@@ -64,17 +62,40 @@ public:
     static std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
     static std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
 
-    static std::string referenceFromTopic(const std::string& topic);
-    static std::string deviceKeyFromTopic(const std::string& topic);
+    static std::string extractReferenceFromChannel(const std::string& topic);
+    static std::string extractDeviceKeyFromChannel(const std::string& topic);
 
 private:
-    static const std::string m_name;
+    static const std::string NAME;
 
-    static const std::vector<std::string> m_devicTopics;
-    static const std::vector<std::string> m_platformTopics;
+    static const std::string CHANNEL_DELIMITER;
+    static const std::string CHANNEL_WILDCARD;
 
-    static const std::vector<std::string> m_deviceMessageTypes;
-    static const std::vector<std::string> m_platformMessageTypes;
+    static const std::string GATEWAY_TYPE;
+    static const std::string DEVICE_TYPE;
+    static const std::string REFERENCE_TYPE;
+    static const std::string DEVICE_TO_PLATFORM_TYPE;
+    static const std::string PLATFORM_TO_DEVICE_TYPE;
+
+    static const std::string GATEWAY_PATH_PREFIX;
+    static const std::string DEVICE_PATH_PREFIX;
+    static const std::string REFERENCE_PATH_PREFIX;
+    static const std::string DEVICE_TO_PLATFORM_DIRECTION;
+    static const std::string PLATFORM_TO_DEVICE_DIRECTION;
+
+    static const std::string SENSOR_READING_TOPIC_ROOT;
+    static const std::string EVENTS_TOPIC_ROOT;
+    static const std::string ACTUATION_STATUS_TOPIC_ROOT;
+    static const std::string CONFIGURATION_SET_RESPONSE_TOPIC_ROOT;
+    static const std::string CONFIGURATION_GET_RESPONSE_TOPIC_ROOT;
+
+    static const std::string ACTUATION_SET_TOPIC_ROOT;
+    static const std::string ACTUATION_GET_TOPIC_ROOT;
+    static const std::string CONFIGURATION_SET_REQUEST_TOPIC_ROOT;
+    static const std::string CONFIGURATION_GET_REQUEST_TOPIC_ROOT;
+
+    static const std::vector<std::string> DEVICE_TOPICS;
+    static const std::vector<std::string> PLATFORM_TOPICS;
 
     static constexpr int DIRRECTION_POS = 0;
     static constexpr int TYPE_POS = 1;

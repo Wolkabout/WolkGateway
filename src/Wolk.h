@@ -51,6 +51,7 @@ class DeviceRegistrationService;
 class Wolk
 {
     friend class WolkBuilder;
+    friend class ProtocolRegistrator;
 
 public:
     virtual ~Wolk() = default;
@@ -72,11 +73,6 @@ public:
      */
     void disconnect();
 
-    /**
-     *
-     */
-    template <class P> void registerDataProtocol();
-
 private:
     class ConnectivityFacade;
 
@@ -94,6 +90,8 @@ private:
 
     void gatewayRegistered();
     void setupGatewayListeners(const std::string& protocol);
+
+    template <class P> void registerDataProtocol();
 
     Device m_device;
 

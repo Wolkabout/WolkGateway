@@ -15,7 +15,6 @@
  */
 
 #include "DeviceRegistrationProtocol.h"
-#include "connectivity/Channels.h"
 #include "model/DeviceRegistrationRequestDto.h"
 #include "model/DeviceRegistrationResponseDto.h"
 #include "model/DeviceReregistrationResponseDto.h"
@@ -33,17 +32,26 @@ using nlohmann::json;
 
 namespace wolkabout
 {
-const std::string DeviceRegistrationProtocol::m_name = "RegistrationProtocol";
+const std::string DeviceRegistrationProtocol::NAME = "RegistrationProtocol";
 
-const std::vector<std::string> DeviceRegistrationProtocol::m_deviceTopics = {
-  Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::DEVICE_PATH_PREFIX + Channel::CHANNEL_DELIMITER +
-  Channel::CHANNEL_WILDCARD};
+const std::string DeviceRegistrationProtocol::CHANNEL_DELIMITER = "/";
+const std::string DeviceRegistrationProtocol::CHANNEL_WILDCARD = "#";
+const std::string DeviceRegistrationProtocol::GATEWAY_PATH_PREFIX = "g/";
+const std::string DeviceRegistrationProtocol::DEVICE_PATH_PREFIX = "d/";
+const std::string DeviceRegistrationProtocol::DEVICE_TO_PLATFORM_DIRECTION = "d2p/";
+const std::string DeviceRegistrationProtocol::PLATFORM_TO_DEVICE_DIRECTION = "p2d/";
 
-const std::vector<std::string> DeviceRegistrationProtocol::m_platformTopics = {
-  Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX + Channel::CHANNEL_DELIMITER +
-    Channel::CHANNEL_WILDCARD,
-  Channel::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX + Channel::CHANNEL_DELIMITER +
-    Channel::CHANNEL_WILDCARD};
+const std::string DeviceRegistrationProtocol::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT = "d2p/register_device/";
+const std::string DeviceRegistrationProtocol::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT = "p2d/register_device/";
+const std::string DeviceRegistrationProtocol::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT = "p2d/reregister_device/";
+const std::string DeviceRegistrationProtocol::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT = "d2p/reregister_device/";
+
+const std::vector<std::string> DeviceRegistrationProtocol::DEVICE_TOPICS = {DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT +
+                                                                            DEVICE_PATH_PREFIX + CHANNEL_WILDCARD};
+
+const std::vector<std::string> DeviceRegistrationProtocol::PLATFORM_TOPICS = {
+  DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_WILDCARD,
+  DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_WILDCARD};
 
 const std::string DeviceRegistrationProtocol::REGISTRATION_RESPONSE_OK = "OK";
 const std::string DeviceRegistrationProtocol::REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT = "ERROR_KEY_CONFLICT";
@@ -514,14 +522,19 @@ void to_json(json& j, const DeviceReregistrationResponseDto& dto)
 }
 /*** DEVICE REREGISTRATION RESPONSE DTO ***/
 
+const std::string& DeviceRegistrationProtocol::getName()
+{
+    return NAME;
+}
+
 const std::vector<std::string>& DeviceRegistrationProtocol::getDeviceTopics()
 {
-    return m_deviceTopics;
+    return DEVICE_TOPICS;
 }
 
 const std::vector<std::string>& DeviceRegistrationProtocol::getPlatformTopics()
 {
-    return m_platformTopics;
+    return PLATFORM_TOPICS;
 }
 
 std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
@@ -536,13 +549,11 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
         const auto channel = [&]() -> std::string {
             if (deviceKey == gatewayKey)
             {
-                return Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
-                       Channel::CHANNEL_DELIMITER + gatewayKey;
+                return DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
             }
 
-            return Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
-                   Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER + Channel::DEVICE_PATH_PREFIX +
-                   Channel::CHANNEL_DELIMITER + deviceKey;
+            return DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+                   DEVICE_PATH_PREFIX + deviceKey;
         }();
 
         return std::make_shared<Message>(jsonPayload.dump(), channel);
@@ -565,13 +576,11 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(
         const auto channel = [&]() -> std::string {
             if (deviceKey == gatewayKey)
             {
-                return Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
-                       Channel::CHANNEL_DELIMITER + gatewayKey;
+                return DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
             }
 
-            return Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
-                   Channel::CHANNEL_DELIMITER + gatewayKey + Channel::CHANNEL_DELIMITER + Channel::DEVICE_PATH_PREFIX +
-                   Channel::CHANNEL_DELIMITER + deviceKey;
+            return DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+                   DEVICE_PATH_PREFIX + deviceKey;
         }();
 
         return std::make_shared<Message>(jsonPayload.dump(), channel);
@@ -591,8 +600,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
     try
     {
         const json jsonPayload(response);
-        const std::string channel = Channel::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT + Channel::GATEWAY_PATH_PREFIX +
-                                    Channel::CHANNEL_DELIMITER + gatewayKey;
+        const std::string channel = DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
 
         return std::make_shared<Message>(jsonPayload.dump(), channel);
     }
@@ -680,42 +688,42 @@ bool DeviceRegistrationProtocol::isMessageToPlatform(const std::string& channel)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(channel, Channel::DEVICE_TO_PLATFORM_DIRECTION);
+    return StringUtils::startsWith(channel, DEVICE_TO_PLATFORM_DIRECTION);
 }
 
 bool DeviceRegistrationProtocol::isMessageFromPlatform(const std::string& channel)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(channel, Channel::PLATFORM_TO_DEVICE_DIRECTION);
+    return StringUtils::startsWith(channel, PLATFORM_TO_DEVICE_DIRECTION);
 }
 
 bool DeviceRegistrationProtocol::isRegistrationRequest(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(message->getChannel(), Channel::DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT);
+    return StringUtils::startsWith(message->getChannel(), DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT);
 }
 
 bool DeviceRegistrationProtocol::isRegistrationResponse(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(message->getChannel(), Channel::DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT);
+    return StringUtils::startsWith(message->getChannel(), DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT);
 }
 
 bool DeviceRegistrationProtocol::isReregistrationRequest(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(message->getChannel(), Channel::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT);
+    return StringUtils::startsWith(message->getChannel(), DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT);
 }
 
 bool DeviceRegistrationProtocol::isReregistrationResponse(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(message->getChannel(), Channel::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT);
+    return StringUtils::startsWith(message->getChannel(), DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT);
 }
 
 std::string DeviceRegistrationProtocol::extractDeviceKeyFromChannel(const std::string& channel)

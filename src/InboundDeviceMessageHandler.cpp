@@ -15,7 +15,6 @@
  */
 
 #include "InboundDeviceMessageHandler.h"
-#include "connectivity/Channels.h"
 #include "model/Message.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"

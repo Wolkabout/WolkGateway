@@ -32,10 +32,17 @@
 #include "service/DeviceStatusService.h"
 #include "service/PublishingService.h"
 
+#include "ProtocolHolder.h"
+#include "ProtocolRegistrator.h"
+#include "connectivity/json/JsonProtocol.h"
+
 #include <stdexcept>
 
 namespace wolkabout
 {
+// Declaration for JsonProtocol
+template WolkBuilder& WolkBuilder::withDataProtocol<JsonProtocol>();
+
 WolkBuilder& WolkBuilder::platformHost(const std::string& host)
 {
     m_platformHost = host;
@@ -80,11 +87,22 @@ WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion,
     return *this;
 }
 
+template <class Protocol> WolkBuilder& WolkBuilder::withDataProtocol()
+{
+    m_protocolHolder.reset(new TemplateProtocolHolder<Protocol>());
+    return *this;
+}
+
 std::unique_ptr<Wolk> WolkBuilder::build() const
 {
     if (m_device.getKey().empty())
     {
         throw std::logic_error("No device key present.");
+    }
+
+    if (!m_protocolHolder)
+    {
+        throw std::logic_error("No protocol defined.");
     }
 
     auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
@@ -143,6 +161,9 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     wolk->m_inboundDeviceMessageHandler->setListener<StatusProtocol>(wolk->m_deviceStatusService);
     wolk->m_inboundPlatformMessageHandler->setListener<StatusProtocol>(wolk->m_deviceStatusService);
+
+    ProtocolRegistrator registrator;
+    m_protocolHolder->accept(registrator, *wolk);
 
     //	wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(m_maxFirmwareFileSize,
     // m_maxFirmwareFileChunkSize,

@@ -69,7 +69,7 @@ ChannelProtocolResolverImpl<P>::ChannelProtocolResolverImpl(
 
 template <class P> void ChannelProtocolResolverImpl<P>::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    const std::string deviceKey = P::deviceKeyFromTopic(message->getChannel());
+    const std::string deviceKey = P::extractDeviceKeyFromChannel(message->getChannel());
     std::shared_ptr<Device> device = m_deviceRepository.findByDeviceKey(deviceKey);
     if (!device)
     {
@@ -83,7 +83,7 @@ template <class P> void ChannelProtocolResolverImpl<P>::platformMessageReceived(
 
 template <class P> void ChannelProtocolResolverImpl<P>::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    const std::string deviceKey = P::deviceKeyFromTopic(message->getChannel());
+    const std::string deviceKey = P::extractDeviceKeyFromChannel(message->getChannel());
     std::shared_ptr<Device> device = m_deviceRepository.findByDeviceKey(deviceKey);
     if (!device)
     {

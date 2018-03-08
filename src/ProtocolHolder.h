@@ -39,6 +39,6 @@ template <class T> void TemplateProtocolHolder<T>::accept(ProtocolRegistrator& p
 {
     pc.registerProtocol<T>(wolk);
 }
-}
+}    // namespace wolkabout
 
 #endif    // TEMPLATEHOLDER_H

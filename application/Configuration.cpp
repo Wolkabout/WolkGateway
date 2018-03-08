@@ -18,14 +18,14 @@
 #include "utilities/FileSystemUtils.h"
 #include "utilities/json.hpp"
 
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace wolkabout
 {
 using nlohmann::json;
-    
+
 GatewayConfiguration::GatewayConfiguration(std::string name, std::string key, std::string password,
                                            std::string protocol, std::string platformMqttUri, std::string localMqttUri)
 : m_name(std::move(name))
@@ -67,19 +67,19 @@ const std::string& GatewayConfiguration::getPlatformMqttUri() const
     return m_platformMqttUri;
 }
 
-wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string &gatewayConfigurationFile)
+wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string& gatewayConfigurationFile)
 {
     if (!FileSystemUtils::isFilePresent(gatewayConfigurationFile))
     {
         throw std::logic_error("Given gateway configuration file does not exist.");
     }
-    
+
     std::string gatewayConfigurationJson;
     if (!FileSystemUtils::readFileContent(gatewayConfigurationFile, gatewayConfigurationJson))
     {
         throw std::logic_error("Unable to read gateway configuration file.");
     }
-    
+
     auto j = json::parse(gatewayConfigurationJson);
     const auto name = j.at("name").get<std::string>();
     const auto key = j.at("key").get<std::string>();
@@ -87,7 +87,7 @@ wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string
     const auto protocol = j.at("protocol").get<std::string>();
     const auto platformMqttUri = j.at("platformMqttUri").get<std::string>();
     const auto localMqttUri = j.at("localMqttUri").get<std::string>();
-    
+
     return GatewayConfiguration(name, key, password, protocol, platformMqttUri, localMqttUri);
 }
 }    // namespace wolkabout

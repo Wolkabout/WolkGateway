@@ -35,7 +35,7 @@ public:
     const std::string& getLocalMqttUri() const;
 
     static wolkabout::GatewayConfiguration fromJson(const std::string& gatewayConfigurationFile);
-    
+
 private:
     const std::string m_name;
 

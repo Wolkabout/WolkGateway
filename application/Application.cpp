@@ -20,9 +20,9 @@
 #include "utilities/ConsoleLogger.h"
 
 #include <chrono>
+#include <stdexcept>
 #include <string>
 #include <thread>
-#include <stdexcept>
 
 namespace
 {
@@ -32,32 +32,34 @@ void setupLogger()
     logger->setLogLevel(wolkabout::LogLevel::INFO);
     wolkabout::Logger::setInstance(std::move(logger));
 }
-}
+}    // namespace
 
 int main(int argc, char** argv)
 {
     setupLogger();
-    
+
     if (argc != 2)
     {
         LOG(ERROR) << "WolkGateway Application: Usage -  " << argv[0] << " [gatewayConfigurationFilePath]";
         return -1;
     }
-    
+
     wolkabout::GatewayConfiguration gatewayConfiguration = wolkabout::GatewayConfiguration::fromJson(argv[1]);
-    
+
     if (gatewayConfiguration.getProtocol() != wolkabout::JsonProtocol::getName())
     {
-        throw std::logic_error("Unsupported protocol '" + gatewayConfiguration.getProtocol() + "' specified in gateway configuration file.");
+        throw std::logic_error("Unsupported protocol '" + gatewayConfiguration.getProtocol() +
+                               "' specified in gateway configuration file.");
     }
 
-    wolkabout::Device device(gatewayConfiguration.getName(), gatewayConfiguration.getKey(), gatewayConfiguration.getPassword());
+    wolkabout::Device device(gatewayConfiguration.getName(), gatewayConfiguration.getKey(),
+                             gatewayConfiguration.getPassword());
     std::unique_ptr<wolkabout::Wolk> wolk = wolkabout::Wolk::newBuilder(device)
                                               .withDataProtocol<wolkabout::JsonProtocol>()
                                               .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                                               .platformHost(gatewayConfiguration.getPlatformMqttUri())
                                               .build();
-    
+
     wolk->connect();
     while (true)
     {

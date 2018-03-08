@@ -218,7 +218,8 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
         m_deviceRepository.save(device);
         invokeOnDeviceRegisteredListener(deviceKey, deviceKey == m_gatewayKey);
 
-        std::lock_guard<decltype(m_devicesWithPostponedRegistrationMutex)> devicesWithPostponedRegistrationLock(m_devicesWithPostponedRegistrationMutex);
+        std::lock_guard<decltype(m_devicesWithPostponedRegistrationMutex)> devicesWithPostponedRegistrationLock(
+          m_devicesWithPostponedRegistrationMutex);
         if (device.getKey() == m_gatewayKey && !m_devicesWithPostponedRegistration.empty())
         {
             LOG(INFO) << "DeviceRegistrationService: Processing postponed device registration requests";

@@ -31,6 +31,6 @@ template <class Protocol> void ProtocolRegistrator::registerProtocol(Wolk& wolk)
 {
     wolk.registerDataProtocol<Protocol>();
 }
-}
+}    // namespace wolkabout
 
 #endif    // PROTOCOLREGISTRATOR_H

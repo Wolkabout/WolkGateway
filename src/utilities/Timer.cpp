@@ -52,12 +52,9 @@ void Timer::start(unsigned intervalMsec, std::function<void()> callback)
 
 void Timer::stop()
 {
-    {    // the block is for mutex to be unlocked before join
-        std::lock_guard<std::mutex> lock{m_lock};
-        m_isRunning = false;
+    m_isRunning = false;
 
-        m_condition.notify_all();
-    }
+    m_condition.notify_all();
 
     if (m_worker && m_worker->joinable())
     {

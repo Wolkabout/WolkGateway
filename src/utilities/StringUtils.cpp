@@ -16,6 +16,7 @@
 
 #include "utilities/StringUtils.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -224,5 +225,13 @@ bool StringUtils::mqttTopicMatch(const std::string& wildcardTopic, const std::st
 
     // TODO match single level wildcards
     return wildcardTopic == topic;
+}
+
+std::string StringUtils::toUpperCase(const std::string& string)
+{
+    std::string transformed = string;
+    std::transform(transformed.begin(), transformed.end(), transformed.begin(), ::toupper);
+
+    return transformed;
 }
 }    // namespace wolkabout

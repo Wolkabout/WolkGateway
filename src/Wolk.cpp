@@ -30,6 +30,11 @@
 #include <thread>
 #include <utility>
 
+namespace
+{
+const unsigned RECONNECT_DELAY_MSEC = 2000;
+}
+
 namespace wolkabout
 {
 WolkBuilder Wolk::newBuilder(Device device)
@@ -49,7 +54,7 @@ void Wolk::disconnect()
     addToCommandBuffer([=]() -> void { m_deviceConnectivityService->disconnect(); });
 }
 
-Wolk::Wolk(Device device) : m_device(device)
+Wolk::Wolk(Device device) : m_device{device}
 {
     m_commandBuffer = std::unique_ptr<CommandBuffer>(new CommandBuffer());
 }
@@ -74,6 +79,7 @@ void Wolk::connectToPlatform()
         }
         else
         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(RECONNECT_DELAY_MSEC));
             connectToPlatform();
         }
     });
@@ -88,6 +94,7 @@ void Wolk::connectToDevices()
         }
         else
         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(RECONNECT_DELAY_MSEC));
             connectToDevices();
         }
     });

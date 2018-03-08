@@ -52,6 +52,8 @@ public:
     static std::string base64Decode(const std::string& encodedString);
 
     static bool mqttTopicMatch(const std::string& wildcardTopic, const std::string& topic);
+
+    static std::string toUpperCase(const std::string& string);
 };
 }    // namespace wolkabout
 

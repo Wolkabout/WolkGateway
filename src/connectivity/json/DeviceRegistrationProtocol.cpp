@@ -610,7 +610,8 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRes
     }
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey)
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRequestForGateway(
+  const std::string& gatewayKey)
 {
     const std::string channel = DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
     return std::make_shared<Message>("", channel);
@@ -621,7 +622,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationReq
     const std::string channel = DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + DEVICE_PATH_PREFIX;
     return std::make_shared<Message>("", channel);
 }
-    
+
 std::shared_ptr<DeviceRegistrationRequest> DeviceRegistrationProtocol::makeRegistrationRequest(
   std::shared_ptr<Message> message)
 {

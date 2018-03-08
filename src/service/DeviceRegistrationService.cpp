@@ -34,12 +34,12 @@
 namespace wolkabout
 {
 DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey, DeviceRepository& deviceRepository,
-                                                     OutboundMessageHandler& outboundDeviceMessageHandler,
-                                                     OutboundMessageHandler& outboundPlatformMessageHandler)
+                                                     OutboundMessageHandler& outboundPlatformMessageHandler,
+                                                     OutboundMessageHandler& outboundDeviceMessageHandler)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_deviceRepository{deviceRepository}
-, m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
+, m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
 {
 }
 

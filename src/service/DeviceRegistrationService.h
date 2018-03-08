@@ -38,8 +38,8 @@ class DeviceRegistrationService : public DeviceMessageListener, public PlatformM
 {
 public:
     DeviceRegistrationService(std::string gatewayKey, DeviceRepository& deviceRepository,
-                              OutboundMessageHandler& outboundDeviceMessageHandler,
-                              OutboundMessageHandler& outboundPlatformMessageHandler);
+                              OutboundMessageHandler& outboundPlatformMessageHandler,
+                              OutboundMessageHandler& outboundDeviceMessageHandler);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
@@ -62,8 +62,8 @@ private:
     const std::string m_gatewayKey;
 
     DeviceRepository& m_deviceRepository;
-    OutboundMessageHandler& m_outboundDeviceMessageHandler;
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
+    OutboundMessageHandler& m_outboundDeviceMessageHandler;
 
     std::function<void(const std::string& deviceKey, bool isGateway)> m_onDeviceRegistered;
 

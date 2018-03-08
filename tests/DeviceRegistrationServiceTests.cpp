@@ -22,7 +22,7 @@ public:
     {
         m_messages.push_back(message);
     }
-    
+
     const std::vector<std::shared_ptr<wolkabout::Message>>& getMessages() const
     {
         return m_messages;
@@ -58,7 +58,7 @@ public:
         platformOutboundMessageHandler = std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler = std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
         deviceRegistrationService =
-        std::unique_ptr<wolkabout::DeviceRegistrationService>(new wolkabout::DeviceRegistrationService(GATEWAY_KEY, *deviceRepository, *deviceOutboundMessageHandler, *platformOutboundMessageHandler));
+        std::unique_ptr<wolkabout::DeviceRegistrationService>(new wolkabout::DeviceRegistrationService(GATEWAY_KEY, *deviceRepository, *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
     }
     
     void TearDown() override

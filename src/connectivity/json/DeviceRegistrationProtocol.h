@@ -24,9 +24,9 @@
 namespace wolkabout
 {
 class Message;
-class DeviceRegistrationRequestDto;
-class DeviceRegistrationResponseDto;
-class DeviceReregistrationResponseDto;
+class DeviceRegistrationRequest;
+class DeviceRegistrationResponse;
+class DeviceReregistrationResponse;
 
 class DeviceRegistrationProtocol
 {
@@ -39,14 +39,14 @@ public:
     static const std::vector<std::string>& getPlatformTopics();
 
     static std::shared_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                const DeviceRegistrationRequestDto& request);
+                                                const DeviceRegistrationRequest& request);
     static std::shared_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                const DeviceRegistrationResponseDto& request);
+                                                const DeviceRegistrationResponse& request);
     static std::shared_ptr<Message> makeMessage(const std::string& gatewayKey,
-                                                const DeviceReregistrationResponseDto& response);
+                                                const DeviceReregistrationResponse& response);
 
-    static std::shared_ptr<DeviceRegistrationRequestDto> makeRegistrationRequest(std::shared_ptr<Message> message);
-    static std::shared_ptr<DeviceRegistrationResponseDto> makeRegistrationResponse(std::shared_ptr<Message> message);
+    static std::shared_ptr<DeviceRegistrationRequest> makeRegistrationRequest(std::shared_ptr<Message> message);
+    static std::shared_ptr<DeviceRegistrationResponse> makeRegistrationResponse(std::shared_ptr<Message> message);
 
     static bool isMessageToPlatform(const std::string& channel);
 

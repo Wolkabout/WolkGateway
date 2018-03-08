@@ -43,8 +43,6 @@ public:
                      std::string readingType, ActuatorManifest::DataType dataType, unsigned int precision,
                      double minimum, double maximum, std::string delimiter, std::vector<std::string> labels);
 
-    virtual ~ActuatorManifest() = default;
-
     const std::string& getName() const;
     ActuatorManifest& setName(const std::string& name);
 

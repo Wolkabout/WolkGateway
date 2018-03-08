@@ -43,8 +43,6 @@ public:
                    std::string readingType, SensorManifest::DataType dataType, unsigned int precision, double minimum,
                    double maximum, std::string delimiter, std::vector<std::string> labels);
 
-    virtual ~SensorManifest() = default;
-
     const std::string& getName() const;
     SensorManifest& setName(const std::string& name);
 

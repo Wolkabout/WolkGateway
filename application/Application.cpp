@@ -18,6 +18,7 @@
 #include "Wolk.h"
 #include "connectivity/json/JsonProtocol.h"
 #include "utilities/ConsoleLogger.h"
+#include "utilities/StringUtils.h"
 
 #include <chrono>
 #include <stdexcept>
@@ -32,15 +33,36 @@ void setupLogger()
     logger->setLogLevel(wolkabout::LogLevel::INFO);
     wolkabout::Logger::setInstance(std::move(logger));
 }
+
+wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
+{
+    const std::string str = wolkabout::StringUtils::toUpperCase(levelStr);
+    const auto logLevel = [&]() -> wolkabout::LogLevel {
+        if (str == "TRACE")
+            return wolkabout::LogLevel::TRACE;
+        else if (str == "DEBUG")
+            return wolkabout::LogLevel::DEBUG;
+        else if (str == "INFO")
+            return wolkabout::LogLevel::INFO;
+        else if (str == "WARN")
+            return wolkabout::LogLevel::WARN;
+        else if (str == "ERROR")
+            return wolkabout::LogLevel::ERROR;
+
+        throw std::logic_error("Unable to parse log level.");
+    }();
+
+    return logLevel;
+}
 }    // namespace
 
 int main(int argc, char** argv)
 {
     setupLogger();
 
-    if (argc != 2)
+    if (argc < 2)
     {
-        LOG(ERROR) << "WolkGateway Application: Usage -  " << argv[0] << " [gatewayConfigurationFilePath]";
+        LOG(ERROR) << "WolkGateway Application: Usage -  " << argv[0] << " [gatewayConfigurationFilePath] [logLevel]";
         return -1;
     }
 
@@ -53,6 +75,20 @@ int main(int argc, char** argv)
     {
         LOG(ERROR) << "WolkGateway Application: Unable to parse gateway configuration file. Reason: " << e.what();
         return -1;
+    }
+
+    if (argc > 2)
+    {
+        const std::string logLevelStr{argv[2]};
+        try
+        {
+            wolkabout::LogLevel level = parseLogLevel(logLevelStr);
+            wolkabout::Logger::getInstance()->setLogLevel(level);
+        }
+        catch (std::logic_error& e)
+        {
+            LOG(ERROR) << "WolkGateway Application: " << e.what();
+        }
     }
 
     if (gatewayConfiguration.getProtocol() != wolkabout::JsonProtocol::getName())

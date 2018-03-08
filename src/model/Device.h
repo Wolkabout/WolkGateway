@@ -31,8 +31,6 @@ public:
     Device(std::string name, std::string key, std::string password);
     Device(std::string name, std::string key, std::string password, DeviceManifest deviceManifest);
 
-    virtual ~Device() = default;
-
     const std::string& getName() const;
     const std::string& getKey() const;
     const std::string& getPassword() const;

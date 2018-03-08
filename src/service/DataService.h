@@ -50,8 +50,11 @@ public:
     void disconnected() override;
 
 private:
-    void routeDeviceMessage(std::shared_ptr<Message> message);
-    void routePlatformMessage(std::shared_ptr<Message> message);
+    void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
+    void routePlatformToDeviceMessage(std::shared_ptr<Message> message);
+
+    void routeGatewayToPlatformMessage(std::shared_ptr<Message> message);
+    void routePlatformToGatewayMessage(std::shared_ptr<Message> message);
 
     void handleGatewayOfflineMessage(std::shared_ptr<Message> message);
 
@@ -80,26 +83,37 @@ template <class P> void DataService<P>::platformMessageReceived(std::shared_ptr<
 {
     LOG(TRACE) << METHOD_INFO;
 
-    if (P::isPlatformToGatewayMessage(message->getChannel()))
+    const std::string topic = message->getChannel();
+
+    if (!P::isMessageFromPlatform(topic))
+    {
+        LOG(WARN) << "DataService: Ignoring message on channel '" << topic << "'. Message not from platform.";
+        return;
+    }
+
+    const std::string deviceKey = P::extractDeviceKeyFromChannel(topic);
+
+    if (deviceKey.empty())
+    {
+        LOG(WARN) << "DataService: Failed to extract device key from channel '" << topic << "'";
+        return;
+    }
+
+    if (m_gatewayKey == deviceKey)
     {
         if (m_gatewayModuleConnected)
         {
-            // if message is for gateway device just resend it
-            m_outboundDeviceMessageHandler.addMessage(message);
+            routePlatformToGatewayMessage(message);
         }
         else
         {
             handleGatewayOfflineMessage(message);
         }
     }
-    else if (P::isPlatformToDeviceMessage(message->getChannel()))
-    {
-        // if message is for device remove gateway info from channel
-        routePlatformMessage(message);
-    }
     else
     {
-        LOG(WARN) << "Message channel not parsed: " << message->getChannel();
+        // if message is for device remove gateway info from channel
+        routePlatformToDeviceMessage(message);
     }
 }
 
@@ -107,22 +121,34 @@ template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Me
 {
     LOG(TRACE) << METHOD_INFO;
 
-    if (P::isGatewayToPlatformMessage(message->getChannel()))
-    {
-        // if message is from gateway device just resend it
-        m_outboundPlatformMessageHandler.addMessage(message);
+    const std::string topic = message->getChannel();
 
+    if (!P::isMessageToPlatform(topic))
+    {
+        LOG(WARN) << "DeviceStatusService: Ignoring message on channel '" << topic
+                  << "'. Message not intended for platform.";
+        return;
+    }
+
+    const std::string deviceKey = P::extractDeviceKeyFromChannel(topic);
+
+    if (deviceKey.empty())
+    {
+        LOG(WARN) << "DataService: Failed to extract device key from channel '" << topic << "'";
+        return;
+    }
+
+    if (m_gatewayKey == deviceKey)
+    {
         // gateway module is connected
         m_gatewayModuleConnected = true;
-    }
-    else if (P::isDeviceToPlatformMessage(message->getChannel()))
-    {
-        // if message is from device add gateway info to channel
-        routeDeviceMessage(message);
+
+        routeGatewayToPlatformMessage(message);
     }
     else
     {
-        LOG(WARN) << "Message channel not parsed: " << message->getChannel();
+        // if message is from device add gateway info to channel
+        routeDeviceToPlatformMessage(message);
     }
 }
 
@@ -136,11 +162,11 @@ template <class P> void DataService<P>::disconnected()
     m_gatewayModuleConnected = false;
 }
 
-template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Message> message)
+template <class P> void DataService<P>::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = P::routeDeviceMessage(message->getChannel(), m_gatewayKey);
+    const std::string topic = P::routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
     if (topic.empty())
     {
         LOG(WARN) << "Failed to route device message: " << message->getChannel();
@@ -152,11 +178,43 @@ template <class P> void DataService<P>::routeDeviceMessage(std::shared_ptr<Messa
     m_outboundPlatformMessageHandler.addMessage(routedMessage);
 }
 
-template <class P> void DataService<P>::routePlatformMessage(std::shared_ptr<Message> message)
+template <class P> void DataService<P>::routePlatformToDeviceMessage(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = P::routePlatformMessage(message->getChannel(), m_gatewayKey);
+    const std::string topic = P::routePlatformToDeviceMessage(message->getChannel(), m_gatewayKey);
+    if (topic.empty())
+    {
+        LOG(WARN) << "Failed to route platform message: " << message->getChannel();
+        return;
+    }
+
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
+
+    m_outboundDeviceMessageHandler.addMessage(routedMessage);
+}
+
+template <class P> void DataService<P>::routeGatewayToPlatformMessage(std::shared_ptr<Message> message)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    const std::string topic = P::routeGatewayToPlatformMessage(message->getChannel());
+    if (topic.empty())
+    {
+        LOG(WARN) << "Failed to route device message: " << message->getChannel();
+        return;
+    }
+
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
+
+    m_outboundPlatformMessageHandler.addMessage(routedMessage);
+}
+
+template <class P> void DataService<P>::routePlatformToGatewayMessage(std::shared_ptr<Message> message)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    const std::string topic = P::routePlatformToGatewayMessage(message->getChannel());
     if (topic.empty())
     {
         LOG(WARN) << "Failed to route platform message: " << message->getChannel();

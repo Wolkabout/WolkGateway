@@ -25,19 +25,16 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -Weffc++ -pedantic    
                                             -Wcast-qual -Wconversion                                                   \
                                             -Wdisabled-optimization                                                    \
                                             -Wfloat-equal -Wformat=2                                                   \
-                                            -Wformat-nonliteral -Wformat-security                                      \
-                                            -Wformat-y2k                                                               \
-                                            -Wimport  -Winit-self                                                      \
-                                            -Wmissing-field-initializers -Wmissing-format-attribute                    \
+                                            -Werror=import  -Werror=init-self                                          \
+                                            -Werror=missing-field-initializers -Wmissing-format-attribute              \
                                             -Wmissing-include-dirs -Wmissing-noreturn                                  \
-                                            -Wpointer-arith                                                            \
+                                            -Werror=pointer-arith                                                      \
                                             -Wno-packed  -Wno-padded -Wredundant-decls                                 \
-                                            -Wshadow -Wstack-protector                                                 \
+                                            -Werror=shadow -Werror=stack-protector                                     \
                                             -Wstrict-aliasing=2                                                        \
-                                            -Wunreachable-code -Wunused                                                \
-                                            -Wunused-parameter                                                         \
+                                            -Werror=unreachable-code -Wunused                                          \
                                             -Wvariadic-macros                                                          \
-                                            -Wwrite-strings")
+                                            -Wwrite-strings -Werror=non-virtual-dtor")
 
 add_definitions(-DOPENSSL)
 add_subdirectory(mqtt)

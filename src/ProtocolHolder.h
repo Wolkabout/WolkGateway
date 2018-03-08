@@ -31,7 +31,6 @@ public:
 template <class T> class TemplateProtocolHolder : public ProtocolHolder
 {
 public:
-    static T t;
     void accept(ProtocolRegistrator& pc, Wolk& wolk);
 };
 

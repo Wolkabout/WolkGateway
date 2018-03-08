@@ -29,8 +29,6 @@ public:
     Alarm();
     Alarm(std::string value, std::string reference, unsigned long long int rtc = 0);
 
-    virtual ~Alarm() = default;
-
     void acceptVisit(ReadingVisitor& visitor) override;
 };
 }    // namespace wolkabout

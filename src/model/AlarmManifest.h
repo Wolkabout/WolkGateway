@@ -35,8 +35,6 @@ public:
     AlarmManifest(std::string name, AlarmManifest::AlarmSeverity severity, std::string reference, std::string message,
                   std::string description);
 
-    virtual ~AlarmManifest() = default;
-
     const std::string& getName() const;
     AlarmManifest& setName(const std::string& name);
 

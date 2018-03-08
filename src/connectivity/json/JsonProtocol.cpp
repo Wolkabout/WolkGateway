@@ -237,134 +237,18 @@ bool JsonProtocol::fromMessage(std::shared_ptr<Message> message, ActuatorGetComm
     return true;
 }
 
-bool JsonProtocol::isGatewayToPlatformMessage(const std::string& topic)
+bool JsonProtocol::isMessageToPlatform(const std::string& channel)
 {
-    auto tokens = StringUtils::tokenize(topic, CHANNEL_DELIMITER);
+    LOG(TRACE) << METHOD_INFO;
 
-    if (tokens.size() != 6)
-    {
-        LOG(DEBUG) << "Token count mismatch in path: " << topic;
-        return false;
-    }
-
-    if (tokens[DIRRECTION_POS] != DEVICE_TO_PLATFORM_TYPE)
-    {
-        LOG(DEBUG) << "Device message dirrection not valid: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_TYPE_POS] != GATEWAY_TYPE)
-    {
-        LOG(DEBUG) << "Gateway perfix missing in path: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_REFERENCE_TYPE_POS] != REFERENCE_TYPE)
-    {
-        LOG(DEBUG) << "Reference perfix missing in path: " << topic;
-        return false;
-    }
-
-    return true;
+    return StringUtils::startsWith(channel, DEVICE_TO_PLATFORM_DIRECTION);
 }
 
-bool JsonProtocol::isPlatformToGatewayMessage(const std::string& topic)
+bool JsonProtocol::isMessageFromPlatform(const std::string& channel)
 {
-    auto tokens = StringUtils::tokenize(topic, CHANNEL_DELIMITER);
+    LOG(TRACE) << METHOD_INFO;
 
-    if (tokens.size() != 6)
-    {
-        LOG(DEBUG) << "Token count mismatch in path: " << topic;
-        return false;
-    }
-
-    if (tokens[DIRRECTION_POS] != PLATFORM_TO_DEVICE_TYPE)
-    {
-        LOG(DEBUG) << "Device message dirrection not valid: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_TYPE_POS] != GATEWAY_TYPE)
-    {
-        LOG(DEBUG) << "Gateway perfix missing in path: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_REFERENCE_TYPE_POS] != REFERENCE_TYPE)
-    {
-        LOG(DEBUG) << "Device perfix missing in path: " << topic;
-        return false;
-    }
-
-    return true;
-}
-
-bool JsonProtocol::isDeviceToPlatformMessage(const std::string& topic)
-{
-    auto tokens = StringUtils::tokenize(topic, CHANNEL_DELIMITER);
-
-    if (tokens.size() < 6)
-    {
-        LOG(DEBUG) << "Token count mismatch in path: " << topic;
-        return false;
-    }
-
-    if (tokens[DIRRECTION_POS] != DEVICE_TO_PLATFORM_TYPE)
-    {
-        LOG(DEBUG) << "Device message dirrection not valid: " << topic;
-        return false;
-    }
-
-    if (tokens[DEVICE_TYPE_POS] != DEVICE_TYPE)
-    {
-        LOG(DEBUG) << "Device perfix missing in path: " << topic;
-        return false;
-    }
-
-    if (tokens[DEVICE_REFERENCE_TYPE_POS] != REFERENCE_TYPE)
-    {
-        LOG(DEBUG) << "Reference perfix missing in path: " << topic;
-        return false;
-    }
-
-    return true;
-}
-
-bool JsonProtocol::isPlatformToDeviceMessage(const std::string& topic)
-{
-    auto tokens = StringUtils::tokenize(topic, CHANNEL_DELIMITER);
-
-    if (tokens.size() != 8)
-    {
-        LOG(DEBUG) << "Token count mismatch in path: " << topic;
-        return false;
-    }
-
-    if (tokens[DIRRECTION_POS] != PLATFORM_TO_DEVICE_TYPE)
-    {
-        LOG(DEBUG) << "Device message dirrection not valid: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_TYPE_POS] != GATEWAY_TYPE)
-    {
-        LOG(DEBUG) << "Gateway perfix missing in path: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_DEVICE_TYPE_POS] != DEVICE_TYPE)
-    {
-        LOG(DEBUG) << "Device perfix missing in path: " << topic;
-        return false;
-    }
-
-    if (tokens[GATEWAY_DEVICE_REFERENCE_TYPE_POS] != REFERENCE_TYPE)
-    {
-        LOG(DEBUG) << "Reference perfix missing in path: " << topic;
-        return false;
-    }
-
-    return true;
+    return StringUtils::startsWith(channel, PLATFORM_TO_DEVICE_DIRECTION);
 }
 
 bool JsonProtocol::isActuatorSetMessage(const std::string& topic)
@@ -377,7 +261,7 @@ bool JsonProtocol::isActuatorGetMessage(const std::string& topic)
     return StringUtils::startsWith(topic, ACTUATION_GET_TOPIC_ROOT);
 }
 
-std::string JsonProtocol::routePlatformMessage(const std::string& topic, const std::string& gatewayKey)
+std::string JsonProtocol::routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey)
 {
     const std::string gwTopicPart = GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER;
     if (topic.find(gwTopicPart) != std::string::npos)
@@ -388,23 +272,49 @@ std::string JsonProtocol::routePlatformMessage(const std::string& topic, const s
     return "";
 }
 
-std::string JsonProtocol::routeDeviceMessage(const std::string& topic, const std::string& gatewayKey)
+std::string JsonProtocol::routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey)
 {
-    auto firstPos = topic.find(CHANNEL_DELIMITER);
-    if (firstPos == std::string::npos)
+    const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
+    const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX + gatewayKey;
+
+    const auto position = topic.find(deviceTopicPart);
+    if (position != std::string::npos)
     {
-        return "";
+        std::string routedTopic = topic;
+        return routedTopic.insert(position, gatewayTopicPart);
     }
 
-    auto secondPos = topic.find(CHANNEL_DELIMITER, firstPos + CHANNEL_DELIMITER.length());
-    if (secondPos == std::string::npos)
+    return "";
+}
+
+std::string JsonProtocol::routePlatformToGatewayMessage(const std::string& topic)
+{
+    const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
+    const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX;
+
+    const auto position = topic.find(gatewayTopicPart);
+    if (position != std::string::npos)
     {
-        return "";
+        std::string routedTopic = topic;
+        return routedTopic.replace(position, gatewayTopicPart.size(), deviceTopicPart);
     }
 
-    std::string newTopic = topic;
-    return newTopic.insert(secondPos + CHANNEL_DELIMITER.length(),
-                           GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER);
+    return "";
+}
+
+std::string JsonProtocol::routeGatewayToPlatformMessage(const std::string& topic)
+{
+    const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
+    const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX;
+
+    const auto position = topic.find(deviceTopicPart);
+    if (position != std::string::npos)
+    {
+        std::string routedTopic = topic;
+        return routedTopic.replace(position, deviceTopicPart.size(), gatewayTopicPart);
+    }
+
+    return "";
 }
 
 std::string JsonProtocol::extractReferenceFromChannel(const std::string& topic)

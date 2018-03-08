@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker run -it --rm wolkabout/gateway
+docker run -it --net="host" wolkabout/gateway

@@ -351,7 +351,9 @@ std::string JsonProtocol::extractDeviceKeyFromChannel(const std::string& topic)
     {
         const auto keyEndPosition = topic.find(CHANNEL_DELIMITER, deviceKeyStartPosition + devicePathPrefix.size());
 
-        return topic.substr(deviceKeyStartPosition + devicePathPrefix.size(), keyEndPosition);
+        const auto pos = deviceKeyStartPosition + devicePathPrefix.size();
+
+        return topic.substr(pos, keyEndPosition - pos);
     }
 
     const std::string gatewayPathPrefix = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX;
@@ -364,6 +366,8 @@ std::string JsonProtocol::extractDeviceKeyFromChannel(const std::string& topic)
 
     const auto keyEndPosition = topic.find(CHANNEL_DELIMITER, gatewayKeyStartPosition + gatewayPathPrefix.size());
 
-    return topic.substr(gatewayKeyStartPosition + gatewayPathPrefix.size(), keyEndPosition);
+    const auto pos = gatewayKeyStartPosition + gatewayPathPrefix.size();
+
+    return topic.substr(pos, keyEndPosition - pos);
 }
 }    // namespace wolkabout

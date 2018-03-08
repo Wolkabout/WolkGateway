@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 pushd ..
-tar --exclude='./Docker' -zcvf ./Docker/gateway.tar.gz .
+tar --exclude='./Docker' -zcvf ./Docker/gateway/gateway.tar.gz .
 popd
 
 pushd gateway

@@ -21,6 +21,8 @@ namespace wolkabout
 class GatewayConfiguration
 {
 public:
+    GatewayConfiguration() = default;
+
     GatewayConfiguration(std::string name, std::string key, std::string password, std::string protocol,
                          std::string platformMqttUri, std::string localMqttUri);
 
@@ -37,14 +39,14 @@ public:
     static wolkabout::GatewayConfiguration fromJson(const std::string& gatewayConfigurationFile);
 
 private:
-    const std::string m_name;
+    std::string m_name;
 
-    const std::string m_key;
-    const std::string m_password;
+    std::string m_key;
+    std::string m_password;
 
-    const std::string m_protocol;
+    std::string m_protocol;
 
-    const std::string m_platformMqttUri;
-    const std::string m_localMqttUri;
+    std::string m_platformMqttUri;
+    std::string m_localMqttUri;
 };
 }    // namespace wolkabout

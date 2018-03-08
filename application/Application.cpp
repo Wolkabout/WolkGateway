@@ -44,12 +44,22 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    wolkabout::GatewayConfiguration gatewayConfiguration = wolkabout::GatewayConfiguration::fromJson(argv[1]);
+    wolkabout::GatewayConfiguration gatewayConfiguration;
+    try
+    {
+        gatewayConfiguration = wolkabout::GatewayConfiguration::fromJson(argv[1]);
+    }
+    catch (std::logic_error& e)
+    {
+        LOG(ERROR) << "WolkGateway Application: Unable to parse gateway configuration file. Reason: " << e.what();
+        return -1;
+    }
 
     if (gatewayConfiguration.getProtocol() != wolkabout::JsonProtocol::getName())
     {
-        throw std::logic_error("Unsupported protocol '" + gatewayConfiguration.getProtocol() +
-                               "' specified in gateway configuration file.");
+        LOG(ERROR) << "WolkGateway Application: Unsupported protocol '" << gatewayConfiguration.getProtocol()
+                   << "' specified in gateway configuration file";
+        return -1;
     }
 
     wolkabout::Device device(gatewayConfiguration.getName(), gatewayConfiguration.getKey(),

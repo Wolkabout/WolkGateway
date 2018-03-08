@@ -14,33 +14,35 @@
  * limitations under the License.
  */
 
-#ifndef DEVICEREGISTRATIONREQUESTDTO_H
-#define DEVICEREGISTRATIONREQUESTDTO_H
-
+#include "model/DeviceRegistrationRequest.h"
 #include "model/Device.h"
 #include "model/DeviceManifest.h"
 
 #include <string>
+#include <utility>
 
 namespace wolkabout
 {
-class DeviceRegistrationRequestDto
+DeviceRegistrationRequest::DeviceRegistrationRequest(std::string deviceName, std::string deviceKey,
+                                                     DeviceManifest deviceManifest)
+: m_device(std::move(deviceName), std::move(deviceKey), std::move(deviceManifest))
 {
-public:
-    DeviceRegistrationRequestDto() = default;
-    DeviceRegistrationRequestDto(std::string deviceName, std::string deviceKey, DeviceManifest deviceManifest);
-    DeviceRegistrationRequestDto(Device device);
+}
 
-    virtual ~DeviceRegistrationRequestDto() = default;
+DeviceRegistrationRequest::DeviceRegistrationRequest(Device device) : m_device(std::move(device)) {}
 
-    const std::string& getDeviceName() const;
-    const std::string& getDeviceKey() const;
+const std::string& DeviceRegistrationRequest::getDeviceName() const
+{
+    return m_device.getName();
+}
 
-    const DeviceManifest& getManifest() const;
+const std::string& DeviceRegistrationRequest::getDeviceKey() const
+{
+    return m_device.getKey();
+}
 
-private:
-    Device m_device;
-};
+const DeviceManifest& DeviceRegistrationRequest::getManifest() const
+{
+    return m_device.getManifest();
+}
 }    // namespace wolkabout
-
-#endif    // DEVICEREGISTRATIONDTO_H

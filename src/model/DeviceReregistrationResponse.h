@@ -14,35 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef DEVICEREGISTRATIONRESPONSEDTO_H
-#define DEVICEREGISTRATIONRESPONSEDTO_H
+#ifndef DEVICEREREGISTRATIONRESPONSE_H
+#define DEVICEREREGISTRATIONRESPONSE_H
 
 namespace wolkabout
 {
-class DeviceRegistrationResponseDto
+class DeviceReregistrationResponse
 {
 public:
     enum class Result
     {
-        OK,
-        ERROR_KEY_CONFLICT,
-        ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED,
-        ERROR_MANIFEST_CONFLICT,
-        ERROR_READING_PAYLOAD,
-        ERROR_GATEWAY_NOT_FOUND,
-        ERROR_NO_GATEWAY_MANIFEST
+        OK
     };
 
-    DeviceRegistrationResponseDto() = default;
-    DeviceRegistrationResponseDto(DeviceRegistrationResponseDto::Result result);
+    DeviceReregistrationResponse(DeviceReregistrationResponse::Result result);
 
-    virtual ~DeviceRegistrationResponseDto() = default;
-
-    DeviceRegistrationResponseDto::Result getResult() const;
+    DeviceReregistrationResponse::Result getResult() const;
 
 private:
-    DeviceRegistrationResponseDto::Result m_result;
+    const DeviceReregistrationResponse::Result m_result;
 };
 }    // namespace wolkabout
 
-#endif    // DEVICEREGISTRATIONRESPONSEDTO_H
+#endif    // DEVICEREREGISTRATIONRESPONSE_H

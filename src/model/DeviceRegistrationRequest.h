@@ -14,36 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUS_H
-#define ACTUATORSTATUS_H
+#ifndef DEVICEREGISTRATIONREQUEST_H
+#define DEVICEREGISTRATIONREQUEST_H
 
-#include "model/Reading.h"
+#include "model/Device.h"
+#include "model/DeviceManifest.h"
 
 #include <string>
 
 namespace wolkabout
 {
-class ActuatorStatus : public Reading
+class DeviceRegistrationRequest
 {
 public:
-    enum class State
-    {
-        READY,
-        BUSY,
-        ERROR
-    };
+    DeviceRegistrationRequest() = default;
+    DeviceRegistrationRequest(std::string deviceName, std::string deviceKey, DeviceManifest deviceManifest);
+    DeviceRegistrationRequest(Device device);
 
-    ActuatorStatus();
-    ActuatorStatus(std::string value, ActuatorStatus::State state);
-    ActuatorStatus(std::string value, std::string reference, ActuatorStatus::State state);
+    const std::string& getDeviceName() const;
+    const std::string& getDeviceKey() const;
 
-    ActuatorStatus::State getState() const;
-
-    void acceptVisit(ReadingVisitor& visitor) override;
+    const DeviceManifest& getManifest() const;
 
 private:
-    ActuatorStatus::State m_state;
+    Device m_device;
 };
 }    // namespace wolkabout
 
-#endif
+#endif    // DEVICEREGISTRATIONREQUEST_H

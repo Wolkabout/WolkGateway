@@ -47,20 +47,18 @@ public:
 
     static bool fromMessage(std::shared_ptr<Message> message, ActuatorGetCommand& command);
 
-    static bool isGatewayToPlatformMessage(const std::string& topic);
-
-    static bool isPlatformToGatewayMessage(const std::string& topic);
-
-    static bool isDeviceToPlatformMessage(const std::string& topic);
-
-    static bool isPlatformToDeviceMessage(const std::string& topic);
+    static bool isMessageToPlatform(const std::string& channel);
+    static bool isMessageFromPlatform(const std::string& channel);
 
     static bool isActuatorSetMessage(const std::string& topic);
 
     static bool isActuatorGetMessage(const std::string& topic);
 
-    static std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
-    static std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    static std::string routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
+    static std::string routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
+
+    static std::string routePlatformToGatewayMessage(const std::string& topic);
+    static std::string routeGatewayToPlatformMessage(const std::string& topic);
 
     static std::string extractReferenceFromChannel(const std::string& topic);
     static std::string extractDeviceKeyFromChannel(const std::string& topic);
@@ -96,21 +94,6 @@ private:
 
     static const std::vector<std::string> DEVICE_TOPICS;
     static const std::vector<std::string> PLATFORM_TOPICS;
-
-    static constexpr int DIRRECTION_POS = 0;
-    static constexpr int TYPE_POS = 1;
-    static constexpr int GATEWAY_TYPE_POS = 2;
-    static constexpr int GATEWAY_KEY_POS = 3;
-    static constexpr int DEVICE_TYPE_POS = 2;
-    static constexpr int DEVICE_KEY_POS = 3;
-    static constexpr int GATEWAY_DEVICE_TYPE_POS = 4;
-    static constexpr int GATEWAY_DEVICE_KEY_POS = 5;
-    static constexpr int GATEWAY_REFERENCE_TYPE_POS = 4;
-    static constexpr int GATEWAY_REFERENCE_VALUE_POS = 5;
-    static constexpr int DEVICE_REFERENCE_TYPE_POS = 4;
-    static constexpr int DEVICE_REFERENCE_VALUE_POS = 5;
-    static constexpr int GATEWAY_DEVICE_REFERENCE_TYPE_POS = 6;
-    static constexpr int GATEWAY_DEVICE_REFERENCE_VALUE_POS = 7;
 };
 }    // namespace wolkabout
 

@@ -28,7 +28,6 @@ class SensorReading;
 class ReadingVisitor
 {
 public:
-    ReadingVisitor() = default;
     virtual ~ReadingVisitor() = default;
 
     virtual void visit(ActuatorStatus& actuatorStatus) = 0;

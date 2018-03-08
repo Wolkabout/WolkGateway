@@ -14,19 +14,32 @@
  * limitations under the License.
  */
 
-#include "model/DeviceRegistrationResponseDto.h"
-
-#include <utility>
+#ifndef DEVICEREGISTRATIONRESPONSE_H
+#define DEVICEREGISTRATIONRESPONSE_H
 
 namespace wolkabout
 {
-DeviceRegistrationResponseDto::DeviceRegistrationResponseDto(DeviceRegistrationResponseDto::Result result)
-: m_result(std::move(result))
+class DeviceRegistrationResponse
 {
-}
+public:
+    enum class Result
+    {
+        OK,
+        ERROR_KEY_CONFLICT,
+        ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED,
+        ERROR_MANIFEST_CONFLICT,
+        ERROR_READING_PAYLOAD,
+        ERROR_GATEWAY_NOT_FOUND,
+        ERROR_NO_GATEWAY_MANIFEST
+    };
 
-DeviceRegistrationResponseDto::Result DeviceRegistrationResponseDto::getResult() const
-{
-    return m_result;
-}
+    DeviceRegistrationResponse(DeviceRegistrationResponse::Result result);
+
+    DeviceRegistrationResponse::Result getResult() const;
+
+private:
+    const DeviceRegistrationResponse::Result m_result;
+};
 }    // namespace wolkabout
+
+#endif    // DEVICEREGISTRATIONRESPONSE_H

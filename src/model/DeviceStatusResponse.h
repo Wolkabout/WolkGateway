@@ -35,7 +35,7 @@ public:
     DeviceStatusResponse::Status getStatus() const;
 
 private:
-    DeviceStatusResponse::Status m_status;
+    const DeviceStatusResponse::Status m_status;
 };
 }    // namespace wolkabout
 

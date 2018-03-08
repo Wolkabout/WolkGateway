@@ -37,8 +37,6 @@ public:
                           std::string collapseKey, std::string defaultValue, std::string nullValue, bool isOptional,
                           unsigned int size, std::string delimiter);
 
-    virtual ~ConfigurationManifest() = default;
-
     const std::string& getName() const;
     ConfigurationManifest& setName(const std::string& name);
 

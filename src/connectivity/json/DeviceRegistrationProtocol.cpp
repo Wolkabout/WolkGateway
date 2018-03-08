@@ -15,9 +15,9 @@
  */
 
 #include "DeviceRegistrationProtocol.h"
-#include "model/DeviceRegistrationRequestDto.h"
-#include "model/DeviceRegistrationResponseDto.h"
-#include "model/DeviceReregistrationResponseDto.h"
+#include "model/DeviceRegistrationRequest.h"
+#include "model/DeviceRegistrationResponse.h"
+#include "model/DeviceReregistrationResponse.h"
 #include "model/Message.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
@@ -429,7 +429,7 @@ void from_json(const json& j, DeviceManifest& deviceManifest)
 /*** DEVICE MANIFEST ***/
 
 /*** DEVICE REGISTRATION REQUEST DTO ***/
-void to_json(json& j, const DeviceRegistrationRequestDto& dto)
+void to_json(json& j, const DeviceRegistrationRequest& dto)
 {
     // clang-format off
     j = {
@@ -442,45 +442,45 @@ void to_json(json& j, const DeviceRegistrationRequestDto& dto)
     // clang-format on
 }
 
-void from_json(const json& j, DeviceRegistrationRequestDto& dto)
+void from_json(const json& j, DeviceRegistrationRequest& dto)
 {
     dto =
-      DeviceRegistrationRequestDto(j.at("device").at("name").get<std::string>(),
-                                   j.at("device").at("key").get<std::string>(), j.at("manifest").get<DeviceManifest>());
+      DeviceRegistrationRequest(j.at("device").at("name").get<std::string>(),
+                                j.at("device").at("key").get<std::string>(), j.at("manifest").get<DeviceManifest>());
 }
 /*** DEVICE REGISTRATION REQUEST DTO ***/
 
 /*** DEVICE REGISTRATION RESPONSE DTO ***/
-void to_json(json& j, const DeviceRegistrationResponseDto& dto)
+void to_json(json& j, const DeviceRegistrationResponse& dto)
 {
     auto resultStr = [&]() -> std::string {
         switch (dto.getResult())
         {
-        case DeviceRegistrationResponseDto::Result::OK:
+        case DeviceRegistrationResponse::Result::OK:
             return "OK";
             break;
 
-        case DeviceRegistrationResponseDto::Result::ERROR_GATEWAY_NOT_FOUND:
+        case DeviceRegistrationResponse::Result::ERROR_GATEWAY_NOT_FOUND:
             return "ERROR_GATEWAY_NOT_FOUND";
             break;
 
-        case DeviceRegistrationResponseDto::Result::ERROR_KEY_CONFLICT:
+        case DeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT:
             return "ERROR_KEY_CONFLICT";
             break;
 
-        case DeviceRegistrationResponseDto::Result::ERROR_MANIFEST_CONFLICT:
+        case DeviceRegistrationResponse::Result::ERROR_MANIFEST_CONFLICT:
             return "ERROR_MANIFEST_CONFLICT";
             break;
 
-        case DeviceRegistrationResponseDto::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED:
+        case DeviceRegistrationResponse::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED:
             return "ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED";
             break;
 
-        case DeviceRegistrationResponseDto::Result::ERROR_NO_GATEWAY_MANIFEST:
+        case DeviceRegistrationResponse::Result::ERROR_NO_GATEWAY_MANIFEST:
             return "ERROR_NO_GATEWAY_MANIFEST";
             break;
 
-        case DeviceRegistrationResponseDto::Result::ERROR_READING_PAYLOAD:
+        case DeviceRegistrationResponse::Result::ERROR_READING_PAYLOAD:
             return "ERROR_READING_PAYLOAD";
             break;
 
@@ -499,12 +499,12 @@ void to_json(json& j, const DeviceRegistrationResponseDto& dto)
 /*** DEVICE REGISTRATION RESPONSE DTO ***/
 
 /*** DEVICE REREGISTRATION RESPONSE DTO ***/
-void to_json(json& j, const DeviceReregistrationResponseDto& dto)
+void to_json(json& j, const DeviceReregistrationResponse& dto)
 {
     auto resultStr = [&]() -> std::string {
         switch (dto.getResult())
         {
-        case DeviceReregistrationResponseDto::Result::OK:
+        case DeviceReregistrationResponse::Result::OK:
             return "OK";
             break;
 
@@ -539,7 +539,7 @@ const std::vector<std::string>& DeviceRegistrationProtocol::getPlatformTopics()
 
 std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
                                                                  const std::string& deviceKey,
-                                                                 const DeviceRegistrationRequestDto& request)
+                                                                 const DeviceRegistrationRequest& request)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -565,8 +565,9 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
     }
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(
-  const std::string& gatewayKey, const std::string& deviceKey, const wolkabout::DeviceRegistrationResponseDto& response)
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
+                                                                 const std::string& deviceKey,
+                                                                 const wolkabout::DeviceRegistrationResponse& response)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -593,7 +594,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(
 }
 
 std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
-                                                                 const DeviceReregistrationResponseDto& response)
+                                                                 const DeviceReregistrationResponse& response)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -611,7 +612,7 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
     }
 }
 
-std::shared_ptr<DeviceRegistrationRequestDto> DeviceRegistrationProtocol::makeRegistrationRequest(
+std::shared_ptr<DeviceRegistrationRequest> DeviceRegistrationProtocol::makeRegistrationRequest(
   std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
@@ -619,7 +620,7 @@ std::shared_ptr<DeviceRegistrationRequestDto> DeviceRegistrationProtocol::makeRe
     try
     {
         const json jsonRequest = json::parse(message->getContent());
-        auto request = std::make_shared<DeviceRegistrationRequestDto>();
+        auto request = std::make_shared<DeviceRegistrationRequest>();
         *request = jsonRequest;
         return request;
     }
@@ -630,7 +631,7 @@ std::shared_ptr<DeviceRegistrationRequestDto> DeviceRegistrationProtocol::makeRe
     }
 }
 
-std::shared_ptr<DeviceRegistrationResponseDto> DeviceRegistrationProtocol::makeRegistrationResponse(
+std::shared_ptr<DeviceRegistrationResponse> DeviceRegistrationProtocol::makeRegistrationResponse(
   std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
@@ -641,41 +642,41 @@ std::shared_ptr<DeviceRegistrationResponseDto> DeviceRegistrationProtocol::makeR
 
         const std::string typeStr = j.at("result").get<std::string>();
 
-        const DeviceRegistrationResponseDto::Result result = [&] {
+        const DeviceRegistrationResponse::Result result = [&] {
             if (typeStr == REGISTRATION_RESPONSE_OK)
             {
-                return DeviceRegistrationResponseDto::Result::OK;
+                return DeviceRegistrationResponse::Result::OK;
             }
             else if (typeStr == REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT)
             {
-                return DeviceRegistrationResponseDto::Result::ERROR_KEY_CONFLICT;
+                return DeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT;
             }
             else if (typeStr == REGISTRATION_RESPONSE_ERROR_MANIFEST_CONFLICT)
             {
-                return DeviceRegistrationResponseDto::Result::ERROR_MANIFEST_CONFLICT;
+                return DeviceRegistrationResponse::Result::ERROR_MANIFEST_CONFLICT;
             }
             else if (typeStr == REGISTRATION_RESPONSE_ERROR_MAX_NUMBER_OF_DEVICES_EXCEEDED)
             {
-                return DeviceRegistrationResponseDto::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED;
+                return DeviceRegistrationResponse::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED;
             }
             else if (typeStr == REGISTRATION_RESPONSE_ERROR_READING_PAYLOAD)
             {
-                return DeviceRegistrationResponseDto::Result::ERROR_READING_PAYLOAD;
+                return DeviceRegistrationResponse::Result::ERROR_READING_PAYLOAD;
             }
             else if (typeStr == REGISTRATION_RESPONSE_ERROR_GATEWAY_NOT_FOUND)
             {
-                return DeviceRegistrationResponseDto::Result::ERROR_GATEWAY_NOT_FOUND;
+                return DeviceRegistrationResponse::Result::ERROR_GATEWAY_NOT_FOUND;
             }
             else if (typeStr == REGISTRATION_RESPONSE_ERROR_NO_GATEWAY_MANIFEST)
             {
-                return DeviceRegistrationResponseDto::Result::ERROR_NO_GATEWAY_MANIFEST;
+                return DeviceRegistrationResponse::Result::ERROR_NO_GATEWAY_MANIFEST;
             }
 
             assert(false);
             throw std::logic_error("");
         }();
 
-        return std::make_shared<DeviceRegistrationResponseDto>(result);
+        return std::make_shared<DeviceRegistrationResponse>(result);
     }
     catch (std::exception& e)
     {

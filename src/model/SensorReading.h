@@ -18,7 +18,6 @@
 #define SENSORREADING_H
 
 #include "model/Reading.h"
-
 #include <string>
 
 namespace wolkabout
@@ -28,8 +27,6 @@ class SensorReading : public Reading
 public:
     SensorReading();
     SensorReading(std::string value, std::string reference, unsigned long long int rtc = 0);
-
-    virtual ~SensorReading() = default;
 
     void acceptVisit(ReadingVisitor& visitor) override;
 };

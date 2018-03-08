@@ -190,7 +190,7 @@ bool StatusProtocol::isMessageToPlatform(const std::string& channel)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(channel, DEVICE_TO_PLATFORM_DIRECTION);
+    return isLastWillMessage(channel) || StringUtils::startsWith(channel, DEVICE_TO_PLATFORM_DIRECTION);
 }
 
 bool StatusProtocol::isMessageFromPlatform(const std::string& channel)

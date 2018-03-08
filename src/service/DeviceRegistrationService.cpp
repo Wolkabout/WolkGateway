@@ -19,9 +19,9 @@
 #include "Poco/Bugcheck.h"
 #include "connectivity/json/DeviceRegistrationProtocol.h"
 #include "model/Device.h"
-#include "model/DeviceRegistrationRequestDto.h"
-#include "model/DeviceRegistrationResponseDto.h"
-#include "model/DeviceReregistrationResponseDto.h"
+#include "model/DeviceRegistrationRequest.h"
+#include "model/DeviceRegistrationResponse.h"
+#include "model/DeviceReregistrationResponse.h"
 #include "model/Message.h"
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
@@ -128,7 +128,7 @@ void DeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::stri
 }
 
 void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::string& deviceKey,
-                                                                const DeviceRegistrationRequestDto& request)
+                                                                const DeviceRegistrationRequest& request)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -168,7 +168,7 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
 
     LOG(INFO) << "DeviceRegistrationService: Reregistering devices connected to gateway";
 
-    DeviceReregistrationResponseDto reregistrationResponse(DeviceReregistrationResponseDto::Result::OK);
+    DeviceReregistrationResponse reregistrationResponse(DeviceReregistrationResponse::Result::OK);
     m_outboundPlatformMessageHandler.addMessage(
       DeviceRegistrationProtocol::makeMessage(m_gatewayKey, reregistrationResponse));
 
@@ -179,7 +179,7 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
 
         auto device = m_deviceRepository.findByDeviceKey(deviceKey);
         auto deviceRegistrationRequest =
-          std::make_shared<DeviceRegistrationRequestDto>(device->getName(), device->getKey(), device->getManifest());
+          std::make_shared<DeviceRegistrationRequest>(device->getName(), device->getKey(), device->getManifest());
 
         std::lock_guard<decltype(m_devicesAwaitingRegistrationResponseMutex)> l(
           m_devicesAwaitingRegistrationResponseMutex);
@@ -192,7 +192,7 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
 }
 
 void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::string& deviceKey,
-                                                                 const DeviceRegistrationResponseDto& response)
+                                                                 const DeviceRegistrationResponse& response)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -206,7 +206,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
     }
 
     auto registrationResult = response.getResult();
-    if (registrationResult == DeviceRegistrationResponseDto::Result::OK)
+    if (registrationResult == DeviceRegistrationResponse::Result::OK)
     {
         LOG(INFO) << "DeviceRegistrationService: Device with key '" << deviceKey
                   << "' successfully registered on platform";
@@ -236,28 +236,27 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
     else
     {
         auto registrationFailureReason = [&]() -> std::string {
-            if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_KEY_CONFLICT)
+            if (registrationResult == DeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT)
             {
                 return "Device with given key already registered";
             }
-            else if (registrationResult ==
-                     DeviceRegistrationResponseDto::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED)
+            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED)
             {
                 return "Maximum number of devices registered";
             }
-            else if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_READING_PAYLOAD)
+            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_READING_PAYLOAD)
             {
                 return "Rejected registration DTO";
             }
-            else if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_MANIFEST_CONFLICT)
+            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_MANIFEST_CONFLICT)
             {
                 return "Manifest conflict";
             }
-            else if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_NO_GATEWAY_MANIFEST)
+            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_NO_GATEWAY_MANIFEST)
             {
                 return "Gateway has been deleted on platform";
             }
-            else if (registrationResult == DeviceRegistrationResponseDto::Result::ERROR_GATEWAY_NOT_FOUND)
+            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_GATEWAY_NOT_FOUND)
             {
                 return "Gateway has been deleted on platform";
             }
@@ -274,7 +273,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
 }
 
 void DeviceRegistrationService::addToPostponedDeviceRegistartionRequests(
-  const std::string& deviceKey, const wolkabout::DeviceRegistrationRequestDto& request)
+  const std::string& deviceKey, const wolkabout::DeviceRegistrationRequest& request)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -283,7 +282,7 @@ void DeviceRegistrationService::addToPostponedDeviceRegistartionRequests(
 
     std::lock_guard<decltype(m_devicesWithPostponedRegistrationMutex)> l(m_devicesWithPostponedRegistrationMutex);
     auto postponedDeviceRegistration =
-      std::unique_ptr<DeviceRegistrationRequestDto>(new DeviceRegistrationRequestDto(request));
+      std::unique_ptr<DeviceRegistrationRequest>(new DeviceRegistrationRequest(request));
     m_devicesWithPostponedRegistration[deviceKey] = std::move(postponedDeviceRegistration);
 }
 }    // namespace wolkabout

@@ -35,8 +35,6 @@ public:
                    std::vector<ConfigurationManifest> configurations = {}, std::vector<SensorManifest> sensors = {},
                    std::vector<AlarmManifest> alarms = {}, std::vector<ActuatorManifest> actuators = {});
 
-    virtual ~DeviceManifest() = default;
-
     DeviceManifest& addConfiguration(const ConfigurationManifest& configurationManifest);
     DeviceManifest& addSensor(const SensorManifest& sensorManifest);
     DeviceManifest& addAlarm(const AlarmManifest& alarmManifest);

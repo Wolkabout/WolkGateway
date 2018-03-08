@@ -550,7 +550,7 @@ std::unique_ptr<std::vector<std::string>> SQLiteDeviceRepository::findAllDeviceK
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    auto deviceKeys = std::unique_ptr<std::vector<std::string>>();
+    auto deviceKeys = std::unique_ptr<std::vector<std::string>>(new std::vector<std::string>());
 
     Statement statement(*m_session);
     statement << "SELECT key FROM device;", into(*deviceKeys), now;

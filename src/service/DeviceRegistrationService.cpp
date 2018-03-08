@@ -34,10 +34,12 @@
 namespace wolkabout
 {
 DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey, DeviceRepository& deviceRepository,
-                                                     OutboundMessageHandler& outboundPlatformMessageHandler)
+                                                     OutboundMessageHandler& outboundPlatformMessageHandler,
+                                                     OutboundMessageHandler& outboundDeviceMessageHandler)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_deviceRepository{deviceRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
+, m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
 {
 }
 
@@ -158,7 +160,8 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
       std::unique_ptr<Device>(new Device(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
     m_devicesAwaitingRegistrationResponse[deviceKey] = std::move(device);
 
-    auto registrationRequest = DeviceRegistrationProtocol::makeMessage(m_gatewayKey, deviceKey, request);
+    const auto registrationRequest =
+      DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(m_gatewayKey, deviceKey, request);
     m_outboundPlatformMessageHandler.addMessage(registrationRequest);
 }
 
@@ -168,27 +171,19 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
 
     LOG(INFO) << "DeviceRegistrationService: Reregistering devices connected to gateway";
 
-    DeviceReregistrationResponse reregistrationResponse(DeviceReregistrationResponse::Result::OK);
-    m_outboundPlatformMessageHandler.addMessage(
-      DeviceRegistrationProtocol::makeMessage(m_gatewayKey, reregistrationResponse));
+    const auto reregistrationResponse = DeviceReregistrationResponse(DeviceReregistrationResponse::Result::OK);
+    const auto reregistrationResponseMessage =
+      DeviceRegistrationProtocol::makeDeviceReregistrationResponseMessage(m_gatewayKey, reregistrationResponse);
+    m_outboundPlatformMessageHandler.addMessage(reregistrationResponseMessage);
 
-    auto registeredDevicesKeys = m_deviceRepository.findAllDeviceKeys();
+    const auto registeredDevicesKeys = m_deviceRepository.findAllDeviceKeys();
     for (const std::string& deviceKey : *registeredDevicesKeys)
     {
-        LOG(INFO) << "DeviceRegistrationService: Reregistering device with key '" << deviceKey << "'";
-
-        auto device = m_deviceRepository.findByDeviceKey(deviceKey);
-        auto deviceRegistrationRequest =
-          std::make_shared<DeviceRegistrationRequest>(device->getName(), device->getKey(), device->getManifest());
-
-        std::lock_guard<decltype(m_devicesAwaitingRegistrationResponseMutex)> l(
-          m_devicesAwaitingRegistrationResponseMutex);
-        m_devicesAwaitingRegistrationResponse[deviceKey] = std::move(device);
         m_deviceRepository.remove(deviceKey);
-
-        m_outboundPlatformMessageHandler.addMessage(
-          DeviceRegistrationProtocol::makeMessage(m_gatewayKey, deviceKey, *deviceRegistrationRequest));
     }
+
+    const auto deviceRegistrationRequest = DeviceRegistrationProtocol::makeDeviceReregistrationRequestForDevice();
+    m_outboundDeviceMessageHandler.addMessage(deviceRegistrationRequest);
 }
 
 void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::string& deviceKey,

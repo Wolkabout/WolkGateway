@@ -42,17 +42,18 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -Weffc++ -pedantic    
 add_definitions(-DOPENSSL)
 add_subdirectory(mqtt)
 
-# WolkGateway
+# WolkGateway library
 include_directories("mqtt")
 include_directories("src")
 include_directories(SYSTEM "${CONAN_INCLUDE_DIRS_OPENSSL}")
 include_directories(SYSTEM "${CONAN_INCLUDE_DIRS_POCO}")
 
-file(GLOB_RECURSE HEADER_FILES "src/*.h" "src/*.hpp")
-file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
+file(GLOB_RECURSE LIB_HEADER_FILES "src/*.h" "src/*.hpp")
+file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
 
-add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
+add_library(${PROJECT_NAME} SHARED ${LIB_HEADER_FILES} ${LIB_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ssl crypto z PocoUtil PocoCrypto PocoData PocoDataSQLite PocoFoundation paho-mqtt pthread)
+set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
 
 # Tests
@@ -63,15 +64,18 @@ file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h" "tests/*.hpp")
 file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
 
 add_executable(tests ${TESTS_HEADER_FILES} ${TESTS_SOURCE_FILES})
-target_link_libraries(tests ${PROJECT_NAME} gmock_main gmock gtest)
-set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(tests gmock_main gmock gtest WolkGateway)
+set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set_target_properties(tests PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
+
+# WolkGateway executable
+file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
+file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
+
+add_executable(${PROJECT_NAME}App ${BIN_HEADER_FILES} ${BIN_SOURCE_FILES})
+target_link_libraries(${PROJECT_NAME}App WolkGateway)
+set_target_properties(${PROJECT_NAME}App PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set_target_properties(${PROJECT_NAME}App PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
 
 # CMake utilities
 add_subdirectory(cmake)
-
-# Example
-add_executable(example example/Application.cpp)
-target_link_libraries(example ${PROJECT_NAME})
-set_target_properties(example PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-set_target_properties(example PROPERTIES LINK_FLAGS "-Wl,-rpath,./")

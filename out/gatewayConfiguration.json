@@ -1,0 +1,11 @@
+{
+    "name": "",
+
+    "key": "",
+    "password": "",
+
+    "protocol": "JsonProtocol",
+
+    "platformMqttUri": "ssl://api-demo.wolkabout.com:8883",
+    "localMqttUri": "tcp://localhost:1883"
+}

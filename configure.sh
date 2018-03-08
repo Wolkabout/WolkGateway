@@ -16,5 +16,5 @@
 
 pushd out
 conan install --build=missing ..
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
 popd

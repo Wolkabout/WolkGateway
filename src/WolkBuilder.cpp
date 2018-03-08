@@ -143,7 +143,7 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     // Setup registration service
     wolk->m_deviceRegistrationService = std::make_shared<DeviceRegistrationService>(
-      m_device.getKey(), *wolk->m_deviceRepository, *wolk->m_platformPublisher);
+      m_device.getKey(), *wolk->m_deviceRepository, *wolk->m_devicePublisher, *wolk->m_platformPublisher);
 
     wolk->m_inboundDeviceMessageHandler->setListener<DeviceRegistrationProtocol>(wolk->m_deviceRegistrationService);
     wolk->m_inboundPlatformMessageHandler->setListener<DeviceRegistrationProtocol>(wolk->m_deviceRegistrationService);

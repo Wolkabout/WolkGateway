@@ -537,9 +537,8 @@ const std::vector<std::string>& DeviceRegistrationProtocol::getPlatformTopics()
     return PLATFORM_TOPICS;
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
-                                                                 const std::string& deviceKey,
-                                                                 const DeviceRegistrationRequest& request)
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
+  const std::string& gatewayKey, const std::string& deviceKey, const DeviceRegistrationRequest& request)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -565,9 +564,8 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
     }
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
-                                                                 const std::string& deviceKey,
-                                                                 const wolkabout::DeviceRegistrationResponse& response)
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceRegistrationResponseMessage(
+  const std::string& gatewayKey, const std::string& deviceKey, const wolkabout::DeviceRegistrationResponse& response)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -593,8 +591,8 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
     }
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::string& gatewayKey,
-                                                                 const DeviceReregistrationResponse& response)
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationResponseMessage(
+  const std::string& gatewayKey, const DeviceReregistrationResponse& response)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -612,6 +610,18 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeMessage(const std::stri
     }
 }
 
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey)
+{
+    const std::string channel = DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
+    return std::make_shared<Message>("", channel);
+}
+
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRequestForDevice()
+{
+    const std::string channel = DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + DEVICE_PATH_PREFIX;
+    return std::make_shared<Message>("", channel);
+}
+    
 std::shared_ptr<DeviceRegistrationRequest> DeviceRegistrationProtocol::makeRegistrationRequest(
   std::shared_ptr<Message> message)
 {

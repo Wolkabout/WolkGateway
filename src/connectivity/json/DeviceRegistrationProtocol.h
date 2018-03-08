@@ -38,12 +38,16 @@ public:
     static const std::vector<std::string>& getDeviceTopics();
     static const std::vector<std::string>& getPlatformTopics();
 
-    static std::shared_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                const DeviceRegistrationRequest& request);
-    static std::shared_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                const DeviceRegistrationResponse& request);
-    static std::shared_ptr<Message> makeMessage(const std::string& gatewayKey,
-                                                const DeviceReregistrationResponse& response);
+    static std::shared_ptr<Message> makeDeviceRegistrationRequestMessage(const std::string& gatewayKey,
+                                                                         const std::string& deviceKey,
+                                                                         const DeviceRegistrationRequest& request);
+    static std::shared_ptr<Message> makeDeviceRegistrationResponseMessage(const std::string& gatewayKey,
+                                                                          const std::string& deviceKey,
+                                                                          const DeviceRegistrationResponse& request);
+    static std::shared_ptr<Message> makeDeviceReregistrationResponseMessage(
+      const std::string& gatewayKey, const DeviceReregistrationResponse& response);
+    static std::shared_ptr<Message> makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey);
+    static std::shared_ptr<Message> makeDeviceReregistrationRequestForDevice();
 
     static std::shared_ptr<DeviceRegistrationRequest> makeRegistrationRequest(std::shared_ptr<Message> message);
     static std::shared_ptr<DeviceRegistrationResponse> makeRegistrationResponse(std::shared_ptr<Message> message);

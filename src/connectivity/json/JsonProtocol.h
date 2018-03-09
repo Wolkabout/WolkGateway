@@ -50,9 +50,12 @@ public:
     static bool isMessageToPlatform(const std::string& channel);
     static bool isMessageFromPlatform(const std::string& channel);
 
-    static bool isActuatorSetMessage(const std::string& topic);
+    static bool isActuatorSetMessage(const std::string& channel);
+    static bool isActuatorGetMessage(const std::string& channel);
 
-    static bool isActuatorGetMessage(const std::string& topic);
+    static bool isSensorReadingMessage(const std::string& channel);
+    static bool isAlarmMessage(const std::string& channel);
+    static bool isActuatorStatusMessage(const std::string& channel);
 
     static std::string routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
     static std::string routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey);

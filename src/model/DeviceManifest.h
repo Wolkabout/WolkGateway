@@ -22,6 +22,8 @@
 #include "model/ConfigurationManifest.h"
 #include "model/SensorManifest.h"
 
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -44,6 +46,17 @@ public:
     const std::vector<SensorManifest>& getSensors() const;
     const std::vector<AlarmManifest>& getAlarms() const;
     const std::vector<ActuatorManifest>& getActuators() const;
+
+    std::unique_ptr<ConfigurationManifest> getConfigurationManifest(
+      std::function<bool(const ConfigurationManifest&)> filter) const;
+    std::unique_ptr<SensorManifest> getSensorManifest(std::function<bool(const SensorManifest&)> filter) const;
+    std::unique_ptr<AlarmManifest> getAlarmManifest(std::function<bool(const AlarmManifest&)> filter) const;
+    std::unique_ptr<ActuatorManifest> getActuatorManifest(std::function<bool(const ActuatorManifest&)> filter) const;
+
+    bool hasConfigurationManifestWithReference(const std::string& reference) const;
+    bool hasSensorManifestWithReference(const std::string& reference) const;
+    bool hasAlarmManifestWithReference(const std::string& reference) const;
+    bool hasActuatorManifestWithReference(const std::string& reference) const;
 
     const std::string& getName() const;
     const std::string& getDescription() const;

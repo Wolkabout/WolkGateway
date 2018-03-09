@@ -251,14 +251,29 @@ bool JsonProtocol::isMessageFromPlatform(const std::string& channel)
     return StringUtils::startsWith(channel, PLATFORM_TO_DEVICE_DIRECTION);
 }
 
-bool JsonProtocol::isActuatorSetMessage(const std::string& topic)
+bool JsonProtocol::isActuatorSetMessage(const std::string& channel)
 {
-    return StringUtils::startsWith(topic, ACTUATION_SET_TOPIC_ROOT);
+    return StringUtils::startsWith(channel, ACTUATION_SET_TOPIC_ROOT);
 }
 
-bool JsonProtocol::isActuatorGetMessage(const std::string& topic)
+bool JsonProtocol::isActuatorGetMessage(const std::string& channel)
 {
-    return StringUtils::startsWith(topic, ACTUATION_GET_TOPIC_ROOT);
+    return StringUtils::startsWith(channel, ACTUATION_GET_TOPIC_ROOT);
+}
+
+bool JsonProtocol::isSensorReadingMessage(const std::string& channel)
+{
+    return StringUtils::startsWith(channel, SENSOR_READING_TOPIC_ROOT);
+}
+
+bool JsonProtocol::isAlarmMessage(const std::string& channel)
+{
+    return StringUtils::startsWith(channel, EVENTS_TOPIC_ROOT);
+}
+
+bool JsonProtocol::isActuatorStatusMessage(const std::string& channel)
+{
+    return StringUtils::startsWith(channel, ACTUATION_STATUS_TOPIC_ROOT);
 }
 
 std::string JsonProtocol::routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey)

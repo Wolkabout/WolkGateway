@@ -26,8 +26,10 @@
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
+
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <memory>
 #include <string>
 #include <vector>
@@ -121,33 +123,74 @@ template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Me
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = message->getChannel();
-
-    if (!P::isMessageToPlatform(topic))
+    const std::string channel = message->getChannel();
+    if (!P::isMessageToPlatform(channel))
     {
-        LOG(WARN) << "DeviceStatusService: Ignoring message on channel '" << topic
-                  << "'. Message not intended for platform.";
+        LOG(WARN) << "DataService: Ignoring message on channel '" << channel << "'. Message not intended for platform.";
         return;
     }
 
-    const std::string deviceKey = P::extractDeviceKeyFromChannel(topic);
-
-    if (deviceKey.empty())
+    const std::string deviceKey = P::extractDeviceKeyFromChannel(channel);
+    const std::unique_ptr<Device> device = m_deviceRepository.findByDeviceKey(deviceKey);
+    if (!device)
     {
-        LOG(WARN) << "DataService: Failed to extract device key from channel '" << topic << "'";
+        LOG(WARN) << "DataService: Not forwarding data message from device with key '" << deviceKey
+                  << "'. Device not registered";
         return;
     }
 
-    if (m_gatewayKey == deviceKey)
+    if (P::isSensorReadingMessage(channel))
     {
-        // gateway module is connected
+        const std::string sensorReference = P::extractReferenceFromChannel(channel);
+        const DeviceManifest& deviceManifest = device->getManifest();
+        if (!deviceManifest.hasSensorManifestWithReference(sensorReference))
+        {
+            LOG(WARN) << "DataService: Not forwarding sensor reading with reference '" << sensorReference
+                      << "' from device with key '" << deviceKey
+                      << "'. No sensor with given reference in device manifest";
+            return;
+        }
+    }
+    else if (P::isAlarmMessage(channel))
+    {
+        const std::string alarmReference = P::extractReferenceFromChannel(channel);
+        const DeviceManifest& deviceManifest = device->getManifest();
+        if (!deviceManifest.hasAlarmManifestWithReference(alarmReference))
+        {
+            LOG(WARN) << "DataService: Not forwarding alarm with reference '" << alarmReference
+                      << "' from device with key '" << deviceKey
+                      << "'. No event with given reference in device manifest";
+            return;
+        }
+    }
+    else if (P::isActuatorStatusMessage(channel))
+    {
+        const std::string actuatorReference = P::extractReferenceFromChannel(channel);
+        const DeviceManifest& deviceManifest = device->getManifest();
+        if (!deviceManifest.hasActuatorManifestWithReference(actuatorReference))
+        {
+            LOG(WARN) << "DataService: Not forwarding actuator status with reference '" << actuatorReference
+                      << "' from device with key '" << deviceKey
+                      << "'. No actuator with given reference in device manifest";
+            return;
+        }
+    }
+    else
+    {
+        assert(false && "DataService: Unsupported message type");
+
+        LOG(ERROR) << "DataService: Not forwarding message from device on channel: '" << channel
+                   << "'. Unsupported message type";
+        return;
+    }
+
+    if (deviceKey == m_gatewayKey)
+    {
         m_gatewayModuleConnected = true;
-
         routeGatewayToPlatformMessage(message);
     }
     else
     {
-        // if message is from device add gateway info to channel
         routeDeviceToPlatformMessage(message);
     }
 }
@@ -166,15 +209,14 @@ template <class P> void DataService<P>::routeDeviceToPlatformMessage(std::shared
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = P::routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
-    if (topic.empty())
+    const std::string channel = P::routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
+    if (channel.empty())
     {
         LOG(WARN) << "Failed to route device message: " << message->getChannel();
         return;
     }
 
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
-
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
     m_outboundPlatformMessageHandler.addMessage(routedMessage);
 }
 
@@ -182,15 +224,14 @@ template <class P> void DataService<P>::routePlatformToDeviceMessage(std::shared
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = P::routePlatformToDeviceMessage(message->getChannel(), m_gatewayKey);
-    if (topic.empty())
+    const std::string channel = P::routePlatformToDeviceMessage(message->getChannel(), m_gatewayKey);
+    if (channel.empty())
     {
         LOG(WARN) << "Failed to route platform message: " << message->getChannel();
         return;
     }
 
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
-
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
     m_outboundDeviceMessageHandler.addMessage(routedMessage);
 }
 
@@ -198,15 +239,14 @@ template <class P> void DataService<P>::routeGatewayToPlatformMessage(std::share
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = P::routeGatewayToPlatformMessage(message->getChannel());
-    if (topic.empty())
+    const std::string channel = P::routeGatewayToPlatformMessage(message->getChannel());
+    if (channel.empty())
     {
         LOG(WARN) << "Failed to route device message: " << message->getChannel();
         return;
     }
 
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
-
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
     m_outboundPlatformMessageHandler.addMessage(routedMessage);
 }
 
@@ -214,15 +254,14 @@ template <class P> void DataService<P>::routePlatformToGatewayMessage(std::share
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = P::routePlatformToGatewayMessage(message->getChannel());
-    if (topic.empty())
+    const std::string channel = P::routePlatformToGatewayMessage(message->getChannel());
+    if (channel.empty())
     {
         LOG(WARN) << "Failed to route platform message: " << message->getChannel();
         return;
     }
 
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
-
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
     m_outboundDeviceMessageHandler.addMessage(routedMessage);
 }
 
@@ -237,14 +276,14 @@ template <class P> void DataService<P>::handleGatewayOfflineMessage(std::shared_
         return;
     }
 
-    auto gwDevice = m_deviceRepository.findByDeviceKey(m_gatewayKey);
-    if (!gwDevice)
+    const auto gatewayDevice = m_deviceRepository.findByDeviceKey(m_gatewayKey);
+    if (!gatewayDevice)
     {
         LOG(WARN) << "Data Service: Gateway device not found in repository";
         return;
     }
 
-    auto actuatorReferences = gwDevice->getActuatorReferences();
+    const auto actuatorReferences = gatewayDevice->getActuatorReferences();
     if (auto it = std::find(actuatorReferences.begin(), actuatorReferences.end(), ref) != actuatorReferences.end())
     {
         ActuatorStatus status{"", ref, ActuatorStatus::State::ERROR};

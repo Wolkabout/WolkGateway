@@ -20,15 +20,16 @@
 #include "model/ConfigurationManifest.h"
 #include "model/SensorManifest.h"
 
+#include <functional>
 #include <string>
 #include <vector>
 
-wolkabout::DeviceManifest::DeviceManifest(std::string name, std::string description, std::string protocol,
-                                          std::string firmwareUpdateProtocol,
-                                          std::vector<wolkabout::ConfigurationManifest> configurations,
-                                          std::vector<wolkabout::SensorManifest> sensors,
-                                          std::vector<wolkabout::AlarmManifest> alarms,
-                                          std::vector<wolkabout::ActuatorManifest> actuators)
+namespace wolkabout
+{
+DeviceManifest::DeviceManifest(std::string name, std::string description, std::string protocol,
+                               std::string firmwareUpdateProtocol, std::vector<ConfigurationManifest> configurations,
+                               std::vector<SensorManifest> sensors, std::vector<AlarmManifest> alarms,
+                               std::vector<ActuatorManifest> actuators)
 : m_name(std::move(name))
 , m_description(std::move(description))
 , m_protocol(std::move(protocol))
@@ -40,67 +41,174 @@ wolkabout::DeviceManifest::DeviceManifest(std::string name, std::string descript
 {
 }
 
-wolkabout::DeviceManifest& wolkabout::DeviceManifest::addConfiguration(
+DeviceManifest& wolkabout::DeviceManifest::addConfiguration(
   const wolkabout::ConfigurationManifest& configurationManifest)
 {
     m_configurations.push_back(configurationManifest);
     return *this;
 }
 
-wolkabout::DeviceManifest& wolkabout::DeviceManifest::addSensor(const wolkabout::SensorManifest& sensorManifest)
+DeviceManifest& DeviceManifest::addSensor(const SensorManifest& sensorManifest)
 {
     m_sensors.push_back(sensorManifest);
     return *this;
 }
 
-wolkabout::DeviceManifest& wolkabout::DeviceManifest::addAlarm(const wolkabout::AlarmManifest& alarmManifest)
+DeviceManifest& DeviceManifest::addAlarm(const AlarmManifest& alarmManifest)
 {
     m_alarms.push_back(alarmManifest);
     return *this;
 }
 
-wolkabout::DeviceManifest& wolkabout::DeviceManifest::addActuator(const wolkabout::ActuatorManifest& actuatorManifest)
+DeviceManifest& DeviceManifest::addActuator(const ActuatorManifest& actuatorManifest)
 {
     m_actuators.push_back(actuatorManifest);
     return *this;
 }
 
-const std::vector<wolkabout::ConfigurationManifest>& wolkabout::DeviceManifest::getConfigurations() const
+const std::vector<ConfigurationManifest>& DeviceManifest::getConfigurations() const
 {
     return m_configurations;
 }
 
-const std::vector<wolkabout::SensorManifest>& wolkabout::DeviceManifest::getSensors() const
+const std::vector<SensorManifest>& DeviceManifest::getSensors() const
 {
     return m_sensors;
 }
 
-const std::vector<wolkabout::AlarmManifest>& wolkabout::DeviceManifest::getAlarms() const
+const std::vector<AlarmManifest>& DeviceManifest::getAlarms() const
 {
     return m_alarms;
 }
 
-const std::vector<wolkabout::ActuatorManifest>& wolkabout::DeviceManifest::getActuators() const
+const std::vector<ActuatorManifest>& DeviceManifest::getActuators() const
 {
     return m_actuators;
 }
 
-const std::string& wolkabout::DeviceManifest::getName() const
+std::unique_ptr<ConfigurationManifest> DeviceManifest::getConfigurationManifest(
+  std::function<bool(const ConfigurationManifest&)> filter) const
+{
+    for (const ConfigurationManifest& configurationManifest : m_configurations)
+    {
+        if (filter(configurationManifest))
+        {
+            return std::unique_ptr<ConfigurationManifest>(new ConfigurationManifest(configurationManifest));
+        }
+    }
+
+    return nullptr;
+}
+
+std::unique_ptr<SensorManifest> DeviceManifest::getSensorManifest(
+  std::function<bool(const SensorManifest&)> filter) const
+{
+    for (const SensorManifest& sensorManifest : m_sensors)
+    {
+        if (filter(sensorManifest))
+        {
+            return std::unique_ptr<SensorManifest>(new SensorManifest(sensorManifest));
+        }
+    }
+
+    return nullptr;
+}
+
+std::unique_ptr<AlarmManifest> DeviceManifest::getAlarmManifest(std::function<bool(const AlarmManifest&)> filter) const
+{
+    for (const AlarmManifest& alarmManifest : m_alarms)
+    {
+        if (filter(alarmManifest))
+        {
+            return std::unique_ptr<AlarmManifest>(new AlarmManifest(alarmManifest));
+        }
+    }
+
+    return nullptr;
+}
+
+std::unique_ptr<ActuatorManifest> DeviceManifest::getActuatorManifest(
+  std::function<bool(const ActuatorManifest&)> filter) const
+{
+    for (const ActuatorManifest& actuatorManifest : m_actuators)
+    {
+        if (filter(actuatorManifest))
+        {
+            return std::unique_ptr<ActuatorManifest>(new ActuatorManifest(actuatorManifest));
+        }
+    }
+
+    return nullptr;
+}
+
+bool DeviceManifest::hasConfigurationManifestWithReference(const std::string& reference) const
+{
+    for (const ConfigurationManifest& configurationManifest : m_configurations)
+    {
+        if (configurationManifest.getReference() == reference)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool DeviceManifest::hasSensorManifestWithReference(const std::string& reference) const
+{
+    for (const SensorManifest& sensorManifest : m_sensors)
+    {
+        if (sensorManifest.getReference() == reference)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool DeviceManifest::hasAlarmManifestWithReference(const std::string& reference) const
+{
+    for (const AlarmManifest& alarmManifest : m_alarms)
+    {
+        if (alarmManifest.getReference() == reference)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool DeviceManifest::hasActuatorManifestWithReference(const std::string& reference) const
+{
+    for (const ActuatorManifest& actuatorManifest : m_actuators)
+    {
+        if (actuatorManifest.getReference() == reference)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+const std::string& DeviceManifest::getName() const
 {
     return m_name;
 }
 
-const std::string& wolkabout::DeviceManifest::getDescription() const
+const std::string& DeviceManifest::getDescription() const
 {
     return m_description;
 }
 
-const std::string& wolkabout::DeviceManifest::getFirmwareUpdateProtocol() const
+const std::string& DeviceManifest::getFirmwareUpdateProtocol() const
 {
     return m_firmwareUpdateProtocol;
 }
 
-bool wolkabout::DeviceManifest::operator==(DeviceManifest& rhs) const
+bool DeviceManifest::operator==(DeviceManifest& rhs) const
 {
     if (m_name != rhs.m_name || m_description != rhs.m_description || m_protocol != rhs.m_protocol ||
         m_firmwareUpdateProtocol != rhs.m_firmwareUpdateProtocol)
@@ -163,12 +271,13 @@ bool wolkabout::DeviceManifest::operator==(DeviceManifest& rhs) const
     return true;
 }
 
-bool wolkabout::DeviceManifest::operator!=(DeviceManifest& rhs) const
+bool DeviceManifest::operator!=(DeviceManifest& rhs) const
 {
     return !(*this == rhs);
 }
 
-const std::string& wolkabout::DeviceManifest::getProtocol() const
+const std::string& DeviceManifest::getProtocol() const
 {
     return m_protocol;
 }
+}    // namespace wolkabout

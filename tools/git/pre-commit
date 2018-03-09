@@ -10,7 +10,7 @@ fi
 
 format_file() {
  file="${1}"
- clang-format ${STYLEARG} ${1} -output-replacements-xml | grep "<replacement " >/dev/null
+ clang-format ${STYLEARG} ${1} -sort-includes -output-replacements-xml | grep "<replacement " >/dev/null
  if [ $? -ne 1 ]
  then
    echo "File ["${1}"] in commit did not match format rules"

@@ -56,7 +56,7 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
 
     if (DeviceRegistrationProtocol::isRegistrationResponse(message))
     {
-        auto response = DeviceRegistrationProtocol::makeRegistrationResponse(message);
+        const auto response = DeviceRegistrationProtocol::makeRegistrationResponse(message);
         if (!response)
         {
             LOG(ERROR)
@@ -200,7 +200,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
         return;
     }
 
-    auto registrationResult = response.getResult();
+    const auto registrationResult = response.getResult();
     if (registrationResult == DeviceRegistrationResponse::Result::OK)
     {
         LOG(INFO) << "DeviceRegistrationService: Device with key '" << deviceKey
@@ -230,7 +230,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
     }
     else
     {
-        auto registrationFailureReason = [&]() -> std::string {
+        const auto registrationFailureReason = [&]() -> std::string {
             if (registrationResult == DeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT)
             {
                 return "Device with given key already registered";

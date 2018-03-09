@@ -31,6 +31,8 @@ public:
     void setLogLevel(wolkabout::LogLevel level) override;
 
 private:
+    static std::string getFormattedDateTime();
+
     std::atomic<LogLevel> m_level;
 };
 }    // namespace wolkabout

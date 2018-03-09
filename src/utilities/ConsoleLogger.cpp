@@ -15,6 +15,8 @@
  */
 
 #include "utilities/ConsoleLogger.h"
+
+#include <ctime>
 #include <iostream>
 
 namespace wolkabout
@@ -29,27 +31,27 @@ void ConsoleLogger::logEntry(Log& log)
         {
         case LogLevel::TRACE:
         {
-            std::cout << "[T] " << log.getMessage();
+            std::cout << getFormattedDateTime() << " [T] " << log.getMessage();
             break;
         }
         case LogLevel::DEBUG:
         {
-            std::cout << "[D] " << log.getMessage();
+            std::cout << getFormattedDateTime() << " [D] " << log.getMessage();
             break;
         }
         case LogLevel::INFO:
         {
-            std::cout << "[I] " << log.getMessage();
+            std::cout << getFormattedDateTime() << " [I] " << log.getMessage();
             break;
         }
         case LogLevel::WARN:
         {
-            std::cout << "[W] " << log.getMessage();
+            std::cout << getFormattedDateTime() << " [W] " << log.getMessage();
             break;
         }
         case LogLevel::ERROR:
         {
-            std::cout << "[E] " << log.getMessage();
+            std::cout << getFormattedDateTime() << " [E] " << log.getMessage();
             break;
         }
         }
@@ -62,4 +64,19 @@ void ConsoleLogger::setLogLevel(wolkabout::LogLevel level)
 {
     m_level = level;
 }
+
+std::string ConsoleLogger::getFormattedDateTime()
+{
+    time_t rawtime;
+    struct tm* timeinfo;
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    char _retval[19];
+    strftime(_retval, sizeof(_retval), "%Y-%m-%d %H:%M:%S", timeinfo);
+
+    return _retval;
+}
+
 }    // namespace wolkabout

@@ -175,5 +175,6 @@ TEST(DeviceRegistrationProtocol, VerifyPlatformTopics)
 {
     std::vector<std::string> platformTopics = wolkabout::DeviceRegistrationProtocol::getPlatformTopics();
 
-    ASSERT_THAT(platformTopics, ::testing::UnorderedElementsAre("p2d/register_device/g/#", "p2d/reregister_device/g/#"));
+    ASSERT_THAT(platformTopics,
+                ::testing::UnorderedElementsAre("p2d/register_device/g/#", "p2d/reregister_device/g/#"));
 }

@@ -16,7 +16,6 @@
 
 #include "service/DeviceRegistrationService.h"
 #include "OutboundMessageHandler.h"
-#include "Poco/Bugcheck.h"
 #include "connectivity/json/DeviceRegistrationProtocol.h"
 #include "model/Device.h"
 #include "model/DeviceRegistrationRequest.h"
@@ -26,6 +25,7 @@
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
 
+#include <cassert>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -256,7 +256,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
                 return "Gateway has been deleted on platform";
             }
 
-            poco_assert_dbg(false);
+            assert(false && "Unknown device registration error");
             return "Unknown";
         }();
 

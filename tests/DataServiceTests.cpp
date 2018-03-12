@@ -3,12 +3,7 @@
 #include "connectivity/json/JsonProtocol.h"
 #include "model/Message.h"
 #include "repository/SQLiteDeviceRepository.h"
-
-#define private public
-#define protected public
 #include "service/DataService.h"
-#undef private
-#undef protected
 
 #include <gtest/gtest.h>
 #include <cstdio>
@@ -98,7 +93,7 @@ TEST_F(DataService,
        Given_GatewayModuleIsConnected_When_MessageFromPlatformForGatewayIsReceived_Then_MessageIsSentToGatewayModule)
 {
     // Given
-    dataService->m_gatewayModuleConnected = true;
+    dataService->connected();
 
     // When
     auto message = std::make_shared<wolkabout::Message>("", "p2d/actuator_set/g/GATEWAY_KEY/r/REF");
@@ -116,7 +111,7 @@ TEST_F(
   Given_GatewayModuleIsConnected_When_MessageFromPlatformForGatewayWithInvalidDeviceTypeIsReceived_Then_MessageIsIgnored)
 {
     // Given
-    dataService->m_gatewayModuleConnected = true;
+    dataService->connected();
 
     // When
     auto message = std::make_shared<wolkabout::Message>("", "p2d/actuator_set/d/GATEWAY_KEY/r/REF");
@@ -131,7 +126,7 @@ TEST_F(DataService,
        Given_GatewayModuleIsDisonnected_When_MessageFromPlatformForGatewayIsReceived_Then_MessageSentToGatewayModule)
 {
     // Given
-    dataService->m_gatewayModuleConnected = false;
+    dataService->disconnected();
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
       .WillByDefault(testing::Return(new wolkabout::Device(
@@ -163,7 +158,7 @@ TEST_F(
   Given_GatewayModuleIsDisonnected_When_MessageFromPlatformForGatewayWithMissingReferenceIsReceived_Then_MessageIsIgnored)
 {
     // Given
-    dataService->m_gatewayModuleConnected = false;
+    dataService->disconnected();
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
       .WillByDefault(testing::Return(new wolkabout::Device(
@@ -193,7 +188,7 @@ TEST_F(
   Given_GatewayModuleIsDisonnected_When_MessageFromPlatformForGatewayWithUndefinedReferenceIsReceived_Then_MessageIsIgnored)
 {
     // Given
-    dataService->m_gatewayModuleConnected = false;
+    dataService->disconnected();
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
       .WillByDefault(testing::Return(new wolkabout::Device(
@@ -223,7 +218,7 @@ TEST_F(
   Given_GatewayModuleIsDisonnectedAndGatewayDeviceIsNotInRepository_When_MessageFromPlatformForGatewayIsReceived_Then_MessageIsIgnored)
 {
     // Given
-    dataService->m_gatewayModuleConnected = false;
+    dataService->disconnected();
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY")).WillByDefault(testing::Return(nullptr));
 
@@ -271,7 +266,7 @@ TEST_F(DataService, Given_When_MessageFromDeviceWithInvalidChannelDirectionIsRec
     // Intentionally left empty
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("", "p2d/sensor_readings/g/GATEWAY_KEY/r/REF");
+    auto message = std::make_shared<wolkabout::Message>("", "p2d/sensor_reading/g/GATEWAY_KEY/r/REF");
     dataService->deviceMessageReceived(message);
 
     // Then
@@ -285,29 +280,12 @@ TEST_F(DataService, Given_When_MessageFromDeviceWithMissingDeviceTypeIsReceived_
     // Intentionally left empty
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_readings/GATEWAY_KEY/r/REF");
+    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/GATEWAY_KEY/r/REF");
     dataService->deviceMessageReceived(message);
 
     // Then
     ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-}
-
-TEST_F(
-  DataService,
-  Given_GatewayModuleIsDiconnected_When_MessageFromGatewayWithIncorrectDeviceTypeIsReceived_Then_MessageIsIgnoredAndGatewayIsConnected)
-{
-    // Given
-    dataService->m_gatewayModuleConnected = false;
-
-    // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_readings/g/GATEWAY_KEY/r/REF");
-    dataService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(dataService->m_gatewayModuleConnected);
 }
 
 TEST_F(
@@ -315,26 +293,50 @@ TEST_F(
   Given_GatewayModuleIsDiconnected_When_MessageFromGatewayIsReceived_Then_MessageIsSentToPlatformAndGatewayIsConnected)
 {
     // Given
-    dataService->m_gatewayModuleConnected = false;
+    dataService->disconnected();
+
+    ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
+      .WillByDefault(testing::Return(new wolkabout::Device(
+        "", "GATEWAY_KEY",
+        wolkabout::DeviceManifest{
+          "",
+          "",
+          "",
+          "",
+          {},
+          {wolkabout::SensorManifest{"", "REF", "", "", "", wolkabout::SensorManifest::DataType::NUMERIC, 1, 0, 100}},
+          {},
+          {}})));
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_readings/d/GATEWAY_KEY/r/REF");
+    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/GATEWAY_KEY/r/REF");
     dataService->deviceMessageReceived(message);
 
     // Then
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().size(), 1);
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().front()->getChannel(),
-              "d2p/sensor_readings/g/GATEWAY_KEY/r/REF");
-    ASSERT_TRUE(dataService->m_gatewayModuleConnected);
+              "d2p/sensor_reading/g/GATEWAY_KEY/r/REF");
 }
 
 TEST_F(DataService, Given_When_MessageFromDeviceWithIncorrectDeviceTypeIsReceived_Then_MessageIsIgnored)
 {
     // Given
+    ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
+      .WillByDefault(testing::Return(new wolkabout::Device(
+        "", "GATEWAY_KEY",
+        wolkabout::DeviceManifest{
+          "",
+          "",
+          "",
+          "",
+          {},
+          {wolkabout::SensorManifest{"", "REF", "", "", "", wolkabout::SensorManifest::DataType::NUMERIC, 1, 0, 100}},
+          {},
+          {}})));
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_readings/k/GATEWAY_KEY/r/REF");
+    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/k/GATEWAY_KEY/r/REF");
     dataService->deviceMessageReceived(message);
 
     // Then
@@ -345,14 +347,53 @@ TEST_F(DataService, Given_When_MessageFromDeviceWithIncorrectDeviceTypeIsReceive
 TEST_F(DataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToPlatform)
 {
     // Given
+    ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
+      .WillByDefault(testing::Return(new wolkabout::Device(
+        "", "DEVICE_KEY",
+        wolkabout::DeviceManifest{
+          "",
+          "",
+          "",
+          "",
+          {},
+          {wolkabout::SensorManifest{"", "REF", "", "", "", wolkabout::SensorManifest::DataType::NUMERIC, 1, 0, 100}},
+          {},
+          {}})));
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_readings/d/DEVICE_KEY/r/REF");
+    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/DEVICE_KEY/r/REF");
     dataService->deviceMessageReceived(message);
 
     // Then
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().size(), 1);
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().front()->getChannel(),
-              "d2p/sensor_readings/g/GATEWAY_KEY/d/DEVICE_KEY/r/REF");
+              "d2p/sensor_reading/g/GATEWAY_KEY/d/DEVICE_KEY/r/REF");
+}
+
+TEST_F(DataService,
+       Given_MessageThatIsNotInLineWithDeviceManifest_When_MessageIsReceived_Then_MessageIsNotSentToPlatform)
+{
+    // Given
+    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/DEVICE_KEY/r/REF");
+
+    ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
+      .WillByDefault(testing::Return(new wolkabout::Device(
+        "", "DEVICE_KEY",
+        wolkabout::DeviceManifest{
+          "",
+          "",
+          "",
+          "",
+          {},
+          {wolkabout::SensorManifest{"", "REF2", "", "", "", wolkabout::SensorManifest::DataType::NUMERIC, 1, 0, 100}},
+          {},
+          {}})));
+
+    // When
+    dataService->deviceMessageReceived(message);
+
+    // Then
+    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
+    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
 }

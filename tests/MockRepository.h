@@ -10,9 +10,9 @@ public:
     MockRepository() {}
     virtual ~MockRepository() {}
 
-    void save(const wolkabout::Device& device) override{};
+    void save(const wolkabout::Device& /* device */) override{};
 
-    void remove(const std::string& devicekey) override{};
+    void remove(const std::string& /* devicekey */) override{};
 
     std::unique_ptr<wolkabout::Device> findByDeviceKey(const std::string& key) override
     {

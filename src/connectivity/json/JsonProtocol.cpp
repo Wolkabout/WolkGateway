@@ -58,12 +58,12 @@ const std::string JsonProtocol::ACTUATION_GET_TOPIC_ROOT = "p2d/actuator_get/";
 const std::string JsonProtocol::CONFIGURATION_SET_REQUEST_TOPIC_ROOT = "p2d/configuration_set/";
 const std::string JsonProtocol::CONFIGURATION_GET_REQUEST_TOPIC_ROOT = "p2d/configuration_get/";
 
-const std::vector<std::string> JsonProtocol::DEVICE_TOPICS = {SENSOR_READING_TOPIC_ROOT + CHANNEL_WILDCARD,
-                                                              EVENTS_TOPIC_ROOT + CHANNEL_WILDCARD,
-                                                              ACTUATION_STATUS_TOPIC_ROOT + CHANNEL_WILDCARD};
+const std::vector<std::string> JsonProtocol::DEVICE_CHANNELS = {SENSOR_READING_TOPIC_ROOT + CHANNEL_WILDCARD,
+                                                                EVENTS_TOPIC_ROOT + CHANNEL_WILDCARD,
+                                                                ACTUATION_STATUS_TOPIC_ROOT + CHANNEL_WILDCARD};
 
-const std::vector<std::string> JsonProtocol::PLATFORM_TOPICS = {ACTUATION_GET_TOPIC_ROOT + CHANNEL_WILDCARD,
-                                                                ACTUATION_SET_TOPIC_ROOT + CHANNEL_WILDCARD};
+const std::vector<std::string> JsonProtocol::PLATFORM_CHANNELS = {ACTUATION_GET_TOPIC_ROOT + CHANNEL_WILDCARD,
+                                                                  ACTUATION_SET_TOPIC_ROOT + CHANNEL_WILDCARD};
 
 void from_json(const json& j, SensorReading& reading)
 {
@@ -160,14 +160,14 @@ const std::string& JsonProtocol::getName()
     return NAME;
 }
 
-const std::vector<std::string>& JsonProtocol::getDeviceTopics()
+const std::vector<std::string>& JsonProtocol::getDeviceChannels()
 {
-    return DEVICE_TOPICS;
+    return DEVICE_CHANNELS;
 }
 
-const std::vector<std::string>& JsonProtocol::getPlatformTopics()
+const std::vector<std::string>& JsonProtocol::getPlatformChannels()
 {
-    return PLATFORM_TOPICS;
+    return PLATFORM_CHANNELS;
 }
 
 std::shared_ptr<Message> JsonProtocol::make(const std::string& gatewayKey,

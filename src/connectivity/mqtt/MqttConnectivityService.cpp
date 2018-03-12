@@ -55,7 +55,7 @@ bool MqttConnectivityService::connect()
 
         if (auto handler = m_listener.lock())
         {
-            const auto& topics = handler->getTopics();
+            const auto topics = handler->getChannels();
             for (const std::string& topic : topics)
             {
                 m_mqttClient->subscribe(topic);

@@ -450,7 +450,7 @@ TEST(JsonProtocol, Given_Channels_When_DeviceChannelsAreRequested_Then_DeviceCha
     const std::vector<std::string> channels{"d2p/sensor_reading/#", "d2p/events/#", "d2p/actuator_status/#"};
 
     // When
-    const auto deviceChannels = wolkabout::JsonProtocol::getDeviceTopics();
+    const auto deviceChannels = wolkabout::JsonProtocol::getDeviceChannels();
 
     // Then
     for (const auto& channel : channels)
@@ -466,7 +466,7 @@ TEST(JsonProtocol, Given_Channels_When_PlatformChannelsAreRequested_Then_Platfor
     const std::vector<std::string> channels{"p2d/actuator_set/#", "p2d/actuator_get/#"};
 
     // When
-    const auto platformChannels = wolkabout::JsonProtocol::getPlatformTopics();
+    const auto platformChannels = wolkabout::JsonProtocol::getPlatformChannels();
 
     // Then
     for (const auto& channel : channels)

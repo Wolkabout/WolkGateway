@@ -42,9 +42,9 @@ class InboundPlatformMessageHandler : public InboundMessageHandler
 public:
     InboundPlatformMessageHandler(const std::string& gatewayKey);
 
-    void messageReceived(const std::string& topic, const std::string& message) override;
+    void messageReceived(const std::string& channel, const std::string& message) override;
 
-    const std::vector<std::string>& getTopics() const override;
+    std::vector<std::string> getChannels() const override;
 
     template <class P> void setListener(std::weak_ptr<PlatformMessageListener> listener);
 
@@ -56,7 +56,7 @@ private:
 
     std::vector<std::string> m_subscriptionList;
 
-    std::map<std::string, std::weak_ptr<PlatformMessageListener>> m_topicHandlers;
+    std::map<std::string, std::weak_ptr<PlatformMessageListener>> m_channelHandlers;
 
     mutable std::mutex m_lock;
 };
@@ -65,10 +65,10 @@ template <class P> void InboundPlatformMessageHandler::setListener(std::weak_ptr
 {
     std::lock_guard<std::mutex> locker{m_lock};
 
-    for (auto topic : P::getPlatformTopics())
+    for (auto channel : P::getPlatformChannels())
     {
-        m_topicHandlers[topic] = listener;
-        m_subscriptionList.push_back(topic);
+        m_channelHandlers[channel] = listener;
+        m_subscriptionList.push_back(channel);
     }
 }
 }    // namespace wolkabout

@@ -171,9 +171,9 @@ Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler& handler,
 {
 }
 
-void Wolk::ConnectivityFacade::messageReceived(const std::string& topic, const std::string& message)
+void Wolk::ConnectivityFacade::messageReceived(const std::string& channel, const std::string& message)
 {
-    m_messageHandler.messageReceived(topic, message);
+    m_messageHandler.messageReceived(channel, message);
 }
 
 void Wolk::ConnectivityFacade::connectionLost()
@@ -181,8 +181,8 @@ void Wolk::ConnectivityFacade::connectionLost()
     m_connectionLostHandler();
 }
 
-const std::vector<std::string>& Wolk::ConnectivityFacade::getTopics() const
+std::vector<std::string> Wolk::ConnectivityFacade::getChannels() const
 {
-    return m_messageHandler.getTopics();
+    return m_messageHandler.getChannels();
 }
 }    // namespace wolkabout

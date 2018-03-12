@@ -46,10 +46,10 @@ const std::string DeviceRegistrationProtocol::DEVICE_REGISTRATION_RESPONSE_TOPIC
 const std::string DeviceRegistrationProtocol::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT = "p2d/reregister_device/";
 const std::string DeviceRegistrationProtocol::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT = "d2p/reregister_device/";
 
-const std::vector<std::string> DeviceRegistrationProtocol::DEVICE_TOPICS = {DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT +
-                                                                            DEVICE_PATH_PREFIX + CHANNEL_WILDCARD};
+const std::vector<std::string> DeviceRegistrationProtocol::DEVICE_CHANNELS = {DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT +
+                                                                              DEVICE_PATH_PREFIX + CHANNEL_WILDCARD};
 
-const std::vector<std::string> DeviceRegistrationProtocol::PLATFORM_TOPICS = {
+const std::vector<std::string> DeviceRegistrationProtocol::PLATFORM_CHANNELS = {
   DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_WILDCARD,
   DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_WILDCARD};
 
@@ -527,14 +527,14 @@ const std::string& DeviceRegistrationProtocol::getName()
     return NAME;
 }
 
-const std::vector<std::string>& DeviceRegistrationProtocol::getDeviceTopics()
+const std::vector<std::string>& DeviceRegistrationProtocol::getDeviceChannels()
 {
-    return DEVICE_TOPICS;
+    return DEVICE_CHANNELS;
 }
 
-const std::vector<std::string>& DeviceRegistrationProtocol::getPlatformTopics()
+const std::vector<std::string>& DeviceRegistrationProtocol::getPlatformChannels()
 {
-    return PLATFORM_TOPICS;
+    return PLATFORM_CHANNELS;
 }
 
 std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(

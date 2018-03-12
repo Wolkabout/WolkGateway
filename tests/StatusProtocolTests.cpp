@@ -182,7 +182,7 @@ TEST(StatusProtocol, Given_Channels_When_DeviceChannelsAreRequested_Then_DeviceC
     const std::vector<std::string> channels{"d2p/status/#", "lastwill/#"};
 
     // When
-    const auto deviceChannels = wolkabout::StatusProtocol::getDeviceTopics();
+    const auto deviceChannels = wolkabout::StatusProtocol::getDeviceChannels();
 
     // Then
     for (const auto& channel : channels)
@@ -198,7 +198,7 @@ TEST(StatusProtocol, Given_Channels_When_PlatformChannelsAreRequested_Then_Platf
     const std::vector<std::string> channels{"p2d/status/#"};
 
     // When
-    const auto platformChannels = wolkabout::StatusProtocol::getPlatformTopics();
+    const auto platformChannels = wolkabout::StatusProtocol::getPlatformChannels();
 
     // Then
     for (const auto& channel : channels)

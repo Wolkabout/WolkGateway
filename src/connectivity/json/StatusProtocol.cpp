@@ -39,10 +39,11 @@ const std::string StatusProtocol::LAST_WILL_TOPIC_ROOT = "lastwill/";
 const std::string StatusProtocol::DEVICE_STATUS_REQUEST_TOPIC_ROOT = "p2d/status/";
 const std::string StatusProtocol::DEVICE_STATUS_RESPONSE_TOPIC_ROOT = "d2p/status/";
 
-const std::vector<std::string> StatusProtocol::DEVICE_TOPICS = {DEVICE_STATUS_RESPONSE_TOPIC_ROOT + CHANNEL_WILDCARD,
-                                                                LAST_WILL_TOPIC_ROOT + CHANNEL_WILDCARD};
+const std::vector<std::string> StatusProtocol::DEVICE_CHANNELS = {DEVICE_STATUS_RESPONSE_TOPIC_ROOT + CHANNEL_WILDCARD,
+                                                                  LAST_WILL_TOPIC_ROOT + CHANNEL_WILDCARD};
 
-const std::vector<std::string> StatusProtocol::PLATFORM_TOPICS = {DEVICE_STATUS_REQUEST_TOPIC_ROOT + CHANNEL_WILDCARD};
+const std::vector<std::string> StatusProtocol::PLATFORM_CHANNELS = {DEVICE_STATUS_REQUEST_TOPIC_ROOT +
+                                                                    CHANNEL_WILDCARD};
 
 const std::string StatusProtocol::STATUS_RESPONSE_STATE_FIELD = "state";
 const std::string StatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED = "CONNECTED";
@@ -93,16 +94,16 @@ const std::string& StatusProtocol::getName()
     return NAME;
 }
 
-const std::vector<std::string>& StatusProtocol::getDeviceTopics()
+const std::vector<std::string>& StatusProtocol::getDeviceChannels()
 {
     LOG(TRACE) << METHOD_INFO;
-    return DEVICE_TOPICS;
+    return DEVICE_CHANNELS;
 }
 
-const std::vector<std::string>& StatusProtocol::getPlatformTopics()
+const std::vector<std::string>& StatusProtocol::getPlatformChannels()
 {
     LOG(TRACE) << METHOD_INFO;
-    return PLATFORM_TOPICS;
+    return PLATFORM_CHANNELS;
 }
 
 std::shared_ptr<Message> StatusProtocol::messageFromDeviceStatusResponse(const std::string& gatewayKey,

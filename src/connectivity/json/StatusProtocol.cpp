@@ -225,22 +225,17 @@ std::string StatusProtocol::routeDeviceMessage(const std::string& topic, const s
 {
     LOG(TRACE) << METHOD_INFO;
 
-    auto firstPos = topic.find(CHANNEL_DELIMITER);
-    if (firstPos == std::string::npos)
+    const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
+    const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX + gatewayKey;
+
+    const auto position = topic.find(deviceTopicPart);
+    if (position != std::string::npos)
     {
-        LOG(TRACE) << "Status protocol: Channel delimiter missing in path: " << topic;
-        return "";
+        std::string routedTopic = topic;
+        return routedTopic.insert(position, gatewayTopicPart);
     }
 
-    auto secondPos = topic.find(CHANNEL_DELIMITER, firstPos + CHANNEL_DELIMITER.length());
-    if (secondPos == std::string::npos)
-    {
-        LOG(TRACE) << "Status protocol: Channel delimiter missing in path: " << topic;
-        return "";
-    }
-
-    std::string newTopic = topic;
-    return newTopic.insert(secondPos + CHANNEL_DELIMITER.length(), GATEWAY_PATH_PREFIX + gatewayKey);
+    return "";
 }
 
 std::string StatusProtocol::routePlatformMessage(const std::string& topic, const std::string& gatewayKey)
@@ -260,28 +255,34 @@ std::string StatusProtocol::extractDeviceKeyFromChannel(const std::string& topic
 {
     LOG(TRACE) << METHOD_INFO;
 
-    if (isLastWillMessage(topic))
+    std::string top = topic;
+    if (StringUtils::endsWith(top, CHANNEL_DELIMITER))
     {
-        return StringUtils::removePrefix(topic, LAST_WILL_TOPIC_ROOT);
+        top = top.substr(0, top.size() - CHANNEL_DELIMITER.size());
     }
 
-    const auto deviceKeyStartPosition = topic.find(DEVICE_PATH_PREFIX);
+    if (isLastWillMessage(top))
+    {
+        return StringUtils::removePrefix(top, LAST_WILL_TOPIC_ROOT);
+    }
+
+    const auto deviceKeyStartPosition = top.find(DEVICE_PATH_PREFIX);
     if (deviceKeyStartPosition != std::string::npos)
     {
-        const auto keyEndPosition = topic.find(CHANNEL_DELIMITER, deviceKeyStartPosition + DEVICE_PATH_PREFIX.size());
+        const auto keyEndPosition = top.find(CHANNEL_DELIMITER, deviceKeyStartPosition + DEVICE_PATH_PREFIX.size());
 
-        return topic.substr(deviceKeyStartPosition + DEVICE_PATH_PREFIX.size(), keyEndPosition);
+        return top.substr(deviceKeyStartPosition + DEVICE_PATH_PREFIX.size(), keyEndPosition);
     }
 
-    const auto gatewayKeyStartPosition = topic.find(GATEWAY_PATH_PREFIX);
+    const auto gatewayKeyStartPosition = top.find(GATEWAY_PATH_PREFIX);
     if (gatewayKeyStartPosition == std::string::npos)
     {
         return "";
     }
 
-    const auto keyEndPosition = topic.find(CHANNEL_DELIMITER, gatewayKeyStartPosition + GATEWAY_PATH_PREFIX.size());
+    const auto keyEndPosition = top.find(CHANNEL_DELIMITER, gatewayKeyStartPosition + GATEWAY_PATH_PREFIX.size());
 
-    return topic.substr(gatewayKeyStartPosition + GATEWAY_PATH_PREFIX.size(), keyEndPosition);
+    return top.substr(gatewayKeyStartPosition + GATEWAY_PATH_PREFIX.size(), keyEndPosition);
 }
 
 std::vector<std::string> StatusProtocol::deviceKeysFromContent(const std::string& content)

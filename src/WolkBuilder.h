@@ -19,7 +19,6 @@
 
 #include "connectivity/ConnectivityService.h"
 #include "model/Device.h"
-#include "persistence/Persistence.h"
 
 #include <cstdint>
 #include <functional>
@@ -29,8 +28,6 @@
 namespace wolkabout
 {
 class Wolk;
-class UrlFileDownloader;
-class FirmwareInstaller;
 class ProtocolHolder;
 
 class WolkBuilder final
@@ -55,41 +52,6 @@ public:
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& gatewayHost(const std::string& host);
-
-    /**
-     * @brief Sets underlying persistence mechanism to be used<br>
-     *        Sample in-memory persistence is used as default
-     * @param persistence std::shared_ptr to wolkabout::Persistence implementation
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& withPersistence(std::shared_ptr<Persistence> persistence);
-
-    /**
-     * @brief withFirmwareUpdate Enables firmware update for device
-     * @param firmwareVersion Current version of the firmware
-     * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
-     * @param firmwareDownloadDirectory Directory where to download firmware file
-     * @param maxFirmwareFileSize Maximum size of firmware file that can be handled
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::weak_ptr<FirmwareInstaller> installer,
-                                    const std::string& firmwareDownloadDirectory,
-                                    std::uint_fast64_t maxFirmwareFileSize,
-                                    std::uint_fast64_t maxFirmwareFileChunkSize);
-
-    /**
-     * @brief withFirmwareUpdate Enables firmware update for device
-     * @param firmwareVersion Current version of the firmware
-     * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
-     * @param firmwareDownloadDirectory Directory where to download firmware file
-     * @param maxFirmwareFileSize Maximum size of firmware file that can be handled
-     * @param urlDownloader Instance of wolkabout::UrlFileDownloader used to downlad firmware from provided url
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::weak_ptr<FirmwareInstaller> installer,
-                                    const std::string& firmwareDownloadDirectory,
-                                    std::uint_fast64_t maxFirmwareFileSize, std::uint_fast64_t maxFirmwareFileChunkSize,
-                                    std::weak_ptr<UrlFileDownloader> urlDownloader);
 
     /**
      * @brief withDataProtocol Defines which data protocol to use
@@ -119,16 +81,7 @@ private:
     std::string m_gatewayHost;
     Device m_device;
 
-    std::shared_ptr<Persistence> m_persistence;
-
     std::shared_ptr<ProtocolHolder> m_protocolHolder;
-
-    std::string m_firmwareVersion;
-    std::string m_firmwareDownloadDirectory;
-    std::uint_fast64_t m_maxFirmwareFileSize;
-    std::uint_fast64_t m_maxFirmwareFileChunkSize;
-    std::weak_ptr<FirmwareInstaller> m_firmwareInstaller;
-    std::weak_ptr<UrlFileDownloader> m_urlFileDownloader;
 
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
     static const constexpr char* MESSAGE_BUS_HOST = "tcp://localhost:1883";

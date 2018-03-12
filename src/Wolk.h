@@ -41,8 +41,6 @@ class ConnectivityService;
 class InboundMessageHandler;
 class InboundDeviceMessageHandler;
 class InboundPlatformMessageHandler;
-// class FirmwareUpdateService;
-// class FileDownloadService;
 class DeviceManager;
 class OutboundServiceDataHandler;
 class DataServiceBase;
@@ -99,12 +97,9 @@ private:
 
     std::unique_ptr<ConnectivityService> m_platformConnectivityService;
     std::unique_ptr<ConnectivityService> m_deviceConnectivityService;
-    std::shared_ptr<Persistence> m_persistence;
 
     std::unique_ptr<InboundPlatformMessageHandler> m_inboundPlatformMessageHandler;
     std::unique_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
-
-    // std::shared_ptr<OutboundServiceDataHandler> m_outboundServiceDataHandler;
 
     std::shared_ptr<ConnectivityFacade> m_platformConnectivityManager;
     std::shared_ptr<ConnectivityFacade> m_deviceConnectivityManager;
@@ -112,8 +107,6 @@ private:
     std::unique_ptr<PublishingService> m_platformPublisher;
     std::unique_ptr<PublishingService> m_devicePublisher;
 
-    // std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
-    // std::shared_ptr<FileDownloadService> m_fileDownloadService;
     std::map<std::string, std::tuple<std::shared_ptr<DataServiceBase>, std::shared_ptr<ChannelProtocolResolver>>>
       m_dataServices;
 

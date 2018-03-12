@@ -55,38 +55,6 @@ WolkBuilder& WolkBuilder::gatewayHost(const std::string& host)
     return *this;
 }
 
-WolkBuilder& WolkBuilder::withPersistence(std::shared_ptr<Persistence> persistence)
-{
-    m_persistence = persistence;
-    return *this;
-}
-
-WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion,
-                                             std::weak_ptr<FirmwareInstaller> installer,
-                                             const std::string& firmwareDownloadDirectory,
-                                             uint_fast64_t maxFirmwareFileSize,
-                                             std::uint_fast64_t maxFirmwareFileChunkSize)
-{
-    return withFirmwareUpdate(firmwareVersion, installer, firmwareDownloadDirectory, maxFirmwareFileSize,
-                              maxFirmwareFileChunkSize, std::weak_ptr<UrlFileDownloader>());
-}
-
-WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion,
-                                             std::weak_ptr<FirmwareInstaller> installer,
-                                             const std::string& firmwareDownloadDirectory,
-                                             uint_fast64_t maxFirmwareFileSize,
-                                             std::uint_fast64_t maxFirmwareFileChunkSize,
-                                             std::weak_ptr<UrlFileDownloader> urlDownloader)
-{
-    m_firmwareVersion = firmwareVersion;
-    m_firmwareDownloadDirectory = firmwareDownloadDirectory;
-    m_maxFirmwareFileSize = maxFirmwareFileSize;
-    m_maxFirmwareFileChunkSize = maxFirmwareFileChunkSize;
-    m_firmwareInstaller = installer;
-    m_urlFileDownloader = urlDownloader;
-    return *this;
-}
-
 template <class Protocol> WolkBuilder& WolkBuilder::withDataProtocol()
 {
     m_protocolHolder.reset(new TemplateProtocolHolder<Protocol>());
@@ -135,9 +103,6 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
           wolk->connectToDevices();
       });
 
-    //    wolk->m_outboundServiceDataHandler =
-    //      std::make_shared<OutboundDataService>(m_device, wolk->m_platformConnectivityService);
-
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
     wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
 
@@ -165,40 +130,6 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
     ProtocolRegistrator registrator;
     m_protocolHolder->accept(registrator, *wolk);
 
-    //	wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(m_maxFirmwareFileSize,
-    // m_maxFirmwareFileChunkSize,
-    //																		std::unique_ptr<FileHandler>(new
-    // FileHandler()),
-    //																		outboundServiceDataHandler);
-
-    //	if(m_firmwareInstaller.lock() != nullptr)
-    //	{
-    //		wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(m_firmwareVersion,
-    // m_firmwareDownloadDirectory,
-    //																				m_maxFirmwareFileSize,
-    // outboundServiceDataHandler,
-    //																				wolk->m_fileDownloadService,
-    // m_urlFileDownloader,
-    //																				m_firmwareInstaller);
-    //	}
-
-    //	std::weak_ptr<FileDownloadService> fileDownloadService_weak{wolk->m_fileDownloadService};
-    //	inboundMessageHandler->setBinaryDataHandler([=](const BinaryData& binaryData) -> void {
-    //		if(auto handler = fileDownloadService_weak.lock())
-    //		{
-    //			handler->handleBinaryData(binaryData);
-    //		}
-    //	});
-
-    //	std::weak_ptr<FirmwareUpdateService> firmwareUpdateService_weak{wolk->m_firmwareUpdateService};
-    //	inboundMessageHandler->setFirmwareUpdateCommandHandler([=](const FirmwareUpdateCommand& firmwareUpdateCommand)
-    //-> void {
-    //		if(auto handler = firmwareUpdateService_weak.lock())
-    //		{
-    //			handler->handleFirmwareUpdateCommand(firmwareUpdateCommand);
-    //		}
-    //	});
-
     return wolk;
 }
 
@@ -208,14 +139,7 @@ wolkabout::WolkBuilder::operator std::unique_ptr<Wolk>() const
 }
 
 WolkBuilder::WolkBuilder(Device device)
-: m_platformHost{WOLK_DEMO_HOST}
-, m_gatewayHost{MESSAGE_BUS_HOST}
-, m_device{std::move(device)}
-, m_persistence{new InMemoryPersistence()}
-, m_firmwareVersion{""}
-, m_firmwareDownloadDirectory{""}
-, m_maxFirmwareFileSize{0}
-, m_maxFirmwareFileChunkSize{0}
+: m_platformHost{WOLK_DEMO_HOST}, m_gatewayHost{MESSAGE_BUS_HOST}, m_device{std::move(device)}
 {
 }
 }    // namespace wolkabout

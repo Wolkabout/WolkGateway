@@ -29,11 +29,11 @@ class ConnectivityServiceListener
 public:
     virtual ~ConnectivityServiceListener() = default;
 
-    virtual void messageReceived(const std::string& topic, const std::string& message) = 0;
+    virtual void messageReceived(const std::string& channel, const std::string& message) = 0;
 
     virtual void connectionLost() = 0;
 
-    virtual const std::vector<std::string>& getTopics() const = 0;
+    virtual std::vector<std::string> getChannels() const = 0;
 };
 
 class Message;

@@ -166,14 +166,14 @@ TEST(DeviceRegistrationProtocol,
 
 TEST(DeviceRegistrationProtocol, VerifyDeviceTopics)
 {
-    std::vector<std::string> deviceTopics = wolkabout::DeviceRegistrationProtocol::getDeviceTopics();
+    std::vector<std::string> deviceTopics = wolkabout::DeviceRegistrationProtocol::getDeviceChannels();
 
     ASSERT_THAT(deviceTopics, ::testing::ElementsAre("d2p/register_device/d/#"));
 }
 
 TEST(DeviceRegistrationProtocol, VerifyPlatformTopics)
 {
-    std::vector<std::string> platformTopics = wolkabout::DeviceRegistrationProtocol::getPlatformTopics();
+    std::vector<std::string> platformTopics = wolkabout::DeviceRegistrationProtocol::getPlatformChannels();
 
     ASSERT_THAT(platformTopics,
                 ::testing::UnorderedElementsAre("p2d/register_device/g/#", "p2d/reregister_device/g/#"));

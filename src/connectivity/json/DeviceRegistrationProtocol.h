@@ -35,8 +35,8 @@ public:
 
     static const std::string& getName();
 
-    static const std::vector<std::string>& getDeviceTopics();
-    static const std::vector<std::string>& getPlatformTopics();
+    static const std::vector<std::string>& getDeviceChannels();
+    static const std::vector<std::string>& getPlatformChannels();
 
     static std::shared_ptr<Message> makeDeviceRegistrationRequestMessage(const std::string& gatewayKey,
                                                                          const std::string& deviceKey,
@@ -79,8 +79,8 @@ private:
     static const std::string DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT;
     static const std::string DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT;
 
-    static const std::vector<std::string> DEVICE_TOPICS;
-    static const std::vector<std::string> PLATFORM_TOPICS;
+    static const std::vector<std::string> DEVICE_CHANNELS;
+    static const std::vector<std::string> PLATFORM_CHANNELS;
 
     static const std::string REGISTRATION_RESPONSE_OK;
     static const std::string REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT;

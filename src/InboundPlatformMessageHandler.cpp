@@ -35,16 +35,16 @@ void InboundPlatformMessageHandler::messageReceived(const std::string& channel, 
 
     std::lock_guard<std::mutex> lg{m_lock};
 
-    auto it = std::find_if(m_topicHandlers.begin(), m_topicHandlers.end(),
+    auto it = std::find_if(m_channelHandlers.begin(), m_channelHandlers.end(),
                            [&](const std::pair<std::string, std::weak_ptr<PlatformMessageListener>>& kvp) {
                                return StringUtils::mqttTopicMatch(kvp.first, channel);
                            });
 
-    if (it != m_topicHandlers.end())
+    if (it != m_channelHandlers.end())
     {
-        auto topicHandler = it->second;
+        auto channelHandler = it->second;
         addToCommandBuffer([=] {
-            if (auto handler = topicHandler.lock())
+            if (auto handler = channelHandler.lock())
             {
                 handler->platformMessageReceived(std::make_shared<Message>(payload, channel));
             }
@@ -52,11 +52,11 @@ void InboundPlatformMessageHandler::messageReceived(const std::string& channel, 
     }
     else
     {
-        LOG(INFO) << "Handler for device topic not found: " << channel;
+        LOG(INFO) << "Handler for device channel not found: " << channel;
     }
 }
 
-const std::vector<std::string>& InboundPlatformMessageHandler::getTopics() const
+std::vector<std::string> InboundPlatformMessageHandler::getChannels() const
 {
     std::lock_guard<std::mutex> lg{m_lock};
     return m_subscriptionList;

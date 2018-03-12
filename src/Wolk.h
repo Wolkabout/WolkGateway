@@ -121,9 +121,9 @@ private:
     public:
         ConnectivityFacade(InboundMessageHandler& handler, std::function<void()> connectionLostHandler);
 
-        void messageReceived(const std::string& topic, const std::string& message) override;
+        void messageReceived(const std::string& channel, const std::string& message) override;
         void connectionLost() override;
-        const std::vector<std::string>& getTopics() const override;
+        std::vector<std::string> getChannels() const override;
 
     private:
         InboundMessageHandler& m_messageHandler;

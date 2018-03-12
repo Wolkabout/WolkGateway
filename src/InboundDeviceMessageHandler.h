@@ -42,9 +42,9 @@ class InboundDeviceMessageHandler : public InboundMessageHandler
 public:
     InboundDeviceMessageHandler();
 
-    void messageReceived(const std::string& topic, const std::string& message) override;
+    void messageReceived(const std::string& channel, const std::string& message) override;
 
-    const std::vector<std::string>& getTopics() const override;
+    std::vector<std::string> getChannels() const override;
 
     template <class P> void setListener(std::weak_ptr<DeviceMessageListener> listener);
 
@@ -54,7 +54,7 @@ private:
     std::unique_ptr<CommandBuffer> m_commandBuffer;
 
     std::vector<std::string> m_subscriptionList;
-    std::map<std::string, std::weak_ptr<DeviceMessageListener>> m_topicHandlers;
+    std::map<std::string, std::weak_ptr<DeviceMessageListener>> m_channelHandlers;
 
     mutable std::mutex m_lock;
 };
@@ -63,10 +63,10 @@ template <class P> void InboundDeviceMessageHandler::setListener(std::weak_ptr<D
 {
     std::lock_guard<std::mutex> locker{m_lock};
 
-    for (auto topic : P::getDeviceTopics())
+    for (auto channel : P::getDeviceChannels())
     {
-        m_topicHandlers[topic] = listener;
-        m_subscriptionList.push_back(topic);
+        m_channelHandlers[channel] = listener;
+        m_subscriptionList.push_back(channel);
     }
 }
 }    // namespace wolkabout

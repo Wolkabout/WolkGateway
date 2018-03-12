@@ -31,16 +31,16 @@ void InboundDeviceMessageHandler::messageReceived(const std::string& channel, co
 
     std::lock_guard<std::mutex> lg{m_lock};
 
-    auto it = std::find_if(m_topicHandlers.begin(), m_topicHandlers.end(),
+    auto it = std::find_if(m_channelHandlers.begin(), m_channelHandlers.end(),
                            [&](const std::pair<std::string, std::weak_ptr<DeviceMessageListener>>& kvp) {
                                return StringUtils::mqttTopicMatch(kvp.first, channel);
                            });
 
-    if (it != m_topicHandlers.end())
+    if (it != m_channelHandlers.end())
     {
-        auto topicHandler = it->second;
+        auto channelHandler = it->second;
         addToCommandBuffer([=] {
-            if (auto handler = topicHandler.lock())
+            if (auto handler = channelHandler.lock())
             {
                 handler->deviceMessageReceived(std::make_shared<Message>(payload, channel));
             }
@@ -48,11 +48,11 @@ void InboundDeviceMessageHandler::messageReceived(const std::string& channel, co
     }
     else
     {
-        LOG(ERROR) << "InboundDeviceMessageHandler: Handler for device topic not found: " << channel;
+        LOG(ERROR) << "InboundDeviceMessageHandler: Handler for device channel not found: " << channel;
     }
 }
 
-const std::vector<std::string>& InboundDeviceMessageHandler::getTopics() const
+std::vector<std::string> InboundDeviceMessageHandler::getChannels() const
 {
     std::lock_guard<std::mutex> lg{m_lock};
     return m_subscriptionList;

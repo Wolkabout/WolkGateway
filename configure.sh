@@ -15,6 +15,7 @@
 # limitations under the License.
 
 cp tools/git/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
 
 pushd out
 conan install --build=missing ..

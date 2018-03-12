@@ -218,7 +218,14 @@ bool StatusProtocol::isLastWillMessage(const std::string& topic)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(topic, LAST_WILL_TOPIC_ROOT);
+    std::string top = topic;
+
+    if (!StringUtils::endsWith(top, CHANNEL_DELIMITER))
+    {
+        top.append(CHANNEL_DELIMITER);
+    }
+
+    return StringUtils::startsWith(top, LAST_WILL_TOPIC_ROOT);
 }
 
 std::string StatusProtocol::routeDeviceMessage(const std::string& topic, const std::string& gatewayKey)
@@ -263,7 +270,13 @@ std::string StatusProtocol::extractDeviceKeyFromChannel(const std::string& topic
 
     if (isLastWillMessage(top))
     {
-        return StringUtils::removePrefix(top, LAST_WILL_TOPIC_ROOT);
+        auto delimiterPosition = top.find(CHANNEL_DELIMITER);
+        if (delimiterPosition == std::string::npos)
+        {
+            return "";
+        }
+
+        return top.substr(delimiterPosition + CHANNEL_DELIMITER.size(), std::string::npos);
     }
 
     const auto deviceKeyStartPosition = top.find(DEVICE_PATH_PREFIX);

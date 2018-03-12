@@ -103,7 +103,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
         }
         else    // check for list of key in payload
         {
-            const auto deviceKeys = StatusProtocol::deviceKeysFromContent(topic);
+            const auto deviceKeys = StatusProtocol::deviceKeysFromContent(message->getContent());
 
             for (const auto& key : deviceKeys)
             {

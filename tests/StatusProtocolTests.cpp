@@ -44,6 +44,19 @@ TEST(StatusProtocol, Given_LastWillChannelForDevice_When_DeviceKeyIsExtracted_Th
 }
 
 TEST(StatusProtocol,
+     Given_LastWillChannelForDeviceNoKey_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToEmpty)
+{
+    // Given
+    const std::string lastwillChannel = "lastwill";
+
+    // When
+    const std::string deviceKey = wolkabout::StatusProtocol::extractDeviceKeyFromChannel(lastwillChannel);
+
+    // Then
+    ASSERT_EQ("", deviceKey);
+}
+
+TEST(StatusProtocol,
      Given_LastWillChannelAndPayloadForDevice_When_DeviceKeysAreExtracted_Then_ExtractedDeviceKeysAreEqualToDeviceKeys)
 {
     // Given

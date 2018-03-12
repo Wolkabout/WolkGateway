@@ -1,6 +1,7 @@
 #ifndef MOCKREPOSITORY_H
 #define MOCKREPOSITORY_H
 
+#include "model/Device.h"
 #include "repository/DeviceRepository.h"
 #include <gmock/gmock.h>
 

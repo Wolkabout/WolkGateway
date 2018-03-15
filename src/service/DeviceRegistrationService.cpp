@@ -26,10 +26,12 @@
 #include "utilities/Logger.h"
 
 #include <cassert>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 namespace wolkabout
 {
@@ -71,6 +73,10 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
     else if (DeviceRegistrationProtocol::isReregistrationRequest(message))
     {
         handleDeviceReregistrationRequest();
+    }
+    else if (DeviceRegistrationProtocol::isDeviceDeletionResponse(message))
+    {
+        LOG(INFO) << "DeviceRegistrationService: Received device deletion response (" << message->getChannel() << ")";
     }
     else
     {
@@ -126,6 +132,22 @@ void DeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::stri
     if (m_onDeviceRegistered)
     {
         m_onDeviceRegistered(deviceKey, isGateway);
+    }
+}
+
+void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys)
+{
+    const auto deviceKeysFromRepository = m_deviceRepository.findAllDeviceKeys();
+    for (const std::string& deviceKeyFromRepository : *deviceKeysFromRepository)
+    {
+        if (std::find(devicesKeys.begin(), devicesKeys.end(), deviceKeyFromRepository) == devicesKeys.end())
+        {
+            m_deviceRepository.remove(deviceKeyFromRepository);
+
+            const auto deviceDeletionRequestMessage =
+              DeviceRegistrationProtocol::makeDeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
+            m_outboundPlatformMessageHandler.addMessage(deviceDeletionRequestMessage);
+        }
     }
 }
 

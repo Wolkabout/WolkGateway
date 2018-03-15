@@ -27,6 +27,8 @@
 #include "connectivity/mqtt/PahoMqttClient.h"
 #include "model/Device.h"
 #include "persistence/inmemory/InMemoryPersistence.h"
+#include "repository/ExistingDevicesRepository.h"
+#include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DeviceRegistrationService.h"
 #include "service/DeviceStatusService.h"
@@ -75,8 +77,13 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
 
+    // Setup device repository
     wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
 
+    // Setup existing devices repository
+    wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
+
+    // Setup connectivity services
     wolk->m_platformConnectivityService.reset(new MqttConnectivityService(
       std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_platformHost));
 
@@ -113,12 +120,16 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
     wolk->m_inboundDeviceMessageHandler->setListener<DeviceRegistrationProtocol>(wolk->m_deviceRegistrationService);
     wolk->m_inboundPlatformMessageHandler->setListener<DeviceRegistrationProtocol>(wolk->m_deviceRegistrationService);
 
-    wolk->m_deviceRegistrationService->onDeviceRegistered([&](const std::string& /* deviceKey */, bool isGateway) {
+    wolk->m_deviceRegistrationService->onDeviceRegistered([&](const std::string& deviceKey, bool isGateway) {
         if (isGateway)
         {
             wolk->gatewayRegistered();
         }
+
+        wolk->m_existingDevicesRepository->addDeviceKey(deviceKey);
     });
+
+    wolk->m_deviceRegistrationService->deleteDevicesOtherThan(wolk->m_existingDevicesRepository->getDeviceKeys());
 
     // Setup device status service
     wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(

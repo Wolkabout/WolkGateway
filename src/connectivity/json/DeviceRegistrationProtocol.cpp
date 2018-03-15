@@ -46,12 +46,16 @@ const std::string DeviceRegistrationProtocol::DEVICE_REGISTRATION_RESPONSE_TOPIC
 const std::string DeviceRegistrationProtocol::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT = "p2d/reregister_device/";
 const std::string DeviceRegistrationProtocol::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT = "d2p/reregister_device/";
 
+const std::string DeviceRegistrationProtocol::DEVICE_DELETION_REQUEST_TOPIC_ROOT = "d2p/delete_device/";
+const std::string DeviceRegistrationProtocol::DEVICE_DELETION_RESPONSE_TOPIC_ROOT = "p2d/delete_device/";
+
 const std::vector<std::string> DeviceRegistrationProtocol::DEVICE_CHANNELS = {DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT +
                                                                               DEVICE_PATH_PREFIX + CHANNEL_WILDCARD};
 
 const std::vector<std::string> DeviceRegistrationProtocol::PLATFORM_CHANNELS = {
   DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_WILDCARD,
-  DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_WILDCARD};
+  DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_WILDCARD,
+  DEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_WILDCARD};
 
 const std::string DeviceRegistrationProtocol::REGISTRATION_RESPONSE_OK = "OK";
 const std::string DeviceRegistrationProtocol::REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT = "ERROR_KEY_CONFLICT";
@@ -610,6 +614,12 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRes
     }
 }
 
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRequestForDevice()
+{
+    const std::string channel = DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + DEVICE_PATH_PREFIX;
+    return std::make_shared<Message>("", channel);
+}
+
 std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRequestForGateway(
   const std::string& gatewayKey)
 {
@@ -617,10 +627,17 @@ std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationReq
     return std::make_shared<Message>("", channel);
 }
 
-std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceReregistrationRequestForDevice()
+std::shared_ptr<Message> DeviceRegistrationProtocol::makeDeviceDeletionRequestMessage(const std::string& gatewayKey,
+                                                                                      const std::string& deviceKey)
 {
-    const std::string channel = DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + DEVICE_PATH_PREFIX;
-    return std::make_shared<Message>("", channel);
+    std::stringstream channel;
+    channel << DEVICE_DELETION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
+    if (deviceKey != gatewayKey)
+    {
+        channel << CHANNEL_DELIMITER + DEVICE_PATH_PREFIX + deviceKey;
+    }
+
+    return std::make_shared<Message>("", channel.str());
 }
 
 std::shared_ptr<DeviceRegistrationRequest> DeviceRegistrationProtocol::makeRegistrationRequest(
@@ -736,6 +753,20 @@ bool DeviceRegistrationProtocol::isReregistrationResponse(std::shared_ptr<Messag
     LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(message->getChannel(), DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT);
+}
+
+bool DeviceRegistrationProtocol::isDeviceDeletionRequest(std::shared_ptr<Message> message)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    return StringUtils::startsWith(message->getChannel(), DEVICE_DELETION_REQUEST_TOPIC_ROOT);
+}
+
+bool DeviceRegistrationProtocol::isDeviceDeletionResponse(std::shared_ptr<Message> message)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    return StringUtils::startsWith(message->getChannel(), DEVICE_DELETION_RESPONSE_TOPIC_ROOT);
 }
 
 std::string DeviceRegistrationProtocol::extractDeviceKeyFromChannel(const std::string& channel)

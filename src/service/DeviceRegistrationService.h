@@ -25,6 +25,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 namespace wolkabout
 {
@@ -47,6 +48,8 @@ public:
 
     void onDeviceRegistered(std::function<void(const std::string& deviceKey, bool isGateway)> onDeviceRegistered);
 
+    void deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys);
+
 protected:
     void invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const;
 
@@ -62,6 +65,7 @@ private:
     const std::string m_gatewayKey;
 
     DeviceRepository& m_deviceRepository;
+
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;
 

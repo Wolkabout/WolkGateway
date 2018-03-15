@@ -55,13 +55,13 @@ public:
     const std::string& getUnit() const;
     ActuatorManifest& setUnit(const std::string& unit);
 
-    const std::string& getReadingType() const;    // TODO: @N. Antic
+    const std::string& getReadingType() const;
     ActuatorManifest& setReadingType(const std::string& readingType);
 
     ActuatorManifest::DataType getDataType() const;
     ActuatorManifest& setDataType(ActuatorManifest::DataType dataType);
 
-    unsigned int getPrecision() const;    // TODO: @N. Antic
+    unsigned int getPrecision() const;
     ActuatorManifest& setPrecision(unsigned int precision);
 
     double getMinimum() const;

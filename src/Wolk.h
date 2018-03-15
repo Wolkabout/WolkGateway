@@ -22,6 +22,7 @@
 #include "WolkBuilder.h"
 #include "model/Device.h"
 #include "repository/DeviceRepository.h"
+#include "repository/ExistingDevicesRepository.h"
 #include "service/DataService.h"
 #include "service/DeviceStatusService.h"
 #include "service/PublishingService.h"
@@ -94,6 +95,7 @@ private:
     Device m_device;
 
     std::unique_ptr<DeviceRepository> m_deviceRepository;
+    std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
 
     std::unique_ptr<ConnectivityService> m_platformConnectivityService;
     std::unique_ptr<ConnectivityService> m_deviceConnectivityService;

@@ -46,8 +46,12 @@ public:
                                                                           const DeviceRegistrationResponse& request);
     static std::shared_ptr<Message> makeDeviceReregistrationResponseMessage(
       const std::string& gatewayKey, const DeviceReregistrationResponse& response);
-    static std::shared_ptr<Message> makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey);
+
     static std::shared_ptr<Message> makeDeviceReregistrationRequestForDevice();
+    static std::shared_ptr<Message> makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey);
+
+    static std::shared_ptr<Message> makeDeviceDeletionRequestMessage(const std::string& gatewayKey,
+                                                                     const std::string& deviceKey);
 
     static std::shared_ptr<DeviceRegistrationRequest> makeRegistrationRequest(std::shared_ptr<Message> message);
     static std::shared_ptr<DeviceRegistrationResponse> makeRegistrationResponse(std::shared_ptr<Message> message);
@@ -61,6 +65,9 @@ public:
 
     static bool isReregistrationRequest(std::shared_ptr<Message> message);
     static bool isReregistrationResponse(std::shared_ptr<Message> message);
+
+    static bool isDeviceDeletionRequest(std::shared_ptr<Message> message);
+    static bool isDeviceDeletionResponse(std::shared_ptr<Message> message);
 
     static std::string extractDeviceKeyFromChannel(const std::string& channel);
 
@@ -78,6 +85,9 @@ private:
     static const std::string DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
     static const std::string DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT;
     static const std::string DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT;
+
+    static const std::string DEVICE_DELETION_REQUEST_TOPIC_ROOT;
+    static const std::string DEVICE_DELETION_RESPONSE_TOPIC_ROOT;
 
     static const std::vector<std::string> DEVICE_CHANNELS;
     static const std::vector<std::string> PLATFORM_CHANNELS;

@@ -443,3 +443,60 @@ TEST_F(
     // Then
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
 }
+
+TEST_F(
+  DeviceRegistrationService,
+  Given_SingleRegisteredChildDevice_When_DevicesOtherThanChildDeviceAreDeleted_Then_NoDeletionRequestIsSentToPlatform)
+{
+    // Given
+    const std::string childDeviceKey = "child_device_key";
+
+    wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
+                                             "DFUProtocol");
+    wolkabout::Device device("Child device", childDeviceKey, deviceManifest);
+    deviceRepository->save(device);
+
+    // When
+    deviceRegistrationService->deleteDevicesOtherThan({childDeviceKey});
+
+    // Then
+    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
+}
+
+TEST_F(DeviceRegistrationService,
+       Given_SingleRegisteredChildDevice_When_ChildDeviceisDeleted_Then_DeletionRequestIsSentToPlatform)
+{
+    // Given
+    const std::string childDeviceKey = "child_device_key";
+
+    wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
+                                             "DFUProtocol");
+    wolkabout::Device device("Child device", childDeviceKey, deviceManifest);
+    deviceRepository->save(device);
+
+    // When
+    deviceRegistrationService->deleteDevicesOtherThan({});
+
+    // Then
+    ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
+    ASSERT_TRUE(wolkabout::DeviceRegistrationProtocol::isDeviceDeletionRequest(
+      platformOutboundMessageHandler->getMessages().front()));
+}
+
+TEST_F(DeviceRegistrationService,
+       Given_SingleRegisteredChildDevice_When_ChildDeviceisDeleted_Then_ChildDeviceIsDeletedFromDeviceRepository)
+{
+    // Given
+    const std::string childDeviceKey = "child_device_key";
+
+    wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
+                                             "DFUProtocol");
+    wolkabout::Device device("Child device", childDeviceKey, deviceManifest);
+    deviceRepository->save(device);
+
+    // When
+    deviceRegistrationService->deleteDevicesOtherThan({});
+
+    // Then
+    ASSERT_FALSE(deviceRepository->containsDeviceWithKey(childDeviceKey));
+}

@@ -15,6 +15,8 @@ public:
 
     void remove(const std::string& /* devicekey */) override{};
 
+    void removeAll() override{};
+
     std::unique_ptr<wolkabout::Device> findByDeviceKey(const std::string& key) override
     {
         return std::unique_ptr<wolkabout::Device>(findByDeviceKeyProxy(key));

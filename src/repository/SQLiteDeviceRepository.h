@@ -42,6 +42,8 @@ public:
 
     void remove(const std::string& deviceKey) override;
 
+    void removeAll() override;
+
     std::unique_ptr<Device> findByDeviceKey(const std::string& deviceKey) override;
 
     std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override;

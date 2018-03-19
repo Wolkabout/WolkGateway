@@ -33,6 +33,8 @@ public:
 
     virtual void remove(const std::string& devicekey) = 0;
 
+    virtual void removeAll() = 0;
+
     virtual std::unique_ptr<Device> findByDeviceKey(const std::string& key) = 0;
 
     virtual std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() = 0;

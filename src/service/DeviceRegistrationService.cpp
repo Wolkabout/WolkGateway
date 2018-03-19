@@ -142,7 +142,14 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
     {
         if (std::find(devicesKeys.begin(), devicesKeys.end(), deviceKeyFromRepository) == devicesKeys.end())
         {
-            m_deviceRepository.remove(deviceKeyFromRepository);
+            if (deviceKeyFromRepository != m_gatewayKey)
+            {
+                m_deviceRepository.remove(deviceKeyFromRepository);
+            }
+            else
+            {
+                m_deviceRepository.removeAll();
+            }
 
             const auto deviceDeletionRequestMessage =
               DeviceRegistrationProtocol::makeDeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);

@@ -25,6 +25,7 @@
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
 
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <map>

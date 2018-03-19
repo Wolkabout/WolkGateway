@@ -516,7 +516,7 @@ TEST_F(DeviceRegistrationService,
     deviceRepository->save(device);
 
     // When
-    deviceRegistrationService->deleteDevicesOtherThan({});
+    deviceRegistrationService->deleteDevicesOtherThan({"child_device_key"});
 
     // Then
     ASSERT_TRUE(deviceRepository->findAllDeviceKeys()->empty());

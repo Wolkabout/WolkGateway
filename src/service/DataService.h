@@ -175,6 +175,9 @@ template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Me
             return;
         }
     }
+    else if (P::isConfigurationCurrentMessage(channel))
+    {
+    }
     else
     {
         assert(false && "DataService: Unsupported message type");

@@ -286,6 +286,11 @@ bool JsonProtocol::isActuatorStatusMessage(const std::string& channel)
     return StringUtils::startsWith(channel, ACTUATION_STATUS_TOPIC_ROOT);
 }
 
+bool JsonProtocol::isConfigurationCurrentMessage(const std::string& channel)
+{
+    return StringUtils::startsWith(channel, CONFIGURATION_RESPONSE_TOPIC_ROOT);
+}
+
 std::string JsonProtocol::routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey)
 {
     const std::string gwTopicPart = GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER;

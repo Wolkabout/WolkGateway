@@ -104,6 +104,7 @@ int main(int argc, char** argv)
                                               .withDataProtocol<wolkabout::JsonProtocol>()
                                               .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                                               .platformHost(gatewayConfiguration.getPlatformMqttUri())
+                                              .withoutKeepAlive()
                                               .build();
 
     wolk->connect();

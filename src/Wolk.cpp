@@ -22,6 +22,7 @@
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
 #include "service/FirmwareUpdateService.h"
+#include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 
 #include <memory>
@@ -37,6 +38,8 @@ const unsigned RECONNECT_DELAY_MSEC = 2000;
 
 namespace wolkabout
 {
+const constexpr std::chrono::seconds Wolk::KEEP_ALIVE_INTERVAL;
+
 WolkBuilder Wolk::newBuilder(Device device)
 {
     return WolkBuilder(device);
@@ -70,12 +73,32 @@ unsigned long long Wolk::currentRtc()
     return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
 }
 
+void Wolk::notifyConnected()
+{
+    m_platformPublisher->connected();
+
+    if (m_keepAliveService)
+    {
+        m_keepAliveService->connected();
+    }
+}
+
+void Wolk::notifyDisonnected()
+{
+    m_platformPublisher->disconnected();
+
+    if (m_keepAliveService)
+    {
+        m_keepAliveService->disconnected();
+    }
+}
+
 void Wolk::connectToPlatform()
 {
     addToCommandBuffer([=]() -> void {
         if (m_platformConnectivityService->connect())
         {
-            m_platformPublisher->connected();
+            notifyConnected();
         }
         else
         {

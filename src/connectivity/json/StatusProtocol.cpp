@@ -38,12 +38,14 @@ const std::string StatusProtocol::PLATFORM_TO_DEVICE_DIRECTION = "p2d/";
 const std::string StatusProtocol::LAST_WILL_TOPIC_ROOT = "lastwill/";
 const std::string StatusProtocol::DEVICE_STATUS_REQUEST_TOPIC_ROOT = "p2d/status/";
 const std::string StatusProtocol::DEVICE_STATUS_RESPONSE_TOPIC_ROOT = "d2p/status/";
+const std::string StatusProtocol::PING_TOPIC_ROOT = "d2p/ping/";
+const std::string StatusProtocol::PONG_TOPIC_ROOT = "p2d/pong/";
 
 const std::vector<std::string> StatusProtocol::DEVICE_CHANNELS = {DEVICE_STATUS_RESPONSE_TOPIC_ROOT + CHANNEL_WILDCARD,
                                                                   LAST_WILL_TOPIC_ROOT + CHANNEL_WILDCARD};
 
-const std::vector<std::string> StatusProtocol::PLATFORM_CHANNELS = {DEVICE_STATUS_REQUEST_TOPIC_ROOT +
-                                                                    CHANNEL_WILDCARD};
+const std::vector<std::string> StatusProtocol::PLATFORM_CHANNELS = {DEVICE_STATUS_REQUEST_TOPIC_ROOT + CHANNEL_WILDCARD,
+                                                                    PONG_TOPIC_ROOT + CHANNEL_WILDCARD};
 
 const std::string StatusProtocol::STATUS_RESPONSE_STATE_FIELD = "state";
 const std::string StatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED = "CONNECTED";
@@ -147,6 +149,14 @@ std::shared_ptr<Message> StatusProtocol::messageFromDeviceStatusRequest(const st
     return std::make_shared<Message>(payload, topic);
 }
 
+std::shared_ptr<Message> StatusProtocol::makeFromPingRequest(const std::string& gatewayKey)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    const std::string topic = PING_TOPIC_ROOT + gatewayKey;
+    return std::make_shared<Message>("", topic);
+}
+
 std::shared_ptr<DeviceStatusResponse> StatusProtocol::makeDeviceStatusResponse(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
@@ -227,6 +237,13 @@ bool StatusProtocol::isLastWillMessage(const std::string& topic)
     }
 
     return StringUtils::startsWith(top, LAST_WILL_TOPIC_ROOT);
+}
+
+bool StatusProtocol::isPongMessage(const std::string& topic)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    return StringUtils::startsWith(topic, PONG_TOPIC_ROOT);
 }
 
 std::string StatusProtocol::routeDeviceMessage(const std::string& topic, const std::string& gatewayKey)

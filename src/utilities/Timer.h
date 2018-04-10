@@ -31,7 +31,8 @@ public:
     Timer();
     ~Timer();
 
-    void start(unsigned intervalMsec, std::function<void()> callback);
+    void start(std::chrono::milliseconds interval, std::function<void()> callback);
+    void run(std::chrono::milliseconds interval, std::function<void()> callback);
     void stop();
     bool running() const;
 
@@ -41,6 +42,7 @@ private:
     std::condition_variable m_condition;
     std::unique_ptr<std::thread> m_worker;
 };
+
 }    // namespace wolkabout
 
 #endif    // TIMER_H

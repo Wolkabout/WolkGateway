@@ -46,6 +46,8 @@ public:
 
     static std::shared_ptr<Message> messageFromDeviceStatusRequest(const std::string& deviceKey);
 
+    static std::shared_ptr<Message> makeFromPingRequest(const std::string& gatewayKey);
+
     static std::shared_ptr<DeviceStatusResponse> makeDeviceStatusResponse(std::shared_ptr<Message> message);
 
     static bool isMessageToPlatform(const std::string& channel);
@@ -54,6 +56,7 @@ public:
     static bool isStatusResponseMessage(const std::string& topic);
     static bool isStatusRequestMessage(const std::string& topic);
     static bool isLastWillMessage(const std::string& topic);
+    static bool isPongMessage(const std::string& topic);
 
     static std::string routeDeviceMessage(const std::string& topic, const std::string& gatewayKey);
     static std::string routePlatformMessage(const std::string& topic, const std::string& gatewayKey);
@@ -80,6 +83,8 @@ private:
     static const std::string LAST_WILL_TOPIC_ROOT;
     static const std::string DEVICE_STATUS_REQUEST_TOPIC_ROOT;
     static const std::string DEVICE_STATUS_RESPONSE_TOPIC_ROOT;
+    static const std::string PING_TOPIC_ROOT;
+    static const std::string PONG_TOPIC_ROOT;
 
     static const std::vector<std::string> DEVICE_CHANNELS;
     static const std::vector<std::string> PLATFORM_CHANNELS;

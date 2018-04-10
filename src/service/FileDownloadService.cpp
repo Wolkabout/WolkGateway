@@ -23,6 +23,8 @@
 
 namespace wolkabout
 {
+const constexpr std::chrono::milliseconds FileDownloadService::PACKET_REQUEST_TIMEOUT;
+
 FileDownloadService::FileDownloadService(uint_fast64_t maxFileSize, uint_fast64_t maxPacketSize,
                                          std::unique_ptr<FileHandler> fileHandler,
                                          std::shared_ptr<OutboundServiceDataHandler> outboundDataHandler)
@@ -75,7 +77,7 @@ void FileDownloadService::requestPacket(unsigned index, uint_fast64_t size)
     ++m_retryCount;
     m_outboundDataHandler->addFilePacketRequest(FilePacketRequest{m_currentFileName, index, size});
 
-    m_timer.start(PACKET_REQUEST_TIMEOUT_MSEC, [=] {
+    m_timer.start(PACKET_REQUEST_TIMEOUT, [=] {
         abort();
         if (m_currentOnFailCallback)
         {

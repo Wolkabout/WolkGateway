@@ -19,6 +19,7 @@
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
 #include "OutboundDataService.h"
+#include "StatusMessageRouter.h"
 #include "Wolk.h"
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/json/DeviceRegistrationProtocol.h"
@@ -32,6 +33,7 @@
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DeviceRegistrationService.h"
 #include "service/DeviceStatusService.h"
+#include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 
 #include "ProtocolHolder.h"
@@ -60,6 +62,12 @@ WolkBuilder& WolkBuilder::gatewayHost(const std::string& host)
 template <class Protocol> WolkBuilder& WolkBuilder::withDataProtocol()
 {
     m_protocolHolder.reset(new TemplateProtocolHolder<Protocol>());
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::withoutKeepAlive()
+{
+    m_keepAliveEnabled = false;
     return *this;
 }
 
@@ -100,7 +108,7 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     wolk->m_platformConnectivityManager =
       std::make_shared<Wolk::ConnectivityFacade>(*wolk->m_inboundPlatformMessageHandler, [&] {
-          wolk->m_platformPublisher->disconnected();
+          wolk->notifyDisonnected();
           wolk->connectToPlatform();
       });
 
@@ -131,13 +139,24 @@ std::unique_ptr<Wolk> WolkBuilder::build() const
 
     wolk->m_deviceRegistrationService->deleteDevicesOtherThan(wolk->m_existingDevicesRepository->getDeviceKeys());
 
-    // Setup device status service
+    // Setup device status and keep alive service
     wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
       m_device.getKey(), *wolk->m_deviceRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher);
 
-    wolk->m_inboundDeviceMessageHandler->setListener<StatusProtocol>(wolk->m_deviceStatusService);
-    wolk->m_inboundPlatformMessageHandler->setListener<StatusProtocol>(wolk->m_deviceStatusService);
+    if (m_keepAliveEnabled)
+    {
+        wolk->m_keepAliveService =
+          std::make_shared<KeepAliveService>(m_device.getKey(), *wolk->m_platformPublisher, Wolk::KEEP_ALIVE_INTERVAL);
+    }
 
+    wolk->m_statusMessageRouter =
+      std::make_shared<StatusMessageRouter>(wolk->m_deviceStatusService.get(), wolk->m_deviceStatusService.get(),
+                                            wolk->m_deviceStatusService.get(), wolk->m_keepAliveService.get());
+
+    wolk->m_inboundDeviceMessageHandler->setListener<StatusProtocol>(wolk->m_statusMessageRouter);
+    wolk->m_inboundPlatformMessageHandler->setListener<StatusProtocol>(wolk->m_statusMessageRouter);
+
+    // Setup data service
     ProtocolRegistrator registrator;
     m_protocolHolder->accept(registrator, *wolk);
 
@@ -150,7 +169,7 @@ wolkabout::WolkBuilder::operator std::unique_ptr<Wolk>() const
 }
 
 WolkBuilder::WolkBuilder(Device device)
-: m_platformHost{WOLK_DEMO_HOST}, m_gatewayHost{MESSAGE_BUS_HOST}, m_device{std::move(device)}
+: m_platformHost{WOLK_DEMO_HOST}, m_gatewayHost{MESSAGE_BUS_HOST}, m_device{std::move(device)}, m_keepAliveEnabled{true}
 {
 }
 }    // namespace wolkabout

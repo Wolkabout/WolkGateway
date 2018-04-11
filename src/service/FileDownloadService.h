@@ -127,7 +127,7 @@ private:
     static const unsigned short MAX_RETRY_COUNT = 3;
     unsigned short m_retryCount;
 
-    static const unsigned short PACKET_REQUEST_TIMEOUT_MSEC = 60000;
+    static const constexpr std::chrono::milliseconds PACKET_REQUEST_TIMEOUT{6000};
 };
 }    // namespace wolkabout
 

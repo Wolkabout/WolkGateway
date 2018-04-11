@@ -30,6 +30,7 @@ public:
     }
 
     WolkOptional(T value) : m_value{value}, m_null{false} {}
+
     WolkOptional<T>& operator=(T value)
     {
         m_value = value;
@@ -38,8 +39,9 @@ public:
         return *this;
     }
 
-    operator T() const { return m_value; }
-    bool null() const { return m_null; }
+    operator bool() const { return !m_null; }
+
+    const T& value() const { return m_value; }
 
 private:
     T m_value;

@@ -46,6 +46,8 @@ class DeviceManager;
 class OutboundServiceDataHandler;
 class DataServiceBase;
 class DeviceRegistrationService;
+class KeepAliveService;
+class StatusMessageRouter;
 
 class Wolk
 {
@@ -75,11 +77,16 @@ public:
 private:
     class ConnectivityFacade;
 
+    static const constexpr std::chrono::seconds KEEP_ALIVE_INTERVAL{600};
+
     Wolk(Device device);
 
     void addToCommandBuffer(std::function<void()> command);
 
     static unsigned long long int currentRtc();
+
+    void notifyConnected();
+    void notifyDisonnected();
 
     void connectToPlatform();
     void connectToDevices();
@@ -114,6 +121,9 @@ private:
 
     std::shared_ptr<DeviceRegistrationService> m_deviceRegistrationService;
     std::shared_ptr<DeviceStatusService> m_deviceStatusService;
+    std::shared_ptr<KeepAliveService> m_keepAliveService;
+
+    std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
 
     std::mutex m_lock;
     std::unique_ptr<CommandBuffer> m_commandBuffer;

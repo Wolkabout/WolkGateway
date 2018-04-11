@@ -100,11 +100,17 @@ int main(int argc, char** argv)
 
     wolkabout::Device device(gatewayConfiguration.getName(), gatewayConfiguration.getKey(),
                              gatewayConfiguration.getPassword());
-    std::unique_ptr<wolkabout::Wolk> wolk = wolkabout::Wolk::newBuilder(device)
-                                              .withDataProtocol<wolkabout::JsonProtocol>()
-                                              .gatewayHost(gatewayConfiguration.getLocalMqttUri())
-                                              .platformHost(gatewayConfiguration.getPlatformMqttUri())
-                                              .build();
+    auto builder = wolkabout::Wolk::newBuilder(device)
+                     .withDataProtocol<wolkabout::JsonProtocol>()
+                     .gatewayHost(gatewayConfiguration.getLocalMqttUri())
+                     .platformHost(gatewayConfiguration.getPlatformMqttUri());
+
+    if (gatewayConfiguration.getKeepAliveEnabled() && !gatewayConfiguration.getKeepAliveEnabled().value())
+    {
+        builder.withoutKeepAlive();
+    }
+
+    std::unique_ptr<wolkabout::Wolk> wolk = builder.build();
 
     wolk->connect();
     while (true)

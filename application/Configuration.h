@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "model/WolkOptional.h"
 #include <string>
 
 namespace wolkabout
@@ -36,6 +37,10 @@ public:
     const std::string& getPlatformMqttUri() const;
     const std::string& getLocalMqttUri() const;
 
+    void setKeepAliveEnabled(bool value);
+
+    const WolkOptional<bool>& getKeepAliveEnabled() const;
+
     static wolkabout::GatewayConfiguration fromJson(const std::string& gatewayConfigurationFile);
 
 private:
@@ -48,5 +53,15 @@ private:
 
     std::string m_platformMqttUri;
     std::string m_localMqttUri;
+
+    WolkOptional<bool> m_keepAliveEnabled;
+
+    static const std::string NAME;
+    static const std::string KEY;
+    static const std::string PASSWORD;
+    static const std::string PROTOCOL;
+    static const std::string PLATFORM_URI;
+    static const std::string LOCAL_URI;
+    static const std::string KEEP_ALIVE;
 };
 }    // namespace wolkabout

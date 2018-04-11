@@ -61,6 +61,13 @@ public:
     template <class Protocol> WolkBuilder& withDataProtocol();
 
     /**
+     * @brief withoutKeepAlive Disables ping mechanism used to notify WolkAbout IOT Platform
+     * that device is still connected
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& withoutKeepAlive();
+
+    /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
      *
@@ -82,6 +89,8 @@ private:
     Device m_device;
 
     std::shared_ptr<ProtocolHolder> m_protocolHolder;
+
+    bool m_keepAliveEnabled;
 
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
     static const constexpr char* MESSAGE_BUS_HOST = "tcp://localhost:1883";

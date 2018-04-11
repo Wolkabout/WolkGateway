@@ -26,6 +26,14 @@ namespace wolkabout
 {
 using nlohmann::json;
 
+const std::string GatewayConfiguration::NAME = "name";
+const std::string GatewayConfiguration::KEY = "key";
+const std::string GatewayConfiguration::PASSWORD = "password";
+const std::string GatewayConfiguration::PROTOCOL = "protocol";
+const std::string GatewayConfiguration::PLATFORM_URI = "platformMqttUri";
+const std::string GatewayConfiguration::LOCAL_URI = "localMqttUri";
+const std::string GatewayConfiguration::KEEP_ALIVE = "keepAlive";
+
 GatewayConfiguration::GatewayConfiguration(std::string name, std::string key, std::string password,
                                            std::string protocol, std::string platformMqttUri, std::string localMqttUri)
 : m_name(std::move(name))
@@ -67,6 +75,16 @@ const std::string& GatewayConfiguration::getPlatformMqttUri() const
     return m_platformMqttUri;
 }
 
+void GatewayConfiguration::setKeepAliveEnabled(bool value)
+{
+    m_keepAliveEnabled = value;
+}
+
+const WolkOptional<bool>& GatewayConfiguration::getKeepAliveEnabled() const
+{
+    return m_keepAliveEnabled;
+}
+
 wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string& gatewayConfigurationFile)
 {
     if (!FileSystemUtils::isFilePresent(gatewayConfigurationFile))
@@ -81,13 +99,20 @@ wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string
     }
 
     auto j = json::parse(gatewayConfigurationJson);
-    const auto name = j.at("name").get<std::string>();
-    const auto key = j.at("key").get<std::string>();
-    const auto password = j.at("password").get<std::string>();
-    const auto protocol = j.at("protocol").get<std::string>();
-    const auto platformMqttUri = j.at("platformMqttUri").get<std::string>();
-    const auto localMqttUri = j.at("localMqttUri").get<std::string>();
+    const auto name = j.at(NAME).get<std::string>();
+    const auto key = j.at(KEY).get<std::string>();
+    const auto password = j.at(PASSWORD).get<std::string>();
+    const auto protocol = j.at(PROTOCOL).get<std::string>();
+    const auto platformMqttUri = j.at(PLATFORM_URI).get<std::string>();
+    const auto localMqttUri = j.at(LOCAL_URI).get<std::string>();
 
-    return GatewayConfiguration(name, key, password, protocol, platformMqttUri, localMqttUri);
+    GatewayConfiguration configuration(name, key, password, protocol, platformMqttUri, localMqttUri);
+
+    if (j.find(KEEP_ALIVE) != j.end())
+    {
+        configuration.setKeepAliveEnabled(j.at(KEEP_ALIVE).get<bool>());
+    }
+
+    return configuration;
 }
 }    // namespace wolkabout

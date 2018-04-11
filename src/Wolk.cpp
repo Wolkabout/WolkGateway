@@ -21,7 +21,6 @@
 #include "model/Device.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
-#include "service/FirmwareUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 

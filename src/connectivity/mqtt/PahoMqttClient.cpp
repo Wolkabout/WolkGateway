@@ -86,7 +86,14 @@ void PahoMqttClient::disconnect()
 {
     if (m_isConnected)
     {
-        m_client->disconnect();
+        try
+        {
+            m_isConnected = false;
+            m_client->disconnect();
+        }
+        catch (mqtt::exception&)
+        {
+        }
     }
 }
 
@@ -185,12 +192,18 @@ void PahoMqttClient::connected(const mqtt::string& /* cause */)
 void PahoMqttClient::connection_lost(const mqtt::string& /* cause */)
 {
     m_isConnected = false;
-    m_onConnectionLost();
+    if (m_onConnectionLost)
+    {
+        m_onConnectionLost();
+    }
 }
 
 void PahoMqttClient::message_arrived(mqtt::const_message_ptr msg)
 {
-    m_onMessageReceived(msg->get_topic(), msg->get_payload_str());
+    if (m_onMessageReceived)
+    {
+        m_onMessageReceived(msg->get_topic(), msg->get_payload_str());
+    }
 }
 
 void PahoMqttClient::delivery_complete(mqtt::delivery_token_ptr /* tok */) {}

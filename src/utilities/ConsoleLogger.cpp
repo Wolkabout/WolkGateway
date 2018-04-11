@@ -73,7 +73,7 @@ std::string ConsoleLogger::getFormattedDateTime()
     time(&rawtime);
     timeinfo = localtime(&rawtime);
 
-    char _retval[19];
+    char _retval[20];
     strftime(_retval, sizeof(_retval), "%Y-%m-%d %H:%M:%S", timeinfo);
 
     return _retval;

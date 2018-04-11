@@ -315,6 +315,17 @@ void SQLiteDeviceRepository::remove(const std::string& deviceKey)
     statement << "COMMIT;", now;
 }
 
+void SQLiteDeviceRepository::removeAll()
+{
+    std::lock_guard<decltype(m_mutex)> l(m_mutex);
+
+    const auto deviceKeysFromRepository = findAllDeviceKeys();
+    for (const std::string& deviceKey : *deviceKeysFromRepository)
+    {
+        remove(deviceKey);
+    }
+}
+
 std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::string& deviceKey)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);

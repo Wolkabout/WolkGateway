@@ -129,11 +129,41 @@ TEST(DeviceRegistrationProtocol,
     auto registrationResponseMessage = std::make_shared<wolkabout::Message>("", registrationResponseChannel);
 
     // When
-    const bool isReregistrationResonse =
+    const bool isReregistrationResponse =
       wolkabout::DeviceRegistrationProtocol::isRegistrationResponse(registrationResponseMessage);
 
     // Then
-    ASSERT_TRUE(isReregistrationResonse);
+    ASSERT_TRUE(isReregistrationResponse);
+}
+
+TEST(DeviceRegistrationProtocol,
+     Given_DeviceDeletionRequestMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsDeviceDeletionRequest)
+{
+    // Given
+    const std::string deviceDeletionRequestChannel = "d2p/delete_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    auto deviceDeletionRequestMessage = std::make_shared<wolkabout::Message>("", deviceDeletionRequestChannel);
+
+    // When
+    const bool isDeviceDeletionRequest =
+      wolkabout::DeviceRegistrationProtocol::isDeviceDeletionRequest(deviceDeletionRequestMessage);
+
+    // Then
+    ASSERT_TRUE(isDeviceDeletionRequest);
+}
+
+TEST(DeviceRegistrationProtocol,
+     Given_DeviceDeletionResponseMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsDeviceDeletionResponse)
+{
+    // Given
+    const std::string deviceDeletionResponseChannel = "p2d/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    auto deviceDeletionResponseMessage = std::make_shared<wolkabout::Message>("", deviceDeletionResponseChannel);
+
+    // When
+    const bool isDeviceDeletionResponse =
+      wolkabout::DeviceRegistrationProtocol::isRegistrationResponse(deviceDeletionResponseMessage);
+
+    // Then
+    ASSERT_TRUE(isDeviceDeletionResponse);
 }
 
 TEST(DeviceRegistrationProtocol,
@@ -175,6 +205,6 @@ TEST(DeviceRegistrationProtocol, VerifyPlatformTopics)
 {
     std::vector<std::string> platformTopics = wolkabout::DeviceRegistrationProtocol::getPlatformChannels();
 
-    ASSERT_THAT(platformTopics,
-                ::testing::UnorderedElementsAre("p2d/register_device/g/#", "p2d/reregister_device/g/#"));
+    ASSERT_THAT(platformTopics, ::testing::UnorderedElementsAre("p2d/register_device/g/#", "p2d/reregister_device/g/#",
+                                                                "p2d/delete_device/g/#"));
 }

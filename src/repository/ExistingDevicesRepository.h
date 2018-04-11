@@ -14,33 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef DEVICEREPOSITORY_H
-#define DEVICEREPOSITORY_H
+#ifndef EXISTINGDEVICESREPOSITORY_H
+#define EXISTINGDEVICESREPOSITORY_H
 
-#include <memory>
 #include <string>
 #include <vector>
 
 namespace wolkabout
 {
-class Device;
-class DeviceRepository
+class ExistingDevicesRepository
 {
 public:
-    virtual ~DeviceRepository() = default;
+    virtual ~ExistingDevicesRepository() = default;
 
-    virtual void save(const Device& device) = 0;
+    virtual void addDeviceKey(const std::string& deviceKey) = 0;
 
-    virtual void remove(const std::string& devicekey) = 0;
-
-    virtual void removeAll() = 0;
-
-    virtual std::unique_ptr<Device> findByDeviceKey(const std::string& key) = 0;
-
-    virtual std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() = 0;
-
-    virtual bool containsDeviceWithKey(const std::string& deviceKey) = 0;
+    virtual std::vector<std::string> getDeviceKeys() = 0;
 };
 }    // namespace wolkabout
 
-#endif    // DEVICEREPOSITORY_H
+#endif

@@ -14,33 +14,35 @@
  * limitations under the License.
  */
 
-#ifndef DEVICEREPOSITORY_H
-#define DEVICEREPOSITORY_H
+#ifndef JSONFILEEXISTINGDEVICESREPOSITORY_H
+#define JSONFILEEXISTINGDEVICESREPOSITORY_H
 
-#include <memory>
+#include "repository/ExistingDevicesRepository.h"
+
+#include <mutex>
 #include <string>
 #include <vector>
 
 namespace wolkabout
 {
-class Device;
-class DeviceRepository
+class JsonFileExistingDevicesRepository : public ExistingDevicesRepository
 {
 public:
-    virtual ~DeviceRepository() = default;
+    JsonFileExistingDevicesRepository(const std::string& file = "existingDevices.json");
 
-    virtual void save(const Device& device) = 0;
+    void addDeviceKey(const std::string& deviceKey) override;
 
-    virtual void remove(const std::string& devicekey) = 0;
+    std::vector<std::string> getDeviceKeys() override;
 
-    virtual void removeAll() = 0;
+private:
+    void createFileIfNotPresent();
+    void readFromFile();
+    void saveToFile();
 
-    virtual std::unique_ptr<Device> findByDeviceKey(const std::string& key) = 0;
-
-    virtual std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() = 0;
-
-    virtual bool containsDeviceWithKey(const std::string& deviceKey) = 0;
+    std::mutex m_fileMutex;
+    const std::string m_file;
+    std::vector<std::string> m_deviceKeys;
 };
 }    // namespace wolkabout
 
-#endif    // DEVICEREPOSITORY_H
+#endif

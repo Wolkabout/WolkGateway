@@ -43,6 +43,18 @@ TEST(StatusProtocol, Given_LastWillChannelForDevice_When_DeviceKeyIsExtracted_Th
     ASSERT_EQ("DEVICE_KEY", deviceKey);
 }
 
+TEST(StatusProtocol, Given_PongChannelForDevice_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToDeviceKey)
+{
+    // Given
+    const std::string pongChannel = "pong/DEVICE_KEY/";
+
+    // When
+    const std::string deviceKey = wolkabout::StatusProtocol::extractDeviceKeyFromChannel(pongChannel);
+
+    // Then
+    ASSERT_EQ("DEVICE_KEY", deviceKey);
+}
+
 TEST(StatusProtocol,
      Given_LastWillChannelForDeviceNoKey_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToEmpty)
 {
@@ -190,12 +202,14 @@ TEST(StatusProtocol, Given_Channels_When_DeviceChannelsAreRequested_Then_DeviceC
         auto it = std::find(deviceChannels.begin(), deviceChannels.end(), channel);
         ASSERT_TRUE(it != deviceChannels.end());
     }
+
+    ASSERT_EQ(deviceChannels.size(), channels.size());
 }
 
 TEST(StatusProtocol, Given_Channels_When_PlatformChannelsAreRequested_Then_PlatformChannelsMatchChannels)
 {
     // Given
-    const std::vector<std::string> channels{"p2d/status/#"};
+    const std::vector<std::string> channels{"p2d/status/#", "p2d/pong/#"};
 
     // When
     const auto platformChannels = wolkabout::StatusProtocol::getPlatformChannels();
@@ -206,6 +220,8 @@ TEST(StatusProtocol, Given_Channels_When_PlatformChannelsAreRequested_Then_Platf
         auto it = std::find(platformChannels.begin(), platformChannels.end(), channel);
         ASSERT_TRUE(it != platformChannels.end());
     }
+
+    ASSERT_EQ(platformChannels.size(), channels.size());
 }
 
 TEST(StatusProtocol, Given_StatusRequestMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsStatusRequest)
@@ -242,6 +258,18 @@ TEST(StatusProtocol, Given_LastWillMessage_When_MessageTypeIsChecked_Then_Messag
 
     // Then
     ASSERT_TRUE(isLastwill);
+}
+
+TEST(StatusProtocol, Given_PongMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsPong)
+{
+    // Given
+    const std::string pongChannel = "p2d/pong/DEVICE_KEY";
+
+    // When
+    const bool isPong = wolkabout::StatusProtocol::isPongMessage(pongChannel);
+
+    // Then
+    ASSERT_TRUE(isPong);
 }
 
 TEST(StatusProtocol, Given_DeviceStatusResponse_When_MessageIsCreated_Then_MessageChannelMatchKeys)

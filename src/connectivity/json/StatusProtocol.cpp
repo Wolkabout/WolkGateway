@@ -297,6 +297,17 @@ std::string StatusProtocol::extractDeviceKeyFromChannel(const std::string& topic
         return top.substr(delimiterPosition + CHANNEL_DELIMITER.size(), std::string::npos);
     }
 
+    if (isPongMessage(top))
+    {
+        auto delimiterPosition = top.find(CHANNEL_DELIMITER);
+        if (delimiterPosition == std::string::npos)
+        {
+            return "";
+        }
+
+        return top.substr(delimiterPosition + CHANNEL_DELIMITER.size(), std::string::npos);
+    }
+
     const auto deviceKeyStartPosition = top.find(DEVICE_PATH_PREFIX);
     if (deviceKeyStartPosition != std::string::npos)
     {

@@ -38,8 +38,8 @@ const std::string StatusProtocol::PLATFORM_TO_DEVICE_DIRECTION = "p2d/";
 const std::string StatusProtocol::LAST_WILL_TOPIC_ROOT = "lastwill/";
 const std::string StatusProtocol::DEVICE_STATUS_REQUEST_TOPIC_ROOT = "p2d/status/";
 const std::string StatusProtocol::DEVICE_STATUS_RESPONSE_TOPIC_ROOT = "d2p/status/";
-const std::string StatusProtocol::PING_TOPIC_ROOT = "d2p/ping/";
-const std::string StatusProtocol::PONG_TOPIC_ROOT = "p2d/pong/";
+const std::string StatusProtocol::PING_TOPIC_ROOT = "ping/";
+const std::string StatusProtocol::PONG_TOPIC_ROOT = "pong/";
 
 const std::vector<std::string> StatusProtocol::DEVICE_CHANNELS = {DEVICE_STATUS_RESPONSE_TOPIC_ROOT + CHANNEL_WILDCARD,
                                                                   LAST_WILL_TOPIC_ROOT + CHANNEL_WILDCARD};

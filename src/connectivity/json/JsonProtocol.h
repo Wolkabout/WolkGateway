@@ -53,9 +53,13 @@ public:
     static bool isActuatorSetMessage(const std::string& channel);
     static bool isActuatorGetMessage(const std::string& channel);
 
+    static bool isConfigurationSetMessage(const std::string& channel);
+    static bool isConfigurationGetMessage(const std::string& channel);
+
     static bool isSensorReadingMessage(const std::string& channel);
     static bool isAlarmMessage(const std::string& channel);
     static bool isActuatorStatusMessage(const std::string& channel);
+    static bool isConfigurationCurrentMessage(const std::string& channel);
 
     static std::string routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey);
     static std::string routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey);
@@ -87,8 +91,7 @@ private:
     static const std::string SENSOR_READING_TOPIC_ROOT;
     static const std::string EVENTS_TOPIC_ROOT;
     static const std::string ACTUATION_STATUS_TOPIC_ROOT;
-    static const std::string CONFIGURATION_SET_RESPONSE_TOPIC_ROOT;
-    static const std::string CONFIGURATION_GET_RESPONSE_TOPIC_ROOT;
+    static const std::string CONFIGURATION_RESPONSE_TOPIC_ROOT;
 
     static const std::string ACTUATION_SET_TOPIC_ROOT;
     static const std::string ACTUATION_GET_TOPIC_ROOT;

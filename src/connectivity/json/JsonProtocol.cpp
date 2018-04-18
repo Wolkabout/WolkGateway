@@ -50,20 +50,20 @@ const std::string JsonProtocol::PLATFORM_TO_DEVICE_DIRECTION = "p2d/";
 const std::string JsonProtocol::SENSOR_READING_TOPIC_ROOT = "d2p/sensor_reading/";
 const std::string JsonProtocol::EVENTS_TOPIC_ROOT = "d2p/events/";
 const std::string JsonProtocol::ACTUATION_STATUS_TOPIC_ROOT = "d2p/actuator_status/";
-const std::string JsonProtocol::CONFIGURATION_SET_RESPONSE_TOPIC_ROOT = "d2p/configuration_set/";
-const std::string JsonProtocol::CONFIGURATION_GET_RESPONSE_TOPIC_ROOT = "d2p/configuration_get/";
+const std::string JsonProtocol::CONFIGURATION_RESPONSE_TOPIC_ROOT = "d2p/configuration_get/";
 
 const std::string JsonProtocol::ACTUATION_SET_TOPIC_ROOT = "p2d/actuator_set/";
 const std::string JsonProtocol::ACTUATION_GET_TOPIC_ROOT = "p2d/actuator_get/";
 const std::string JsonProtocol::CONFIGURATION_SET_REQUEST_TOPIC_ROOT = "p2d/configuration_set/";
 const std::string JsonProtocol::CONFIGURATION_GET_REQUEST_TOPIC_ROOT = "p2d/configuration_get/";
 
-const std::vector<std::string> JsonProtocol::DEVICE_CHANNELS = {SENSOR_READING_TOPIC_ROOT + CHANNEL_WILDCARD,
-                                                                EVENTS_TOPIC_ROOT + CHANNEL_WILDCARD,
-                                                                ACTUATION_STATUS_TOPIC_ROOT + CHANNEL_WILDCARD};
+const std::vector<std::string> JsonProtocol::DEVICE_CHANNELS = {
+  SENSOR_READING_TOPIC_ROOT + CHANNEL_WILDCARD, EVENTS_TOPIC_ROOT + CHANNEL_WILDCARD,
+  ACTUATION_STATUS_TOPIC_ROOT + CHANNEL_WILDCARD, CONFIGURATION_RESPONSE_TOPIC_ROOT + CHANNEL_WILDCARD};
 
-const std::vector<std::string> JsonProtocol::PLATFORM_CHANNELS = {ACTUATION_GET_TOPIC_ROOT + CHANNEL_WILDCARD,
-                                                                  ACTUATION_SET_TOPIC_ROOT + CHANNEL_WILDCARD};
+const std::vector<std::string> JsonProtocol::PLATFORM_CHANNELS = {
+  ACTUATION_GET_TOPIC_ROOT + CHANNEL_WILDCARD, ACTUATION_SET_TOPIC_ROOT + CHANNEL_WILDCARD,
+  CONFIGURATION_GET_REQUEST_TOPIC_ROOT + CHANNEL_WILDCARD, CONFIGURATION_SET_REQUEST_TOPIC_ROOT + CHANNEL_WILDCARD};
 
 void from_json(const json& j, SensorReading& reading)
 {
@@ -261,6 +261,16 @@ bool JsonProtocol::isActuatorGetMessage(const std::string& channel)
     return StringUtils::startsWith(channel, ACTUATION_GET_TOPIC_ROOT);
 }
 
+bool JsonProtocol::isConfigurationSetMessage(const std::string& channel)
+{
+    return StringUtils::startsWith(channel, CONFIGURATION_SET_REQUEST_TOPIC_ROOT);
+}
+
+bool JsonProtocol::isConfigurationGetMessage(const std::string& channel)
+{
+    return StringUtils::startsWith(channel, CONFIGURATION_GET_REQUEST_TOPIC_ROOT);
+}
+
 bool JsonProtocol::isSensorReadingMessage(const std::string& channel)
 {
     return StringUtils::startsWith(channel, SENSOR_READING_TOPIC_ROOT);
@@ -274,6 +284,11 @@ bool JsonProtocol::isAlarmMessage(const std::string& channel)
 bool JsonProtocol::isActuatorStatusMessage(const std::string& channel)
 {
     return StringUtils::startsWith(channel, ACTUATION_STATUS_TOPIC_ROOT);
+}
+
+bool JsonProtocol::isConfigurationCurrentMessage(const std::string& channel)
+{
+    return StringUtils::startsWith(channel, CONFIGURATION_RESPONSE_TOPIC_ROOT);
 }
 
 std::string JsonProtocol::routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey)

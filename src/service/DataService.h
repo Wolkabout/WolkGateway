@@ -175,6 +175,9 @@ template <class P> void DataService<P>::deviceMessageReceived(std::shared_ptr<Me
             return;
         }
     }
+    else if (P::isConfigurationCurrentMessage(channel))
+    {
+    }
     else
     {
         assert(false && "DataService: Unsupported message type");
@@ -269,13 +272,6 @@ template <class P> void DataService<P>::handleGatewayOfflineMessage(std::shared_
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string ref = P::extractReferenceFromChannel(message->getChannel());
-    if (ref.empty())
-    {
-        LOG(INFO) << "Data Service: Unable to get reference from topic: " << message->getChannel();
-        return;
-    }
-
     const auto gatewayDevice = m_deviceRepository.findByDeviceKey(m_gatewayKey);
     if (!gatewayDevice)
     {
@@ -283,24 +279,46 @@ template <class P> void DataService<P>::handleGatewayOfflineMessage(std::shared_
         return;
     }
 
-    const auto actuatorReferences = gatewayDevice->getActuatorReferences();
-    if (auto it = std::find(actuatorReferences.begin(), actuatorReferences.end(), ref) != actuatorReferences.end())
+    if (P::isActuatorGetMessage(message->getChannel()) || P::isActuatorSetMessage(message->getChannel()))
     {
-        ActuatorStatus status{"", ref, ActuatorStatus::State::ERROR};
-        auto statusMessage = P::make(m_gatewayKey, status);
+        LOG(DEBUG) << "Data Service: Handling actuation message for gateway";
 
-        if (!statusMessage)
+        const std::string ref = P::extractReferenceFromChannel(message->getChannel());
+        if (ref.empty())
         {
-            LOG(WARN) << "Failed to create actuator status message";
+            LOG(WARN) << "Data Service: Unable to get reference from topic: " << message->getChannel();
             return;
         }
 
-        m_outboundPlatformMessageHandler.addMessage(statusMessage);
+        const auto actuatorReferences = gatewayDevice->getActuatorReferences();
+        if (auto it = std::find(actuatorReferences.begin(), actuatorReferences.end(), ref) != actuatorReferences.end())
+        {
+            ActuatorStatus status{"", ref, ActuatorStatus::State::ERROR};
+            auto statusMessage = P::make(m_gatewayKey, status);
+
+            if (!statusMessage)
+            {
+                LOG(WARN) << "Failed to create actuator status message";
+                return;
+            }
+
+            m_outboundPlatformMessageHandler.addMessage(statusMessage);
+        }
+        else
+        {
+            LOG(INFO) << "Data Service: Actuator reference not defined for gateway: " << ref;
+        }
     }
-    // TODO configuration
+    else if (P::isConfigurationGetMessage(message->getChannel()) || P::isConfigurationSetMessage(message->getChannel()))
+    {
+        LOG(DEBUG) << "Data Service: Handling configuration message for gateway";
+    }
     else
     {
-        LOG(INFO) << "Data Service: Reference not defined for gateway: " << ref;
+        assert(false && "DataService: Unsupported message type");
+
+        LOG(ERROR) << "DataService: Not forwarding message from device on channel: '" << message->getChannel()
+                   << "'. Unsupported message type";
     }
 }
 }    // namespace wolkabout

@@ -18,11 +18,12 @@
 #include "InboundMessageHandler.h"
 #include "WolkBuilder.h"
 #include "connectivity/ConnectivityService.h"
-#include "model/Device.h"
+#include "model/DetailedDevice.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
+#include "utilities/Logger.h"
 
 #include <memory>
 #include <sstream>
@@ -72,7 +73,7 @@ unsigned long long Wolk::currentRtc()
     return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
 }
 
-void Wolk::notifyConnected()
+void Wolk::notifyPlatformConnected()
 {
     m_platformPublisher->connected();
 
@@ -82,7 +83,7 @@ void Wolk::notifyConnected()
     }
 }
 
-void Wolk::notifyDisonnected()
+void Wolk::notifyPlatformDisonnected()
 {
     m_platformPublisher->disconnected();
 
@@ -92,12 +93,26 @@ void Wolk::notifyDisonnected()
     }
 }
 
+void Wolk::notifyDevicesConnected()
+{
+    m_devicePublisher->connected();
+
+    m_deviceStatusService->connected();
+}
+
+void Wolk::notifyDevicesDisonnected()
+{
+    m_devicePublisher->disconnected();
+
+    m_deviceStatusService->disconnected();
+}
+
 void Wolk::connectToPlatform()
 {
     addToCommandBuffer([=]() -> void {
         if (m_platformConnectivityService->connect())
         {
-            notifyConnected();
+            notifyPlatformConnected();
         }
         else
         {
@@ -112,7 +127,7 @@ void Wolk::connectToDevices()
     addToCommandBuffer([=]() -> void {
         if (m_deviceConnectivityService->connect())
         {
-            m_devicePublisher->connected();
+            notifyDevicesConnected();
         }
         else
         {
@@ -187,24 +202,31 @@ void Wolk::setupGatewayListeners(const std::string& protocol)
     }
 }
 
-Wolk::ConnectivityFacade::ConnectivityFacade(InboundMessageHandler& handler,
-                                             std::function<void()> connectionLostHandler)
-: m_messageHandler{handler}, m_connectionLostHandler{connectionLostHandler}
+void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol)
 {
-}
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
 
-void Wolk::ConnectivityFacade::messageReceived(const std::string& channel, const std::string& message)
-{
-    m_messageHandler.messageReceived(channel, message);
-}
+    if (auto it = m_dataServices.find(protocol->getName()) != m_dataServices.end())
+    {
+        LOG(INFO) << "Data protocol already registered";
+        return;
+    }
 
-void Wolk::ConnectivityFacade::connectionLost()
-{
-    m_connectionLostHandler();
-}
+    auto dataService = std::make_shared<DataService>(m_device.getKey(), *protocol, *m_deviceRepository,
+                                                     *m_platformPublisher, *m_devicePublisher);
 
-std::vector<std::string> Wolk::ConnectivityFacade::getChannels() const
-{
-    return m_messageHandler.getChannels();
+    auto protocolResolver =
+      std::make_shared<ChannelProtocolResolver>(*protocol, *m_deviceRepository,
+                                                [&](const std::string& protocolName, std::shared_ptr<Message> message) {
+                                                    routePlatformData(protocolName, message);
+                                                },
+                                                [&](const std::string& protocolName, std::shared_ptr<Message> message) {
+                                                    routeDeviceData(protocolName, message);
+                                                });
+
+    m_dataServices[protocol->getName()] = std::make_tuple(dataService, protocol, protocolResolver);
+
+    m_inboundDeviceMessageHandler->addListener(protocolResolver);
+    m_inboundPlatformMessageHandler->addListener(protocolResolver);
 }
 }    // namespace wolkabout

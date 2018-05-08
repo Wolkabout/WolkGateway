@@ -24,10 +24,8 @@ class GatewayConfiguration
 public:
     GatewayConfiguration() = default;
 
-    GatewayConfiguration(std::string name, std::string key, std::string password, std::string protocol,
-                         std::string platformMqttUri, std::string localMqttUri);
-
-    const std::string& getName() const;
+    GatewayConfiguration(std::string key, std::string password, std::string protocol, std::string platformMqttUri,
+                         std::string localMqttUri);
 
     const std::string& getKey() const;
     const std::string& getPassword() const;
@@ -44,8 +42,6 @@ public:
     static wolkabout::GatewayConfiguration fromJson(const std::string& gatewayConfigurationFile);
 
 private:
-    std::string m_name;
-
     std::string m_key;
     std::string m_password;
 
@@ -56,7 +52,6 @@ private:
 
     WolkOptional<bool> m_keepAliveEnabled;
 
-    static const std::string NAME;
     static const std::string KEY;
     static const std::string PASSWORD;
     static const std::string PROTOCOL;

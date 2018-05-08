@@ -18,9 +18,12 @@
 #define WOLK_H
 
 #include "ChannelProtocolResolver.h"
-#include "InboundDeviceMessageHandler.h"
+#include "GatewayInboundDeviceMessageHandler.h"
 #include "WolkBuilder.h"
 #include "model/Device.h"
+#include "protocol/GatewayDataProtocol.h"
+#include "protocol/GatewayDeviceRegistrationProtocol.h"
+#include "protocol/GatewayStatusProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "service/DataService.h"
@@ -52,7 +55,6 @@ class StatusMessageRouter;
 class Wolk
 {
     friend class WolkBuilder;
-    friend class ProtocolRegistrator;
 
 public:
     virtual ~Wolk() = default;
@@ -75,8 +77,6 @@ public:
     void disconnect();
 
 private:
-    class ConnectivityFacade;
-
     static const constexpr std::chrono::seconds KEEP_ALIVE_INTERVAL{600};
 
     Wolk(Device device);
@@ -85,8 +85,10 @@ private:
 
     static unsigned long long int currentRtc();
 
-    void notifyConnected();
-    void notifyDisonnected();
+    void notifyPlatformConnected();
+    void notifyPlatformDisonnected();
+    void notifyDevicesConnected();
+    void notifyDevicesDisonnected();
 
     void connectToPlatform();
     void connectToDevices();
@@ -97,9 +99,12 @@ private:
     void gatewayRegistered();
     void setupGatewayListeners(const std::string& protocol);
 
-    template <class P> void registerDataProtocol();
+    void registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol);
 
     Device m_device;
+
+    std::unique_ptr<GatewayStatusProtocol> m_statusProtocol;
+    std::unique_ptr<GatewayDeviceRegistrationProtocol> m_registrationProtocol;
 
     std::unique_ptr<DeviceRepository> m_deviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
@@ -110,61 +115,61 @@ private:
     std::unique_ptr<InboundPlatformMessageHandler> m_inboundPlatformMessageHandler;
     std::unique_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
 
-    std::shared_ptr<ConnectivityFacade> m_platformConnectivityManager;
-    std::shared_ptr<ConnectivityFacade> m_deviceConnectivityManager;
-
     std::unique_ptr<PublishingService> m_platformPublisher;
     std::unique_ptr<PublishingService> m_devicePublisher;
 
-    std::map<std::string, std::tuple<std::shared_ptr<DataServiceBase>, std::shared_ptr<ChannelProtocolResolver>>>
+    std::map<std::string, std::tuple<std::shared_ptr<DataService>, std::shared_ptr<GatewayDataProtocol>,
+                                     std::shared_ptr<ChannelProtocolResolver>>>
       m_dataServices;
 
     std::shared_ptr<DeviceRegistrationService> m_deviceRegistrationService;
-    std::shared_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<KeepAliveService> m_keepAliveService;
 
+    std::shared_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
 
     std::mutex m_lock;
     std::unique_ptr<CommandBuffer> m_commandBuffer;
 
-    class ConnectivityFacade : public ConnectivityServiceListener
+    template <class MessageHandler> class ConnectivityFacade : public ConnectivityServiceListener
     {
     public:
-        ConnectivityFacade(InboundMessageHandler& handler, std::function<void()> connectionLostHandler);
+        ConnectivityFacade(MessageHandler& handler, std::function<void()> connectionLostHandler);
 
         void messageReceived(const std::string& channel, const std::string& message) override;
         void connectionLost() override;
         std::vector<std::string> getChannels() const override;
 
     private:
-        InboundMessageHandler& m_messageHandler;
+        MessageHandler& m_messageHandler;
         std::function<void()> m_connectionLostHandler;
     };
+
+    std::shared_ptr<ConnectivityFacade<InboundPlatformMessageHandler>> m_platformConnectivityManager;
+    std::shared_ptr<ConnectivityFacade<InboundDeviceMessageHandler>> m_deviceConnectivityManager;
 };
 
-template <class P> void Wolk::registerDataProtocol()
+template <class MessageHandler>
+Wolk::ConnectivityFacade<MessageHandler>::ConnectivityFacade(MessageHandler& handler,
+                                                             std::function<void()> connectionLostHandler)
+: m_messageHandler{handler}, m_connectionLostHandler{connectionLostHandler}
 {
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
+}
 
-    if (auto it = m_dataServices.find(P::getName()) != m_dataServices.end())
-    {
-        LOG(INFO) << "Data protocol already registered";
-        return;
-    }
+template <class MessageHandler>
+void Wolk::ConnectivityFacade<MessageHandler>::messageReceived(const std::string& channel, const std::string& message)
+{
+    m_messageHandler.messageReceived(channel, message);
+}
 
-    auto dataService = std::make_shared<DataService<P>>(m_device.getKey(), *m_deviceRepository, *m_platformPublisher,
-                                                        *m_devicePublisher);
+template <class MessageHandler> void Wolk::ConnectivityFacade<MessageHandler>::connectionLost()
+{
+    m_connectionLostHandler();
+}
 
-    auto protocolResolver = std::make_shared<ChannelProtocolResolverImpl<P>>(
-      *m_deviceRepository,
-      [&](const std::string& protocol, std::shared_ptr<Message> message) { routePlatformData(protocol, message); },
-      [&](const std::string& protocol, std::shared_ptr<Message> message) { routeDeviceData(protocol, message); });
-
-    m_dataServices[P::getName()] = std::make_pair(dataService, protocolResolver);
-
-    m_inboundDeviceMessageHandler->setListener<P>(protocolResolver);
-    m_inboundPlatformMessageHandler->setListener<P>(protocolResolver);
+template <class MessageHandler> std::vector<std::string> Wolk::ConnectivityFacade<MessageHandler>::getChannels() const
+{
+    return m_messageHandler.getChannels();
 }
 }    // namespace wolkabout
 

@@ -13,62 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef INBOUNDDEVICEMESSAGEHANDLER_H
 #define INBOUNDDEVICEMESSAGEHANDLER_H
 
-#include "InboundMessageHandler.h"
-#include "utilities/CommandBuffer.h"
-
-#include <map>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 
 namespace wolkabout
 {
 class Message;
+class GatewayProtocol;
 
 class DeviceMessageListener
 {
 public:
     virtual ~DeviceMessageListener() = default;
     virtual void deviceMessageReceived(std::shared_ptr<Message> message) = 0;
+    virtual const GatewayProtocol& getProtocol() const = 0;
 };
 
-class InboundDeviceMessageHandler : public InboundMessageHandler
+class InboundDeviceMessageHandler
 {
 public:
-    InboundDeviceMessageHandler();
+    virtual ~InboundDeviceMessageHandler() = default;
 
-    void messageReceived(const std::string& channel, const std::string& message) override;
+    virtual void messageReceived(const std::string& channel, const std::string& message) = 0;
 
-    std::vector<std::string> getChannels() const override;
+    virtual std::vector<std::string> getChannels() const = 0;
 
-    template <class P> void setListener(std::weak_ptr<DeviceMessageListener> listener);
-
-private:
-    void addToCommandBuffer(std::function<void()> command);
-
-    std::unique_ptr<CommandBuffer> m_commandBuffer;
-
-    std::vector<std::string> m_subscriptionList;
-    std::map<std::string, std::weak_ptr<DeviceMessageListener>> m_channelHandlers;
-
-    mutable std::mutex m_lock;
+    virtual void addListener(std::weak_ptr<DeviceMessageListener> listener) = 0;
 };
 
-template <class P> void InboundDeviceMessageHandler::setListener(std::weak_ptr<DeviceMessageListener> listener)
-{
-    std::lock_guard<std::mutex> locker{m_lock};
-
-    for (auto channel : P::getDeviceChannels())
-    {
-        m_channelHandlers[channel] = listener;
-        m_subscriptionList.push_back(channel);
-    }
-}
 }    // namespace wolkabout
 
-#endif
+#endif    // INBOUNDDEVICEMESSAGEHANDLER_H

@@ -15,6 +15,7 @@
  */
 
 #include "OutboundMessageHandler.h"
+#include "protocol/json/JsonGatewayStatusProtocol.h"
 #include "service/KeepAliveService.h"
 
 #include <gtest/gtest.h>
@@ -38,14 +39,16 @@ class KeepAliveService : public ::testing::Test
 public:
     void SetUp() override
     {
+        protocol = std::unique_ptr<wolkabout::GatewayStatusProtocol>(new wolkabout::JsonGatewayStatusProtocol());
         platformOutboundMessageHandler =
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         keepAliveService = std::unique_ptr<wolkabout::KeepAliveService>(
-          new wolkabout::KeepAliveService(GATEWAY_KEY, *platformOutboundMessageHandler, PING_INTERVAL));
+          new wolkabout::KeepAliveService(GATEWAY_KEY, *protocol, *platformOutboundMessageHandler, PING_INTERVAL));
     }
 
     void TearDown() override {}
 
+    std::unique_ptr<wolkabout::GatewayStatusProtocol> protocol;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<wolkabout::KeepAliveService> keepAliveService;
 

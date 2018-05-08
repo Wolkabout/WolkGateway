@@ -1,9 +1,10 @@
 #include "OutboundMessageHandler.h"
-#include "connectivity/json/DeviceRegistrationProtocol.h"
+#include "model/Device.h"
 #include "model/DeviceRegistrationRequest.h"
 #include "model/DeviceRegistrationResponse.h"
 #include "model/DeviceReregistrationResponse.h"
 #include "model/Message.h"
+#include "protocol/json/JsonGatewayDeviceRegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DeviceRegistrationService.h"
@@ -42,6 +43,8 @@ class DeviceRegistrationService : public ::testing::Test
 public:
     void SetUp() override
     {
+        protocol = std::unique_ptr<wolkabout::GatewayDeviceRegistrationProtocol>(
+          new wolkabout::JsonGatewayDeviceRegistrationProtocol());
         deviceRepository = std::unique_ptr<wolkabout::SQLiteDeviceRepository>(
           new wolkabout::SQLiteDeviceRepository(DEVICE_REPOSITORY_PATH));
         platformOutboundMessageHandler =
@@ -50,11 +53,12 @@ public:
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
         deviceRegistrationService =
           std::unique_ptr<wolkabout::DeviceRegistrationService>(new wolkabout::DeviceRegistrationService(
-            GATEWAY_KEY, *deviceRepository, *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
+            GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
 
+    std::unique_ptr<wolkabout::GatewayDeviceRegistrationProtocol> protocol;
     std::unique_ptr<wolkabout::SQLiteDeviceRepository> deviceRepository;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;
@@ -77,8 +81,8 @@ TEST_F(
     wolkabout::DeviceManifest deviceManifest("Manifest name", "Manifest description", "JsonProtocol", "DFUProtocol");
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
 
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // Then
@@ -96,9 +100,8 @@ TEST_F(DeviceRegistrationService,
                                               "DFUProtocol");
     wolkabout::DeviceRegistrationRequest gatewayRegistrationRequest("Gateway name", GATEWAY_KEY, gatewayManifest);
 
-    auto gatewayRegistrationRequestMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(GATEWAY_KEY, GATEWAY_KEY,
-                                                                                  gatewayRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> gatewayRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, GATEWAY_KEY, gatewayRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(gatewayRegistrationRequestMessage);
 
     // Then
@@ -112,15 +115,15 @@ TEST_F(
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     // When
     const std::string deviceKey("device_key");
     wolkabout::DeviceManifest deviceManifest("Manifest name", "Manifest description", "JsonProtocol", "DFUProtocol");
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
 
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
@@ -135,19 +138,19 @@ TEST_F(
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     const std::string deviceKey("device_key");
     wolkabout::DeviceManifest deviceManifest("Manifest name", "Manifest description", "JsonProtocol", "DFUProtocol");
-    wolkabout::Device device("Device name", deviceKey, deviceManifest);
+    wolkabout::DetailedDevice device("Device name", deviceKey, deviceManifest);
 
     deviceRepository->save(device);
 
     // When
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // Then
@@ -161,12 +164,12 @@ TEST_F(
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     const std::string deviceKey("device_key");
     wolkabout::DeviceManifest deviceManifest("Manifest name", "Manifest description", "JsonProtocol", "DFUProtocol");
-    wolkabout::Device device("Device name", deviceKey, deviceManifest);
+    wolkabout::DetailedDevice device("Device name", deviceKey, deviceManifest);
 
     deviceRepository->save(device);
 
@@ -174,8 +177,8 @@ TEST_F(
     deviceManifest.addSensor(wolkabout::SensorManifest("Sensor name", "ref", "desc", "unit", "readingType",
                                                        wolkabout::SensorManifest::DataType::STRING, 1, 0, 1));
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // Then
@@ -189,18 +192,18 @@ TEST_F(
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     // When
     const std::string deviceKey("device_key");
     wolkabout::DeviceManifest deviceManifest("Manifest name", "Manifest description", "JsonSingleProtocol",
                                              "DFUProtocol");
-    wolkabout::Device device("Device name", deviceKey, deviceManifest);
+    wolkabout::DetailedDevice device("Device name", deviceKey, deviceManifest);
 
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // Then
@@ -214,17 +217,17 @@ TEST_F(
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     // When
     const std::string deviceKey("device_key");
     wolkabout::DeviceManifest deviceManifest("Manifest name", "Manifest description", "JsonProtocol", "DFUProtocol");
-    wolkabout::Device device("Device name", deviceKey, deviceManifest);
+    wolkabout::DetailedDevice device("Device name", deviceKey, deviceManifest);
 
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // Then
@@ -247,18 +250,16 @@ TEST_F(
                                               "DFUProtocol");
     wolkabout::DeviceRegistrationRequest gatewayRegistrationRequest("Gateway name", GATEWAY_KEY, gatewayManifest);
 
-    auto gatewayRegistrationRequestMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(GATEWAY_KEY, GATEWAY_KEY,
-                                                                                  gatewayRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> gatewayRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, GATEWAY_KEY, gatewayRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(gatewayRegistrationRequestMessage);
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
 
     // When
     wolkabout::DeviceRegistrationResponse gatewayRegistrationResponse(
       wolkabout::DeviceRegistrationResponse::Result::OK);
-    auto gatewayRegistrationResponseMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationResponseMessage(GATEWAY_KEY, GATEWAY_KEY,
-                                                                                   gatewayRegistrationResponse);
+    std::shared_ptr<wolkabout::Message> gatewayRegistrationResponseMessage =
+      protocol->makeMessage(GATEWAY_KEY, GATEWAY_KEY, gatewayRegistrationResponse);
     deviceRegistrationService->platformMessageReceived(gatewayRegistrationResponseMessage);
 
     // Then
@@ -280,22 +281,21 @@ TEST_F(
 
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     const std::string deviceKey("device_key");
     wolkabout::DeviceManifest deviceManifest("Manifest name", "Manifest description", "JsonProtocol", "DFUProtocol");
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
 
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
     wolkabout::DeviceRegistrationResponse deviceRegistrationResponse(wolkabout::DeviceRegistrationResponse::Result::OK);
-    auto deviceRegistrationResponseMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationResponseMessage(GATEWAY_KEY, deviceKey,
-                                                                                   deviceRegistrationResponse);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationResponseMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationResponse);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then
@@ -312,18 +312,16 @@ TEST_F(
                                               "DFUProtocol");
     wolkabout::DeviceRegistrationRequest gatewayRegistrationRequest("Gateway name", GATEWAY_KEY, gatewayManifest);
 
-    auto gatewayRegistrationRequestMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(GATEWAY_KEY, GATEWAY_KEY,
-                                                                                  gatewayRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> gatewayRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, GATEWAY_KEY, gatewayRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(gatewayRegistrationRequestMessage);
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
 
     // When
     wolkabout::DeviceRegistrationResponse gatewayRegistrationResponse(
       wolkabout::DeviceRegistrationResponse::Result::OK);
-    auto gatewayRegistrationResponseMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationResponseMessage(GATEWAY_KEY, GATEWAY_KEY,
-                                                                                   gatewayRegistrationResponse);
+    std::shared_ptr<wolkabout::Message> gatewayRegistrationResponseMessage =
+      protocol->makeMessage(GATEWAY_KEY, GATEWAY_KEY, gatewayRegistrationResponse);
     deviceRegistrationService->platformMessageReceived(gatewayRegistrationResponseMessage);
 
     // Then
@@ -337,22 +335,21 @@ TEST_F(
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     const std::string deviceKey("device_key");
     wolkabout::DeviceManifest deviceManifest("Manifest name", "Manifest description", "JsonProtocol", "DFUProtocol");
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
 
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
     wolkabout::DeviceRegistrationResponse deviceRegistrationResponse(wolkabout::DeviceRegistrationResponse::Result::OK);
-    auto deviceRegistrationResponseMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationResponseMessage(GATEWAY_KEY, deviceKey,
-                                                                                   deviceRegistrationResponse);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationResponseMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationResponse);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then
@@ -368,9 +365,8 @@ TEST_F(
                                               "DFUProtocol");
     wolkabout::DeviceRegistrationRequest gatewayRegistrationRequest("Gateway name", GATEWAY_KEY, gatewayManifest);
 
-    auto gatewayRegistrationRequestMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(GATEWAY_KEY, GATEWAY_KEY,
-                                                                                  gatewayRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> gatewayRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, GATEWAY_KEY, gatewayRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(gatewayRegistrationRequestMessage);
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
 
@@ -379,17 +375,16 @@ TEST_F(
                                              "DFUProtocol");
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
 
-    auto deviceRegistrationRequestMessage = wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(
-      GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
+    std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
+      protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
 
     // When
     wolkabout::DeviceRegistrationResponse gatewayRegistrationResponse(
       wolkabout::DeviceRegistrationResponse::Result::OK);
-    auto gatewayRegistrationResponseMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceRegistrationResponseMessage(GATEWAY_KEY, GATEWAY_KEY,
-                                                                                   gatewayRegistrationResponse);
+    std::shared_ptr<wolkabout::Message> gatewayRegistrationResponseMessage =
+      protocol->makeMessage(GATEWAY_KEY, GATEWAY_KEY, gatewayRegistrationResponse);
     deviceRegistrationService->platformMessageReceived(gatewayRegistrationResponseMessage);
 
     // Then
@@ -403,17 +398,17 @@ TEST_F(
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
                                              "DFUProtocol");
-    wolkabout::Device device("Child device", "child_device_key", deviceManifest);
+    wolkabout::DetailedDevice device("Child device", "child_device_key", deviceManifest);
     deviceRepository->save(device);
 
     // When
-    auto reregisterAllDevicesRequestMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceReregistrationRequestForGateway(GATEWAY_KEY);
+    std::shared_ptr<wolkabout::Message> reregisterAllDevicesRequestMessage =
+      protocol->makeDeviceReregistrationRequestForGateway(GATEWAY_KEY);
     deviceRegistrationService->platformMessageReceived(reregisterAllDevicesRequestMessage);
 
     // Then
@@ -427,17 +422,17 @@ TEST_F(
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
                                              "DFUProtocol");
-    wolkabout::Device device("Child device", "child_device_key", deviceManifest);
+    wolkabout::DetailedDevice device("Child device", "child_device_key", deviceManifest);
     deviceRepository->save(device);
 
     // When
-    auto reregisterAllDevicesRequestMessage =
-      wolkabout::DeviceRegistrationProtocol::makeDeviceReregistrationRequestForGateway(GATEWAY_KEY);
+    std::shared_ptr<wolkabout::Message> reregisterAllDevicesRequestMessage =
+      protocol->makeDeviceReregistrationRequestForGateway(GATEWAY_KEY);
     deviceRegistrationService->platformMessageReceived(reregisterAllDevicesRequestMessage);
 
     // Then
@@ -453,7 +448,7 @@ TEST_F(
 
     wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
                                              "DFUProtocol");
-    wolkabout::Device device("Child device", childDeviceKey, deviceManifest);
+    wolkabout::DetailedDevice device("Child device", childDeviceKey, deviceManifest);
     deviceRepository->save(device);
 
     // When
@@ -471,7 +466,7 @@ TEST_F(DeviceRegistrationService,
 
     wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
                                              "DFUProtocol");
-    wolkabout::Device device("Child device", childDeviceKey, deviceManifest);
+    wolkabout::DetailedDevice device("Child device", childDeviceKey, deviceManifest);
     deviceRepository->save(device);
 
     // When
@@ -479,8 +474,7 @@ TEST_F(DeviceRegistrationService,
 
     // Then
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
-    ASSERT_TRUE(wolkabout::DeviceRegistrationProtocol::isDeviceDeletionRequest(
-      platformOutboundMessageHandler->getMessages().front()));
+    ASSERT_TRUE(protocol->isDeviceDeletionRequest(*platformOutboundMessageHandler->getMessages().front()));
 }
 
 TEST_F(DeviceRegistrationService,
@@ -491,7 +485,7 @@ TEST_F(DeviceRegistrationService,
 
     wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
                                              "DFUProtocol");
-    wolkabout::Device device("Child device", childDeviceKey, deviceManifest);
+    wolkabout::DetailedDevice device("Child device", childDeviceKey, deviceManifest);
     deviceRepository->save(device);
 
     // When
@@ -507,12 +501,12 @@ TEST_F(DeviceRegistrationService,
     // Given
     wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
                                               "DFUProtocol");
-    wolkabout::Device gateway("Gateway", GATEWAY_KEY, gatewayManifest);
+    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
     deviceRepository->save(gateway);
 
     wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
                                              "DFUProtocol");
-    wolkabout::Device device("Child device", "child_device_key", deviceManifest);
+    wolkabout::DetailedDevice device("Child device", "child_device_key", deviceManifest);
     deviceRepository->save(device);
 
     // When

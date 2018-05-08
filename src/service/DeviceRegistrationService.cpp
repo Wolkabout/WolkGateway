@@ -16,12 +16,12 @@
 
 #include "service/DeviceRegistrationService.h"
 #include "OutboundMessageHandler.h"
-#include "connectivity/json/DeviceRegistrationProtocol.h"
-#include "model/Device.h"
+#include "model/DetailedDevice.h"
 #include "model/DeviceRegistrationRequest.h"
 #include "model/DeviceRegistrationResponse.h"
 #include "model/DeviceReregistrationResponse.h"
 #include "model/Message.h"
+#include "protocol/GatewayDeviceRegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
 
@@ -36,10 +36,13 @@
 
 namespace wolkabout
 {
-DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey, DeviceRepository& deviceRepository,
+DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey,
+                                                     GatewayDeviceRegistrationProtocol& protocol,
+                                                     DeviceRepository& deviceRepository,
                                                      OutboundMessageHandler& outboundPlatformMessageHandler,
                                                      OutboundMessageHandler& outboundDeviceMessageHandler)
 : m_gatewayKey{std::move(gatewayKey)}
+, m_protocol{protocol}
 , m_deviceRepository{deviceRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
@@ -50,16 +53,16 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
 {
     LOG(TRACE) << METHOD_INFO;
 
-    if (!DeviceRegistrationProtocol::isMessageFromPlatform(message->getChannel()))
+    if (!m_protocol.isMessageFromPlatform(*message))
     {
         LOG(WARN) << "DeviceRegistrationService: Ignoring message on channel '" << message->getChannel()
                   << "'. Message not from platform.";
         return;
     }
 
-    if (DeviceRegistrationProtocol::isRegistrationResponse(message))
+    if (m_protocol.isRegistrationResponse(*message))
     {
-        const auto response = DeviceRegistrationProtocol::makeRegistrationResponse(message);
+        const auto response = m_protocol.makeRegistrationResponse(*message);
         if (!response)
         {
             LOG(ERROR)
@@ -68,14 +71,14 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
             return;
         }
 
-        auto deviceKey = DeviceRegistrationProtocol::extractDeviceKeyFromChannel(message->getChannel());
+        auto deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
         handleDeviceRegistrationResponse(deviceKey, *response);
     }
-    else if (DeviceRegistrationProtocol::isReregistrationRequest(message))
+    else if (m_protocol.isReregistrationRequest(*message))
     {
         handleDeviceReregistrationRequest();
     }
-    else if (DeviceRegistrationProtocol::isDeviceDeletionResponse(message))
+    else if (m_protocol.isDeviceDeletionResponse(*message))
     {
         LOG(INFO) << "DeviceRegistrationService: Received device deletion response (" << message->getChannel() << ")";
     }
@@ -90,21 +93,21 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
 {
     LOG(TRACE) << METHOD_INFO;
 
-    if (!DeviceRegistrationProtocol::isMessageToPlatform(message->getChannel()))
+    if (!m_protocol.isMessageToPlatform(*message))
     {
         LOG(WARN) << "DeviceRegistrationService: Ignoring message received on channel '" << message->getChannel()
                   << "'. Message not intended for platform.";
         return;
     }
 
-    if (!DeviceRegistrationProtocol::isRegistrationRequest(message))
+    if (!m_protocol.isRegistrationRequest(*message))
     {
         LOG(WARN) << "DeviceRegistrationService: unhandled message on channel '" << message->getChannel()
                   << "'. Unsupported message type";
         return;
     }
 
-    auto request = DeviceRegistrationProtocol::makeRegistrationRequest(message);
+    auto request = m_protocol.makeRegistrationRequest(*message);
     if (!request)
     {
         LOG(ERROR) << "DeviceRegistrationService: Device registration request could not be deserialized. Channel: '"
@@ -112,7 +115,7 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
         return;
     }
 
-    auto deviceKey = DeviceRegistrationProtocol::extractDeviceKeyFromChannel(message->getChannel());
+    auto deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
     if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
     {
         addToPostponedDeviceRegistartionRequests(deviceKey, *request);
@@ -120,6 +123,11 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
     }
 
     handleDeviceRegistrationRequest(deviceKey, *request);
+}
+
+const GatewayProtocol& DeviceRegistrationService::getProtocol() const
+{
+    return m_protocol;
 }
 
 void DeviceRegistrationService::onDeviceRegistered(
@@ -152,8 +160,8 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
                 m_deviceRepository.removeAll();
             }
 
-            const auto deviceDeletionRequestMessage =
-              DeviceRegistrationProtocol::makeDeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
+            std::shared_ptr<Message> deviceDeletionRequestMessage =
+              m_protocol.makeDeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
             m_outboundPlatformMessageHandler.addMessage(deviceDeletionRequestMessage);
         }
     }
@@ -176,8 +184,8 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
     }
 
     auto savedDevice = m_deviceRepository.findByDeviceKey(deviceKey);
-    auto deviceRequestingRegistration =
-      std::unique_ptr<Device>(new Device(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
+    auto deviceRequestingRegistration = std::unique_ptr<DetailedDevice>(
+      new DetailedDevice(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
     if (savedDevice && *savedDevice == *deviceRequestingRegistration)
     {
         LOG(WARN) << "DeviceRegistrationService: Ignoring device registration request for device with key '"
@@ -186,12 +194,11 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
     }
 
     std::lock_guard<decltype(m_devicesAwaitingRegistrationResponseMutex)> l(m_devicesAwaitingRegistrationResponseMutex);
-    auto device =
-      std::unique_ptr<Device>(new Device(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
+    auto device = std::unique_ptr<DetailedDevice>(
+      new DetailedDevice(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
     m_devicesAwaitingRegistrationResponse[deviceKey] = std::move(device);
 
-    const auto registrationRequest =
-      DeviceRegistrationProtocol::makeDeviceRegistrationRequestMessage(m_gatewayKey, deviceKey, request);
+    std::shared_ptr<Message> registrationRequest = m_protocol.makeMessage(m_gatewayKey, deviceKey, request);
     m_outboundPlatformMessageHandler.addMessage(registrationRequest);
 }
 
@@ -202,8 +209,8 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
     LOG(INFO) << "DeviceRegistrationService: Reregistering devices connected to gateway";
 
     const auto reregistrationResponse = DeviceReregistrationResponse(DeviceReregistrationResponse::Result::OK);
-    const auto reregistrationResponseMessage =
-      DeviceRegistrationProtocol::makeDeviceReregistrationResponseMessage(m_gatewayKey, reregistrationResponse);
+    std::shared_ptr<Message> reregistrationResponseMessage =
+      m_protocol.makeMessage(m_gatewayKey, reregistrationResponse);
     m_outboundPlatformMessageHandler.addMessage(reregistrationResponseMessage);
 
     const auto registeredDevicesKeys = m_deviceRepository.findAllDeviceKeys();
@@ -212,7 +219,7 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
         m_deviceRepository.remove(deviceKey);
     }
 
-    const auto deviceRegistrationRequest = DeviceRegistrationProtocol::makeDeviceReregistrationRequestForDevice();
+    std::shared_ptr<Message> deviceRegistrationRequest = m_protocol.makeDeviceReregistrationRequestForDevice();
     m_outboundDeviceMessageHandler.addMessage(deviceRegistrationRequest);
 }
 

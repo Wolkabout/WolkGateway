@@ -16,18 +16,19 @@
 #ifndef STATUSMESSAGEROUTER_H
 #define STATUSMESSAGEROUTER_H
 
-#include "InboundDeviceMessageHandler.h"
-#include "InboundPlatformMessageHandler.h"
+#include "GatewayInboundDeviceMessageHandler.h"
+#include "GatewayInboundPlatformMessageHandler.h"
 #include <memory>
 
 namespace wolkabout
 {
+class GatewayStatusProtocol;
 class Message;
 
 class StatusMessageRouter : public PlatformMessageListener, public DeviceMessageListener
 {
 public:
-    StatusMessageRouter(PlatformMessageListener* platformStatusMessageHandler,
+    StatusMessageRouter(GatewayStatusProtocol& protocol, PlatformMessageListener* platformStatusMessageHandler,
                         DeviceMessageListener* deviceStatusMessageHandler,
                         DeviceMessageListener* lastWillMessageHandler,
                         PlatformMessageListener* platformKeepAliveMessageHandler);
@@ -35,7 +36,11 @@ public:
     void platformMessageReceived(std::shared_ptr<Message> message) override;
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
+    const GatewayProtocol& getProtocol() const override;
+
 private:
+    GatewayStatusProtocol& m_protocol;
+
     PlatformMessageListener* m_platformStatusMessageHandler;
     DeviceMessageListener* m_deviceStatusMessageHandler;
     DeviceMessageListener* m_lastWillMessageHandler;

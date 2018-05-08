@@ -9,7 +9,7 @@ cmake
 Poco:shared=True
 
 [imports]
-bin, *.dll -> ./
-bin, *.so -> ./
-lib, *.so* -> ./
-lib, *.dylib* -> ./
+bin, *.dll -> ./lib
+bin, *.so -> ./lib
+lib, *.so* -> ./lib
+lib, *.dylib* -> ./lib

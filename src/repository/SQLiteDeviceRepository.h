@@ -38,13 +38,13 @@ public:
     SQLiteDeviceRepository(const std::string& connectionString = "deviceRepository.db");
     virtual ~SQLiteDeviceRepository() = default;
 
-    void save(const Device& device) override;
+    void save(const DetailedDevice& device) override;
 
     void remove(const std::string& deviceKey) override;
 
     void removeAll() override;
 
-    std::unique_ptr<Device> findByDeviceKey(const std::string& deviceKey) override;
+    std::unique_ptr<DetailedDevice> findByDeviceKey(const std::string& deviceKey) override;
 
     std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override;
 
@@ -57,7 +57,7 @@ private:
     static std::string calculateSha256(const ConfigurationManifest& configurationManifest);
     static std::string calculateSha256(const DeviceManifest& deviceManifest);
 
-    void update(const Device& device);
+    void update(const DetailedDevice& device);
 
     std::recursive_mutex m_mutex;
     std::unique_ptr<Poco::Data::Session> m_session;

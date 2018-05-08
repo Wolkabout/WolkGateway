@@ -28,12 +28,12 @@
 namespace wolkabout
 {
 class ConnectivityService;
-class Persistence;
+class GatewayPersistence;
 
 class PublishingService : public OutboundMessageHandler, public ConnectionStatusListener
 {
 public:
-    PublishingService(ConnectivityService& connectivityService, std::unique_ptr<Persistence> persistence);
+    PublishingService(ConnectivityService& connectivityService, std::unique_ptr<GatewayPersistence> persistence);
     ~PublishingService();
 
     void addMessage(std::shared_ptr<Message> message) override;
@@ -45,7 +45,7 @@ private:
     void run();
 
     ConnectivityService& m_connectivityService;
-    std::unique_ptr<Persistence> m_persistence;
+    std::unique_ptr<GatewayPersistence> m_persistence;
 
     std::atomic_bool m_connected;
 

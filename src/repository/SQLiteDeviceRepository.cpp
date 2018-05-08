@@ -18,7 +18,7 @@
 #include "model/ActuatorManifest.h"
 #include "model/AlarmManifest.h"
 #include "model/ConfigurationManifest.h"
-#include "model/Device.h"
+#include "model/DetailedDevice.h"
 #include "model/DeviceManifest.h"
 
 #include "utilities/Logger.h"
@@ -95,7 +95,7 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
     statement.execute();
 }
 
-void SQLiteDeviceRepository::save(const Device& device)
+void SQLiteDeviceRepository::save(const DetailedDevice& device)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
@@ -264,16 +264,15 @@ void SQLiteDeviceRepository::save(const Device& device)
         const auto minimum = configurationManifest.getMinimum();
         const auto maximum = configurationManifest.getMaximum();
         const auto size = Poco::UInt32(configurationManifest.getSize());
-        const auto isOptional = Poco::UInt8(configurationManifest.isOptional() ? 1 : 0);
 
         statement << "INSERT INTO configuration_manifest(reference, name, description, unit, data_type, minimum, "
-                     "maximum, size, delimiter, collapse_key, default_value, null_value, optional, device_manifest_id)"
-                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                     "maximum, size, delimiter, default_value, null_value, device_manifest_id)"
+                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
           useRef(configurationManifest.getReference()), useRef(configurationManifest.getName()),
           useRef(configurationManifest.getDescription()), useRef(configurationManifest.getUnit()), bind(dataType),
           bind(minimum), bind(maximum), bind(size), useRef(configurationManifest.getDelimiter()),
-          useRef(configurationManifest.getCollapseKey()), useRef(configurationManifest.getDefaultValue()),
-          useRef(configurationManifest.getNullValue()), bind(isOptional), useRef(deviceManifestId);
+          useRef(configurationManifest.getDefaultValue()), useRef(configurationManifest.getNullValue()),
+          useRef(deviceManifestId);
     }
 
     // Device
@@ -326,7 +325,7 @@ void SQLiteDeviceRepository::removeAll()
     }
 }
 
-std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::string& deviceKey)
+std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const std::string& deviceKey)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
@@ -502,6 +501,7 @@ std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
     }
 
     // Configuration manifests
+    Poco::UInt64 configurationManifestId;
     std::string configurationReference;
     std::string configurationName;
     std::string configurationDescription;
@@ -511,18 +511,16 @@ std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
     double configurationMaximum;
     Poco::UInt32 configurationSize;
     std::string configurationDelimiter;
-    std::string configurationCollapseKey;
     std::string configurationDefaultValue;
     std::string configurationNullValue;
-    Poco::UInt8 configurationIsOptional;
     statement.reset(*m_session);
-    statement << "SELECT reference, name, description, unit, data_type, minimum, maximum, size, delimiter, "
-                 "collapse_key, default_value, null_value,"
-                 "optional FROM configuration_manifest WHERE device_manifest_id=?;",
-      useRef(deviceManifestId), into(configurationReference), into(configurationName), into(configurationDescription),
-      into(configurationUnit), into(configurationDataTypeStr), into(configurationMinimum), into(configurationMaximum),
-      into(configurationSize), into(configurationDelimiter), into(configurationCollapseKey),
-      into(configurationDefaultValue), into(configurationNullValue), into(configurationIsOptional), range(0, 1);
+    statement << "SELECT id, reference, name, description, unit, data_type, minimum, maximum, size, delimiter, "
+                 "default_value, null_value"
+                 " FROM configuration_manifest WHERE device_manifest_id=?;",
+      useRef(deviceManifestId), into(configurationManifestId), into(configurationReference), into(configurationName),
+      into(configurationDescription), into(configurationUnit), into(configurationDataTypeStr),
+      into(configurationMinimum), into(configurationMaximum), into(configurationSize), into(configurationDelimiter),
+      into(configurationDefaultValue), into(configurationNullValue), range(0, 1);
 
     while (!statement.done())
     {
@@ -548,13 +546,18 @@ std::unique_ptr<Device> SQLiteDeviceRepository::findByDeviceKey(const std::strin
             return ConfigurationManifest::DataType::STRING;
         }();
 
+        std::vector<std::string> labels;
+        Statement selectLabelsStatement(*m_session);
+        selectLabelsStatement << "SELECT label FROM configuration_label WHERE configuration_manifest_id=?;",
+          bind(configurationManifestId), into(labels), now;
+
         deviceManifest->addConfiguration(ConfigurationManifest(
           configurationName, configurationReference, configurationDescription, configurationUnit, configurationDataType,
-          configurationMinimum, configurationMaximum, configurationCollapseKey, configurationDefaultValue,
-          configurationNullValue, configurationIsOptional != 0, configurationSize, configurationDelimiter));
+          configurationMinimum, configurationMaximum, configurationDefaultValue, configurationSize,
+          configurationDelimiter, labels, configurationNullValue));
     }
 
-    return std::unique_ptr<Device>(new Device(deviceName, deviceKey, *deviceManifest));
+    return std::unique_ptr<DetailedDevice>(new DetailedDevice(deviceName, deviceKey, *deviceManifest));
 }
 
 std::unique_ptr<std::vector<std::string>> SQLiteDeviceRepository::findAllDeviceKeys()
@@ -579,7 +582,7 @@ bool SQLiteDeviceRepository::containsDeviceWithKey(const std::string& deviceKey)
     return deviceCount != 0 ? true : false;
 }
 
-void SQLiteDeviceRepository::update(const Device& device)
+void SQLiteDeviceRepository::update(const DetailedDevice& device)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
@@ -704,10 +707,8 @@ std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationManifest&
     digestEngine.update(std::to_string(configurationManifest.getMaximum()));
     digestEngine.update(std::to_string(configurationManifest.getSize()));
     digestEngine.update(configurationManifest.getDelimiter());
-    digestEngine.update(configurationManifest.getCollapseKey());
     digestEngine.update(configurationManifest.getDefaultValue());
     digestEngine.update(configurationManifest.getNullValue());
-    digestEngine.update(configurationManifest.isOptional());
 
     digestEngine.update([&]() -> std::string {
         if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::BOOLEAN)
@@ -726,6 +727,11 @@ std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationManifest&
         poco_assert(false);
         return "";
     }());
+
+    for (const std::string& label : configurationManifest.getLabels())
+    {
+        digestEngine.update(label);
+    }
 
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }

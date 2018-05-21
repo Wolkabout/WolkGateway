@@ -16,7 +16,7 @@
 
 #include "Configuration.h"
 #include "Wolk.h"
-#include "connectivity/json/JsonProtocol.h"
+#include "protocol/json/JsonGatewayDataProtocol.h"
 #include "utilities/ConsoleLogger.h"
 #include "utilities/StringUtils.h"
 
@@ -91,17 +91,18 @@ int main(int argc, char** argv)
         }
     }
 
-    if (gatewayConfiguration.getProtocol() != wolkabout::JsonProtocol::getName())
+    auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+
+    if (gatewayConfiguration.getProtocol() != dataProtocol->getName())
     {
         LOG(ERROR) << "WolkGateway Application: Unsupported protocol '" << gatewayConfiguration.getProtocol()
                    << "' specified in gateway configuration file";
         return -1;
     }
 
-    wolkabout::Device device(gatewayConfiguration.getName(), gatewayConfiguration.getKey(),
-                             gatewayConfiguration.getPassword());
+    wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword());
     auto builder = wolkabout::Wolk::newBuilder(device)
-                     .withDataProtocol<wolkabout::JsonProtocol>()
+                     .withDataProtocol(std::move(dataProtocol))
                      .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                      .platformHost(gatewayConfiguration.getPlatformMqttUri());
 

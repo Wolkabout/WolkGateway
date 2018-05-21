@@ -17,12 +17,13 @@
 #include "PublishingService.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/Message.h"
-#include "persistence/Persistence.h"
+#include "persistence/GatewayPersistence.h"
 #include "utilities/Logger.h"
 
 namespace wolkabout
 {
-PublishingService::PublishingService(ConnectivityService& connectivityService, std::unique_ptr<Persistence> persistence)
+PublishingService::PublishingService(ConnectivityService& connectivityService,
+                                     std::unique_ptr<GatewayPersistence> persistence)
 : m_connectivityService{connectivityService}
 , m_persistence{std::move(persistence)}
 , m_connected{false}

@@ -1,7 +1,7 @@
 #include "MockRepository.h"
 #include "OutboundMessageHandler.h"
-#include "connectivity/json/JsonProtocol.h"
 #include "model/Message.h"
+#include "protocol/json/JsonGatewayDataProtocol.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DataService.h"
 
@@ -39,22 +39,23 @@ class DataService : public ::testing::Test
 public:
     void SetUp() override
     {
+        protocol = std::unique_ptr<wolkabout::GatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
         deviceRepository = std::unique_ptr<MockRepository>(new MockRepository());
         platformOutboundMessageHandler =
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
-        dataService = std::unique_ptr<wolkabout::DataService<wolkabout::JsonProtocol>>(
-          new wolkabout::DataService<wolkabout::JsonProtocol>(
-            GATEWAY_KEY, *deviceRepository, *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
+        dataService = std::unique_ptr<wolkabout::DataService>(new wolkabout::DataService(
+          GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
 
+    std::unique_ptr<wolkabout::GatewayDataProtocol> protocol;
     std::unique_ptr<MockRepository> deviceRepository;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;
-    std::unique_ptr<wolkabout::DataService<wolkabout::JsonProtocol>> dataService;
+    std::unique_ptr<wolkabout::DataService> dataService;
 
     static constexpr const char* DEVICE_REPOSITORY_PATH = "testsDeviceRepository.db";
     static constexpr const char* GATEWAY_KEY = "GATEWAY_KEY";
@@ -129,7 +130,7 @@ TEST_F(DataService,
     dataService->disconnected();
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
-      .WillByDefault(testing::Return(new wolkabout::Device(
+      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "GATEWAY_KEY",
         wolkabout::DeviceManifest{
           "",
@@ -161,7 +162,7 @@ TEST_F(
     dataService->disconnected();
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
-      .WillByDefault(testing::Return(new wolkabout::Device(
+      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "GATEWAY_KEY",
         wolkabout::DeviceManifest{
           "",
@@ -191,7 +192,7 @@ TEST_F(
     dataService->disconnected();
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
-      .WillByDefault(testing::Return(new wolkabout::Device(
+      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "GATEWAY_KEY",
         wolkabout::DeviceManifest{
           "",
@@ -296,7 +297,7 @@ TEST_F(
     dataService->disconnected();
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
-      .WillByDefault(testing::Return(new wolkabout::Device(
+      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "GATEWAY_KEY",
         wolkabout::DeviceManifest{
           "",
@@ -323,7 +324,7 @@ TEST_F(DataService, Given_When_MessageFromDeviceWithIncorrectDeviceTypeIsReceive
 {
     // Given
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
-      .WillByDefault(testing::Return(new wolkabout::Device(
+      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "GATEWAY_KEY",
         wolkabout::DeviceManifest{
           "",
@@ -348,7 +349,7 @@ TEST_F(DataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToP
 {
     // Given
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
-      .WillByDefault(testing::Return(new wolkabout::Device(
+      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "DEVICE_KEY",
         wolkabout::DeviceManifest{
           "",
@@ -378,7 +379,7 @@ TEST_F(DataService,
     auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/DEVICE_KEY/r/REF");
 
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
-      .WillByDefault(testing::Return(new wolkabout::Device(
+      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "DEVICE_KEY",
         wolkabout::DeviceManifest{
           "",

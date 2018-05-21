@@ -15,6 +15,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(WolkGateway C CXX)
 
+set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+
 include(${CMAKE_CURRENT_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(NO_OUTPUT_DIRS KEEP_RPATHS)
 
@@ -34,23 +36,32 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -Weffc++ -pedantic    
                                             -Wstrict-aliasing=2                                                        \
                                             -Werror=unreachable-code -Wunused                                          \
                                             -Wvariadic-macros                                                          \
-                                            -Wwrite-strings -Werror=non-virtual-dtor")
+                                            -Wwrite-strings -Werror=non-virtual-dtor -Werror=return-type")
+
+set(SSL_INCLUDE_DIR "${CONAN_INCLUDE_DIRS_OPENSSL}")
+set(SSL_LIBS "${CONAN_LIBS}")
 
 add_definitions(-DOPENSSL)
-add_subdirectory(mqtt)
+
+# library output
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+link_directories(${CMAKE_BINARY_DIR}/lib)
+
+# WolkAbout c++ SDK
+add_subdirectory(WolkSDK-Cpp)
 
 # WolkGateway library
-include_directories("mqtt")
 include_directories("src")
+include_directories("WolkSDK-Cpp/mqtt")
+include_directories("WolkSDK-Cpp/core")
 include_directories(SYSTEM "${CONAN_INCLUDE_DIRS_OPENSSL}")
 include_directories(SYSTEM "${CONAN_INCLUDE_DIRS_POCO}")
 
 file(GLOB_RECURSE LIB_HEADER_FILES "src/*.h" "src/*.hpp")
 file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
 
-add_library(${PROJECT_NAME} SHARED ${LIB_HEADER_FILES} ${LIB_SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} ssl crypto z PocoUtil PocoCrypto PocoData PocoDataSQLite PocoFoundation paho-mqtt pthread)
-set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+add_library(${PROJECT_NAME} SHARED ${LIB_SOURCE_FILES})
+target_link_libraries(${PROJECT_NAME} WolkAboutCore z PocoUtil PocoCrypto PocoData PocoDataSQLite PocoFoundation pthread)
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
 
 # Tests
@@ -60,19 +71,18 @@ include_directories(SYSTEM "${CONAN_INCLUDE_DIRS_GTEST}")
 file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h" "tests/*.hpp")
 file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
 
-add_executable(tests ${TESTS_HEADER_FILES} ${TESTS_SOURCE_FILES})
+add_executable(tests ${TESTS_SOURCE_FILES})
 target_link_libraries(tests gmock_main gmock gtest WolkGateway)
 set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set_target_properties(tests PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
+set_target_properties(tests PROPERTIES LINK_FLAGS "-Wl,-rpath,./lib")
 
 # WolkGateway executable
 file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
 file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
 
-add_executable(${PROJECT_NAME}App ${BIN_HEADER_FILES} ${BIN_SOURCE_FILES})
+add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME}App WolkGateway)
-set_target_properties(${PROJECT_NAME}App PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set_target_properties(${PROJECT_NAME}App PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
+set_target_properties(${PROJECT_NAME}App PROPERTIES LINK_FLAGS "-Wl,-rpath,./lib")
 
 # CMake utilities
 add_subdirectory(cmake)

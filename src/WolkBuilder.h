@@ -27,8 +27,8 @@
 
 namespace wolkabout
 {
+class GatewayDataProtocol;
 class Wolk;
-class ProtocolHolder;
 
 class WolkBuilder final
 {
@@ -55,10 +55,10 @@ public:
 
     /**
      * @brief withDataProtocol Defines which data protocol to use
-     * @tparam Protocol protocol type to register (must be declared in WolkBuilder.cpp)
+     * @tparam Protocol protocol type to register
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    template <class Protocol> WolkBuilder& withDataProtocol();
+    WolkBuilder& withDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol);
 
     /**
      * @brief withoutKeepAlive Disables ping mechanism used to notify WolkAbout IOT Platform
@@ -75,20 +75,20 @@ public:
      * @throws std::logic_error if actuator status provider is not set, and wolkabout::Device has actuator references
      * @throws std::logic_error if actuation handler is not set, and wolkabout::Device has actuator references
      */
-    std::unique_ptr<Wolk> build() const;
+    std::unique_ptr<Wolk> build();
 
     /**
      * @brief operator std::unique_ptr<Wolk> Conversion to wolkabout::wolk as result returns std::unique_ptr to built
      * wolkabout::Wolk instance
      */
-    operator std::unique_ptr<Wolk>() const;
+    operator std::unique_ptr<Wolk>();
 
 private:
     std::string m_platformHost;
     std::string m_gatewayHost;
     Device m_device;
 
-    std::shared_ptr<ProtocolHolder> m_protocolHolder;
+    std::shared_ptr<GatewayDataProtocol> m_dataProtocol;
 
     bool m_keepAliveEnabled;
 

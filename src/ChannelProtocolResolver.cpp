@@ -15,16 +15,55 @@
  */
 
 #include "ChannelProtocolResolver.h"
+#include "model/DetailedDevice.h"
+#include "model/Message.h"
+#include "protocol/GatewayDataProtocol.h"
+#include "repository/DeviceRepository.h"
+#include "utilities/Logger.h"
 
 namespace wolkabout
 {
 ChannelProtocolResolver::ChannelProtocolResolver(
-  DeviceRepository& deviceRepository,
+  GatewayDataProtocol& protocol, DeviceRepository& deviceRepository,
   std::function<void(const std::string&, std::shared_ptr<Message>)> platformMessageHandler,
   std::function<void(const std::string&, std::shared_ptr<Message>)> deviceMessageHandler)
-: m_deviceRepository{deviceRepository}
+: m_protocol{protocol}
+, m_deviceRepository{deviceRepository}
 , m_platformMessageHandler{platformMessageHandler}
 , m_deviceMessageHandler{deviceMessageHandler}
 {
+}
+
+void ChannelProtocolResolver::platformMessageReceived(std::shared_ptr<Message> message)
+{
+    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
+    std::shared_ptr<DetailedDevice> device = m_deviceRepository.findByDeviceKey(deviceKey);
+    if (!device)
+    {
+        LOG(DEBUG) << "Protocol Resolver: Device not found for " << message->getChannel();
+        return;
+    }
+
+    const std::string protocol = device->getManifest().getProtocol();
+    m_platformMessageHandler(protocol, message);
+}
+
+void ChannelProtocolResolver::deviceMessageReceived(std::shared_ptr<Message> message)
+{
+    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
+    std::shared_ptr<DetailedDevice> device = m_deviceRepository.findByDeviceKey(deviceKey);
+    if (!device)
+    {
+        LOG(DEBUG) << "Protocol Resolver: Device not found for " << message->getChannel();
+        return;
+    }
+
+    const std::string protocol = device->getManifest().getProtocol();
+    m_deviceMessageHandler(protocol, message);
+}
+
+const GatewayProtocol& ChannelProtocolResolver::getProtocol() const
+{
+    return m_protocol;
 }
 }    // namespace wolkabout

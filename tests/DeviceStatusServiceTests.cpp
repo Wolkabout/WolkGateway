@@ -2,8 +2,8 @@
 #include "MockConnectionStatusListener.h"
 #include "MockRepository.h"
 #include "OutboundMessageHandler.h"
-#include "connectivity/json/StatusProtocol.h"
 #include "model/Message.h"
+#include "protocol/json/JsonGatewayStatusProtocol.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DeviceStatusService.h"
 
@@ -41,19 +41,22 @@ class DeviceStatusService : public ::testing::Test
 public:
     void SetUp() override
     {
+        protocol = std::unique_ptr<wolkabout::GatewayStatusProtocol>(new wolkabout::JsonGatewayStatusProtocol);
         deviceRepository = std::unique_ptr<MockRepository>(new MockRepository());
         connectionStatusListener = std::make_shared<MockConnectionStatusListener>();
         platformOutboundMessageHandler =
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
-        deviceStatusService = std::unique_ptr<wolkabout::DeviceStatusService>(new wolkabout::DeviceStatusService(
-          GATEWAY_KEY, *deviceRepository, *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
+        deviceStatusService = std::unique_ptr<wolkabout::DeviceStatusService>(
+          new wolkabout::DeviceStatusService(GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler,
+                                             *deviceOutboundMessageHandler, std::chrono::seconds{60}));
         deviceStatusService->setGatewayModuleConnectionStatusListener(connectionStatusListener);
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
 
+    std::unique_ptr<wolkabout::GatewayStatusProtocol> protocol;
     std::unique_ptr<MockRepository> deviceRepository;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;
@@ -107,7 +110,8 @@ TEST_F(DeviceStatusService, Given_When_MessageFromPlatformWithInvalidDeviceTypeI
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
 }
 
-TEST_F(DeviceStatusService, Given_When_MessageFromPlatformIsReceived_Then_MessageIsSentToDevice)
+// Disabled as platform OK response status is not routed to device
+TEST_F(DeviceStatusService, DISABLED_Given_When_MessageFromPlatformIsReceived_Then_MessageIsSentToDevice)
 {
     // Given
     // Intentionally left empty
@@ -336,7 +340,7 @@ TEST_F(DeviceStatusService, Given_When_StatusMessageFromDeviceIsReceived_Then_Me
     // Intentionally left empty
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/status/d/DEVICE_KEY");
+    auto message = std::make_shared<wolkabout::Message>("{\"state\":\"CONNECTED\"}", "d2p/status/d/DEVICE_KEY");
     deviceStatusService->deviceMessageReceived(message);
 
     // Then

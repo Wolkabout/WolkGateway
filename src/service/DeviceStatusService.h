@@ -17,37 +17,71 @@
 #ifndef DEVICESTATUSSERVICE_H
 #define DEVICESTATUSSERVICE_H
 
+#include "ConnectionStatusListener.h"
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
+#include "model/DeviceStatus.h"
+#include "utilities/Timer.h"
+
+#include <chrono>
+#include <map>
+#include <memory>
+#include <string>
 
 namespace wolkabout
 {
 class DeviceRepository;
 class ConnectionStatusListener;
+class GatewayStatusProtocol;
 class OutboundMessageHandler;
 
-class DeviceStatusService : public DeviceMessageListener, public PlatformMessageListener
+class DeviceStatusService : public DeviceMessageListener,
+                            public PlatformMessageListener,
+                            public ConnectionStatusListener
 {
 public:
-    DeviceStatusService(std::string gatewayKey, DeviceRepository& deviceRepository,
+    DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol, DeviceRepository& deviceRepository,
                         OutboundMessageHandler& outboundPlatformMessageHandler,
-                        OutboundMessageHandler& outboundDeviceMessageHandler);
+                        OutboundMessageHandler& outboundDeviceMessageHandler,
+                        std::chrono::seconds statusRequestInterval);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
+    const GatewayProtocol& getProtocol() const override;
+
     void setGatewayModuleConnectionStatusListener(std::weak_ptr<ConnectionStatusListener> listener);
+
+    void connected() override;
+    void disconnected() override;
 
 private:
     void routeDeviceMessage(std::shared_ptr<Message> message);
     void routePlatformMessage(std::shared_ptr<Message> message);
 
+    void requestDevicesStatus();
+    void validateDevicesStatus();
+
+    void sendStatusRequestForDevice(const std::string& deviceKey);
+    void sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus status);
+
+    void logDeviceStatus(const std::string& deviceKey, DeviceStatus status);
+
     const std::string m_gatewayKey;
+    GatewayStatusProtocol& m_protocol;
+
     DeviceRepository& m_deviceRepository;
 
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;
+
+    const std::chrono::seconds m_statusRequestInterval;
+    const std::chrono::seconds m_statusResponseInterval;
+    Timer m_requestTimer;
+    Timer m_responseTimer;
+
+    std::map<std::string, std::pair<std::time_t, DeviceStatus>> m_deviceStatuses;
 
     std::weak_ptr<ConnectionStatusListener> m_gatewayModuleConnectionStatusListener;
 };

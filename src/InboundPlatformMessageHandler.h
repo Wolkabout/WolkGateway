@@ -13,64 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef INBOUNDPLATFORMMESSAGEHANDLER_H
 #define INBOUNDPLATFORMMESSAGEHANDLER_H
 
-#include "InboundMessageHandler.h"
-#include "utilities/CommandBuffer.h"
-
-#include <map>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 
 namespace wolkabout
 {
 class Message;
+class GatewayProtocol;
 
 class PlatformMessageListener
 {
 public:
     virtual ~PlatformMessageListener() = default;
     virtual void platformMessageReceived(std::shared_ptr<Message> message) = 0;
+    virtual const GatewayProtocol& getProtocol() const = 0;
 };
 
-class InboundPlatformMessageHandler : public InboundMessageHandler
+class InboundPlatformMessageHandler
 {
 public:
-    InboundPlatformMessageHandler(const std::string& gatewayKey);
+    virtual ~InboundPlatformMessageHandler() = default;
 
-    void messageReceived(const std::string& channel, const std::string& message) override;
+    virtual void messageReceived(const std::string& channel, const std::string& message) = 0;
 
-    std::vector<std::string> getChannels() const override;
+    virtual std::vector<std::string> getChannels() const = 0;
 
-    template <class P> void setListener(std::weak_ptr<PlatformMessageListener> listener);
-
-private:
-    void addToCommandBuffer(std::function<void()> command);
-
-    std::unique_ptr<CommandBuffer> m_commandBuffer;
-    const std::string m_gatewayKey;
-
-    std::vector<std::string> m_subscriptionList;
-
-    std::map<std::string, std::weak_ptr<PlatformMessageListener>> m_channelHandlers;
-
-    mutable std::mutex m_lock;
+    virtual void addListener(std::weak_ptr<PlatformMessageListener> listener) = 0;
 };
 
-template <class P> void InboundPlatformMessageHandler::setListener(std::weak_ptr<PlatformMessageListener> listener)
-{
-    std::lock_guard<std::mutex> locker{m_lock};
-
-    for (auto channel : P::getPlatformChannels())
-    {
-        m_channelHandlers[channel] = listener;
-        m_subscriptionList.push_back(channel);
-    }
-}
 }    // namespace wolkabout
 
-#endif
+#endif    // INBOUNDPLATFORMMESSAGEHANDLER_H

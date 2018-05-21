@@ -17,8 +17,8 @@
 #ifndef DEVICEREGISTRATIONSERVICE_H
 #define DEVICEREGISTRATIONSERVICE_H
 
-#include "InboundDeviceMessageHandler.h"
-#include "InboundPlatformMessageHandler.h"
+#include "GatewayInboundDeviceMessageHandler.h"
+#include "GatewayInboundPlatformMessageHandler.h"
 #include "model/DeviceRegistrationRequest.h"
 
 #include <map>
@@ -29,22 +29,26 @@
 
 namespace wolkabout
 {
-class Device;
+class DetailedDevice;
 class DeviceRepository;
-class OutboundMessageHandler;
-class Message;
 class DeviceRegistrationResponse;
+class GatewayDeviceRegistrationProtocol;
+class Message;
+class OutboundMessageHandler;
 
 class DeviceRegistrationService : public DeviceMessageListener, public PlatformMessageListener
 {
 public:
-    DeviceRegistrationService(std::string gatewayKey, DeviceRepository& deviceRepository,
+    DeviceRegistrationService(std::string gatewayKey, GatewayDeviceRegistrationProtocol& protocol,
+                              DeviceRepository& deviceRepository,
                               OutboundMessageHandler& outboundPlatformMessageHandler,
                               OutboundMessageHandler& outboundDeviceMessageHandler);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
+
+    const GatewayProtocol& getProtocol() const override;
 
     void onDeviceRegistered(std::function<void(const std::string& deviceKey, bool isGateway)> onDeviceRegistered);
 
@@ -63,6 +67,7 @@ private:
                                                   const DeviceRegistrationRequest& request);
 
     const std::string m_gatewayKey;
+    GatewayDeviceRegistrationProtocol& m_protocol;
 
     DeviceRepository& m_deviceRepository;
 
@@ -72,7 +77,7 @@ private:
     std::function<void(const std::string& deviceKey, bool isGateway)> m_onDeviceRegistered;
 
     std::recursive_mutex m_devicesAwaitingRegistrationResponseMutex;
-    std::map<std::string, std::unique_ptr<Device>> m_devicesAwaitingRegistrationResponse;
+    std::map<std::string, std::unique_ptr<DetailedDevice>> m_devicesAwaitingRegistrationResponse;
 
     std::mutex m_devicesWithPostponedRegistrationMutex;
     std::map<std::string, std::unique_ptr<DeviceRegistrationRequest>> m_devicesWithPostponedRegistration;

@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-#include "model/Device.h"
+#ifndef GATEWAYINMEMORYPERSISTENCE_H
+#define GATEWAYINMEMORYPERSISTENCE_H
 
-#include <string>
+#include "persistence/GatewayPersistence.h"
+#include <mutex>
+#include <queue>
 
 namespace wolkabout
 {
-Device::Device(std::string key, std::string password)
-: DetailedDevice{"", key, password, DeviceManifest{"", "", "", ""}}
+class GatewayInMemoryPersistence : public GatewayPersistence
 {
-}
+public:
+    bool push(std::shared_ptr<Message> message) override;
+    std::shared_ptr<Message> pop() override;
+    std::shared_ptr<Message> front() override;
+    bool empty() const override;
 
-const std::string& Device::getKey() const
-{
-    return DetailedDevice::getKey();
-}
-
-const std::string& Device::getPassword() const
-{
-    return DetailedDevice::getPassword();
-}
+private:
+    mutable std::mutex m_lock;
+    std::queue<std::shared_ptr<Message>> m_queue;
+};
 }    // namespace wolkabout
+
+#endif

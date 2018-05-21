@@ -23,19 +23,19 @@
 
 namespace wolkabout
 {
-class Device;
+class DetailedDevice;
 class DeviceRepository
 {
 public:
     virtual ~DeviceRepository() = default;
 
-    virtual void save(const Device& device) = 0;
+    virtual void save(const DetailedDevice& device) = 0;
 
     virtual void remove(const std::string& devicekey) = 0;
 
     virtual void removeAll() = 0;
 
-    virtual std::unique_ptr<Device> findByDeviceKey(const std::string& key) = 0;
+    virtual std::unique_ptr<DetailedDevice> findByDeviceKey(const std::string& key) = 0;
 
     virtual std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() = 0;
 

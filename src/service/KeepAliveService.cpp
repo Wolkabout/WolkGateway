@@ -17,13 +17,16 @@
 #include "service/KeepAliveService.h"
 #include "OutboundMessageHandler.h"
 #include "connectivity/ConnectivityService.h"
-#include "connectivity/json/StatusProtocol.h"
+#include "model/Message.h"
+#include "protocol/GatewayStatusProtocol.h"
 
 namespace wolkabout
 {
-KeepAliveService::KeepAliveService(std::string gatewayKey, OutboundMessageHandler& outboundMessageHandler,
+KeepAliveService::KeepAliveService(std::string gatewayKey, GatewayStatusProtocol& protocol,
+                                   OutboundMessageHandler& outboundMessageHandler,
                                    std::chrono::seconds keepAliveInterval)
 : m_gatewayKey{std::move(gatewayKey)}
+, m_protocol{protocol}
 , m_outboundMessageHandler{outboundMessageHandler}
 , m_keepAliveInterval{std::move(keepAliveInterval)}
 {
@@ -31,10 +34,15 @@ KeepAliveService::KeepAliveService(std::string gatewayKey, OutboundMessageHandle
 
 void KeepAliveService::platformMessageReceived(std::shared_ptr<Message> message) {}
 
+const GatewayProtocol& KeepAliveService::getProtocol() const
+{
+    return m_protocol;
+}
+
 void KeepAliveService::connected()
 {
     auto ping = [=] {
-        auto message = StatusProtocol::makeFromPingRequest(m_gatewayKey);
+        std::shared_ptr<Message> message = m_protocol.makeFromPingRequest(m_gatewayKey);
 
         if (message)
         {

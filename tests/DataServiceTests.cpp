@@ -140,8 +140,7 @@ TEST_F(DataService,
           {},
           {},
           {},
-          {wolkabout::ActuatorManifest{"", "REF", "", "", "", wolkabout::ActuatorManifest::DataType::NUMERIC, 1, 0,
-                                       100}}})));
+          {wolkabout::ActuatorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}}})));
 
     // When
     auto message = std::make_shared<wolkabout::Message>("{\"value\":\"15\"}", "p2d/actuator_set/g/GATEWAY_KEY/r/REF");
@@ -172,8 +171,7 @@ TEST_F(
           {},
           {},
           {},
-          {wolkabout::ActuatorManifest{"", "OTHER_REF", "", "", "", wolkabout::ActuatorManifest::DataType::NUMERIC, 1,
-                                       0, 100}}})));
+          {wolkabout::ActuatorManifest{"", "OTHER_REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}}})));
 
     // When
     auto message = std::make_shared<wolkabout::Message>("{\"value\":\"15\"}", "p2d/actuator_set/g/GATEWAY_KEY/r/");
@@ -202,8 +200,7 @@ TEST_F(
           {},
           {},
           {},
-          {wolkabout::ActuatorManifest{"", "OTHER_REF", "", "", "", wolkabout::ActuatorManifest::DataType::NUMERIC, 1,
-                                       0, 100}}})));
+          {wolkabout::ActuatorManifest{"", "OTHER_REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}}})));
 
     // When
     auto message = std::make_shared<wolkabout::Message>("{\"value\":\"15\"}", "p2d/actuator_set/g/GATEWAY_KEY/r/REF");
@@ -305,7 +302,7 @@ TEST_F(
           "",
           "",
           {},
-          {wolkabout::SensorManifest{"", "REF", "", "", "", wolkabout::SensorManifest::DataType::NUMERIC, 1, 0, 100}},
+          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
           {},
           {}})));
 
@@ -332,7 +329,7 @@ TEST_F(DataService, Given_When_MessageFromDeviceWithIncorrectDeviceTypeIsReceive
           "",
           "",
           {},
-          {wolkabout::SensorManifest{"", "REF", "", "", "", wolkabout::SensorManifest::DataType::NUMERIC, 1, 0, 100}},
+          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
           {},
           {}})));
 
@@ -357,7 +354,7 @@ TEST_F(DataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToP
           "",
           "",
           {},
-          {wolkabout::SensorManifest{"", "REF", "", "", "", wolkabout::SensorManifest::DataType::NUMERIC, 1, 0, 100}},
+          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
           {},
           {}})));
 
@@ -387,7 +384,7 @@ TEST_F(DataService,
           "",
           "",
           {},
-          {wolkabout::SensorManifest{"", "REF2", "", "", "", wolkabout::SensorManifest::DataType::NUMERIC, 1, 0, 100}},
+          {wolkabout::SensorManifest{"", "REF2", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
           {},
           {}})));
 

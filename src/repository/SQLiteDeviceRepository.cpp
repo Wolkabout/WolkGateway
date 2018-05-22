@@ -18,6 +18,7 @@
 #include "model/ActuatorManifest.h"
 #include "model/AlarmManifest.h"
 #include "model/ConfigurationManifest.h"
+#include "model/DataType.h"
 #include "model/DetailedDevice.h"
 #include "model/DeviceManifest.h"
 
@@ -56,7 +57,7 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
 
     // Actuator manifest
     statement << "CREATE TABLE IF NOT EXISTS actuator_manifest (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-                 "reference TEXT, name TEXT, description TEXT, unit TEXT, reading_type TEXT, data_type TEXT, "
+                 "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, data_type TEXT, "
                  "precision INTEGER, minimum REAL, maximum REAL, delimiter TEXT, device_manifest_id INTEGER, "
                  "FOREIGN KEY(device_manifest_id) REFERENCES device_manifest(id) ON DELETE CASCADE);";
 
@@ -65,8 +66,8 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
                  "FOREIGN KEY(actuator_manifest_id) REFERENCES actuator_manifest(id) ON DELETE CASCADE);";
 
     // Sensor manifest
-    statement << "CREATE TABLE IF NOT EXISTS sensor_manifest (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, reference "
-                 "TEXT, name TEXT, description TEXT, unit TEXT, reading_type TEXT, data_type TEXT, "
+    statement << "CREATE TABLE IF NOT EXISTS sensor_manifest (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+                 "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, data_type TEXT, "
                  "precision INTEGER, minimum REAL, maximum REAL, delimiter TEXT, device_manifest_id INTEGER, "
                  "FOREIGN KEY(device_manifest_id) REFERENCES device_manifest(id) ON DELETE CASCADE);";
 
@@ -77,9 +78,14 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
     // Configuration manifest
     statement << "CREATE TABLE IF NOT EXISTS configuration_manifest (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
                  "reference TEXT, name TEXT, description TEXT, "
-                 "unit TEXT, data_type TEXT, minimum REAL, maximum REAL, size INTEGER, delimiter TEXT, collapse_key "
-                 "TEXT, default_value TEXT, null_value TEXT, optional TEXT, device_manifest_id INTEGER, "
+                 "data_type TEXT, minimum REAL, maximum REAL, delimiter TEXT, "
+                 "default_value TEXT, device_manifest_id INTEGER, "
                  "FOREIGN KEY(device_manifest_id) REFERENCES device_manifest(id) ON DELETE CASCADE);";
+
+    statement
+      << "CREATE TABLE IF NOT EXISTS configuration_label (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, label TEXT, "
+         "configuration_manifest_id INTEGER, "
+         "FOREIGN KEY(configuration_manifest_id) REFERENCES configuration_manifest(id) ON DELETE CASCADE);";
 
     // Device manifest
     statement << "CREATE TABLE IF NOT EXISTS device_manifest (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name "
@@ -167,15 +173,15 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
     for (const wolkabout::ActuatorManifest& actuatorManifest : device.getManifest().getActuators())
     {
         const auto dataType = [&]() -> std::string {
-            if (actuatorManifest.getDataType() == ActuatorManifest::DataType::BOOLEAN)
+            if (actuatorManifest.getDataType() == DataType::BOOLEAN)
             {
                 return "BOOLEAN";
             }
-            else if (actuatorManifest.getDataType() == ActuatorManifest::DataType::NUMERIC)
+            else if (actuatorManifest.getDataType() == DataType::NUMERIC)
             {
                 return "NUMERIC";
             }
-            else if (actuatorManifest.getDataType() == ActuatorManifest::DataType::STRING)
+            else if (actuatorManifest.getDataType() == DataType::STRING)
             {
                 return "STRING";
             }
@@ -186,12 +192,13 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
         const auto precision = Poco::UInt32(actuatorManifest.getPrecision());
         const auto minimum = actuatorManifest.getMinimum();
         const auto maximum = actuatorManifest.getMaximum();
-        statement << "INSERT INTO actuator_manifest(reference, name, description, unit, reading_type, data_type, "
-                     "precision, minimum, maximum, delimiter, device_manifest_id) "
-                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+        statement
+          << "INSERT INTO actuator_manifest(reference, name, description, unit_symbol, reading_type, data_type, "
+             "precision, minimum, maximum, delimiter, device_manifest_id) "
+             "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
           useRef(actuatorManifest.getReference()), useRef(actuatorManifest.getName()),
-          useRef(actuatorManifest.getDescription()), useRef(actuatorManifest.getUnit()),
-          useRef(actuatorManifest.getReadingType()), bind(dataType), bind(precision), bind(minimum), bind(maximum),
+          useRef(actuatorManifest.getDescription()), useRef(actuatorManifest.getUnitSymbol()),
+          useRef(actuatorManifest.getReadingTypeName()), bind(dataType), bind(precision), bind(minimum), bind(maximum),
           useRef(actuatorManifest.getDelimiter()), useRef(deviceManifestId);
 
         for (const std::string& label : actuatorManifest.getLabels())
@@ -206,15 +213,15 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
     for (const wolkabout::SensorManifest& sensorManifest : device.getManifest().getSensors())
     {
         const auto dataType = [&]() -> std::string {
-            if (sensorManifest.getDataType() == SensorManifest::DataType::BOOLEAN)
+            if (sensorManifest.getDataType() == DataType::BOOLEAN)
             {
                 return "BOOLEAN";
             }
-            else if (sensorManifest.getDataType() == SensorManifest::DataType::NUMERIC)
+            else if (sensorManifest.getDataType() == DataType::NUMERIC)
             {
                 return "NUMERIC";
             }
-            else if (sensorManifest.getDataType() == SensorManifest::DataType::STRING)
+            else if (sensorManifest.getDataType() == DataType::STRING)
             {
                 return "STRING";
             }
@@ -225,12 +232,12 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
         const auto precision = Poco::UInt32(sensorManifest.getPrecision());
         const auto minimum = sensorManifest.getMinimum();
         const auto maximum = sensorManifest.getMaximum();
-        statement << "INSERT INTO sensor_manifest(reference, name, description, unit, reading_type, data_type, "
+        statement << "INSERT INTO sensor_manifest(reference, name, description, unit_symbol, reading_type, data_type, "
                      "precision, minimum, maximum, delimiter, device_manifest_id) "
                      "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
           useRef(sensorManifest.getReference()), useRef(sensorManifest.getName()),
-          useRef(sensorManifest.getDescription()), useRef(sensorManifest.getUnit()),
-          useRef(sensorManifest.getReadingType()), bind(dataType), bind(precision), bind(minimum), bind(maximum),
+          useRef(sensorManifest.getDescription()), useRef(sensorManifest.getUnitSymbol()),
+          useRef(sensorManifest.getReadingTypeName()), bind(dataType), bind(precision), bind(minimum), bind(maximum),
           useRef(sensorManifest.getDelimiter()), useRef(deviceManifestId);
 
         for (const std::string& label : sensorManifest.getLabels())
@@ -245,15 +252,15 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
     for (const wolkabout::ConfigurationManifest& configurationManifest : device.getManifest().getConfigurations())
     {
         const auto dataType = [&]() -> std::string {
-            if (configurationManifest.getDataType() == ConfigurationManifest::DataType::BOOLEAN)
+            if (configurationManifest.getDataType() == DataType::BOOLEAN)
             {
                 return "BOOLEAN";
             }
-            else if (configurationManifest.getDataType() == ConfigurationManifest::DataType::NUMERIC)
+            else if (configurationManifest.getDataType() == DataType::NUMERIC)
             {
                 return "NUMERIC";
             }
-            else if (configurationManifest.getDataType() == ConfigurationManifest::DataType::STRING)
+            else if (configurationManifest.getDataType() == DataType::STRING)
             {
                 return "STRING";
             }
@@ -263,16 +270,21 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
 
         const auto minimum = configurationManifest.getMinimum();
         const auto maximum = configurationManifest.getMaximum();
-        const auto size = Poco::UInt32(configurationManifest.getSize());
 
-        statement << "INSERT INTO configuration_manifest(reference, name, description, unit, data_type, minimum, "
-                     "maximum, size, delimiter, default_value, null_value, device_manifest_id)"
-                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+        statement << "INSERT INTO configuration_manifest(reference, name, description, data_type, minimum, "
+                     "maximum, delimiter, default_value, device_manifest_id)"
+                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);",
           useRef(configurationManifest.getReference()), useRef(configurationManifest.getName()),
-          useRef(configurationManifest.getDescription()), useRef(configurationManifest.getUnit()), bind(dataType),
-          bind(minimum), bind(maximum), bind(size), useRef(configurationManifest.getDelimiter()),
-          useRef(configurationManifest.getDefaultValue()), useRef(configurationManifest.getNullValue()),
+          useRef(configurationManifest.getDescription()), bind(dataType), bind(minimum), bind(maximum),
+          useRef(configurationManifest.getDelimiter()), useRef(configurationManifest.getDefaultValue()),
           useRef(deviceManifestId);
+
+        for (const std::string& label : configurationManifest.getLabels())
+        {
+            statement << "INSERT INTO configuration_label SELECT NULL, ?, id FROM configuration_manifest WHERE "
+                         "configuration_manifest.reference=? AND configuration_manifest.device_manifest_id=?;",
+              useRef(label), useRef(configurationManifest.getReference()), useRef(deviceManifestId);
+        }
     }
 
     // Device
@@ -397,7 +409,7 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
     std::string actuatorReference;
     std::string actuatorName;
     std::string actuatorDescription;
-    std::string actuatorUnit;
+    std::string actuatorUnitSymbol;
     std::string actuatorReadingType;
     std::string actuatorDataTypeStr;
     Poco::UInt32 actuatorPrecision;
@@ -405,11 +417,12 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
     double actuatorMaximum;
     std::string actuatorDelimiter;
     statement.reset(*m_session);
-    statement << "SELECT id, reference, name, description, unit, reading_type, data_type, precision, minimum, maximum, "
-                 "delimiter "
-                 "FROM actuator_manifest WHERE device_manifest_id=?;",
+    statement
+      << "SELECT id, reference, name, description, unit_symbol, reading_type, data_type, precision, minimum, maximum, "
+         "delimiter "
+         "FROM actuator_manifest WHERE device_manifest_id=?;",
       useRef(deviceManifestId), into(actuatorManifestId), into(actuatorReference), into(actuatorName),
-      into(actuatorDescription), into(actuatorUnit), into(actuatorReadingType), into(actuatorDataTypeStr),
+      into(actuatorDescription), into(actuatorUnitSymbol), into(actuatorReadingType), into(actuatorDataTypeStr),
       into(actuatorPrecision), into(actuatorMinimum), into(actuatorMaximum), into(actuatorDelimiter), range(0, 1);
 
     while (!statement.done())
@@ -419,21 +432,21 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
             break;
         }
 
-        const auto actuatorDataType = [&]() -> ActuatorManifest::DataType {
+        const auto actuatorDataType = [&]() -> DataType {
             if (actuatorDataTypeStr == "BOOLEAN")
             {
-                return ActuatorManifest::DataType::BOOLEAN;
+                return DataType::BOOLEAN;
             }
             else if (actuatorDataTypeStr == "NUMERIC")
             {
-                return ActuatorManifest::DataType::NUMERIC;
+                return DataType::NUMERIC;
             }
             else if (actuatorDataTypeStr == "STRING")
             {
-                return ActuatorManifest::DataType::STRING;
+                return DataType::STRING;
             }
 
-            return ActuatorManifest::DataType::STRING;
+            return DataType::STRING;
         }();
 
         std::vector<std::string> labels;
@@ -441,9 +454,9 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         selectLabelsStatement << "SELECT label FROM actuator_label WHERE actuator_manifest_id=?;",
           bind(actuatorManifestId), into(labels), now;
 
-        deviceManifest->addActuator(ActuatorManifest(actuatorName, actuatorReference, actuatorDescription, actuatorUnit,
-                                                     actuatorReadingType, actuatorDataType, actuatorPrecision,
-                                                     actuatorMinimum, actuatorMaximum, actuatorDelimiter, labels));
+        deviceManifest->addActuator(ActuatorManifest(actuatorName, actuatorReference, actuatorReadingType,
+                                                     actuatorUnitSymbol, actuatorDataType, actuatorPrecision,
+                                                     actuatorDescription, labels, actuatorMinimum, actuatorMaximum));
     }
 
     // Sensor manifests
@@ -451,7 +464,7 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
     std::string sensorReference;
     std::string sensorName;
     std::string sensorDescription;
-    std::string sensorUnit;
+    std::string sensorUnitSymbol;
     std::string sensorReadingType;
     std::string sensorDataTypeStr;
     Poco::UInt32 sensorPrecision;
@@ -459,11 +472,12 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
     double sensorMaximum;
     std::string sensorDelimiter;
     statement.reset(*m_session);
-    statement << "SELECT id, reference, name, description, unit, reading_type, data_type, precision, minimum, maximum, "
-                 "delimiter "
-                 "FROM sensor_manifest WHERE device_manifest_id=?;",
+    statement
+      << "SELECT id, reference, name, description, unit_symbol, reading_type, data_type, precision, minimum, maximum, "
+         "delimiter "
+         "FROM sensor_manifest WHERE device_manifest_id=?;",
       useRef(deviceManifestId), into(sensorManifestId), into(sensorReference), into(sensorName),
-      into(sensorDescription), into(sensorUnit), into(sensorReadingType), into(sensorDataTypeStr),
+      into(sensorDescription), into(sensorUnitSymbol), into(sensorReadingType), into(sensorDataTypeStr),
       into(sensorPrecision), into(sensorMinimum), into(sensorMaximum), into(sensorDelimiter), range(0, 1);
 
     while (!statement.done())
@@ -473,21 +487,21 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
             break;
         }
 
-        const auto sensorDataType = [&]() -> SensorManifest::DataType {
+        const auto sensorDataType = [&]() -> DataType {
             if (sensorDataTypeStr == "BOOLEAN")
             {
-                return SensorManifest::DataType::BOOLEAN;
+                return DataType::BOOLEAN;
             }
             else if (sensorDataTypeStr == "NUMERIC")
             {
-                return SensorManifest::DataType::NUMERIC;
+                return DataType::NUMERIC;
             }
             else if (sensorDataTypeStr == "STRING")
             {
-                return SensorManifest::DataType::STRING;
+                return DataType::STRING;
             }
 
-            return SensorManifest::DataType::STRING;
+            return DataType::STRING;
         }();
 
         std::vector<std::string> labels;
@@ -495,9 +509,9 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         selectLabelsStatement << "SELECT label FROM sensor_label WHERE sensor_manifest_id=?;", bind(sensorManifestId),
           into(labels), now;
 
-        deviceManifest->addSensor(SensorManifest(sensorName, sensorReference, sensorDescription, sensorUnit,
-                                                 sensorReadingType, sensorDataType, sensorPrecision, sensorMinimum,
-                                                 sensorMaximum, sensorDelimiter, labels));
+        deviceManifest->addSensor(SensorManifest(sensorName, sensorReference, sensorReadingType, sensorUnitSymbol,
+                                                 sensorDataType, sensorPrecision, sensorDescription, labels,
+                                                 sensorMinimum, sensorMaximum));
     }
 
     // Configuration manifests
@@ -505,22 +519,18 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
     std::string configurationReference;
     std::string configurationName;
     std::string configurationDescription;
-    std::string configurationUnit;
     std::string configurationDataTypeStr;
     double configurationMinimum;
     double configurationMaximum;
-    Poco::UInt32 configurationSize;
     std::string configurationDelimiter;
     std::string configurationDefaultValue;
-    std::string configurationNullValue;
     statement.reset(*m_session);
-    statement << "SELECT id, reference, name, description, unit, data_type, minimum, maximum, size, delimiter, "
-                 "default_value, null_value"
+    statement << "SELECT id, reference, name, description, data_type, minimum, maximum, delimiter, "
+                 "default_value"
                  " FROM configuration_manifest WHERE device_manifest_id=?;",
       useRef(deviceManifestId), into(configurationManifestId), into(configurationReference), into(configurationName),
-      into(configurationDescription), into(configurationUnit), into(configurationDataTypeStr),
-      into(configurationMinimum), into(configurationMaximum), into(configurationSize), into(configurationDelimiter),
-      into(configurationDefaultValue), into(configurationNullValue), range(0, 1);
+      into(configurationDescription), into(configurationDataTypeStr), into(configurationMinimum),
+      into(configurationMaximum), into(configurationDelimiter), into(configurationDefaultValue), range(0, 1);
 
     while (!statement.done())
     {
@@ -529,21 +539,21 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
             break;
         }
 
-        const auto configurationDataType = [&]() -> ConfigurationManifest::DataType {
+        const auto configurationDataType = [&]() -> DataType {
             if (configurationDataTypeStr == "STRING")
             {
-                return ConfigurationManifest::DataType::STRING;
+                return DataType::STRING;
             }
             else if (configurationDataTypeStr == "BOOLEAN")
             {
-                return ConfigurationManifest::DataType::BOOLEAN;
+                return DataType::BOOLEAN;
             }
             else if (configurationDataTypeStr == "NUMERIC")
             {
-                return ConfigurationManifest::DataType::NUMERIC;
+                return DataType::NUMERIC;
             }
 
-            return ConfigurationManifest::DataType::STRING;
+            return DataType::STRING;
         }();
 
         std::vector<std::string> labels;
@@ -552,9 +562,8 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
           bind(configurationManifestId), into(labels), now;
 
         deviceManifest->addConfiguration(ConfigurationManifest(
-          configurationName, configurationReference, configurationDescription, configurationUnit, configurationDataType,
-          configurationMinimum, configurationMaximum, configurationDefaultValue, configurationSize,
-          configurationDelimiter, labels, configurationNullValue));
+          configurationName, configurationReference, configurationDataType, configurationDescription,
+          configurationDefaultValue, labels, configurationMinimum, configurationMaximum));
     }
 
     return std::unique_ptr<DetailedDevice>(new DetailedDevice(deviceName, deviceKey, *deviceManifest));
@@ -624,23 +633,23 @@ std::string SQLiteDeviceRepository::calculateSha256(const ActuatorManifest& actu
     digestEngine.update(actuatorManifest.getName());
     digestEngine.update(actuatorManifest.getReference());
     digestEngine.update(actuatorManifest.getDescription());
-    digestEngine.update(actuatorManifest.getUnit());
-    digestEngine.update(actuatorManifest.getReadingType());
+    digestEngine.update(actuatorManifest.getUnitSymbol());
+    digestEngine.update(actuatorManifest.getReadingTypeName());
     digestEngine.update(std::to_string(actuatorManifest.getPrecision()));
     digestEngine.update(std::to_string(actuatorManifest.getMinimum()));
     digestEngine.update(std::to_string(actuatorManifest.getMaximum()));
     digestEngine.update(actuatorManifest.getDelimiter());
 
     digestEngine.update([&]() -> std::string {
-        if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::BOOLEAN)
+        if (actuatorManifest.getDataType() == wolkabout::DataType::BOOLEAN)
         {
             return "B";
         }
-        else if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::NUMERIC)
+        else if (actuatorManifest.getDataType() == wolkabout::DataType::NUMERIC)
         {
             return "N";
         }
-        else if (actuatorManifest.getDataType() == wolkabout::ActuatorManifest::DataType::STRING)
+        else if (actuatorManifest.getDataType() == wolkabout::DataType::STRING)
         {
             return "S";
         }
@@ -663,23 +672,23 @@ std::string SQLiteDeviceRepository::calculateSha256(const SensorManifest& sensor
     digestEngine.update(sensorManifest.getName());
     digestEngine.update(sensorManifest.getReference());
     digestEngine.update(sensorManifest.getDescription());
-    digestEngine.update(sensorManifest.getUnit());
-    digestEngine.update(sensorManifest.getReadingType());
+    digestEngine.update(sensorManifest.getUnitSymbol());
+    digestEngine.update(sensorManifest.getReadingTypeName());
     digestEngine.update(std::to_string(sensorManifest.getPrecision()));
     digestEngine.update(std::to_string(sensorManifest.getMinimum()));
     digestEngine.update(std::to_string(sensorManifest.getMaximum()));
     digestEngine.update(sensorManifest.getDelimiter());
 
     digestEngine.update([&]() -> std::string {
-        if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::BOOLEAN)
+        if (sensorManifest.getDataType() == wolkabout::DataType::BOOLEAN)
         {
             return "B";
         }
-        else if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::NUMERIC)
+        else if (sensorManifest.getDataType() == wolkabout::DataType::NUMERIC)
         {
             return "N";
         }
-        else if (sensorManifest.getDataType() == wolkabout::SensorManifest::DataType::STRING)
+        else if (sensorManifest.getDataType() == wolkabout::DataType::STRING)
         {
             return "S";
         }
@@ -702,24 +711,21 @@ std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationManifest&
     digestEngine.update(configurationManifest.getName());
     digestEngine.update(configurationManifest.getReference());
     digestEngine.update(configurationManifest.getDescription());
-    digestEngine.update(configurationManifest.getUnit());
     digestEngine.update(std::to_string(configurationManifest.getMinimum()));
     digestEngine.update(std::to_string(configurationManifest.getMaximum()));
-    digestEngine.update(std::to_string(configurationManifest.getSize()));
     digestEngine.update(configurationManifest.getDelimiter());
     digestEngine.update(configurationManifest.getDefaultValue());
-    digestEngine.update(configurationManifest.getNullValue());
 
     digestEngine.update([&]() -> std::string {
-        if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::BOOLEAN)
+        if (configurationManifest.getDataType() == wolkabout::DataType::BOOLEAN)
         {
             return "B";
         }
-        else if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::NUMERIC)
+        else if (configurationManifest.getDataType() == wolkabout::DataType::NUMERIC)
         {
             return "N";
         }
-        else if (configurationManifest.getDataType() == wolkabout::ConfigurationManifest::DataType::STRING)
+        else if (configurationManifest.getDataType() == wolkabout::DataType::STRING)
         {
             return "S";
         }

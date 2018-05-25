@@ -174,8 +174,8 @@ TEST_F(
     deviceRepository->save(device);
 
     // When
-    deviceManifest.addSensor(wolkabout::SensorManifest("Sensor name", "ref", "desc", "unit", "readingType",
-                                                       wolkabout::SensorManifest::DataType::STRING, 1, 0, 1));
+    deviceManifest.addSensor(
+      wolkabout::SensorManifest("Sensor name", "ref", "TEXT", "", wolkabout::DataType::STRING, 1, "", {}, 0, 1));
     wolkabout::DeviceRegistrationRequest deviceRegistrationRequest("Device name", deviceKey, deviceManifest);
     std::shared_ptr<wolkabout::Message> deviceRegistrationRequestMessage =
       protocol->makeMessage(GATEWAY_KEY, deviceKey, deviceRegistrationRequest);

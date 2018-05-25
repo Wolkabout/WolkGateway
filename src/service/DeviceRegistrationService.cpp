@@ -153,15 +153,23 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
         {
             if (deviceKeyFromRepository != m_gatewayKey)
             {
+                LOG(INFO) << "Deleting device with key " << deviceKeyFromRepository;
                 m_deviceRepository.remove(deviceKeyFromRepository);
             }
             else
             {
+                LOG(INFO) << "Deleting gateway and all devices";
                 m_deviceRepository.removeAll();
             }
 
             std::shared_ptr<Message> deviceDeletionRequestMessage =
               m_protocol.makeDeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
+            if (!deviceDeletionRequestMessage)
+            {
+                LOG(WARN) << "DeviceRegistrationService: Unable to create deletion request message";
+                return;
+            }
+
             m_outboundPlatformMessageHandler.addMessage(deviceDeletionRequestMessage);
         }
     }
@@ -199,6 +207,12 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
     m_devicesAwaitingRegistrationResponse[deviceKey] = std::move(device);
 
     std::shared_ptr<Message> registrationRequest = m_protocol.makeMessage(m_gatewayKey, deviceKey, request);
+    if (!registrationRequest)
+    {
+        LOG(WARN) << "DeviceRegistrationService: Unable to create registration request message";
+        return;
+    }
+
     m_outboundPlatformMessageHandler.addMessage(registrationRequest);
 }
 
@@ -211,6 +225,12 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
     const auto reregistrationResponse = DeviceReregistrationResponse(DeviceReregistrationResponse::Result::OK);
     std::shared_ptr<Message> reregistrationResponseMessage =
       m_protocol.makeMessage(m_gatewayKey, reregistrationResponse);
+    if (!reregistrationResponseMessage)
+    {
+        LOG(WARN) << "DeviceRegistrationService: Unable to create reregistration response message";
+        return;
+    }
+
     m_outboundPlatformMessageHandler.addMessage(reregistrationResponseMessage);
 
     const auto registeredDevicesKeys = m_deviceRepository.findAllDeviceKeys();
@@ -220,6 +240,12 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
     }
 
     std::shared_ptr<Message> deviceRegistrationRequest = m_protocol.makeDeviceReregistrationRequestForDevice();
+    if (!deviceRegistrationRequest)
+    {
+        LOG(WARN) << "DeviceRegistrationService: Unable to create registration request message";
+        return;
+    }
+
     m_outboundDeviceMessageHandler.addMessage(deviceRegistrationRequest);
 }
 

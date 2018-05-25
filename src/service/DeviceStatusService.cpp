@@ -102,6 +102,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
                 LOG(INFO) << "Device Status Service: Device got disconnected: " << deviceKey;
 
                 // offline status if last will topic contains device key
+                logDeviceStatus(deviceKey, DeviceStatus::OFFLINE);
                 sendStatusResponseForDevice(deviceKey, DeviceStatus::OFFLINE);
             }
         }
@@ -113,6 +114,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
             {
                 LOG(INFO) << "Device Status Service: Device got disconnected: " << key;
 
+                logDeviceStatus(key, DeviceStatus::OFFLINE);
                 sendStatusResponseForDevice(key, DeviceStatus::OFFLINE);
             }
         }
@@ -191,6 +193,15 @@ void DeviceStatusService::setGatewayModuleConnectionStatusListener(std::weak_ptr
     m_gatewayModuleConnectionStatusListener = listener;
 }
 
+void DeviceStatusService::sendLastKnownStatusForDevice(const std::string& deviceKey)
+{
+    if (containsDeviceStatus(deviceKey))
+    {
+        auto status = getDeviceStatus(deviceKey).second;
+        sendStatusResponseForDevice(deviceKey, status);
+    }
+}
+
 void DeviceStatusService::connected()
 {
     requestDevicesStatus();
@@ -264,23 +275,25 @@ void DeviceStatusService::validateDevicesStatus()
             continue;
         }
 
-        auto it = m_deviceStatuses.find(key);
-
-        if (it == m_deviceStatuses.end())
+        if (!containsDeviceStatus(key))
         {
             // device has not reported status at all, send offline status
+            logDeviceStatus(key, DeviceStatus::OFFLINE);
             sendStatusResponseForDevice(key, DeviceStatus::OFFLINE);
             continue;
         }
 
-        std::time_t lastReportTime = it->second.first;
+        auto statusReport = getDeviceStatus(key);
+
+        std::time_t lastReportTime = statusReport.first;
         std::time_t currentTime = std::time(nullptr);
-        DeviceStatus lastStatus = it->second.second;
+        DeviceStatus lastStatus = statusReport.second;
 
         if (std::difftime(lastReportTime, currentTime) > m_statusResponseInterval.count() &&
             lastStatus == DeviceStatus::CONNECTED)
         {
             // device has not reported status in time and last status was CONNECTED, send offline status
+            logDeviceStatus(key, DeviceStatus::OFFLINE);
             sendStatusResponseForDevice(key, DeviceStatus::OFFLINE);
             continue;
         }
@@ -309,13 +322,34 @@ void DeviceStatusService::sendStatusResponseForDevice(const std::string& deviceK
         return;
     }
 
-    logDeviceStatus(deviceKey, status);
-
     m_outboundPlatformMessageHandler.addMessage(statusMessage);
+}
+
+bool DeviceStatusService::containsDeviceStatus(const std::string& deviceKey)
+{
+    std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
+
+    return m_deviceStatuses.find(deviceKey) != m_deviceStatuses.end();
+}
+
+std::pair<std::time_t, DeviceStatus> DeviceStatusService::getDeviceStatus(const std::string& deviceKey)
+{
+    std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
+
+    auto it = m_deviceStatuses.find(deviceKey);
+
+    if (it != m_deviceStatuses.end())
+    {
+        return it->second;
+    }
+
+    return std::make_pair(0, DeviceStatus::OFFLINE);
 }
 
 void DeviceStatusService::logDeviceStatus(const std::string& deviceKey, DeviceStatus status)
 {
+    std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
+
     m_deviceStatuses[deviceKey] = std::make_pair(std::time(nullptr), status);
 }
 

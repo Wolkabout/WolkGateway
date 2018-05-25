@@ -1,4 +1,4 @@
 [submodule "WolkSDK-Cpp"]
 	path = WolkSDK-Cpp
 	url = git@github.com:Wolkabout/WolkSDK-Cpp.git
-	branch = manifest_update
+	branch = master

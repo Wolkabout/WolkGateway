@@ -153,10 +153,12 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
         {
             if (deviceKeyFromRepository != m_gatewayKey)
             {
+                LOG(INFO) << "Deleting device with key " << deviceKeyFromRepository;
                 m_deviceRepository.remove(deviceKeyFromRepository);
             }
             else
             {
+                LOG(INFO) << "Deleting gateway and all devices";
                 m_deviceRepository.removeAll();
             }
 

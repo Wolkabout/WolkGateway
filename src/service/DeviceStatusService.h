@@ -26,6 +26,7 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace wolkabout
@@ -53,6 +54,8 @@ public:
 
     void setGatewayModuleConnectionStatusListener(std::weak_ptr<ConnectionStatusListener> listener);
 
+    void sendLastKnownStatusForDevice(const std::string& deviceKey);
+
     void connected() override;
     void disconnected() override;
 
@@ -66,6 +69,8 @@ private:
     void sendStatusRequestForDevice(const std::string& deviceKey);
     void sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus status);
 
+    bool containsDeviceStatus(const std::string& deviceKey);
+    std::pair<std::time_t, DeviceStatus> getDeviceStatus(const std::string& deviceKey);
     void logDeviceStatus(const std::string& deviceKey, DeviceStatus status);
 
     const std::string m_gatewayKey;
@@ -81,6 +86,7 @@ private:
     Timer m_requestTimer;
     Timer m_responseTimer;
 
+    std::mutex m_deviceStatusMutex;
     std::map<std::string, std::pair<std::time_t, DeviceStatus>> m_deviceStatuses;
 
     std::weak_ptr<ConnectionStatusListener> m_gatewayModuleConnectionStatusListener;

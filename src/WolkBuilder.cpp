@@ -134,6 +134,10 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         {
             wolk->gatewayRegistered();
         }
+        else
+        {
+            wolk->m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
+        }
 
         wolk->m_existingDevicesRepository->addDeviceKey(deviceKey);
     });

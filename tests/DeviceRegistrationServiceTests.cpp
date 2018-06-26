@@ -494,24 +494,3 @@ TEST_F(DeviceRegistrationService,
     // Then
     ASSERT_FALSE(deviceRepository->containsDeviceWithKey(childDeviceKey));
 }
-
-TEST_F(DeviceRegistrationService,
-       Given_RegisteredGatewayAndChildDevice_When_GatewayDeviceIsDeleted_Then_AllDevicesAreDeletedFromRepository)
-{
-    // Given
-    wolkabout::DeviceManifest gatewayManifest("Gateway manifest name", "Gateway manifest description", "JsonProtocol",
-                                              "DFUProtocol");
-    wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayManifest);
-    deviceRepository->save(gateway);
-
-    wolkabout::DeviceManifest deviceManifest("Device manifest name", "Device manifest description", "JsonProtocol",
-                                             "DFUProtocol");
-    wolkabout::DetailedDevice device("Child device", "child_device_key", deviceManifest);
-    deviceRepository->save(device);
-
-    // When
-    deviceRegistrationService->deleteDevicesOtherThan({"child_device_key"});
-
-    // Then
-    ASSERT_TRUE(deviceRepository->findAllDeviceKeys()->empty());
-}

@@ -39,6 +39,8 @@ public:
     void connected() override;
     void disconnected() override;
 
+    void sendPingMessage() const;
+
 private:
     const std::string m_gatewayKey;
 

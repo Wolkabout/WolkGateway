@@ -133,13 +133,13 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         if (isGateway)
         {
             wolk->gatewayRegistered();
+            wolk->m_keepAliveService->sendPingMessage();
         }
         else
         {
             wolk->m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
+            wolk->m_existingDevicesRepository->addDeviceKey(deviceKey);
         }
-
-        wolk->m_existingDevicesRepository->addDeviceKey(deviceKey);
     });
 
     wolk->m_deviceRegistrationService->deleteDevicesOtherThan(wolk->m_existingDevicesRepository->getDeviceKeys());

@@ -151,23 +151,21 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
     {
         if (std::find(devicesKeys.begin(), devicesKeys.end(), deviceKeyFromRepository) == devicesKeys.end())
         {
-            if (deviceKeyFromRepository != m_gatewayKey)
+            if (deviceKeyFromRepository == m_gatewayKey)
             {
-                LOG(INFO) << "Deleting device with key " << deviceKeyFromRepository;
-                m_deviceRepository.remove(deviceKeyFromRepository);
+                LOG(DEBUG) << "Skiping delete gateway";
+                continue;
             }
-            else
-            {
-                LOG(INFO) << "Deleting gateway and all devices";
-                m_deviceRepository.removeAll();
-            }
+
+            LOG(INFO) << "Deleting device with key " << deviceKeyFromRepository;
+            m_deviceRepository.remove(deviceKeyFromRepository);
 
             std::shared_ptr<Message> deviceDeletionRequestMessage =
               m_protocol.makeDeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
             if (!deviceDeletionRequestMessage)
             {
                 LOG(WARN) << "DeviceRegistrationService: Unable to create deletion request message";
-                return;
+                continue;
             }
 
             m_outboundPlatformMessageHandler.addMessage(deviceDeletionRequestMessage);

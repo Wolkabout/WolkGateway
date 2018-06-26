@@ -41,23 +41,24 @@ const GatewayProtocol& KeepAliveService::getProtocol() const
 
 void KeepAliveService::connected()
 {
-    auto ping = [=] {
-        std::shared_ptr<Message> message = m_protocol.makeFromPingRequest(m_gatewayKey);
-
-        if (message)
-        {
-            m_outboundMessageHandler.addMessage(message);
-        }
-    };
-
     // send as soon as connected
-    ping();
+    sendPingMessage();
 
-    m_timer.run(std::chrono::duration_cast<std::chrono::milliseconds>(m_keepAliveInterval), ping);
+    m_timer.run(std::chrono::duration_cast<std::chrono::milliseconds>(m_keepAliveInterval), [=] { sendPingMessage(); });
 }
 
 void KeepAliveService::disconnected()
 {
     m_timer.stop();
+}
+
+void KeepAliveService::sendPingMessage() const
+{
+    std::shared_ptr<Message> message = m_protocol.makeFromPingRequest(m_gatewayKey);
+
+    if (message)
+    {
+        m_outboundMessageHandler.addMessage(message);
+    }
 }
 }

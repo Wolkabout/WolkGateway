@@ -6,6 +6,14 @@ WolkGateway supports bridging of devices using following protocol(s):
 
 * Json protocol
 
+Installing from source
+----------------------
+
+This repository must be cloned from the command line using:
+```sh
+git clone --recurse-submodules https://github.com/Wolkabout/WolkGateway.git
+```
+
 Prerequisite
 ------
 
@@ -42,15 +50,3 @@ Before proceeding with steps from this section complete steps listed in 'Buildin
 2. Open `gatewayConfiguration.json` and fill name, key and password fields with data provided by WolkAbout IoT platform after gateway device creation
 3. Make sure mosquitto is running by invoking `systemctl start mosquitto`
 4. Run gateway by invoking `./WolkGatewayApp gatewayConfiguration.json`
-
-Running WolkGateway inside Docker container
-------
-
-Before proceeding with steps from this section complete steps listed in 'Building' section.
-
-1. Open `out/gatewayConfiguration.json` and fill name, key and password fields with data provided by WolkAbout IoT platform after gateway device creation
-2. Change current directory to `Docker`. Following steps are performed from within this directory
-3. Build WolkGateway Docker image by invoking `build_gateway.sh`
-4. Build Mosquitto Docker image by invoking `build_mosquitto.sh`
-5. Create, and start, Mosquitto container by executing `start_mosquitto.sh`
-6. Create, and start, WolkGateway container by executing `start_gateway.sh`. Afterward WolkGateway should be started with `docker start ...` and **not** via this shell script

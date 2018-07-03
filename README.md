@@ -52,6 +52,17 @@ Before proceeding with steps from this section complete steps listed in 'Buildin
 4. Run gateway by invoking `./WolkGatewayApp gatewayConfiguration.json`
 
 
+Connecting devices
+------
+
+Devices are connected to the gateway using modules. Module implements communication protocol for specific device and manages
+all communication between devices and the gateway including sending device data and registering devices to WolkAbout platform.
+
+Module communicates with gateway via local mqtt broker.
+A single Module may handle multiple devices, and there may be multiple modules deployed.
+
 <p align="center">
   <img src="gateway_architecture.png" title="Gateway architecture">
 </p>
+
+Module implementation may be found at https://github.com/Wolkabout/WolkGatewayModule-Cpp

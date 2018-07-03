@@ -50,3 +50,8 @@ Before proceeding with steps from this section complete steps listed in 'Buildin
 2. Open `gatewayConfiguration.json` and fill name, key and password fields with data provided by WolkAbout IoT platform after gateway device creation
 3. Make sure mosquitto is running by invoking `systemctl start mosquitto`
 4. Run gateway by invoking `./WolkGatewayApp gatewayConfiguration.json`
+
+
+<p align="center">
+  <img src="gateway_architecture.png" title="Gateway architecture">
+</p>

@@ -1,0 +1,10 @@
+*WolkGateway RELEASE NOTES**
+--------------------------
+
+*WolkAbout Technology s.r.o.*
+
+WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
+
+**Version 2.1.1**
+- [BUGFIX] Removed erroneous compiler flags
+- [IMPROVEMENT] Trust store is optinal for mqtt connectivity service

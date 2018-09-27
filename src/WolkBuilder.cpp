@@ -90,7 +90,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     // Setup connectivity services
     wolk->m_platformConnectivityService.reset(new MqttConnectivityService(
-      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_platformHost));
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_platformHost, TRUST_STORE));
     wolk->m_platformConnectivityService->setUncontrolledDisonnectMessage(
       wolk->m_statusProtocol->makeLastWillMessage(m_device.getKey()));
 

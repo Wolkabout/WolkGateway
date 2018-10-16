@@ -24,13 +24,10 @@ class GatewayConfiguration
 public:
     GatewayConfiguration() = default;
 
-    GatewayConfiguration(std::string key, std::string password, std::string protocol, std::string platformMqttUri,
-                         std::string localMqttUri);
+    GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri, std::string localMqttUri);
 
     const std::string& getKey() const;
     const std::string& getPassword() const;
-
-    const std::string& getProtocol() const;
 
     const std::string& getPlatformMqttUri() const;
     const std::string& getLocalMqttUri() const;
@@ -45,8 +42,6 @@ private:
     std::string m_key;
     std::string m_password;
 
-    std::string m_protocol;
-
     std::string m_platformMqttUri;
     std::string m_localMqttUri;
 
@@ -54,7 +49,6 @@ private:
 
     static const std::string KEY;
     static const std::string PASSWORD;
-    static const std::string PROTOCOL;
     static const std::string PLATFORM_URI;
     static const std::string LOCAL_URI;
     static const std::string KEEP_ALIVE;

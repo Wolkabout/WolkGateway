@@ -93,14 +93,8 @@ int main(int argc, char** argv)
 
     auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
 
-    if (gatewayConfiguration.getProtocol() != dataProtocol->getName())
-    {
-        LOG(ERROR) << "WolkGateway Application: Unsupported protocol '" << gatewayConfiguration.getProtocol()
-                   << "' specified in gateway configuration file";
-        return -1;
-    }
-
-    wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword());
+    wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
+                             dataProtocol->getName());
     auto builder = wolkabout::Wolk::newBuilder(device)
                      .withDataProtocol(std::move(dataProtocol))
                      .gatewayHost(gatewayConfiguration.getLocalMqttUri())

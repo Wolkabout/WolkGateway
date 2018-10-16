@@ -26,7 +26,7 @@ namespace wolkabout
 class Device : public DetailedDevice
 {
 public:
-    Device(std::string key, std::string password);
+    Device(std::string key, std::string password, std::string protocol);
 
     const std::string& getKey() const;
     const std::string& getPassword() const;

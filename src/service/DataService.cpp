@@ -285,4 +285,4 @@ void DataService::handleGatewayOfflineMessage(std::shared_ptr<Message> message)
                    << "'. Unsupported message type";
     }
 }
-}
+}    // namespace wolkabout

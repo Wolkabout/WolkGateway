@@ -61,4 +61,4 @@ void KeepAliveService::sendPingMessage() const
         m_outboundMessageHandler.addMessage(message);
     }
 }
-}
+}    // namespace wolkabout

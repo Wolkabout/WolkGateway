@@ -74,4 +74,4 @@ const GatewayProtocol& StatusMessageRouter::getProtocol() const
 {
     return m_protocol;
 }
-}
+}    // namespace wolkabout

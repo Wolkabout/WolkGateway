@@ -20,8 +20,8 @@
 
 namespace wolkabout
 {
-Device::Device(std::string key, std::string password)
-: DetailedDevice{"", key, password, DeviceManifest{"", "", "", ""}}
+Device::Device(std::string key, std::string password, std::string protocol)
+: DetailedDevice{"", key, password, DeviceManifest{"manifest", "", protocol, ""}}
 {
 }
 

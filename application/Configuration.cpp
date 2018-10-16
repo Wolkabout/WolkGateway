@@ -28,16 +28,14 @@ using nlohmann::json;
 
 const std::string GatewayConfiguration::KEY = "key";
 const std::string GatewayConfiguration::PASSWORD = "password";
-const std::string GatewayConfiguration::PROTOCOL = "protocol";
 const std::string GatewayConfiguration::PLATFORM_URI = "platformMqttUri";
 const std::string GatewayConfiguration::LOCAL_URI = "localMqttUri";
 const std::string GatewayConfiguration::KEEP_ALIVE = "keepAlive";
 
-GatewayConfiguration::GatewayConfiguration(std::string key, std::string password, std::string protocol,
-                                           std::string platformMqttUri, std::string localMqttUri)
+GatewayConfiguration::GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri,
+                                           std::string localMqttUri)
 : m_key(std::move(key))
 , m_password(std::move(password))
-, m_protocol(std::move(protocol))
 , m_platformMqttUri(std::move(platformMqttUri))
 , m_localMqttUri(std::move(localMqttUri))
 {
@@ -51,11 +49,6 @@ const std::string& GatewayConfiguration::getKey() const
 const std::string& GatewayConfiguration::getPassword() const
 {
     return m_password;
-}
-
-const std::string& GatewayConfiguration::getProtocol() const
-{
-    return m_protocol;
 }
 
 const std::string& GatewayConfiguration::getLocalMqttUri() const
@@ -94,11 +87,10 @@ wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string
     auto j = json::parse(gatewayConfigurationJson);
     const auto key = j.at(KEY).get<std::string>();
     const auto password = j.at(PASSWORD).get<std::string>();
-    const auto protocol = j.at(PROTOCOL).get<std::string>();
     const auto platformMqttUri = j.at(PLATFORM_URI).get<std::string>();
     const auto localMqttUri = j.at(LOCAL_URI).get<std::string>();
 
-    GatewayConfiguration configuration(key, password, protocol, platformMqttUri, localMqttUri);
+    GatewayConfiguration configuration(key, password, platformMqttUri, localMqttUri);
 
     if (j.find(KEEP_ALIVE) != j.end())
     {

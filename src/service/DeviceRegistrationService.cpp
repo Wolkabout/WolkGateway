@@ -173,6 +173,13 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
     }
 }
 
+void DeviceRegistrationService::registerDevice(const DetailedDevice& device)
+{
+    const DeviceRegistrationRequest registrationRequest(device);
+
+    handleDeviceRegistrationRequest(registrationRequest.getDeviceKey(), registrationRequest);
+}
+
 void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::string& deviceKey,
                                                                 const DeviceRegistrationRequest& request)
 {
@@ -199,7 +206,7 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
         return;
     }
 
-    std::lock_guard<decltype(m_devicesAwaitingRegistrationResponseMutex)> l(m_devicesAwaitingRegistrationResponseMutex);
+    std::lock_guard<decltype(m_devicesAwaitingRegistrationResponseMutex)> l{m_devicesAwaitingRegistrationResponseMutex};
     auto device = std::unique_ptr<DetailedDevice>(
       new DetailedDevice(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
     m_devicesAwaitingRegistrationResponse[deviceKey] = std::move(device);

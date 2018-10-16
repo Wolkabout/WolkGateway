@@ -21,7 +21,7 @@ public:
 
     std::unique_ptr<wolkabout::JsonGatewayStatusProtocol> protocol;
 };
-}
+}    // namespace
 
 TEST_F(JsonGatewayStatusProtocol, Given_Name_When_ProtocolNameIsRequested_Then_NameIsEqualToProtocolName)
 {

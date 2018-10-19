@@ -51,7 +51,6 @@ public:
         deviceStatusService = std::unique_ptr<wolkabout::DeviceStatusService>(
           new wolkabout::DeviceStatusService(GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler,
                                              *deviceOutboundMessageHandler, std::chrono::seconds{60}));
-        deviceStatusService->setGatewayModuleConnectionStatusListener(connectionStatusListener);
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
@@ -155,21 +154,6 @@ TEST_F(DeviceStatusService, Given_When_MessageFromDeviceWithInvalidMessageTypeIs
 }
 
 TEST_F(DeviceStatusService,
-       Given_When_LastWillWithKeyMessageFromGatewayIsReceived_Then_GatewayDisconnectedCallbackIsCalled)
-{
-    // Given
-    EXPECT_CALL(*connectionStatusListener, disconnected()).Times(1);
-
-    // When
-    auto message = std::make_shared<wolkabout::Message>("", "lastwill/GATEWAY_KEY");
-    deviceStatusService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-}
-
-TEST_F(DeviceStatusService,
        Given_When_LastWillWithKeyMessageFromDeviceIsReceived_Then_DeviceStatusMessageIsSentToPlatform)
 {
     // Given
@@ -264,69 +248,6 @@ TEST_F(DeviceStatusService, Given_When_StatusMessageFromDeviceWithInvalidDeviceT
 
     // When
     auto message = std::make_shared<wolkabout::Message>("", "d2p/status/p/DEVICE_KEY");
-    deviceStatusService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-}
-
-TEST_F(DeviceStatusService, Given_When_StatusMessageFromGatewayWithInvalidStatusValueIsReceived_Then_MessageIsIgnored)
-{
-    // Given
-    // Intentionally left empty
-
-    // When
-    const std::string jsonPayload = "{\"state\":\"CONNECTEDD\"}";
-    auto message = std::make_shared<wolkabout::Message>(jsonPayload, "d2p/status/d/GATEWAY_KEY");
-    deviceStatusService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-}
-
-TEST_F(DeviceStatusService,
-       Given_When_StatusMessageFromGatewayConnectedStatusValueIsReceived_Then_GatewayConnectedCallbackIsCalled)
-{
-    // Given
-    EXPECT_CALL(*connectionStatusListener, connected()).Times(1);
-
-    // When
-    const std::string jsonPayload = "{\"state\":\"CONNECTED\"}";
-    auto message = std::make_shared<wolkabout::Message>(jsonPayload, "d2p/status/d/GATEWAY_KEY");
-    deviceStatusService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-}
-
-TEST_F(DeviceStatusService,
-       Given_When_StatusMessageFromGatewaySleepStatusValueIsReceived_Then_GatewayDisconnectedCallbackIsCalled)
-{
-    // Given
-    EXPECT_CALL(*connectionStatusListener, disconnected()).Times(1);
-
-    // When
-    const std::string jsonPayload = "{\"state\":\"SLEEP\"}";
-    auto message = std::make_shared<wolkabout::Message>(jsonPayload, "d2p/status/d/GATEWAY_KEY");
-    deviceStatusService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-}
-
-TEST_F(DeviceStatusService,
-       Given_When_StatusMessageFromGatewayOfflineStatusValueIsReceived_Then_GatewayDisconnectedCallbackIsCalled)
-{
-    // Given
-    EXPECT_CALL(*connectionStatusListener, disconnected()).Times(1);
-
-    // When
-    const std::string jsonPayload = "{\"state\":\"OFFLINE\"}";
-    auto message = std::make_shared<wolkabout::Message>(jsonPayload, "d2p/status/d/GATEWAY_KEY");
     deviceStatusService->deviceMessageReceived(message);
 
     // Then

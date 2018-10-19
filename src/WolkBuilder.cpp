@@ -133,7 +133,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_deviceRegistrationService->onDeviceRegistered([&](const std::string& deviceKey, bool isGateway) {
         if (isGateway)
         {
-            wolk->gatewayRegistered();
             wolk->m_keepAliveService->sendPingMessage();
         }
         else

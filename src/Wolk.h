@@ -239,9 +239,6 @@ private:
     void routePlatformData(const std::string& protocol, std::shared_ptr<Message> message);
     void routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message);
 
-    void gatewayRegistered();
-    void setupGatewayListeners(const std::string& protocol);
-
     void registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol,
                               std::shared_ptr<DataService> dataService = nullptr);
 

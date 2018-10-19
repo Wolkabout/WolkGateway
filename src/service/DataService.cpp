@@ -148,10 +148,6 @@ const GatewayProtocol& DataService::getProtocol() const
     return m_protocol;
 }
 
-void DataService::connected() {}
-
-void DataService::disconnected() {}
-
 void DataService::addMessage(std::shared_ptr<Message> message)
 {
     routeGatewayToPlatformMessage(message);

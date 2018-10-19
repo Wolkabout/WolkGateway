@@ -338,41 +338,6 @@ void Wolk::routeDeviceData(const std::string& protocol, std::shared_ptr<Message>
     }
 }
 
-void Wolk::gatewayRegistered()
-{
-    auto gatewayDevice = m_deviceRepository->findByDeviceKey(m_device.getKey());
-    if (!gatewayDevice)
-    {
-        LOG(WARN) << "Gateway device not found in repository";
-        return;
-    }
-
-    const std::string gatewayProtocol = gatewayDevice->getManifest().getProtocol();
-
-    if (gatewayProtocol.empty())
-    {
-        LOG(WARN) << "Gateway protocol not set";
-        return;
-    }
-
-    setupGatewayListeners(gatewayProtocol);
-}
-
-void Wolk::setupGatewayListeners(const std::string& protocol)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(protocol);
-    if (it != m_dataServices.end())
-    {
-        m_deviceStatusService->setGatewayModuleConnectionStatusListener(std::get<0>(it->second));
-    }
-    else
-    {
-        LOG(WARN) << "Message protocol not found for gateway";
-    }
-}
-
 void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol, std::shared_ptr<DataService> dataService)
 {
     std::lock_guard<decltype(m_lock)> lg{m_lock};

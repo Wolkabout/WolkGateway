@@ -32,10 +32,7 @@ class DeviceRepository;
 class GatewayDataProtocol;
 class MessageListener;
 
-class DataService : public DeviceMessageListener,
-                    public PlatformMessageListener,
-                    public ConnectionStatusListener,
-                    public OutboundMessageHandler
+class DataService : public DeviceMessageListener, public PlatformMessageListener, public OutboundMessageHandler
 {
 public:
     DataService(const std::string& gatewayKey, GatewayDataProtocol& protocol, DeviceRepository& deviceRepository,
@@ -47,10 +44,6 @@ public:
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
     const GatewayProtocol& getProtocol() const override;
-
-    void connected() override;
-
-    void disconnected() override;
 
     void addMessage(std::shared_ptr<Message> message) override;
 

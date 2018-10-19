@@ -52,8 +52,6 @@ public:
 
     const GatewayProtocol& getProtocol() const override;
 
-    void setGatewayModuleConnectionStatusListener(std::weak_ptr<ConnectionStatusListener> listener);
-
     void sendLastKnownStatusForDevice(const std::string& deviceKey);
 
     void connected() override;
@@ -88,8 +86,6 @@ private:
 
     std::mutex m_deviceStatusMutex;
     std::map<std::string, std::pair<std::time_t, DeviceStatus>> m_deviceStatuses;
-
-    std::weak_ptr<ConnectionStatusListener> m_gatewayModuleConnectionStatusListener;
 };
 }    // namespace wolkabout
 

@@ -27,6 +27,7 @@ class Device : public DetailedDevice
 {
 public:
     Device(std::string key, std::string password, std::string protocol);
+    Device(std::string key, std::string password, DeviceManifest deviceManifest);
 
     const std::string& getKey() const;
     const std::string& getPassword() const;

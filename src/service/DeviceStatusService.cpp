@@ -198,6 +198,11 @@ void DeviceStatusService::requestDevicesStatus()
 
     for (const auto& key : *keys)
     {
+        if (key == m_gatewayKey)
+        {
+            continue;
+        }
+
         sendStatusRequestForDevice(key);
     }
 
@@ -211,6 +216,11 @@ void DeviceStatusService::validateDevicesStatus()
 
     for (const auto& key : *keys)
     {
+        if (key == m_gatewayKey)
+        {
+            continue;
+        }
+
         if (!containsDeviceStatus(key))
         {
             // device has not reported status at all, send offline status

@@ -20,6 +20,7 @@
 #include "ConnectionStatusListener.h"
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
+#include "OutboundMessageHandler.h"
 
 #include <atomic>
 #include <memory>
@@ -27,16 +28,19 @@
 
 namespace wolkabout
 {
-class GatewayDataProtocol;
-class OutboundMessageHandler;
 class DeviceRepository;
+class GatewayDataProtocol;
+class MessageListener;
 
-class DataService : public DeviceMessageListener, public PlatformMessageListener, public ConnectionStatusListener
+class DataService : public DeviceMessageListener,
+                    public PlatformMessageListener,
+                    public ConnectionStatusListener,
+                    public OutboundMessageHandler
 {
 public:
     DataService(const std::string& gatewayKey, GatewayDataProtocol& protocol, DeviceRepository& deviceRepository,
                 OutboundMessageHandler& outboundPlatformMessageHandler,
-                OutboundMessageHandler& outboundDeviceMessageHandler);
+                OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice = nullptr);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
@@ -48,14 +52,16 @@ public:
 
     void disconnected() override;
 
+    void addMessage(std::shared_ptr<Message> message) override;
+
+    void setGatewayMessageListener(MessageListener* gatewayDevice);
+
 private:
     void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
     void routePlatformToDeviceMessage(std::shared_ptr<Message> message);
 
     void routeGatewayToPlatformMessage(std::shared_ptr<Message> message);
     void routePlatformToGatewayMessage(std::shared_ptr<Message> message);
-
-    void handleGatewayOfflineMessage(std::shared_ptr<Message> message);
 
     const std::string m_gatewayKey;
     GatewayDataProtocol& m_protocol;
@@ -65,7 +71,7 @@ private:
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;
 
-    std::atomic_bool m_gatewayModuleConnected;
+    MessageListener* m_gatewayDevice;
 };
 
 }    // namespace wolkabout

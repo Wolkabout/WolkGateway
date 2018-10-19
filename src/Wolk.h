@@ -17,10 +17,16 @@
 #ifndef WOLK_H
 #define WOLK_H
 
+#include "ActuationHandler.h"
+#include "ActuatorStatusProvider.h"
 #include "ChannelProtocolResolver.h"
+#include "ConfigurationHandler.h"
+#include "ConfigurationProvider.h"
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "WolkBuilder.h"
 #include "model/Device.h"
+#include "persistence/inmemory/InMemoryPersistence.h"
+#include "protocol/DataProtocol.h"
 #include "protocol/GatewayDataProtocol.h"
 #include "protocol/GatewayDeviceRegistrationProtocol.h"
 #include "protocol/GatewayStatusProtocol.h"
@@ -28,10 +34,12 @@
 #include "repository/ExistingDevicesRepository.h"
 #include "service/DataService.h"
 #include "service/DeviceStatusService.h"
+#include "service/GatewayDataService.h"
 #include "service/PublishingService.h"
 #include "utilities/CommandBuffer.h"
 #include "utilities/StringUtils.h"
 
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
@@ -76,6 +84,127 @@ public:
      */
     void disconnect();
 
+    /**
+     * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
+     * @param reference Sensor reference
+     * @param value Sensor value<br>
+     *              Supported types:<br>
+     *               - bool<br>
+     *               - float<br>
+     *               - double<br>
+     *               - signed int<br>
+     *               - signed long int<br>
+     *               - signed long long int<br>
+     *               - unsigned int<br>
+     *               - unsigned long int<br>
+     *               - unsigned long long int<br>
+     *               - string<br>
+     *               - char*<br>
+     *               - const char*<br>
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    template <typename T> void addSensorReading(const std::string& reference, T value, unsigned long long int rtc = 0);
+
+    /**
+     * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
+     * @param reference Sensor reference
+     * @param value Sensor value
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    void addSensorReading(const std::string& reference, std::string value, unsigned long long int rtc = 0);
+
+    /**
+     * @brief Publishes multi-value sensor reading to WolkAbout IoT Cloud<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
+     * @param reference Sensor reference
+     * @param values Multi-value sensor values<br>
+     *              Supported types:<br>
+     *               - bool<br>
+     *               - float<br>
+     *               - double<br>
+     *               - signed int<br>
+     *               - signed long int<br>
+     *               - signed long long int<br>
+     *               - unsigned int<br>
+     *               - unsigned long int<br>
+     *               - unsigned long long int<br>
+     *               - string<br>
+     *               - char*<br>
+     *               - const char*<br>
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    template <typename T>
+    void addSensorReading(const std::string& reference, std::initializer_list<T> values,
+                          unsigned long long int rtc = 0);
+
+    /**
+     * @brief Publishes multi-value sensor reading to WolkAbout IoT Cloud<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
+     * @param reference Sensor reference
+     * @param values Multi-value sensor values<br>
+     *              Supported types:<br>
+     *               - bool<br>
+     *               - float<br>
+     *               - double<br>
+     *               - signed int<br>
+     *               - signed long int<br>
+     *               - signed long long int<br>
+     *               - unsigned int<br>
+     *               - unsigned long int<br>
+     *               - unsigned long long int<br>
+     *               - string<br>
+     *               - char*<br>
+     *               - const char*<br>
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    template <typename T>
+    void addSensorReading(const std::string& reference, const std::vector<T> values, unsigned long long int rtc = 0);
+
+    /**
+     * @brief Publishes multi-value sensor reading to WolkAbout IoT Cloud<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
+     * @param reference Sensor reference
+     * @param values Multi-value sensor values
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    void addSensorReading(const std::string& reference, const std::vector<std::string> values,
+                          unsigned long long int rtc = 0);
+
+    /**
+     * @brief Publishes alarm to WolkAbout IoT Cloud<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
+     * @param reference Alarm reference
+     * @param active Is alarm active or not
+     * @param rtc POSIX time at which event occurred - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    void addAlarm(const std::string& reference, bool active, unsigned long long int rtc = 0);
+
+    /**
+     * @brief Invokes ActuatorStatusProvider to obtain actuator status, and the publishes it.<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
+     * @param Actuator reference
+     */
+    void publishActuatorStatus(const std::string& reference);
+
+    /**
+     * @brief Invokes ConfigurationProvider to obtain device configuration, and the publishes it.<br>
+     *        This method is thread safe, and can be called from multiple thread simultaneously
+     */
+    void publishConfiguration();
+
+    /**
+     * @brief Publishes data
+     */
+    void publish();
+
 private:
     static const constexpr std::chrono::seconds KEEP_ALIVE_INTERVAL{600};
 
@@ -84,6 +213,20 @@ private:
     void addToCommandBuffer(std::function<void()> command);
 
     static unsigned long long int currentRtc();
+
+    void flushActuatorStatuses();
+    void flushAlarms();
+    void flushSensorReadings();
+    void flushConfiguration();
+
+    void handleActuatorSetCommand(const std::string& reference, const std::string& value);
+    void handleActuatorGetCommand(const std::string& reference);
+
+    void handleConfigurationSetCommand(const ConfigurationSetCommand& command);
+    void handleConfigurationGetCommand();
+
+    std::string getSensorDelimiter(const std::string& reference);
+    std::map<std::string, std::string> getConfigurationDelimiters();
 
     void notifyPlatformConnected();
     void notifyPlatformDisonnected();
@@ -99,7 +242,8 @@ private:
     void gatewayRegistered();
     void setupGatewayListeners(const std::string& protocol);
 
-    void registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol);
+    void registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol,
+                              std::shared_ptr<DataService> dataService = nullptr);
 
     Device m_device;
 
@@ -122,11 +266,27 @@ private:
                                      std::shared_ptr<ChannelProtocolResolver>>>
       m_dataServices;
 
+    std::unique_ptr<GatewayDataService> m_gatewayDataService;
+    std::unique_ptr<Persistence> m_gatewayPersistence;
+    std::unique_ptr<DataProtocol> m_gatewayDataProtocol;
+
     std::shared_ptr<DeviceRegistrationService> m_deviceRegistrationService;
     std::shared_ptr<KeepAliveService> m_keepAliveService;
 
     std::shared_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
+
+    std::function<void(std::string, std::string)> m_actuationHandlerLambda;
+    std::weak_ptr<ActuationHandler> m_actuationHandler;
+
+    std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
+    std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
+
+    std::function<void(const std::vector<ConfigurationItem>& configuration)> m_configurationHandlerLambda;
+    std::weak_ptr<ConfigurationHandler> m_configurationHandler;
+
+    std::function<std::vector<ConfigurationItem>()> m_configurationProviderLambda;
+    std::weak_ptr<ConfigurationProvider> m_configurationProvider;
 
     std::mutex m_lock;
     std::unique_ptr<CommandBuffer> m_commandBuffer;
@@ -148,6 +308,27 @@ private:
     std::shared_ptr<ConnectivityFacade<InboundPlatformMessageHandler>> m_platformConnectivityManager;
     std::shared_ptr<ConnectivityFacade<InboundDeviceMessageHandler>> m_deviceConnectivityManager;
 };
+
+template <typename T> void Wolk::addSensorReading(const std::string& reference, T value, unsigned long long rtc)
+{
+    addSensorReading(reference, StringUtils::toString(value), rtc);
+}
+
+template <typename T>
+void Wolk::addSensorReading(const std::string& reference, std::initializer_list<T> values, unsigned long long int rtc)
+{
+    addSensorReading(reference, std::vector<T>(values), rtc);
+}
+
+template <typename T>
+void Wolk::addSensorReading(const std::string& reference, const std::vector<T> values, unsigned long long int rtc)
+{
+    std::vector<std::string> stringifiedValues(values.size());
+    std::transform(values.cbegin(), values.cend(), stringifiedValues.begin(),
+                   [&](const T& value) -> std::string { return StringUtils::toString(value); });
+
+    addSensorReading(reference, stringifiedValues, rtc);
+}
 
 template <class MessageHandler>
 Wolk::ConnectivityFacade<MessageHandler>::ConnectivityFacade(MessageHandler& handler,

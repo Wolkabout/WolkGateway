@@ -28,6 +28,7 @@
 #include "protocol/json/JsonGatewayDataProtocol.h"
 #include "protocol/json/JsonGatewayDeviceRegistrationProtocol.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
+#include "protocol/json/JsonProtocol.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
@@ -165,8 +166,35 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_statusMessageRouter);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
 
-    // Setup data service
-    wolk->registerDataProtocol(m_dataProtocol);
+    // setup gateway data service if gateway manifest is not empty
+    const auto gwManifest = m_device.getManifest();
+    if (!gwManifest.getSensors().empty() || !gwManifest.getActuators().empty() || !gwManifest.getAlarms().empty() ||
+        !gwManifest.getConfigurations().empty())
+    {
+        auto dataService = std::make_shared<DataService>(m_device.getKey(), *m_dataProtocol, *wolk->m_deviceRepository,
+                                                         *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+
+        wolk->m_gatewayPersistence.reset(new InMemoryPersistence());
+        wolk->m_gatewayDataProtocol.reset(new JsonProtocol());
+        wolk->m_gatewayDataService.reset(new GatewayDataService(
+          m_device.getKey(), *wolk->m_gatewayDataProtocol, *wolk->m_gatewayPersistence, *dataService,
+          [&](const std::string& reference, const std::string& value) {
+              wolk->handleActuatorSetCommand(reference, value);
+          },
+          [&](const std::string& reference) { wolk->handleActuatorGetCommand(reference); },
+          [&](const ConfigurationSetCommand& command) { wolk->handleConfigurationSetCommand(command); },
+          [&]() { wolk->handleConfigurationGetCommand(); }));
+
+        dataService->setGatewayMessageListener(wolk->m_gatewayDataService.get());
+
+        // Setup data service
+        wolk->registerDataProtocol(m_dataProtocol, dataService);
+    }
+    else
+    {
+        // Setup data service
+        wolk->registerDataProtocol(m_dataProtocol);
+    }
 
     return wolk;
 }

@@ -47,6 +47,12 @@ WolkBuilder& WolkBuilder::platformHost(const std::string& host)
     return *this;
 }
 
+WolkBuilder& WolkBuilder::platformTrustStore(const std::string& trustStore)
+{
+    m_platformTrustStore = trustStore;
+    return *this;
+}
+
 WolkBuilder& WolkBuilder::gatewayHost(const std::string& host)
 {
     m_gatewayHost = host;
@@ -90,8 +96,9 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
 
     // Setup connectivity services
-    wolk->m_platformConnectivityService.reset(new MqttConnectivityService(
-      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_platformHost, TRUST_STORE));
+    wolk->m_platformConnectivityService.reset(new MqttConnectivityService(std::make_shared<PahoMqttClient>(),
+                                                                          m_device.getKey(), m_device.getPassword(),
+                                                                          m_platformHost, m_platformTrustStore));
     wolk->m_platformConnectivityService->setUncontrolledDisonnectMessage(
       wolk->m_statusProtocol->makeLastWillMessage(m_device.getKey()));
 

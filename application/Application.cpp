@@ -105,6 +105,11 @@ int main(int argc, char** argv)
         builder.withoutKeepAlive();
     }
 
+    if (gatewayConfiguration.getPlatformTrustStore())
+    {
+        builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore().value());
+    }
+
     std::unique_ptr<wolkabout::Wolk> wolk = builder.build();
 
     wolk->connect();

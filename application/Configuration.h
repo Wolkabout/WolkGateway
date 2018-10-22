@@ -33,8 +33,10 @@ public:
     const std::string& getLocalMqttUri() const;
 
     void setKeepAliveEnabled(bool value);
-
     const WolkOptional<bool>& getKeepAliveEnabled() const;
+
+    void setPlatformTrustStore(const std::string& value);
+    const WolkOptional<std::string>& getPlatformTrustStore() const;
 
     static wolkabout::GatewayConfiguration fromJson(const std::string& gatewayConfigurationFile);
 
@@ -46,10 +48,12 @@ private:
     std::string m_localMqttUri;
 
     WolkOptional<bool> m_keepAliveEnabled;
+    WolkOptional<std::string> m_platformTrustStore;
 
     static const std::string KEY;
     static const std::string PASSWORD;
     static const std::string PLATFORM_URI;
+    static const std::string PLATFORM_TRUST_STORE;
     static const std::string LOCAL_URI;
     static const std::string KEEP_ALIVE;
 };

@@ -29,6 +29,7 @@ using nlohmann::json;
 const std::string GatewayConfiguration::KEY = "key";
 const std::string GatewayConfiguration::PASSWORD = "password";
 const std::string GatewayConfiguration::PLATFORM_URI = "platformMqttUri";
+const std::string GatewayConfiguration::PLATFORM_TRUST_STORE = "platformTrustStore";
 const std::string GatewayConfiguration::LOCAL_URI = "localMqttUri";
 const std::string GatewayConfiguration::KEEP_ALIVE = "keepAlive";
 
@@ -59,6 +60,16 @@ const std::string& GatewayConfiguration::getLocalMqttUri() const
 const std::string& GatewayConfiguration::getPlatformMqttUri() const
 {
     return m_platformMqttUri;
+}
+
+void GatewayConfiguration::setPlatformTrustStore(const std::string& value)
+{
+    m_platformTrustStore = value;
+}
+
+const WolkOptional<std::string>& GatewayConfiguration::getPlatformTrustStore() const
+{
+    return m_platformTrustStore;
 }
 
 void GatewayConfiguration::setKeepAliveEnabled(bool value)
@@ -95,6 +106,11 @@ wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string
     if (j.find(KEEP_ALIVE) != j.end())
     {
         configuration.setKeepAliveEnabled(j.at(KEEP_ALIVE).get<bool>());
+    }
+
+    if (j.find(PLATFORM_TRUST_STORE) != j.end())
+    {
+        configuration.setPlatformTrustStore(j.at(PLATFORM_TRUST_STORE).get<std::string>());
     }
 
     return configuration;

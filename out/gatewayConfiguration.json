@@ -5,7 +5,6 @@
     "password": "",
 
     "platformMqttUri": "ssl://api-demo.wolkabout.com:8883",
-    "platformMqttUri": "ssl://api-verification.wolksense.com:8883",
     "localMqttUri": "tcp://localhost:1883",
 
     "platformTrustStore": "ca.crt"

@@ -66,7 +66,12 @@ void Wolk::addSensorReading(const std::string& reference, std::string value, uns
         rtc = Wolk::currentRtc();
     }
 
-    addToCommandBuffer([=]() -> void { m_gatewayDataService->addSensorReading(reference, value, rtc); });
+    addToCommandBuffer([=]() -> void {
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addSensorReading(reference, value, rtc);
+        }
+    });
 }
 
 void Wolk::addSensorReading(const std::string& reference, const std::vector<std::string> values,
@@ -82,8 +87,12 @@ void Wolk::addSensorReading(const std::string& reference, const std::vector<std:
         rtc = Wolk::currentRtc();
     }
 
-    addToCommandBuffer(
-      [=]() -> void { m_gatewayDataService->addSensorReading(reference, values, getSensorDelimiter(reference), rtc); });
+    addToCommandBuffer([=]() -> void {
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addSensorReading(reference, values, getSensorDelimiter(reference), rtc);
+        }
+    });
 }
 
 void Wolk::addAlarm(const std::string& reference, bool active, unsigned long long rtc)
@@ -93,7 +102,12 @@ void Wolk::addAlarm(const std::string& reference, bool active, unsigned long lon
         rtc = Wolk::currentRtc();
     }
 
-    addToCommandBuffer([=]() -> void { m_gatewayDataService->addAlarm(reference, active, rtc); });
+    addToCommandBuffer([=]() -> void {
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addAlarm(reference, active, rtc);
+        }
+    });
 }
 
 void Wolk::publishActuatorStatus(const std::string& reference)
@@ -112,7 +126,10 @@ void Wolk::publishActuatorStatus(const std::string& reference)
             return ActuatorStatus();
         }();
 
-        m_gatewayDataService->addActuatorStatus(reference, actuatorStatus.getValue(), actuatorStatus.getState());
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addActuatorStatus(reference, actuatorStatus.getValue(), actuatorStatus.getState());
+        }
         flushActuatorStatuses();
     });
 }
@@ -133,7 +150,10 @@ void Wolk::publishConfiguration()
             return std::vector<ConfigurationItem>();
         }();
 
-        m_gatewayDataService->addConfiguration(configuration, getConfigurationDelimiters());
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addConfiguration(configuration, getConfigurationDelimiters());
+        }
         flushConfiguration();
     });
 }
@@ -166,22 +186,34 @@ unsigned long long Wolk::currentRtc()
 
 void Wolk::flushActuatorStatuses()
 {
-    m_gatewayDataService->publishActuatorStatuses();
+    if (m_gatewayDataService)
+    {
+        m_gatewayDataService->publishActuatorStatuses();
+    }
 }
 
 void Wolk::flushAlarms()
 {
-    m_gatewayDataService->publishAlarms();
+    if (m_gatewayDataService)
+    {
+        m_gatewayDataService->publishAlarms();
+    }
 }
 
 void Wolk::flushSensorReadings()
 {
-    m_gatewayDataService->publishSensorReadings();
+    if (m_gatewayDataService)
+    {
+        m_gatewayDataService->publishSensorReadings();
+    }
 }
 
 void Wolk::flushConfiguration()
 {
-    m_gatewayDataService->publishConfiguration();
+    if (m_gatewayDataService)
+    {
+        m_gatewayDataService->publishConfiguration();
+    }
 }
 
 void Wolk::handleActuatorSetCommand(const std::string& reference, const std::string& value)

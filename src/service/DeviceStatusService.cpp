@@ -89,22 +89,11 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
     {
         if (!deviceKey.empty())
         {
-            if (deviceKey == m_gatewayKey)
-            {
-                LOG(INFO) << "Device Status Service: Gateway module got disconnected";
-                if (auto handler = m_gatewayModuleConnectionStatusListener.lock())
-                {
-                    handler->disconnected();
-                }
-            }
-            else
-            {
-                LOG(INFO) << "Device Status Service: Device got disconnected: " << deviceKey;
+            LOG(INFO) << "Device Status Service: Device got disconnected: " << deviceKey;
 
-                // offline status if last will topic contains device key
-                logDeviceStatus(deviceKey, DeviceStatus::OFFLINE);
-                sendStatusResponseForDevice(deviceKey, DeviceStatus::OFFLINE);
-            }
+            // offline status if last will topic contains device key
+            logDeviceStatus(deviceKey, DeviceStatus::OFFLINE);
+            sendStatusResponseForDevice(deviceKey, DeviceStatus::OFFLINE);
         }
         else    // check for list of key in payload
         {
@@ -126,56 +115,16 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
             return;
         }
 
-        if (deviceKey == m_gatewayKey)
+        auto statusResponse = m_protocol.makeDeviceStatusResponse(*message);
+        if (!statusResponse)
         {
-            auto deviceStatusResponse = m_protocol.makeDeviceStatusResponse(*message);
-            if (!deviceStatusResponse)
-            {
-                LOG(WARN) << "Device Status Service: Could not parse message: " << topic << ", "
-                          << message->getContent();
-                return;
-            }
-
-            switch (deviceStatusResponse->getStatus())
-            {
-            case DeviceStatus::CONNECTED:
-            {
-                if (auto handler = m_gatewayModuleConnectionStatusListener.lock())
-                {
-                    LOG(INFO) << "Device Status Service: Gateway module connected";
-                    handler->connected();
-                }
-                break;
-            }
-            case DeviceStatus::SLEEP:
-            case DeviceStatus::OFFLINE:
-            {
-                if (auto handler = m_gatewayModuleConnectionStatusListener.lock())
-                {
-                    LOG(INFO) << "Device Status Service: Gateway module got disconnected";
-                    handler->disconnected();
-                }
-                break;
-            }
-            case DeviceStatus::SERVICE:
-            {
-                // TODO send service status to platform?
-            }
-            }
+            LOG(WARN) << "Device Status Service: Unable to parse device status response";
+            return;
         }
-        else
-        {
-            auto statusResponse = m_protocol.makeDeviceStatusResponse(*message);
-            if (!statusResponse)
-            {
-                LOG(WARN) << "Device Status Service: Unable to parse device status response";
-                return;
-            }
 
-            logDeviceStatus(deviceKey, statusResponse->getStatus());
+        logDeviceStatus(deviceKey, statusResponse->getStatus());
 
-            routeDeviceMessage(message);
-        }
+        routeDeviceMessage(message);
     }
     else
     {
@@ -186,11 +135,6 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
 const GatewayProtocol& DeviceStatusService::getProtocol() const
 {
     return m_protocol;
-}
-
-void DeviceStatusService::setGatewayModuleConnectionStatusListener(std::weak_ptr<ConnectionStatusListener> listener)
-{
-    m_gatewayModuleConnectionStatusListener = listener;
 }
 
 void DeviceStatusService::sendLastKnownStatusForDevice(const std::string& deviceKey)
@@ -254,10 +198,12 @@ void DeviceStatusService::requestDevicesStatus()
 
     for (const auto& key : *keys)
     {
-        if (key != m_gatewayKey)
+        if (key == m_gatewayKey)
         {
-            sendStatusRequestForDevice(key);
+            continue;
         }
+
+        sendStatusRequestForDevice(key);
     }
 
     m_responseTimer.start(std::chrono::duration_cast<std::chrono::milliseconds>(m_statusResponseInterval),

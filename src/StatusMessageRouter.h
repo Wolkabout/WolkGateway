@@ -46,6 +46,6 @@ private:
     DeviceMessageListener* m_lastWillMessageHandler;
     PlatformMessageListener* m_platformKeepAliveMessageHandler;
 };
-}
+}    // namespace wolkabout
 
 #endif    // STATUSMESSAGEROUTER_H

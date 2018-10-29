@@ -77,6 +77,6 @@ public:
     virtual bool isMessageToPlatform(const Message& channel) const = 0;
     virtual bool isMessageFromPlatform(const Message& channel) const = 0;
 };
-}
+}    // namespace wolkabout
 
 #endif    // GATEWAYPROTOCOL_H

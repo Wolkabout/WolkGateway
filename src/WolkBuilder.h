@@ -47,6 +47,13 @@ public:
     WolkBuilder& platformHost(const std::string& host);
 
     /**
+     * @brief Allows passing of server certificate
+     * @param trust store
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& platformTrustStore(const std::string& trustStore);
+
+    /**
      * @brief Allows passing of URI to custom local message bus
      * @param host Message Bus URI
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
@@ -85,6 +92,7 @@ public:
 
 private:
     std::string m_platformHost;
+    std::string m_platformTrustStore = TRUST_STORE;
     std::string m_gatewayHost;
     Device m_device;
 

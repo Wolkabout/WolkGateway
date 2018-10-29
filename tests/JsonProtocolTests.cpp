@@ -23,7 +23,7 @@ public:
 
     std::unique_ptr<wolkabout::GatewayDataProtocol> protocol;
 };
-}
+}    // namespace
 
 TEST_F(JsonGatewayDataProtocol, Given_Name_When_ProtocolNameIsRequested_Then_NameIsEqualToProtocolName)
 {

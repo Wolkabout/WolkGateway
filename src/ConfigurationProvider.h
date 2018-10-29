@@ -14,24 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef DEVICE_H
-#define DEVICE_H
+#ifndef CONFIGURATIONPROVIDER_H
+#define CONFIGURATIONPROVIDER_H
 
-#include "model/DetailedDevice.h"
+#include "model/ConfigurationItem.h"
 
-#include <string>
+#include <vector>
 
 namespace wolkabout
 {
-class Device : public DetailedDevice
+class ConfigurationProvider
 {
 public:
-    Device(std::string key, std::string password, std::string protocol);
-    Device(std::string key, std::string password, DeviceManifest deviceManifest);
+    /**
+     * @brief Device configuration provider callback
+     *        Reads device configuration and returns it as
+     *        vector of wolkabout::ConfigurationItem.<br>
+     *
+     *        Must be implemented as non blocking<br>
+     *        Must be implemented as thread safe
+     * @return Device configuration as std::vector<ConfigurationItem>
+     */
+    virtual std::vector<ConfigurationItem> getConfiguration() = 0;
 
-    const std::string& getKey() const;
-    const std::string& getPassword() const;
+    virtual ~ConfigurationProvider() = default;
 };
 }    // namespace wolkabout
 
-#endif    // DEVICE_H
+#endif

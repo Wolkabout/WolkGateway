@@ -4,8 +4,8 @@
     "key": "",
     "password": "",
 
-    "protocol": "JsonProtocol",
-
     "platformMqttUri": "ssl://api-demo.wolkabout.com:8883",
-    "localMqttUri": "tcp://localhost:1883"
+    "localMqttUri": "tcp://localhost:1883",
+
+    "platformTrustStore": "ca.crt"
 }

@@ -15,6 +15,7 @@
  */
 
 #include "service/DataService.h"
+#include "InboundMessageHandler.h"
 #include "OutboundMessageHandler.h"
 #include "model/ActuatorStatus.h"
 #include "model/DetailedDevice.h"
@@ -30,13 +31,13 @@ namespace wolkabout
 {
 DataService::DataService(const std::string& gatewayKey, GatewayDataProtocol& protocol,
                          DeviceRepository& deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
-                         OutboundMessageHandler& outboundDeviceMessageHandler)
+                         OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice)
 : m_gatewayKey{gatewayKey}
 , m_protocol{protocol}
 , m_deviceRepository{deviceRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
-, m_gatewayModuleConnected{false}
+, m_gatewayDevice{gatewayDevice}
 {
 }
 
@@ -62,14 +63,7 @@ void DataService::platformMessageReceived(std::shared_ptr<Message> message)
 
     if (m_gatewayKey == deviceKey)
     {
-        if (m_gatewayModuleConnected)
-        {
-            routePlatformToGatewayMessage(message);
-        }
-        else
-        {
-            handleGatewayOfflineMessage(message);
-        }
+        routePlatformToGatewayMessage(message);
     }
     else
     {
@@ -146,15 +140,7 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
         return;
     }
 
-    if (deviceKey == m_gatewayKey)
-    {
-        m_gatewayModuleConnected = true;
-        routeGatewayToPlatformMessage(message);
-    }
-    else
-    {
-        routeDeviceToPlatformMessage(message);
-    }
+    routeDeviceToPlatformMessage(message);
 }
 
 const GatewayProtocol& DataService::getProtocol() const
@@ -162,14 +148,14 @@ const GatewayProtocol& DataService::getProtocol() const
     return m_protocol;
 }
 
-void DataService::connected()
+void DataService::addMessage(std::shared_ptr<Message> message)
 {
-    m_gatewayModuleConnected = true;
+    routeGatewayToPlatformMessage(message);
 }
 
-void DataService::disconnected()
+void DataService::setGatewayMessageListener(MessageListener* gatewayDevice)
 {
-    m_gatewayModuleConnected = false;
+    m_gatewayDevice = gatewayDevice;
 }
 
 void DataService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)
@@ -229,60 +215,10 @@ void DataService::routePlatformToGatewayMessage(std::shared_ptr<Message> message
     }
 
     const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
-    m_outboundDeviceMessageHandler.addMessage(routedMessage);
-}
 
-void DataService::handleGatewayOfflineMessage(std::shared_ptr<Message> message)
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const auto gatewayDevice = m_deviceRepository.findByDeviceKey(m_gatewayKey);
-    if (!gatewayDevice)
+    if (m_gatewayDevice)
     {
-        LOG(WARN) << "Data Service: Gateway device not found in repository";
-        return;
-    }
-
-    if (m_protocol.isActuatorGetMessage(*message) || m_protocol.isActuatorSetMessage(*message))
-    {
-        LOG(DEBUG) << "Data Service: Handling actuation message for gateway";
-
-        const std::string ref = m_protocol.extractReferenceFromChannel(message->getChannel());
-        if (ref.empty())
-        {
-            LOG(WARN) << "Data Service: Unable to get reference from topic: " << message->getChannel();
-            return;
-        }
-
-        const auto actuatorReferences = gatewayDevice->getActuatorReferences();
-        if (auto it = std::find(actuatorReferences.begin(), actuatorReferences.end(), ref) != actuatorReferences.end())
-        {
-            ActuatorStatus status{"", ref, ActuatorStatus::State::ERROR};
-            std::shared_ptr<Message> statusMessage = m_protocol.makeMessage(m_gatewayKey, status);
-
-            if (!statusMessage)
-            {
-                LOG(WARN) << "Failed to create actuator status message";
-                return;
-            }
-
-            m_outboundPlatformMessageHandler.addMessage(statusMessage);
-        }
-        else
-        {
-            LOG(INFO) << "Data Service: Actuator reference not defined for gateway: " << ref;
-        }
-    }
-    else if (m_protocol.isConfigurationGetMessage(*message) || m_protocol.isConfigurationSetMessage(*message))
-    {
-        LOG(DEBUG) << "Data Service: Handling configuration message for gateway";
-    }
-    else
-    {
-        assert(false && "DataService: Unsupported message type");
-
-        LOG(ERROR) << "DataService: Not forwarding message from device on channel: '" << message->getChannel()
-                   << "'. Unsupported message type";
+        m_gatewayDevice->messageReceived(routedMessage);
     }
 }
-}
+}    // namespace wolkabout

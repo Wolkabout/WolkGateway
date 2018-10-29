@@ -18,7 +18,9 @@
 #include "InboundMessageHandler.h"
 #include "WolkBuilder.h"
 #include "connectivity/ConnectivityService.h"
+#include "model/ConfigurationSetCommand.h"
 #include "model/DetailedDevice.h"
+#include "protocol/Protocol.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
 #include "service/KeepAliveService.h"
@@ -57,6 +59,115 @@ void Wolk::disconnect()
     addToCommandBuffer([=]() -> void { m_deviceConnectivityService->disconnect(); });
 }
 
+void Wolk::addSensorReading(const std::string& reference, std::string value, unsigned long long rtc)
+{
+    if (rtc == 0)
+    {
+        rtc = Wolk::currentRtc();
+    }
+
+    addToCommandBuffer([=]() -> void {
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addSensorReading(reference, value, rtc);
+        }
+    });
+}
+
+void Wolk::addSensorReading(const std::string& reference, const std::vector<std::string> values,
+                            unsigned long long int rtc)
+{
+    if (values.empty())
+    {
+        return;
+    }
+
+    if (rtc == 0)
+    {
+        rtc = Wolk::currentRtc();
+    }
+
+    addToCommandBuffer([=]() -> void {
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addSensorReading(reference, values, getSensorDelimiter(reference), rtc);
+        }
+    });
+}
+
+void Wolk::addAlarm(const std::string& reference, bool active, unsigned long long rtc)
+{
+    if (rtc == 0)
+    {
+        rtc = Wolk::currentRtc();
+    }
+
+    addToCommandBuffer([=]() -> void {
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addAlarm(reference, active, rtc);
+        }
+    });
+}
+
+void Wolk::publishActuatorStatus(const std::string& reference)
+{
+    addToCommandBuffer([=]() -> void {
+        const ActuatorStatus actuatorStatus = [&]() -> ActuatorStatus {
+            if (auto provider = m_actuatorStatusProvider.lock())
+            {
+                return provider->getActuatorStatus(reference);
+            }
+            else if (m_actuatorStatusProviderLambda)
+            {
+                return m_actuatorStatusProviderLambda(reference);
+            }
+
+            return ActuatorStatus();
+        }();
+
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addActuatorStatus(reference, actuatorStatus.getValue(), actuatorStatus.getState());
+        }
+        flushActuatorStatuses();
+    });
+}
+
+void Wolk::publishConfiguration()
+{
+    addToCommandBuffer([=]() -> void {
+        const auto configuration = [=]() -> std::vector<ConfigurationItem> {
+            if (auto provider = m_configurationProvider.lock())
+            {
+                return provider->getConfiguration();
+            }
+            else if (m_configurationProviderLambda)
+            {
+                return m_configurationProviderLambda();
+            }
+
+            return std::vector<ConfigurationItem>();
+        }();
+
+        if (m_gatewayDataService)
+        {
+            m_gatewayDataService->addConfiguration(configuration, getConfigurationDelimiters());
+        }
+        flushConfiguration();
+    });
+}
+
+void Wolk::publish()
+{
+    addToCommandBuffer([=]() -> void {
+        flushActuatorStatuses();
+        flushAlarms();
+        flushSensorReadings();
+        flushConfiguration();
+    });
+}
+
 Wolk::Wolk(Device device) : m_device{device}
 {
     m_commandBuffer = std::unique_ptr<CommandBuffer>(new CommandBuffer());
@@ -71,6 +182,98 @@ unsigned long long Wolk::currentRtc()
 {
     auto duration = std::chrono::system_clock::now().time_since_epoch();
     return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+}
+
+void Wolk::flushActuatorStatuses()
+{
+    if (m_gatewayDataService)
+    {
+        m_gatewayDataService->publishActuatorStatuses();
+    }
+}
+
+void Wolk::flushAlarms()
+{
+    if (m_gatewayDataService)
+    {
+        m_gatewayDataService->publishAlarms();
+    }
+}
+
+void Wolk::flushSensorReadings()
+{
+    if (m_gatewayDataService)
+    {
+        m_gatewayDataService->publishSensorReadings();
+    }
+}
+
+void Wolk::flushConfiguration()
+{
+    if (m_gatewayDataService)
+    {
+        m_gatewayDataService->publishConfiguration();
+    }
+}
+
+void Wolk::handleActuatorSetCommand(const std::string& reference, const std::string& value)
+{
+    addToCommandBuffer([=] {
+        if (auto provider = m_actuationHandler.lock())
+        {
+            provider->handleActuation(reference, value);
+        }
+        else if (m_actuationHandlerLambda)
+        {
+            m_actuationHandlerLambda(reference, value);
+        }
+    });
+
+    publishActuatorStatus(reference);
+}
+
+void Wolk::handleActuatorGetCommand(const std::string& reference)
+{
+    publishActuatorStatus(reference);
+}
+
+void Wolk::handleConfigurationSetCommand(const ConfigurationSetCommand& command)
+{
+    addToCommandBuffer([=]() -> void {
+        if (auto handler = m_configurationHandler.lock())
+        {
+            handler->handleConfiguration(command.getValues());
+        }
+        else if (m_configurationHandlerLambda)
+        {
+            m_configurationHandlerLambda(command.getValues());
+        }
+    });
+
+    publishConfiguration();
+}
+
+void Wolk::handleConfigurationGetCommand()
+{
+    publishConfiguration();
+}
+
+std::string Wolk::getSensorDelimiter(const std::string& reference)
+{
+    auto delimiters = m_device.getSensorDelimiters();
+
+    auto it = delimiters.find(reference);
+    if (it != delimiters.end())
+    {
+        return it->second;
+    }
+
+    return "";
+}
+
+std::map<std::string, std::string> Wolk::getConfigurationDelimiters()
+{
+    return m_device.getConfigurationDelimiters();
 }
 
 void Wolk::notifyPlatformConnected()
@@ -167,42 +370,7 @@ void Wolk::routeDeviceData(const std::string& protocol, std::shared_ptr<Message>
     }
 }
 
-void Wolk::gatewayRegistered()
-{
-    auto gatewayDevice = m_deviceRepository->findByDeviceKey(m_device.getKey());
-    if (!gatewayDevice)
-    {
-        LOG(WARN) << "Gateway device not found in repository";
-        return;
-    }
-
-    const std::string gatewayProtocol = gatewayDevice->getManifest().getProtocol();
-
-    if (gatewayProtocol.empty())
-    {
-        LOG(WARN) << "Gateway protocol not set";
-        return;
-    }
-
-    setupGatewayListeners(gatewayProtocol);
-}
-
-void Wolk::setupGatewayListeners(const std::string& protocol)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(protocol);
-    if (it != m_dataServices.end())
-    {
-        m_deviceStatusService->setGatewayModuleConnectionStatusListener(std::get<0>(it->second));
-    }
-    else
-    {
-        LOG(WARN) << "Message protocol not found for gateway";
-    }
-}
-
-void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol)
+void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol, std::shared_ptr<DataService> dataService)
 {
     std::lock_guard<decltype(m_lock)> lg{m_lock};
 
@@ -212,8 +380,11 @@ void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol)
         return;
     }
 
-    auto dataService = std::make_shared<DataService>(m_device.getKey(), *protocol, *m_deviceRepository,
-                                                     *m_platformPublisher, *m_devicePublisher);
+    if (!dataService)
+    {
+        dataService = std::make_shared<DataService>(m_device.getKey(), *protocol, *m_deviceRepository,
+                                                    *m_platformPublisher, *m_devicePublisher);
+    }
 
     auto protocolResolver =
       std::make_shared<ChannelProtocolResolver>(*protocol, *m_deviceRepository,

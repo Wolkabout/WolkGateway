@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-#include "model/Device.h"
+#ifndef ACTUATORSTATUSPROVIDER_H
+#define ACTUATORSTATUSPROVIDER_H
+
+#include "model/ActuatorStatus.h"
 
 #include <string>
 
 namespace wolkabout
 {
-Device::Device(std::string key, std::string password, std::string protocol)
-: DetailedDevice{"", key, password, DeviceManifest{"EmptyManifest", "", protocol, ""}}
+class ActuatorStatusProvider
 {
-}
+public:
+    /**
+     * @brief Actuator status provider callback<br>
+     *        Must be implemented as non blocking<br>
+     *        Must be implemented as thread safe
+     * @param reference Actuator reference
+     * @return ActuatorStatus of requested actuator
+     */
+    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
 
-Device::Device(std::string key, std::string password, DeviceManifest deviceManifest)
-: DetailedDevice{"", key, password, deviceManifest}
-{
-}
-
-const std::string& Device::getKey() const
-{
-    return DetailedDevice::getKey();
-}
-
-const std::string& Device::getPassword() const
-{
-    return DetailedDevice::getPassword();
-}
+    virtual ~ActuatorStatusProvider() = default;
+};
 }    // namespace wolkabout
+
+#endif

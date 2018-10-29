@@ -54,6 +54,8 @@ public:
 
     void deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys);
 
+    void registerDevice(const DetailedDevice& device);
+
 protected:
     void invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const;
 

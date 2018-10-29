@@ -14,29 +14,27 @@
  * limitations under the License.
  */
 
-#include "model/Device.h"
+#ifndef ACTUATIONHANDLER_H
+#define ACTUATIONHANDLER_H
 
 #include <string>
 
 namespace wolkabout
 {
-Device::Device(std::string key, std::string password, std::string protocol)
-: DetailedDevice{"", key, password, DeviceManifest{"EmptyManifest", "", protocol, ""}}
+class ActuationHandler
 {
-}
+public:
+    /**
+     * @brief Actuation handler callback<br>
+     *        Must be implemented as non blocking<br>
+     *        Must be implemented as thread safe
+     * @param reference Actuator reference
+     * @param value Desired actuator value
+     */
+    virtual void handleActuation(const std::string& reference, const std::string& value) = 0;
 
-Device::Device(std::string key, std::string password, DeviceManifest deviceManifest)
-: DetailedDevice{"", key, password, deviceManifest}
-{
-}
-
-const std::string& Device::getKey() const
-{
-    return DetailedDevice::getKey();
-}
-
-const std::string& Device::getPassword() const
-{
-    return DetailedDevice::getPassword();
-}
+    virtual ~ActuationHandler() = default;
+};
 }    // namespace wolkabout
+
+#endif

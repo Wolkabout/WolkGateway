@@ -21,7 +21,7 @@ public:
 
     std::unique_ptr<wolkabout::JsonGatewayDeviceRegistrationProtocol> protocol;
 };
-}
+}    // namespace
 
 TEST_F(JsonGatewayDeviceRegistrationProtocol,
        Given_RegistrationRequestChannelForGateway_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToGatewayKey)

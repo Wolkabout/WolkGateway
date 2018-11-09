@@ -63,6 +63,9 @@ public:
     bool isDeviceDeletionRequest(const Message& message) const override;
     bool isDeviceDeletionResponse(const Message& message) const override;
 
+    std::string getResponseChannel(const Message& message, const std::string& gatewayKey,
+                                   const std::string& deviceKey) const override;
+
 private:
     static const std::string NAME;
 

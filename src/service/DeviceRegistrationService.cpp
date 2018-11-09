@@ -34,6 +34,12 @@
 #include <string>
 #include <vector>
 
+namespace
+{
+static const short RETRY_COUNT = 3;
+static const std::chrono::milliseconds RETRY_TIMEOUT{5000};
+}    // namespace
+
 namespace wolkabout
 {
 DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey,
@@ -46,6 +52,7 @@ DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey,
 , m_deviceRepository{deviceRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
+, m_platformRetryMessageHandler{outboundPlatformMessageHandler}
 {
 }
 
@@ -59,6 +66,8 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
                   << "'. Message not from platform.";
         return;
     }
+
+    m_platformRetryMessageHandler.messageReceived(message);
 
     if (m_protocol.isRegistrationResponse(*message))
     {
@@ -168,7 +177,16 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
                 continue;
             }
 
-            m_outboundPlatformMessageHandler.addMessage(deviceDeletionRequestMessage);
+            auto responseChannel =
+              m_protocol.getResponseChannel(*deviceDeletionRequestMessage, m_gatewayKey, deviceKeyFromRepository);
+            RetryMessageStruct retryMessage{deviceDeletionRequestMessage, responseChannel,
+                                            [=](std::shared_ptr<Message>) {
+                                                LOG(ERROR)
+                                                  << "Failed to delete device with key: " << deviceKeyFromRepository
+                                                  << ", no response from platform";
+                                            },
+                                            RETRY_COUNT, RETRY_TIMEOUT};
+            m_platformRetryMessageHandler.addMessage(retryMessage);
         }
     }
 }
@@ -218,7 +236,14 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
         return;
     }
 
-    m_outboundPlatformMessageHandler.addMessage(registrationRequest);
+    auto responseChannel = m_protocol.getResponseChannel(*registrationRequest, m_gatewayKey, deviceKey);
+    RetryMessageStruct retryMessage{registrationRequest, responseChannel,
+                                    [=](std::shared_ptr<Message>) {
+                                        LOG(ERROR) << "Failed to register device with key: " << deviceKey
+                                                   << ", no response from platform";
+                                    },
+                                    RETRY_COUNT, RETRY_TIMEOUT};
+    m_platformRetryMessageHandler.addMessage(retryMessage);
 }
 
 void DeviceRegistrationService::handleDeviceReregistrationRequest()

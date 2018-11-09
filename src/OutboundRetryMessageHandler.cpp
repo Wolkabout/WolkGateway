@@ -52,6 +52,10 @@ void OutboundRetryMessageHandler::addMessage(RetryMessageStruct msg)
 
     LOG(DEBUG) << "Adding message for retry on channel: " << msg.message->getChannel();
 
+    // send message
+    m_messageHandler.addMessage(msg.message);
+
+    // setup retry
     const auto id = getUniqueId();
     m_messages[id] = {msg, std::unique_ptr<Timer>(new Timer()), 0, false};
 

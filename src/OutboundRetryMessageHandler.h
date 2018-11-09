@@ -38,8 +38,8 @@ struct RetryMessageStruct
     std::shared_ptr<Message> message;
     std::string responseChannel;
     std::function<void(std::shared_ptr<Message>)> onFail;
-    short retryCount = 3;
-    std::chrono::milliseconds retryInterval{5000};
+    short retryCount;
+    std::chrono::milliseconds retryInterval;
 };
 
 class OutboundRetryMessageHandler

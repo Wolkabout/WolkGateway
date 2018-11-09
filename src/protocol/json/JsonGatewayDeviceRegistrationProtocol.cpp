@@ -354,6 +354,40 @@ bool JsonGatewayDeviceRegistrationProtocol::isDeviceDeletionResponse(const Messa
     return StringUtils::startsWith(message.getChannel(), DEVICE_DELETION_RESPONSE_TOPIC_ROOT);
 }
 
+std::string JsonGatewayDeviceRegistrationProtocol::getResponseChannel(const Message& message,
+                                                                      const std::string& gatewayKey,
+                                                                      const std::string& deviceKey) const
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    if (isRegistrationRequest(message))
+    {
+        if (gatewayKey == deviceKey)
+        {
+            return DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
+        }
+        else
+        {
+            return DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+                   DEVICE_PATH_PREFIX + deviceKey;
+        }
+    }
+    else if (isDeviceDeletionRequest(message))
+    {
+        if (gatewayKey == deviceKey)
+        {
+            return DEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
+        }
+        else
+        {
+            return DEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+                   DEVICE_PATH_PREFIX + deviceKey;
+        }
+    }
+
+    return "";
+}
+
 std::string JsonGatewayDeviceRegistrationProtocol::extractDeviceKeyFromChannel(const std::string& channel) const
 {
     LOG(TRACE) << METHOD_INFO;

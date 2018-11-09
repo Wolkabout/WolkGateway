@@ -19,6 +19,7 @@
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
+#include "OutboundRetryMessageHandler.h"
 #include "model/DeviceRegistrationRequest.h"
 
 #include <map>
@@ -75,6 +76,8 @@ private:
 
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;
+
+    OutboundRetryMessageHandler m_platformRetryMessageHandler;
 
     std::function<void(const std::string& deviceKey, bool isGateway)> m_onDeviceRegistered;
 

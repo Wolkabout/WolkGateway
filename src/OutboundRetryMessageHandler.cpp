@@ -132,7 +132,7 @@ void OutboundRetryMessageHandler::clearTimers()
 {
     while (m_run)
     {
-        std::lock_guard<decltype(m_mutex)> lg{m_mutex};
+        std::unique_lock<decltype(m_mutex)> lg{m_mutex};
 
         for (auto it = m_messages.begin(); it != m_messages.end();)
         {
@@ -141,7 +141,7 @@ void OutboundRetryMessageHandler::clearTimers()
 
             if (clearMessage)
             {
-                LOG(DEBUG) << "Removing message from retry que: "
+                LOG(DEBUG) << "Removing message from retry queue: "
                            << std::get<RETRY_MESSAGE_INDEX>(tuple).message->getChannel();
                 // removed flagged messages
                 auto& timer = std::get<TIMER_INDEX>(tuple);
@@ -153,6 +153,8 @@ void OutboundRetryMessageHandler::clearTimers()
                 ++it;
             }
         }
+
+        lg.unlock();
 
         static std::mutex cvMutex;
         std::unique_lock<std::mutex> lock{cvMutex};

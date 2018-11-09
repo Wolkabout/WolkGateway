@@ -61,6 +61,9 @@ public:
 
     virtual bool isDeviceDeletionRequest(const Message& message) const = 0;
     virtual bool isDeviceDeletionResponse(const Message& message) const = 0;
+
+    virtual std::string getResponseChannel(const Message& message, const std::string& gatewayKey,
+                                           const std::string& deviceKey) const = 0;
 };
 }    // namespace wolkabout
 

@@ -53,6 +53,7 @@ public:
 
 private:
     void clearTimers();
+    void notifyCleanup();
     unsigned long long getUniqueId();
 
     OutboundMessageHandler& m_messageHandler;

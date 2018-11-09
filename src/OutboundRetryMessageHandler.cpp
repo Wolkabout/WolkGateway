@@ -17,6 +17,7 @@
 #include "OutboundRetryMessageHandler.h"
 #include "OutboundMessageHandler.h"
 #include "model/Message.h"
+#include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
 
 namespace
@@ -37,6 +38,7 @@ OutboundRetryMessageHandler::OutboundRetryMessageHandler(OutboundMessageHandler&
 OutboundRetryMessageHandler::~OutboundRetryMessageHandler()
 {
     m_run = false;
+    notifyCleanup();
 
     if (m_garbageCollector.joinable())
     {
@@ -47,6 +49,8 @@ OutboundRetryMessageHandler::~OutboundRetryMessageHandler()
 void OutboundRetryMessageHandler::addMessage(RetryMessageStruct msg)
 {
     std::lock_guard<decltype(m_mutex)> lg{m_mutex};
+
+    LOG(DEBUG) << "Adding message for retry on channel: " << msg.message->getChannel();
 
     const auto id = getUniqueId();
     m_messages[id] = {msg, std::unique_ptr<Timer>(new Timer()), 0, false};
@@ -62,6 +66,11 @@ void OutboundRetryMessageHandler::addMessage(RetryMessageStruct msg)
             return;
 
         auto& tuple = it->second;
+
+        // skip if message is already flagged
+        if (std::get<FLAG_INDEX>(tuple))
+            return;
+
         auto& retryCount = std::get<RETRY_COUNT_INDEX>(tuple);
         ++retryCount;
 
@@ -69,15 +78,20 @@ void OutboundRetryMessageHandler::addMessage(RetryMessageStruct msg)
 
         if (retryCount > retryMessage.retryCount)
         {
+            LOG(INFO) << "Retry count exceeded for message on channel: " << retryMessage.message->getChannel();
+
             // flag message struct for deletion
             auto& clearMessage = std::get<FLAG_INDEX>(tuple);
             clearMessage = true;
 
             // on fail callback
             retryMessage.onFail(retryMessage.message);
+
+            notifyCleanup();
         }
         else
         {
+            LOG(INFO) << "Retry sending message on channel: " << retryMessage.message->getChannel();
             // retry message sending
             m_messageHandler.addMessage(retryMessage.message);
         }
@@ -94,13 +108,18 @@ void OutboundRetryMessageHandler::messageReceived(std::shared_ptr<Message> respo
         const auto& retryMessage = std::get<RETRY_MESSAGE_INDEX>(tuple);
         if (StringUtils::mqttTopicMatch(response->getChannel(), retryMessage.responseChannel))
         {
-            // stop retry timer
-            auto& timer = std::get<TIMER_INDEX>(tuple);
-            timer->stop();
+            LOG(DEBUG) << "Response received on channel " << retryMessage.responseChannel
+                       << ", for message on channel: " << retryMessage.message->getChannel();
 
             // flag message struct for deletion
             auto& clearMessage = std::get<FLAG_INDEX>(tuple);
             clearMessage = true;
+
+            // stop retry timer
+            auto& timer = std::get<TIMER_INDEX>(tuple);
+            timer->stop();
+
+            notifyCleanup();
         }
     }
 }
@@ -118,6 +137,8 @@ void OutboundRetryMessageHandler::clearTimers()
 
             if (clearMessage)
             {
+                LOG(DEBUG) << "Removing message from retry que: "
+                           << std::get<RETRY_MESSAGE_INDEX>(tuple).message->getChannel();
                 // removed flagged messages
                 auto& timer = std::get<TIMER_INDEX>(tuple);
                 timer->stop();
@@ -128,7 +149,16 @@ void OutboundRetryMessageHandler::clearTimers()
                 ++it;
             }
         }
+
+        static std::mutex cvMutex;
+        std::unique_lock<std::mutex> lock{cvMutex};
+        m_condition.wait(lock);
     }
+}
+
+void OutboundRetryMessageHandler::notifyCleanup()
+{
+    m_condition.notify_one();
 }
 
 unsigned long long OutboundRetryMessageHandler::getUniqueId()

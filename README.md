@@ -78,3 +78,15 @@ Module may be implemented in any desired language as a mqtt client.
 <p align="center">
   <img src="gateway_architecture.png" title="Gateway architecture">
 </p>
+
+
+Deleting devices
+------
+
+Gateway keeps track of all devices that are registered via modules. Keys of all registered devices are stored in a file existingDevices.json which is located
+in the same directory as gateway executable.
+
+To delete device from gateway open existingDevices.json file and remove the line containing the key of device which should be deleted, and restart gateway.
+Upon starting the gateway will delete all registered devices whoose keys no longer appear in existingDevices.json file.
+
+Note that the device will be registered again if the gateway receives registration request for that device from module.

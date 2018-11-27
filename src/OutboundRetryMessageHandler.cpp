@@ -57,7 +57,7 @@ void OutboundRetryMessageHandler::addMessage(RetryMessageStruct msg)
 
     // setup retry
     const auto id = getUniqueId();
-    m_messages[id] = {msg, std::unique_ptr<Timer>(new Timer()), 0, false};
+    m_messages[id] = std::make_tuple(msg, std::unique_ptr<Timer>(new Timer()), 0, false);
 
     auto& tup = m_messages[id];
     auto& timer = std::get<TIMER_INDEX>(tup);

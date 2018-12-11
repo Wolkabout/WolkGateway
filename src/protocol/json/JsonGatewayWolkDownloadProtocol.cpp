@@ -156,7 +156,8 @@ std::unique_ptr<Message> JsonGatewayWolkDownloadProtocol::makeMessage(const std:
         }
         else
         {
-            return FILE_HANDLING_STATUS_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + DEVICE_PATH_PREFIX + deviceKey;
+            return FILE_HANDLING_STATUS_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+                   DEVICE_PATH_PREFIX + deviceKey;
         }
     }();
 

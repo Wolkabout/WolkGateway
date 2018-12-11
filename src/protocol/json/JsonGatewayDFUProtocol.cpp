@@ -347,8 +347,8 @@ std::unique_ptr<Message> JsonGatewayDFUProtocol::makeMessage(const std::string& 
         }
         else
         {
-            return FIRMWARE_UPDATE_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + DEVICE_PATH_PREFIX +
-                   deviceKey;
+            return FIRMWARE_UPDATE_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+                   DEVICE_PATH_PREFIX + deviceKey;
         }
     }();
 

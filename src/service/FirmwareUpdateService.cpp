@@ -20,6 +20,7 @@
 #include "model/FirmwareUpdateResponse.h"
 #include "model/Message.h"
 #include "protocol/GatewayFirmwareUpdateProtocol.h"
+#include "utilities/FileSystemUtils.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
 
@@ -377,7 +378,9 @@ void FirmwareUpdateService::transferFile(const std::string& deviceKey, const std
 
     setDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::TRANSFER);
 
-    FirmwareUpdateCommand command{FirmwareUpdateCommand::Type::URL_DOWNLOAD, filePath, status.autoinstall};
+    auto fullPath = FileSystemUtils::absolutePath(filePath);
+
+    FirmwareUpdateCommand command{FirmwareUpdateCommand::Type::URL_DOWNLOAD, fullPath, status.autoinstall};
 
     sendCommand(command, deviceKey);
 }

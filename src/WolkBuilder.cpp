@@ -25,15 +25,19 @@
 #include "model/Device.h"
 #include "model/Message.h"
 #include "persistence/inmemory/GatewayInMemoryPersistence.h"
+#include "protocol/json/JsonGatewayDFUProtocol.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
 #include "protocol/json/JsonGatewayDeviceRegistrationProtocol.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
+#include "protocol/json/JsonGatewayWolkDownloadProtocol.h"
 #include "protocol/json/JsonProtocol.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DeviceRegistrationService.h"
 #include "service/DeviceStatusService.h"
+#include "service/FileDownloadService.h"
+#include "service/FirmwareUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 
@@ -88,6 +92,8 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_statusProtocol = std::unique_ptr<GatewayStatusProtocol>(new JsonGatewayStatusProtocol());
     wolk->m_registrationProtocol =
       std::unique_ptr<GatewayDeviceRegistrationProtocol>(new JsonGatewayDeviceRegistrationProtocol());
+    wolk->m_fileDownloadProtocol = std::unique_ptr<GatewayFileDownloadProtocol>(new JsonGatewayWolkDownloadProtocol());
+    wolk->m_firmwareUpdateProtocol = std::unique_ptr<GatewayFirmwareUpdateProtocol>(new JsonGatewayDFUProtocol());
 
     // Setup device repository
     wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
@@ -201,6 +207,18 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         // Setup data service
         wolk->registerDataProtocol(m_dataProtocol);
     }
+
+    // setup file download service
+    wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(
+      m_device.getKey(), *wolk->m_fileDownloadProtocol, 1024 * 1024, 1024 * 1024, *wolk->m_platformPublisher);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
+
+    // setup firmware update service
+    wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
+      m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_platformPublisher, *wolk->m_devicePublisher,
+      *wolk->m_fileDownloadService);
+    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_firmwareUpdateService);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
 
     return wolk;
 }

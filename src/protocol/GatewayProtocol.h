@@ -30,7 +30,9 @@ public:
     {
         DATA,
         REGISTRATION,
-        STATUS
+        STATUS,
+        FIRMWARE_UPDATE,
+        FILE_DOWNLOAD
     };
 
     virtual ~GatewayProtocol() = default;

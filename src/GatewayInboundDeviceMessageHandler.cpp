@@ -27,7 +27,7 @@ GatewayInboundDeviceMessageHandler::GatewayInboundDeviceMessageHandler() : m_com
 
 void GatewayInboundDeviceMessageHandler::messageReceived(const std::string& channel, const std::string& payload)
 {
-    LOG(TRACE) << "GatewayInboundDeviceMessageHandler: Received message on channel: '" << channel << "'. Payload: '"
+    LOG(DEBUG) << "GatewayInboundDeviceMessageHandler: Received message on channel: '" << channel << "'. Payload: '"
                << payload << "'";
 
     std::lock_guard<std::mutex> lg{m_lock};

@@ -51,6 +51,8 @@ private:
 
     void handleFirmwareUpdateResponse(const FirmwareUpdateResponse& response, const std::string deviceKey);
 
+    void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
+
     void fileUpload(const std::string& deviceKey, const std::string& name, std::uint_fast64_t size,
                     const std::string& hash, bool autoInstall, const std::string& subChannel);
 

@@ -46,6 +46,8 @@ public:
 
     bool isFirmwareVersionMessage(const Message& message) const override;
 
+    std::string routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey) const override;
+
     std::unique_ptr<FirmwareUpdateCommand> makeFirmwareUpdateCommand(const Message& message) const override;
 
     std::unique_ptr<FirmwareUpdateResponse> makeFirmwareUpdateResponse(const Message& message) const override;

@@ -386,6 +386,22 @@ bool JsonGatewayDFUProtocol::isFirmwareVersionMessage(const Message& message) co
     return StringUtils::startsWith(message.getChannel(), FIRMWARE_VERSION_TOPIC_ROOT);
 }
 
+std::string JsonGatewayDFUProtocol::routeDeviceToPlatformMessage(const std::string& topic,
+                                                                 const std::string& gatewayKey) const
+{
+    const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
+    const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX + gatewayKey;
+
+    const auto position = topic.find(deviceTopicPart);
+    if (position != std::string::npos)
+    {
+        std::string routedTopic = topic;
+        return routedTopic.insert(position, gatewayTopicPart);
+    }
+
+    return "";
+}
+
 std::unique_ptr<FirmwareUpdateCommand> JsonGatewayDFUProtocol::makeFirmwareUpdateCommand(const Message& message) const
 {
     try

@@ -91,7 +91,7 @@ void FirmwareUpdateService::deviceMessageReceived(std::shared_ptr<Message> messa
     }
     else if (m_protocol.isFirmwareVersionMessage(*message))
     {
-        // TODO route
+        routeDeviceToPlatformMessage(message);
     }
     else
     {
@@ -138,7 +138,7 @@ void FirmwareUpdateService::handleFirmwareUpdateCommand(const FirmwareUpdateComm
             return;
         }
 
-        // TODO compare with maxFIleSize
+        // TODO compare with maxFileSize
         if (!command.getSize() || command.getSize().value() == 0)
         {
             LOG(WARN) << "Missing file size from firmware update command";
@@ -226,7 +226,8 @@ void FirmwareUpdateService::handleFirmwareUpdateResponse(const FirmwareUpdateRes
         auto deviceUpdateStatus = getDeviceUpdateStatus(deviceKey);
 
         setDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::READY);
-        if (deviceUpdateStatus.autoinstall)
+        if (deviceUpdateStatus.autoinstall &&
+            deviceKey == m_gatewayKey)    // auto install only gw, device will autoinstall itself
         {
             install(deviceKey);
         }
@@ -259,6 +260,21 @@ void FirmwareUpdateService::handleFirmwareUpdateResponse(const FirmwareUpdateRes
     }
 
     sendResponse(response, deviceKey);
+}
+
+void FirmwareUpdateService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    const std::string channel = m_protocol.routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
+    if (channel.empty())
+    {
+        LOG(WARN) << "Failed to route device message: " << message->getChannel();
+        return;
+    }
+
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
+    m_outboundPlatformMessageHandler.addMessage(routedMessage);
 }
 
 void FirmwareUpdateService::fileUpload(const std::string& deviceKey, const std::string& name, std::uint_fast64_t size,

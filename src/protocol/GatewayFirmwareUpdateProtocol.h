@@ -43,6 +43,8 @@ public:
 
     virtual bool isFirmwareVersionMessage(const Message& message) const = 0;
 
+    virtual std::string routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey) const = 0;
+
     virtual std::unique_ptr<FirmwareUpdateCommand> makeFirmwareUpdateCommand(const Message& message) const = 0;
 
     virtual std::unique_ptr<FirmwareUpdateResponse> makeFirmwareUpdateResponse(const Message& message) const = 0;

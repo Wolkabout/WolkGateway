@@ -40,6 +40,9 @@ public:
     std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
                                          const FirmwareUpdateCommand& firmwareUpdateCommand) const override;
 
+    std::unique_ptr<Message> makeFromFirmwareVersion(const std::string& deviceKey,
+                                                     const std::string& firmwareVerion) const override;
+
     bool isFirmwareUpdateCommandMessage(const Message& message) const override;
 
     bool isFirmwareUpdateResponseMessage(const Message& message) const override;

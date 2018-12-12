@@ -365,6 +365,13 @@ std::unique_ptr<Message> JsonGatewayDFUProtocol::makeMessage(const std::string& 
     return std::unique_ptr<Message>(new Message(payload, topic));
 }
 
+std::unique_ptr<Message> JsonGatewayDFUProtocol::makeFromFirmwareVersion(const std::string& deviceKey,
+                                                                         const std::string& firmwareVerion) const
+{
+    const std::string topic = FIRMWARE_VERSION_TOPIC_ROOT + GATEWAY_PATH_PREFIX + deviceKey;
+    return std::unique_ptr<Message>(new Message(firmwareVerion, topic));
+}
+
 bool JsonGatewayDFUProtocol::isFirmwareUpdateCommandMessage(const Message& message) const
 {
     LOG(TRACE) << METHOD_INFO;

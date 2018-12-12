@@ -229,6 +229,8 @@ private:
     void handleConfigurationSetCommand(const ConfigurationSetCommand& command);
     void handleConfigurationGetCommand();
 
+    void publishFirmwareStatus();
+
     std::string getSensorDelimiter(const std::string& reference);
     std::map<std::string, std::string> getConfigurationDelimiters();
 

@@ -23,6 +23,7 @@
 #include "protocol/Protocol.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
+#include "service/FirmwareUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 #include "utilities/Logger.h"
@@ -258,6 +259,15 @@ void Wolk::handleConfigurationGetCommand()
     publishConfiguration();
 }
 
+void Wolk::publishFirmwareStatus()
+{
+    if (m_firmwareUpdateService)
+    {
+        m_firmwareUpdateService->reportFirmwareUpdateResult();
+        m_firmwareUpdateService->publishFirmwareVersion();
+    }
+}
+
 std::string Wolk::getSensorDelimiter(const std::string& reference)
 {
     auto delimiters = m_device.getSensorDelimiters();
@@ -316,6 +326,8 @@ void Wolk::connectToPlatform()
         if (m_platformConnectivityService->connect())
         {
             notifyPlatformConnected();
+
+            publishFirmwareStatus();
         }
         else
         {

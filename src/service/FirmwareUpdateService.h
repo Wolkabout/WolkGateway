@@ -18,6 +18,7 @@
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
+#include "service/UrlFileDownloader.h"
 #include "service/WolkaboutFileDownloader.h"
 
 #include <map>
@@ -27,10 +28,12 @@
 
 namespace wolkabout
 {
+class FirmwareInstaller;
 class FirmwareUpdateCommand;
 class FirmwareUpdateResponse;
 class GatewayFirmwareUpdateProtocol;
 class OutboundMessageHandler;
+class UrlFileDownloader;
 
 class FirmwareUpdateService : public DeviceMessageListener, public PlatformMessageListener
 {
@@ -38,13 +41,25 @@ public:
     FirmwareUpdateService(std::string gatewayKey, GatewayFirmwareUpdateProtocol& protocol,
                           OutboundMessageHandler& outboundPlatformMessageHandler,
                           OutboundMessageHandler& outboundDeviceMessageHandler,
-                          WolkaboutFileDownloader& wolkaboutFileDownloader);
+                          WolkaboutFileDownloader& wolkaboutFileDownloader, std::string firmwareDownloadDirectory,
+                          std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr);
+
+    FirmwareUpdateService(std::string gatewayKey, GatewayFirmwareUpdateProtocol& protocol,
+                          OutboundMessageHandler& outboundPlatformMessageHandler,
+                          OutboundMessageHandler& outboundDeviceMessageHandler,
+                          WolkaboutFileDownloader& wolkaboutFileDownloader, std::string firmwareDownloadDirectory,
+                          std::shared_ptr<FirmwareInstaller> firmwareInstaller, std::string currentFirmwareVersion,
+                          std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
     const GatewayProtocol& getProtocol() const override;
+
+    void reportFirmwareUpdateResult();
+
+    void publishFirmwareVersion();
 
 private:
     void handleFirmwareUpdateCommand(const FirmwareUpdateCommand& command, const std::string deviceKey);
@@ -56,14 +71,21 @@ private:
     void fileUpload(const std::string& deviceKey, const std::string& name, std::uint_fast64_t size,
                     const std::string& hash, bool autoInstall, const std::string& subChannel);
 
+    void urlDownload(const std::string& deviceKey, const std::string& url, bool autoInstall,
+                     const std::string& subChannel);
+
     void downloadCompleted(const std::string& filePath, const std::string& hash, const std::string& subChannel);
 
     void downloadFailed(WolkaboutFileDownloader::ErrorCode errorCode, const std::string& hash,
                         const std::string& subChannel);
 
+    void downloadFailed(UrlFileDownloader::Error errorCode, const std::string& url, const std::string& subChannel);
+
     void transferFile(const std::string& deviceKey, const std::string& filePath);
 
     void install(const std::string& deviceKey);
+
+    void installGwFirmware(const std::string& filePath);
 
     void installCompleted(const std::string& deviceKey);
 
@@ -88,6 +110,11 @@ private:
     WolkaboutFileDownloader& m_wolkaboutFileDownloader;
 
     const std::string m_firmwareDownloadDirectory;
+
+    std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
+    const std::string m_currentFirmwareVersion;
+
+    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
     enum class FirmwareDownloadStatus
     {
@@ -117,11 +144,14 @@ private:
             ERROR,
             UNKNOWN
         } status;
+
+        std::string firmwareFile;
     };
 
     void addDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status,
                                bool autoInstall);
     void setDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status);
+    void setDeviceUpdateStatus(const std::string& deviceKey, std::string firmwareFile);
     bool deviceUpdateStatusExists(const std::string& deviceKey);
     DeviceUpdateStruct getDeviceUpdateStatus(const std::string& deviceKey);
     void removeDeviceUpdateStatus(const std::string& deviceKey);
@@ -130,6 +160,8 @@ private:
     std::map<std::string, DeviceUpdateStruct> m_deviceUpdateStatuses;
 
     CommandBuffer m_commandBuffer;
+
+    static const constexpr char* FIRMWARE_VERSION_FILE = ".dfu-version";
 };
 }    // namespace wolkabout
 

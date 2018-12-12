@@ -17,8 +17,10 @@
 #ifndef WOLKBUILDER_H
 #define WOLKBUILDER_H
 
+#include "FirmwareInstaller.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/Device.h"
+#include "service/UrlFileDownloader.h"
 
 #include <cstdint>
 #include <functional>
@@ -68,6 +70,20 @@ public:
     WolkBuilder& withDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol);
 
     /**
+     * @brief withFirmwareUpdate Enables firmware update for gateway
+     * @param firmwareVersion Current version of the firmware
+     * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
+     * @param firmwareDownloadDirectory Directory where to download firmware file
+     * @param maxFirmwareFileSize Maximum size of firmware file that can be handled
+     * @param urlDownloader Instance of wolkabout::UrlFileDownloader used to downlad firmware from provided url
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::shared_ptr<FirmwareInstaller> installer,
+                                    const std::string& firmwareDownloadDirectory,
+                                    std::uint_fast64_t maxFirmwareFileSize, std::uint_fast64_t maxFirmwareFileChunkSize,
+                                    std::shared_ptr<UrlFileDownloader> urlDownloader = nullptr);
+
+    /**
      * @brief withoutKeepAlive Disables ping mechanism used to notify WolkAbout IOT Platform
      * that device is still connected
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
@@ -97,6 +113,13 @@ private:
     Device m_device;
 
     std::shared_ptr<GatewayDataProtocol> m_dataProtocol;
+
+    std::string m_firmwareVersion;
+    std::string m_firmwareDownloadDirectory = "";
+    std::uint_fast64_t m_maxFirmwareFileSize = 10 * 1024 * 1024;
+    std::uint_fast64_t m_maxFirmwareFileChunkSize = 10 * 1024;
+    std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
+    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
     bool m_keepAliveEnabled;
 

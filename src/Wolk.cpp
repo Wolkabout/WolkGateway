@@ -339,6 +339,15 @@ void Wolk::connectToPlatform()
             notifyPlatformConnected();
 
             publishFirmwareStatus();
+
+            for (const std::string& actuatorReference : m_device.getActuatorReferences())
+            {
+                publishActuatorStatus(actuatorReference);
+            }
+
+            publishConfiguration();
+
+            publish();
         }
         else
         {

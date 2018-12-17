@@ -228,7 +228,8 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     // setup firmware update service
     wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
       m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_platformPublisher, *wolk->m_devicePublisher,
-      *wolk->m_fileDownloadService, m_firmwareDownloadDirectory, m_firmwareInstaller, m_firmwareVersion);
+      *wolk->m_fileDownloadService, m_firmwareDownloadDirectory, m_firmwareInstaller, m_firmwareVersion,
+      m_urlFileDownloader);
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_firmwareUpdateService);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
 

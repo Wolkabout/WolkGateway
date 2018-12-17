@@ -268,7 +268,13 @@ void FirmwareUpdateService::handleFirmwareUpdateCommand(const FirmwareUpdateComm
 
         bool autoInstall = command.getAutoInstall() ? false : command.getAutoInstall().value();
 
-        // TODO
+        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::FILE_TRANSFER}, subChannel);
+
+        for (const auto& key : deviceKeys)
+        {
+            urlDownload(key, command.getUrl().value(), autoInstall, subChannel);
+        }
+
         break;
     }
     case FirmwareUpdateCommand::Type::INSTALL:

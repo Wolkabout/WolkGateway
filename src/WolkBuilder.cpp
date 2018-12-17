@@ -171,11 +171,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         }
     });
 
-    // register gateway upon start
-    wolk->m_deviceRegistrationService->registerDevice(m_device);
-
-    wolk->m_deviceRegistrationService->deleteDevicesOtherThan(wolk->m_existingDevicesRepository->getDeviceKeys());
-
     // Setup device status and keep alive service
     wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
       m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher,

@@ -23,6 +23,7 @@
 #include "protocol/Protocol.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
+#include "service/DeviceRegistrationService.h"
 #include "service/FirmwareUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
@@ -293,6 +294,16 @@ void Wolk::notifyPlatformConnected()
     if (m_keepAliveService)
     {
         m_keepAliveService->connected();
+    }
+
+    static bool shouldRegister = true;
+    if (shouldRegister && m_deviceRegistrationService)
+    {
+        // register gateway upon first connect
+        m_deviceRegistrationService->registerDevice(m_device);
+        m_deviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+
+        shouldRegister = false;
     }
 }
 

@@ -125,8 +125,15 @@ private:
 
     struct FirmwareDownloadStruct
     {
-        FirmwareDownloadStatus status;
+        enum class FirmwareDownloadStatus
+        {
+            IN_PROGRESS,
+            COMPLETED,
+            UNKNOWN
+        } status;
+
         std::vector<std::string> devices;
+        std::string firmwareFile;
     };
 
     std::map<std::string, FirmwareDownloadStruct> m_firmwareStatuses;
@@ -144,17 +151,24 @@ private:
             ERROR,
             UNKNOWN
         } status;
-
-        std::string firmwareFile;
     };
 
     void addDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status,
                                bool autoInstall);
     void setDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status);
-    void setDeviceUpdateStatus(const std::string& deviceKey, std::string firmwareFile);
     bool deviceUpdateStatusExists(const std::string& deviceKey);
     DeviceUpdateStruct getDeviceUpdateStatus(const std::string& deviceKey);
     void removeDeviceUpdateStatus(const std::string& deviceKey);
+
+    void addFirmwareDownloadStatus(const std::string& key, FirmwareDownloadStruct::FirmwareDownloadStatus status,
+                                   const std::vector<std::string>& deviceKeys, const std::string& firmwareFile = "");
+    void setFirmwareDownloadStatus(const std::string& key, const std::string& firmwareFile);
+    bool firmwareDownloadStatusExists(const std::string& key);
+    FirmwareDownloadStruct getFirmwareDownloadStatus(const std::string& key);
+    std::string getFirmwareFileForDevice(const std::string& deviceKey);
+    void removeDeviceFromFirmwareStatus(const std::string& deviceKey);
+    void removeFirmwareStatus(const std::string& key);
+    void clearUsedFirmwareFiles();
 
     // TODO move to database
     std::map<std::string, DeviceUpdateStruct> m_deviceUpdateStatuses;

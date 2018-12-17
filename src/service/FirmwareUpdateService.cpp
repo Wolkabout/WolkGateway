@@ -25,6 +25,8 @@
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
 
+#include <algorithm>
+
 namespace wolkabout
 {
 FirmwareUpdateService::FirmwareUpdateService(std::string gatewayKey, GatewayFirmwareUpdateProtocol& protocol,
@@ -361,15 +363,14 @@ void FirmwareUpdateService::fileUpload(const std::string& deviceKey, const std::
 {
     if (deviceUpdateStatusExists(deviceKey))
     {
-        // TODO remove device from other file list
+        removeDeviceFromFirmwareStatus(deviceKey);
     }
 
     addDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::DOWNLOAD, autoInstall);
 
-    auto it = m_firmwareStatuses.find(hash);
-    if (it == m_firmwareStatuses.end())
+    if (!firmwareDownloadStatusExists(hash))
     {
-        m_firmwareStatuses[hash] = {FirmwareDownloadStatus::IN_PROGRESS, {deviceKey}};
+        addFirmwareDownloadStatus(hash, FirmwareDownloadStruct::FirmwareDownloadStatus::IN_PROGRESS, {deviceKey});
 
         const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(hash));
 
@@ -389,15 +390,14 @@ void FirmwareUpdateService::urlDownload(const std::string& deviceKey, const std:
 {
     if (deviceUpdateStatusExists(deviceKey))
     {
-        // TODO remove device from other file list
+        removeDeviceFromFirmwareStatus(deviceKey);
     }
 
     addDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::DOWNLOAD, autoInstall);
 
-    auto it = m_firmwareStatuses.find(url);
-    if (it == m_firmwareStatuses.end())
+    if (!firmwareDownloadStatusExists(url))
     {
-        m_firmwareStatuses[url] = {FirmwareDownloadStatus::IN_PROGRESS, {deviceKey}};
+        addFirmwareDownloadStatus(url, FirmwareDownloadStruct::FirmwareDownloadStatus::IN_PROGRESS, {deviceKey});
 
         const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(url));
 
@@ -416,22 +416,21 @@ void FirmwareUpdateService::downloadCompleted(const std::string& filePath, const
                                               const std::string& subChannel)
 {
     addToCommandBuffer([=] {
-        auto it = m_firmwareStatuses.find(hash);
-        if (it == m_firmwareStatuses.end())
+        if (!firmwareDownloadStatusExists(hash))
         {
             LOG(ERROR) << "Missing device info for downloaded firmware file: " << filePath << ", on channel "
                        << subChannel;
         }
 
-        for (const std::string& deviceKey : it->second.devices)
+        setFirmwareDownloadStatus(hash, filePath);
+
+        for (const std::string& deviceKey : getFirmwareDownloadStatus(hash).devices)
         {
             if (!deviceUpdateStatusExists(deviceKey))
             {
                 LOG(ERROR) << "Missing firmware update info for device: " << deviceKey;
                 continue;
             }
-
-            setDeviceUpdateStatus(deviceKey, filePath);
 
             if (deviceKey == m_gatewayKey)
             {
@@ -488,7 +487,7 @@ void FirmwareUpdateService::downloadFailed(WolkaboutFileDownloader::ErrorCode er
     }
     }
 
-    // TODO remove from map
+    removeFirmwareStatus(hash);
 }
 
 void FirmwareUpdateService::downloadFailed(UrlFileDownloader::Error errorCode, const std::string& url,
@@ -527,7 +526,7 @@ void FirmwareUpdateService::downloadFailed(UrlFileDownloader::Error errorCode, c
     }
     }
 
-    // TODO remove from map
+    removeFirmwareStatus(url);
 }
 
 void FirmwareUpdateService::transferFile(const std::string& deviceKey, const std::string& filePath)
@@ -561,7 +560,7 @@ void FirmwareUpdateService::install(const std::string& deviceKey)
                          m_gatewayKey);
         }
 
-        installGwFirmware(getDeviceUpdateStatus(m_gatewayKey).firmwareFile);
+        installGwFirmware(getFirmwareFileForDevice(m_gatewayKey));
     }
     else
     {
@@ -609,19 +608,22 @@ void FirmwareUpdateService::installGwFirmware(const std::string& filePath)
 void FirmwareUpdateService::installCompleted(const std::string& deviceKey)
 {
     removeDeviceUpdateStatus(deviceKey);
-    // TODO remove file
+    removeDeviceFromFirmwareStatus(deviceKey);
+    clearUsedFirmwareFiles();
 }
 
 void FirmwareUpdateService::installAborted(const std::string& deviceKey)
 {
     removeDeviceUpdateStatus(deviceKey);
-    // TODO remove file
+    removeDeviceFromFirmwareStatus(deviceKey);
+    clearUsedFirmwareFiles();
 }
 
 void FirmwareUpdateService::installFailed(const std::string& deviceKey)
 {
     removeDeviceUpdateStatus(deviceKey);
-    // TODO remove file
+    removeDeviceFromFirmwareStatus(deviceKey);
+    clearUsedFirmwareFiles();
 }
 
 void FirmwareUpdateService::abort(const std::string& deviceKey)
@@ -675,18 +677,13 @@ void FirmwareUpdateService::addToCommandBuffer(std::function<void()> command)
 void FirmwareUpdateService::addDeviceUpdateStatus(const std::string& deviceKey,
                                                   DeviceUpdateStruct::DeviceUpdateStatus status, bool autoInstall)
 {
-    m_deviceUpdateStatuses[deviceKey] = {autoInstall, status, ""};
+    m_deviceUpdateStatuses[deviceKey] = {autoInstall, status};
 }
 
 void FirmwareUpdateService::setDeviceUpdateStatus(const std::string& deviceKey,
                                                   DeviceUpdateStruct::DeviceUpdateStatus status)
 {
     m_deviceUpdateStatuses[deviceKey].status = status;
-}
-
-void FirmwareUpdateService::setDeviceUpdateStatus(const std::string& deviceKey, std::string firmwareFile)
-{
-    m_deviceUpdateStatuses[deviceKey].firmwareFile = firmwareFile;
 }
 
 bool FirmwareUpdateService::deviceUpdateStatusExists(const std::string& deviceKey)
@@ -701,7 +698,7 @@ FirmwareUpdateService::DeviceUpdateStruct FirmwareUpdateService::getDeviceUpdate
         return m_deviceUpdateStatuses.at(deviceKey);
     }
 
-    return FirmwareUpdateService::DeviceUpdateStruct{false, DeviceUpdateStruct::DeviceUpdateStatus::UNKNOWN, ""};
+    return FirmwareUpdateService::DeviceUpdateStruct{false, DeviceUpdateStruct::DeviceUpdateStatus::UNKNOWN};
 }
 
 void FirmwareUpdateService::removeDeviceUpdateStatus(const std::string& deviceKey)
@@ -709,6 +706,94 @@ void FirmwareUpdateService::removeDeviceUpdateStatus(const std::string& deviceKe
     if (deviceUpdateStatusExists(deviceKey))
     {
         m_deviceUpdateStatuses.erase(m_deviceUpdateStatuses.find(deviceKey));
+    }
+}
+
+void FirmwareUpdateService::addFirmwareDownloadStatus(const std::string& key,
+                                                      FirmwareDownloadStruct::FirmwareDownloadStatus status,
+                                                      const std::vector<std::string>& deviceKeys,
+                                                      const std::string& firmwareFile)
+{
+    m_firmwareStatuses[key] = {status, deviceKeys, firmwareFile};
+}
+
+FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmwareDownloadStatus(const std::string& key)
+{
+    if (firmwareDownloadStatusExists(key))
+    {
+        return m_firmwareStatuses.at(key);
+    }
+
+    return FirmwareUpdateService::FirmwareDownloadStruct{
+      FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, {}, ""};
+}
+
+void FirmwareUpdateService::setFirmwareDownloadStatus(const std::string& key, const std::string& firmwareFile)
+{
+    m_firmwareStatuses[key].firmwareFile = firmwareFile;
+}
+
+bool FirmwareUpdateService::firmwareDownloadStatusExists(const std::string& key)
+{
+    return m_firmwareStatuses.find(key) != m_firmwareStatuses.end();
+}
+
+std::string FirmwareUpdateService::getFirmwareFileForDevice(const std::string& deviceKey)
+{
+    for (auto& pair : m_firmwareStatuses)
+    {
+        auto& deviceList = pair.second.devices;
+
+        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
+        if (it != deviceList.end())
+        {
+            return pair.second.firmwareFile;
+        }
+    }
+
+    return "";
+}
+
+void FirmwareUpdateService::removeDeviceFromFirmwareStatus(const std::string& deviceKey)
+{
+    for (auto& pair : m_firmwareStatuses)
+    {
+        auto& deviceList = pair.second.devices;
+
+        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
+        if (it != deviceList.end())
+        {
+            deviceList.erase(it);
+        }
+    }
+}
+
+void FirmwareUpdateService::removeFirmwareStatus(const std::string& key)
+{
+    auto it = m_firmwareStatuses.find(key);
+    if (it != m_firmwareStatuses.end())
+    {
+        for (const auto& deviceKey : it->second.devices)
+        {
+            removeDeviceUpdateStatus(deviceKey);
+        }
+        m_firmwareStatuses.erase(it);
+    }
+}
+
+void FirmwareUpdateService::clearUsedFirmwareFiles()
+{
+    for (auto it = m_firmwareStatuses.begin(); it != m_firmwareStatuses.end();)
+    {
+        if (it->second.devices.empty())
+        {
+            FileSystemUtils::deleteFile(it->second.firmwareFile);
+            it = m_firmwareStatuses.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
     }
 }
 }    // namespace wolkabout

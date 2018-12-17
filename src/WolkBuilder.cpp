@@ -63,6 +63,65 @@ WolkBuilder& WolkBuilder::gatewayHost(const std::string& host)
     return *this;
 }
 
+WolkBuilder& WolkBuilder::actuationHandler(
+  const std::function<void(const std::string&, const std::string&)>& actuationHandler)
+{
+    m_actuationHandlerLambda = actuationHandler;
+    m_actuationHandler.reset();
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::actuationHandler(std::shared_ptr<ActuationHandler> actuationHandler)
+{
+    m_actuationHandler = actuationHandler;
+    m_actuationHandlerLambda = nullptr;
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::actuatorStatusProvider(
+  const std::function<ActuatorStatus(const std::string&)>& actuatorStatusProvider)
+{
+    m_actuatorStatusProviderLambda = actuatorStatusProvider;
+    m_actuatorStatusProvider.reset();
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::actuatorStatusProvider(std::shared_ptr<ActuatorStatusProvider> actuatorStatusProvider)
+{
+    m_actuatorStatusProvider = actuatorStatusProvider;
+    m_actuatorStatusProviderLambda = nullptr;
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::configurationHandler(
+  std::function<void(const std::vector<ConfigurationItem>& configuration)> configurationHandler)
+{
+    m_configurationHandlerLambda = configurationHandler;
+    m_configurationHandler.reset();
+    return *this;
+}
+
+wolkabout::WolkBuilder& WolkBuilder::configurationHandler(std::shared_ptr<ConfigurationHandler> configurationHandler)
+{
+    m_configurationHandler = configurationHandler;
+    m_configurationHandlerLambda = nullptr;
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::configurationProvider(std::function<std::vector<ConfigurationItem>()> configurationProvider)
+{
+    m_configurationProviderLambda = configurationProvider;
+    m_configurationProvider.reset();
+    return *this;
+}
+
+wolkabout::WolkBuilder& WolkBuilder::configurationProvider(std::shared_ptr<ConfigurationProvider> configurationProvider)
+{
+    m_configurationProvider = configurationProvider;
+    m_configurationProviderLambda = nullptr;
+    return *this;
+}
+
 WolkBuilder& WolkBuilder::withDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol)
 {
     m_dataProtocol = protocol;

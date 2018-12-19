@@ -23,10 +23,14 @@
 #include "utilities/ByteUtils.h"
 #include "utilities/CommandBuffer.h"
 
+#include <atomic>
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <tuple>
 
 namespace wolkabout
 {
@@ -39,6 +43,8 @@ class FileDownloadService : public WolkaboutFileDownloader, public PlatformMessa
 public:
     FileDownloadService(std::string gatewayKey, GatewayFileDownloadProtocol& protocol, uint_fast64_t maxFileSize,
                         std::uint_fast64_t maxPacketSize, OutboundMessageHandler& outboundMessageHandler);
+
+    ~FileDownloadService();
 
     FileDownloadService(const FileDownloadService&) = delete;
     FileDownloadService& operator=(const FileDownloadService&) = delete;
@@ -61,6 +67,10 @@ private:
 
     void addToCommandBuffer(std::function<void()> command);
 
+    void flagCompletedDownload(const std::string& key);
+    void clearDownloads();
+    void notifyCleanup();
+
     const std::string m_gatewayKey;
 
     GatewayFileDownloadProtocol& m_protocol;
@@ -70,7 +80,12 @@ private:
 
     OutboundMessageHandler& m_outboundMessageHandler;
 
-    std::map<std::string, std::unique_ptr<FileDownloader>> m_activeDownloads;
+    std::map<std::string, std::tuple<std::unique_ptr<FileDownloader>, bool>> m_activeDownloads;
+
+    std::atomic_bool m_run;
+    std::condition_variable m_condition;
+    std::recursive_mutex m_mutex;
+    std::thread m_garbageCollector;
 
     CommandBuffer m_commandBuffer;
 };

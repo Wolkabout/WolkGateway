@@ -27,6 +27,12 @@
 #include <cassert>
 #include <cmath>
 
+namespace
+{
+static const size_t FILE_DOWNLOADER_INDEX = 0;
+static const size_t FLAG_INDEX = 1;
+}    // namespace
+
 namespace wolkabout
 {
 FileDownloadService::FileDownloadService(std::string gatewayKey, GatewayFileDownloadProtocol& protocol,
@@ -37,7 +43,20 @@ FileDownloadService::FileDownloadService(std::string gatewayKey, GatewayFileDown
 , m_maxFileSize{maxFileSize}
 , m_maxPacketSize{maxPacketSize}
 , m_outboundMessageHandler{outboundMessageHandler}
+, m_run{true}
+, m_garbageCollector(&FileDownloadService::clearDownloads, this)
 {
+}
+
+FileDownloadService::~FileDownloadService()
+{
+    m_run = false;
+    notifyCleanup();
+
+    if (m_garbageCollector.joinable())
+    {
+        m_garbageCollector.join();
+    }
 }
 
 void FileDownloadService::download(const std::string& fileName, uint_fast64_t fileSize, const ByteArray& fileHash,
@@ -46,21 +65,31 @@ void FileDownloadService::download(const std::string& fileName, uint_fast64_t fi
                                    std::function<void(WolkaboutFileDownloader::ErrorCode errorCode)> onFailCallback)
 {
     addToCommandBuffer([=] {
+        std::lock_guard<decltype(m_mutex)> lg{m_mutex};
+
         auto it = m_activeDownloads.find(subChannel);
         if (it != m_activeDownloads.end())
         {
             LOG(INFO) << "Download already active for channel: " << subChannel << ", aborting";
-            it->second->abort();
+            std::get<FILE_DOWNLOADER_INDEX>(it->second)->abort();
         }
 
         LOG(INFO) << "Downloading file: " << fileName << ", on channel: " << subChannel;
 
         auto downloader = std::unique_ptr<FileDownloader>(new FileDownloader(m_maxFileSize, m_maxPacketSize));
-        downloader->download(fileName, fileSize, fileHash, downloadDirectory,
-                             [=](const FilePacketRequest& request) { requestPacket(request, subChannel); },
-                             onSuccessCallback, onFailCallback);
+        m_activeDownloads[subChannel] = std::make_tuple(std::move(downloader), false);
 
-        m_activeDownloads[subChannel] = std::move(downloader);
+        std::get<FILE_DOWNLOADER_INDEX>(m_activeDownloads[subChannel])
+          ->download(fileName, fileSize, fileHash, downloadDirectory,
+                     [=](const FilePacketRequest& request) { requestPacket(request, subChannel); },
+                     [=](const std::string& path) {
+                         onSuccessCallback(path);
+                         flagCompletedDownload(subChannel);
+                     },
+                     [=](WolkaboutFileDownloader::ErrorCode code) {
+                         onFailCallback(code);
+                         flagCompletedDownload(subChannel);
+                     });
     });
 }
 
@@ -69,11 +98,13 @@ void FileDownloadService::abort(const std::string& subChannel)
     LOG(DEBUG) << "FileDownloadService::abort " << subChannel;
 
     addToCommandBuffer([=] {
+        std::lock_guard<decltype(m_mutex)> lg{m_mutex};
+
         auto it = m_activeDownloads.find(subChannel);
         if (it != m_activeDownloads.end())
         {
             LOG(INFO) << "Aborting file download for channel: " << subChannel;
-            it->second->abort();
+            std::get<FILE_DOWNLOADER_INDEX>(it->second)->abort();
         }
         else
         {
@@ -118,6 +149,8 @@ const GatewayProtocol& FileDownloadService::getProtocol() const
 
 void FileDownloadService::handleBinaryData(const std::string& deviceKey, const BinaryData& binaryData)
 {
+    std::lock_guard<decltype(m_mutex)> lg{m_mutex};
+
     auto it = m_activeDownloads.find(deviceKey);
     if (it == m_activeDownloads.end())
     {
@@ -125,12 +158,61 @@ void FileDownloadService::handleBinaryData(const std::string& deviceKey, const B
         return;
     }
 
-    it->second->handleData(binaryData);
+    std::get<FILE_DOWNLOADER_INDEX>(it->second)->handleData(binaryData);
 }
 
 void FileDownloadService::addToCommandBuffer(std::function<void()> command)
 {
     m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(command));
+}
+
+void FileDownloadService::flagCompletedDownload(const std::string& key)
+{
+    std::lock_guard<decltype(m_mutex)> lg{m_mutex};
+
+    auto it = m_activeDownloads.find(key);
+    if (it != m_activeDownloads.end())
+    {
+        std::get<FLAG_INDEX>(it->second) = true;
+    }
+
+    notifyCleanup();
+}
+
+void FileDownloadService::notifyCleanup()
+{
+    m_condition.notify_one();
+}
+
+void FileDownloadService::clearDownloads()
+{
+    while (m_run)
+    {
+        std::unique_lock<decltype(m_mutex)> lg{m_mutex};
+
+        for (auto it = m_activeDownloads.begin(); it != m_activeDownloads.end();)
+        {
+            auto& tuple = it->second;
+            auto& downloadCompleted = std::get<FLAG_INDEX>(tuple);
+
+            if (downloadCompleted)
+            {
+                LOG(DEBUG) << "Removing completed download on channel: " << it->first;
+                // removed flagged messages
+                it = m_activeDownloads.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+
+        lg.unlock();
+
+        static std::mutex cvMutex;
+        std::unique_lock<std::mutex> lock{cvMutex};
+        m_condition.wait(lock);
+    }
 }
 
 void FileDownloadService::requestPacket(const FilePacketRequest& request, const std::string& subChannel)

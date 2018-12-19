@@ -566,7 +566,9 @@ void FirmwareUpdateService::install(const std::string& deviceKey)
                          m_gatewayKey);
         }
 
-        installGwFirmware(getFirmwareFileForDevice(m_gatewayKey));
+        auto fullPath = FileSystemUtils::absolutePath(getFirmwareFileForDevice(m_gatewayKey));
+
+        installGwFirmware(fullPath);
     }
     else
     {

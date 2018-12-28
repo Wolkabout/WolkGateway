@@ -25,15 +25,19 @@
 #include "model/Device.h"
 #include "model/Message.h"
 #include "persistence/inmemory/GatewayInMemoryPersistence.h"
+#include "protocol/json/JsonGatewayDFUProtocol.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
 #include "protocol/json/JsonGatewayDeviceRegistrationProtocol.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
+#include "protocol/json/JsonGatewayWolkDownloadProtocol.h"
 #include "protocol/json/JsonProtocol.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DeviceRegistrationService.h"
 #include "service/DeviceStatusService.h"
+#include "service/FileDownloadService.h"
+#include "service/FirmwareUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 
@@ -59,9 +63,84 @@ WolkBuilder& WolkBuilder::gatewayHost(const std::string& host)
     return *this;
 }
 
+WolkBuilder& WolkBuilder::actuationHandler(
+  const std::function<void(const std::string&, const std::string&)>& actuationHandler)
+{
+    m_actuationHandlerLambda = actuationHandler;
+    m_actuationHandler.reset();
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::actuationHandler(std::shared_ptr<ActuationHandler> actuationHandler)
+{
+    m_actuationHandler = actuationHandler;
+    m_actuationHandlerLambda = nullptr;
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::actuatorStatusProvider(
+  const std::function<ActuatorStatus(const std::string&)>& actuatorStatusProvider)
+{
+    m_actuatorStatusProviderLambda = actuatorStatusProvider;
+    m_actuatorStatusProvider.reset();
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::actuatorStatusProvider(std::shared_ptr<ActuatorStatusProvider> actuatorStatusProvider)
+{
+    m_actuatorStatusProvider = actuatorStatusProvider;
+    m_actuatorStatusProviderLambda = nullptr;
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::configurationHandler(
+  std::function<void(const std::vector<ConfigurationItem>& configuration)> configurationHandler)
+{
+    m_configurationHandlerLambda = configurationHandler;
+    m_configurationHandler.reset();
+    return *this;
+}
+
+wolkabout::WolkBuilder& WolkBuilder::configurationHandler(std::shared_ptr<ConfigurationHandler> configurationHandler)
+{
+    m_configurationHandler = configurationHandler;
+    m_configurationHandlerLambda = nullptr;
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::configurationProvider(std::function<std::vector<ConfigurationItem>()> configurationProvider)
+{
+    m_configurationProviderLambda = configurationProvider;
+    m_configurationProvider.reset();
+    return *this;
+}
+
+wolkabout::WolkBuilder& WolkBuilder::configurationProvider(std::shared_ptr<ConfigurationProvider> configurationProvider)
+{
+    m_configurationProvider = configurationProvider;
+    m_configurationProviderLambda = nullptr;
+    return *this;
+}
+
 WolkBuilder& WolkBuilder::withDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol)
 {
     m_dataProtocol = protocol;
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion,
+                                             std::shared_ptr<FirmwareInstaller> installer,
+                                             const std::string& firmwareDownloadDirectory,
+                                             uint_fast64_t maxFirmwareFileSize,
+                                             std::uint_fast64_t maxFirmwareFileChunkSize,
+                                             std::shared_ptr<UrlFileDownloader> urlDownloader)
+{
+    m_firmwareVersion = firmwareVersion;
+    m_firmwareDownloadDirectory = firmwareDownloadDirectory;
+    m_maxFirmwareFileSize = maxFirmwareFileSize;
+    m_maxFirmwareFileChunkSize = maxFirmwareFileChunkSize;
+    m_firmwareInstaller = installer;
+    m_urlFileDownloader = urlDownloader;
     return *this;
 }
 
@@ -88,6 +167,8 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_statusProtocol = std::unique_ptr<GatewayStatusProtocol>(new JsonGatewayStatusProtocol());
     wolk->m_registrationProtocol =
       std::unique_ptr<GatewayDeviceRegistrationProtocol>(new JsonGatewayDeviceRegistrationProtocol());
+    wolk->m_fileDownloadProtocol = std::unique_ptr<GatewayFileDownloadProtocol>(new JsonGatewayWolkDownloadProtocol());
+    wolk->m_firmwareUpdateProtocol = std::unique_ptr<GatewayFirmwareUpdateProtocol>(new JsonGatewayDFUProtocol());
 
     // Setup device repository
     wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
@@ -149,11 +230,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         }
     });
 
-    // register gateway upon start
-    wolk->m_deviceRegistrationService->registerDevice(m_device);
-
-    wolk->m_deviceRegistrationService->deleteDevicesOtherThan(wolk->m_existingDevicesRepository->getDeviceKeys());
-
     // Setup device status and keep alive service
     wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
       m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher,
@@ -201,6 +277,20 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         // Setup data service
         wolk->registerDataProtocol(m_dataProtocol);
     }
+
+    // setup file download service
+    wolk->m_fileDownloadService =
+      std::make_shared<FileDownloadService>(m_device.getKey(), *wolk->m_fileDownloadProtocol, m_maxFirmwareFileSize,
+                                            m_maxFirmwareFileChunkSize, *wolk->m_platformPublisher);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
+
+    // setup firmware update service
+    wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
+      m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_platformPublisher, *wolk->m_devicePublisher,
+      *wolk->m_fileDownloadService, m_firmwareDownloadDirectory, m_firmwareInstaller, m_firmwareVersion,
+      m_urlFileDownloader);
+    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_firmwareUpdateService);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
 
     return wolk;
 }

@@ -29,6 +29,8 @@
 #include "protocol/DataProtocol.h"
 #include "protocol/GatewayDataProtocol.h"
 #include "protocol/GatewayDeviceRegistrationProtocol.h"
+#include "protocol/GatewayFileDownloadProtocol.h"
+#include "protocol/GatewayFirmwareUpdateProtocol.h"
 #include "protocol/GatewayStatusProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
@@ -57,6 +59,8 @@ class DeviceManager;
 class OutboundServiceDataHandler;
 class DataServiceBase;
 class DeviceRegistrationService;
+class FileDownloadService;
+class FirmwareUpdateService;
 class KeepAliveService;
 class StatusMessageRouter;
 
@@ -225,6 +229,8 @@ private:
     void handleConfigurationSetCommand(const ConfigurationSetCommand& command);
     void handleConfigurationGetCommand();
 
+    void publishFirmwareStatus();
+
     std::string getSensorDelimiter(const std::string& reference);
     std::map<std::string, std::string> getConfigurationDelimiters();
 
@@ -246,6 +252,8 @@ private:
 
     std::unique_ptr<GatewayStatusProtocol> m_statusProtocol;
     std::unique_ptr<GatewayDeviceRegistrationProtocol> m_registrationProtocol;
+    std::unique_ptr<GatewayFileDownloadProtocol> m_fileDownloadProtocol;
+    std::unique_ptr<GatewayFirmwareUpdateProtocol> m_firmwareUpdateProtocol;
 
     std::unique_ptr<DeviceRepository> m_deviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
@@ -272,6 +280,9 @@ private:
 
     std::shared_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
+
+    std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
+    std::shared_ptr<FileDownloadService> m_fileDownloadService;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;
     std::weak_ptr<ActuationHandler> m_actuationHandler;

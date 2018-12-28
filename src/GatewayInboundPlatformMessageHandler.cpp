@@ -31,7 +31,7 @@ GatewayInboundPlatformMessageHandler::GatewayInboundPlatformMessageHandler(const
 
 void GatewayInboundPlatformMessageHandler::messageReceived(const std::string& channel, const std::string& payload)
 {
-    LOG(TRACE) << "GatewayInboundPlatformMessageHandler: Message received on channel: '" << channel << "' : '"
+    LOG(DEBUG) << "GatewayInboundPlatformMessageHandler: Message received on channel: '" << channel << "' : '"
                << payload << "'";
 
     std::lock_guard<std::mutex> lg{m_lock};
@@ -53,7 +53,7 @@ void GatewayInboundPlatformMessageHandler::messageReceived(const std::string& ch
     }
     else
     {
-        LOG(INFO) << "Handler for device channel not found: " << channel;
+        LOG(ERROR) << "Handler for device channel not found: " << channel;
     }
 }
 

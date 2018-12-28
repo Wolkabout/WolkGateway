@@ -23,6 +23,8 @@
 #include "protocol/Protocol.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
+#include "service/DeviceRegistrationService.h"
+#include "service/FirmwareUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 #include "utilities/Logger.h"
@@ -258,6 +260,15 @@ void Wolk::handleConfigurationGetCommand()
     publishConfiguration();
 }
 
+void Wolk::publishFirmwareStatus()
+{
+    if (m_firmwareUpdateService)
+    {
+        m_firmwareUpdateService->reportFirmwareUpdateResult();
+        m_firmwareUpdateService->publishFirmwareVersion();
+    }
+}
+
 std::string Wolk::getSensorDelimiter(const std::string& reference)
 {
     auto delimiters = m_device.getSensorDelimiters();
@@ -283,6 +294,16 @@ void Wolk::notifyPlatformConnected()
     if (m_keepAliveService)
     {
         m_keepAliveService->connected();
+    }
+
+    static bool shouldRegister = true;
+    if (shouldRegister && m_deviceRegistrationService)
+    {
+        // register gateway upon first connect
+        m_deviceRegistrationService->registerDevice(m_device);
+        m_deviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+
+        shouldRegister = false;
     }
 }
 
@@ -316,6 +337,17 @@ void Wolk::connectToPlatform()
         if (m_platformConnectivityService->connect())
         {
             notifyPlatformConnected();
+
+            publishFirmwareStatus();
+
+            for (const std::string& actuatorReference : m_device.getActuatorReferences())
+            {
+                publishActuatorStatus(actuatorReference);
+            }
+
+            publishConfiguration();
+
+            publish();
         }
         else
         {

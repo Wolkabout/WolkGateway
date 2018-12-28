@@ -17,8 +17,14 @@
 #ifndef WOLKBUILDER_H
 #define WOLKBUILDER_H
 
+#include "ActuationHandler.h"
+#include "ActuatorStatusProvider.h"
+#include "ConfigurationHandler.h"
+#include "ConfigurationProvider.h"
+#include "FirmwareInstaller.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/Device.h"
+#include "service/UrlFileDownloader.h"
 
 #include <cstdint>
 #include <functional>
@@ -61,11 +67,84 @@ public:
     WolkBuilder& gatewayHost(const std::string& host);
 
     /**
+     * @brief Sets actuation handler
+     * @param actuationHandler Lambda that handles actuation requests
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& actuationHandler(
+      const std::function<void(const std::string& reference, const std::string& value)>& actuationHandler);
+
+    /**
+     * @brief Sets actuation handler
+     * @param actuationHandler Instance of wolkabout::ActuationHandler
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& actuationHandler(std::shared_ptr<ActuationHandler> actuationHandler);
+
+    /**
+     * @brief Sets actuation status provider
+     * @param actuatorStatusProvider Lambda that provides ActuatorStatus by reference of requested actuator
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& actuatorStatusProvider(
+      const std::function<ActuatorStatus(const std::string& reference)>& actuatorStatusProvider);
+
+    /**
+     * @brief Sets actuation status provider
+     * @param actuatorStatusProvider Instance of wolkabout::ActuatorStatusProvider
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& actuatorStatusProvider(std::shared_ptr<ActuatorStatusProvider> actuatorStatusProvider);
+
+    /**
+     * @brief Sets device configuration handler
+     * @param configurationHandler Lambda that handles setting of configuration
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& configurationHandler(
+      std::function<void(const std::vector<ConfigurationItem>& configuration)> configurationHandler);
+
+    /**
+     * @brief Sets device configuration handler
+     * @param configurationHandler Instance of wolkabout::ConfigurationHandler that handles setting of configuration
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& configurationHandler(std::shared_ptr<ConfigurationHandler> configurationHandler);
+
+    /**
+     * @brief Sets device configuration provider
+     * @param configurationProvider Lambda that provides device configuration
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& configurationProvider(std::function<std::vector<ConfigurationItem>()> configurationProvider);
+
+    /**
+     * @brief Sets device configuration provider
+     * @param configurationProvider Instance of wolkabout::ConfigurationProvider that provides device configuration
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& configurationProvider(std::shared_ptr<ConfigurationProvider> configurationProvider);
+
+    /**
      * @brief withDataProtocol Defines which data protocol to use
      * @tparam Protocol protocol type to register
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& withDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol);
+
+    /**
+     * @brief withFirmwareUpdate Enables firmware update for gateway
+     * @param firmwareVersion Current version of the firmware
+     * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
+     * @param firmwareDownloadDirectory Directory where to download firmware file
+     * @param maxFirmwareFileSize Maximum size of firmware file that can be handled
+     * @param urlDownloader Instance of wolkabout::UrlFileDownloader used to downlad firmware from provided url
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::shared_ptr<FirmwareInstaller> installer,
+                                    const std::string& firmwareDownloadDirectory,
+                                    std::uint_fast64_t maxFirmwareFileSize, std::uint_fast64_t maxFirmwareFileChunkSize,
+                                    std::shared_ptr<UrlFileDownloader> urlDownloader = nullptr);
 
     /**
      * @brief withoutKeepAlive Disables ping mechanism used to notify WolkAbout IOT Platform
@@ -96,7 +175,26 @@ private:
     std::string m_gatewayHost;
     Device m_device;
 
+    std::function<void(std::string, std::string)> m_actuationHandlerLambda;
+    std::shared_ptr<ActuationHandler> m_actuationHandler;
+
+    std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
+    std::shared_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
+
+    std::function<void(const std::vector<ConfigurationItem>& configuration)> m_configurationHandlerLambda;
+    std::shared_ptr<ConfigurationHandler> m_configurationHandler;
+
+    std::function<std::vector<ConfigurationItem>()> m_configurationProviderLambda;
+    std::shared_ptr<ConfigurationProvider> m_configurationProvider;
+
     std::shared_ptr<GatewayDataProtocol> m_dataProtocol;
+
+    std::string m_firmwareVersion;
+    std::string m_firmwareDownloadDirectory = "";
+    std::uint_fast64_t m_maxFirmwareFileSize = 10 * 1024 * 1024;
+    std::uint_fast64_t m_maxFirmwareFileChunkSize = 10 * 1024;
+    std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
+    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
     bool m_keepAliveEnabled;
 

@@ -140,7 +140,7 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
           << "INSERT INTO device_manifest(name, description, protocol, firmware_update_protocol, sha256) VALUES(?, "
              "?, ?, ?, ?);",
           useRef(device.getManifest().getName()), useRef(device.getManifest().getDescription()),
-          useRef(device.getManifest().getProtocol()), useRef(device.getManifest().getFirmwareUpdateProtocol()),
+          useRef(device.getManifest().getProtocol()), useRef(device.getManifest().getFirmwareUpdateType()),
           useRef(deviceManifestSha256);
 
         Poco::UInt64 deviceManifestId;
@@ -799,7 +799,7 @@ std::string SQLiteDeviceRepository::calculateSha256(const DeviceManifest& device
     digestEngine.update(deviceManifest.getName());
     digestEngine.update(deviceManifest.getDescription());
     digestEngine.update(deviceManifest.getProtocol());
-    digestEngine.update(deviceManifest.getFirmwareUpdateProtocol());
+    digestEngine.update(deviceManifest.getFirmwareUpdateType());
 
     for (const wolkabout::AlarmManifest& alarmManifest : deviceManifest.getAlarms())
     {

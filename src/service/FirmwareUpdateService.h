@@ -116,13 +116,6 @@ private:
 
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
-    enum class FirmwareDownloadStatus
-    {
-        IN_PROGRESS,
-        COMPLETED,
-        UNKNOWN
-    };
-
     struct FirmwareDownloadStruct
     {
         enum class FirmwareDownloadStatus
@@ -132,8 +125,10 @@ private:
             UNKNOWN
         } status;
 
+        std::string channel;
+        std::string uri;
         std::vector<std::string> devices;
-        std::string firmwareFile;
+        std::string downloadedFirmwarePath;
     };
 
     std::map<std::string, FirmwareDownloadStruct> m_firmwareStatuses;
@@ -144,7 +139,8 @@ private:
 
         enum class DeviceUpdateStatus
         {
-            DOWNLOAD,
+            WOLK_DOWNLOAD,
+            URL_DOWNLOAD,
             TRANSFER,
             READY,
             INSTALL,
@@ -160,12 +156,15 @@ private:
     DeviceUpdateStruct getDeviceUpdateStatus(const std::string& deviceKey);
     void removeDeviceUpdateStatus(const std::string& deviceKey);
 
-    void addFirmwareDownloadStatus(const std::string& key, FirmwareDownloadStruct::FirmwareDownloadStatus status,
-                                   const std::vector<std::string>& deviceKeys, const std::string& firmwareFile = "");
+    void addFirmwareDownloadStatus(const std::string& key, const std::string& channel, const std::string& uri,
+                                   FirmwareDownloadStruct::FirmwareDownloadStatus status,
+                                   const std::vector<std::string>& deviceKeys,
+                                   const std::string& downloadedFirmwarePath = "");
     void setFirmwareDownloadStatus(const std::string& key, const std::string& firmwareFile);
     bool firmwareDownloadStatusExists(const std::string& key);
+    bool firmwareDownloadStatusExistsForDevice(const std::string& deviceKey);
     FirmwareDownloadStruct getFirmwareDownloadStatus(const std::string& key);
-    std::string getFirmwareFileForDevice(const std::string& deviceKey);
+    FirmwareDownloadStruct getFirmwareDownloadStatusForDevice(const std::string& deviceKey);
     void removeDeviceFromFirmwareStatus(const std::string& deviceKey);
     void removeFirmwareStatus(const std::string& key);
     void clearUsedFirmwareFiles();

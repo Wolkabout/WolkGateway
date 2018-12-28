@@ -105,6 +105,7 @@ void FileDownloadService::abort(const std::string& subChannel)
         {
             LOG(INFO) << "Aborting file download for channel: " << subChannel;
             std::get<FILE_DOWNLOADER_INDEX>(it->second)->abort();
+            flagCompletedDownload(subChannel);
         }
         else
         {

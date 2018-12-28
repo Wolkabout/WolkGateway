@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2018 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -372,11 +372,12 @@ void FirmwareUpdateService::fileUpload(const std::string& deviceKey, const std::
         removeDeviceFromFirmwareStatus(deviceKey);
     }
 
-    addDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::DOWNLOAD, autoInstall);
+    addDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::WOLK_DOWNLOAD, autoInstall);
 
     if (!firmwareDownloadStatusExists(hash))
     {
-        addFirmwareDownloadStatus(hash, FirmwareDownloadStruct::FirmwareDownloadStatus::IN_PROGRESS, {deviceKey});
+        addFirmwareDownloadStatus(hash, subChannel, name, FirmwareDownloadStruct::FirmwareDownloadStatus::IN_PROGRESS,
+                                  {deviceKey});
 
         const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(hash));
 
@@ -399,18 +400,22 @@ void FirmwareUpdateService::urlDownload(const std::string& deviceKey, const std:
         removeDeviceFromFirmwareStatus(deviceKey);
     }
 
-    addDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::DOWNLOAD, autoInstall);
+    addDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::URL_DOWNLOAD, autoInstall);
 
     if (!firmwareDownloadStatusExists(url))
     {
-        addFirmwareDownloadStatus(url, FirmwareDownloadStruct::FirmwareDownloadStatus::IN_PROGRESS, {deviceKey});
+        addFirmwareDownloadStatus(url, subChannel, url, FirmwareDownloadStruct::FirmwareDownloadStatus::IN_PROGRESS,
+                                  {deviceKey});
 
         const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(url));
 
-        m_urlFileDownloader->download(
-          url, m_firmwareDownloadDirectory,
-          [=](const std::string& filePath) { downloadCompleted(filePath, url, subChannel); },
-          [=](UrlFileDownloader::Error errorCode) { downloadFailed(errorCode, url, subChannel); });
+        m_urlFileDownloader->download(url, m_firmwareDownloadDirectory,
+                                      [=](const std::string& callbackUrl, const std::string& filePath) {
+                                          downloadCompleted(filePath, callbackUrl, subChannel);
+                                      },
+                                      [=](const std::string& callbackUrl, UrlFileDownloader::Error errorCode) {
+                                          downloadFailed(errorCode, callbackUrl, subChannel);
+                                      });
     }
     else
     {
@@ -566,7 +571,8 @@ void FirmwareUpdateService::install(const std::string& deviceKey)
                          m_gatewayKey);
         }
 
-        auto fullPath = FileSystemUtils::absolutePath(getFirmwareFileForDevice(m_gatewayKey));
+        auto fullPath =
+          FileSystemUtils::absolutePath(getFirmwareDownloadStatusForDevice(m_gatewayKey).downloadedFirmwarePath);
 
         installGwFirmware(fullPath);
     }
@@ -642,12 +648,43 @@ void FirmwareUpdateService::abort(const std::string& deviceKey)
         return;
     }
 
-    if (deviceKey == m_gatewayKey)
+    auto status = getDeviceUpdateStatus(deviceKey);
+
+    // if download is active just abort download
+    if (status.status == DeviceUpdateStruct::DeviceUpdateStatus::WOLK_DOWNLOAD)
     {
+        if (firmwareDownloadStatusExistsForDevice(deviceKey))
+        {
+            auto firmwareStatus = getFirmwareDownloadStatusForDevice(deviceKey);
+            m_wolkaboutFileDownloader.abort(firmwareStatus.channel);
+            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, firmwareStatus.channel);
+        }
+
+        return;
     }
-    else
+    else if (status.status == DeviceUpdateStruct::DeviceUpdateStatus::URL_DOWNLOAD && m_urlFileDownloader)
     {
-        sendCommand(FirmwareUpdateCommand(FirmwareUpdateCommand::Type::ABORT), deviceKey);
+        if (firmwareDownloadStatusExistsForDevice(deviceKey))
+        {
+            auto firmwareStatus = getFirmwareDownloadStatusForDevice(deviceKey);
+            m_urlFileDownloader->abort(firmwareStatus.uri);
+            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, firmwareStatus.channel);
+        }
+
+        return;
+    }
+
+    if (status.status == DeviceUpdateStruct::DeviceUpdateStatus::READY ||
+        status.status == DeviceUpdateStruct::DeviceUpdateStatus::TRANSFER)
+    {
+        if (deviceKey == m_gatewayKey)
+        {
+            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, m_gatewayKey);
+        }
+        else
+        {
+            sendCommand(FirmwareUpdateCommand(FirmwareUpdateCommand::Type::ABORT), deviceKey);
+        }
     }
 }
 
@@ -717,12 +754,13 @@ void FirmwareUpdateService::removeDeviceUpdateStatus(const std::string& deviceKe
     }
 }
 
-void FirmwareUpdateService::addFirmwareDownloadStatus(const std::string& key,
+void FirmwareUpdateService::addFirmwareDownloadStatus(const std::string& key, const std::string& channel,
+                                                      const std::string& uri,
                                                       FirmwareDownloadStruct::FirmwareDownloadStatus status,
                                                       const std::vector<std::string>& deviceKeys,
                                                       const std::string& firmwareFile)
 {
-    m_firmwareStatuses[key] = {status, deviceKeys, firmwareFile};
+    m_firmwareStatuses[key] = {status, channel, uri, deviceKeys, firmwareFile};
 }
 
 FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmwareDownloadStatus(const std::string& key)
@@ -733,12 +771,12 @@ FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmware
     }
 
     return FirmwareUpdateService::FirmwareDownloadStruct{
-      FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, {}, ""};
+      FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, "", "", {}, ""};
 }
 
 void FirmwareUpdateService::setFirmwareDownloadStatus(const std::string& key, const std::string& firmwareFile)
 {
-    m_firmwareStatuses[key].firmwareFile = firmwareFile;
+    m_firmwareStatuses[key].downloadedFirmwarePath = firmwareFile;
 }
 
 bool FirmwareUpdateService::firmwareDownloadStatusExists(const std::string& key)
@@ -746,7 +784,7 @@ bool FirmwareUpdateService::firmwareDownloadStatusExists(const std::string& key)
     return m_firmwareStatuses.find(key) != m_firmwareStatuses.end();
 }
 
-std::string FirmwareUpdateService::getFirmwareFileForDevice(const std::string& deviceKey)
+bool FirmwareUpdateService::firmwareDownloadStatusExistsForDevice(const std::string& deviceKey)
 {
     for (auto& pair : m_firmwareStatuses)
     {
@@ -755,11 +793,29 @@ std::string FirmwareUpdateService::getFirmwareFileForDevice(const std::string& d
         auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
         if (it != deviceList.end())
         {
-            return pair.second.firmwareFile;
+            return true;
         }
     }
 
-    return "";
+    return false;
+}
+
+FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmwareDownloadStatusForDevice(
+  const std::string& deviceKey)
+{
+    for (auto& pair : m_firmwareStatuses)
+    {
+        auto& deviceList = pair.second.devices;
+
+        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
+        if (it != deviceList.end())
+        {
+            return pair.second;
+        }
+    }
+
+    return FirmwareUpdateService::FirmwareDownloadStruct{
+      FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, "", "", {}, ""};
 }
 
 void FirmwareUpdateService::removeDeviceFromFirmwareStatus(const std::string& deviceKey)
@@ -795,7 +851,7 @@ void FirmwareUpdateService::clearUsedFirmwareFiles()
     {
         if (it->second.devices.empty())
         {
-            FileSystemUtils::deleteFile(it->second.firmwareFile);
+            FileSystemUtils::deleteFile(it->second.downloadedFirmwarePath);
             it = m_firmwareStatuses.erase(it);
         }
         else

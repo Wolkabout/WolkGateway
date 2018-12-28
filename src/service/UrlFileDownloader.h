@@ -38,19 +38,22 @@ public:
     /**
      * @brief download Starts downloading of the file from provided url
      * Should be implemented in a thread safe manner
+     * Should support parallel downloads
      * @param url Url of the file to download
      * @param downloadDirectory Directory where to download file
-     * @param onSuccessCallback Function to call when file is downloaded with file path as argument
-     * @param onFailCallback Function to call when download fails with error code as argument
+     * @param onSuccessCallback Function to call when file is downloaded with key and file path as argument
+     * @param onFailCallback Function to call when download fails with key and error code as argument
      */
-    virtual void download(const std::string& url, const std::string& downloadDirectory,
-                          std::function<void(const std::string& filePath)> onSuccessCallback,
-                          std::function<void(UrlFileDownloader::Error errorCode)> onFailCallback) = 0;
+    virtual void download(
+      const std::string& url, const std::string& downloadDirectory,
+      std::function<void(const std::string& url, const std::string& filePath)> onSuccessCallback,
+      std::function<void(const std::string& url, UrlFileDownloader::Error errorCode)> onFailCallback) = 0;
     /**
      * @brief abort Aborts file download and removes any saved data
      * Should be implemented in a thread safe manner
+     * @param url Url of the file being downloaded
      */
-    virtual void abort() = 0;
+    virtual void abort(const std::string& url) = 0;
 };
 }    // namespace wolkabout
 

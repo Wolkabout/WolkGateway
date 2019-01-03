@@ -17,6 +17,7 @@
 #include "service/DataService.h"
 #include "InboundMessageHandler.h"
 #include "OutboundMessageHandler.h"
+#include "model/ActuatorGetCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/DetailedDevice.h"
 #include "model/Message.h"
@@ -156,6 +157,24 @@ void DataService::addMessage(std::shared_ptr<Message> message)
 void DataService::setGatewayMessageListener(MessageListener* gatewayDevice)
 {
     m_gatewayDevice = gatewayDevice;
+}
+
+void DataService::requestActuatorStatusesForDevice(const std::string& deviceKey)
+{
+    auto device = m_deviceRepository.findByDeviceKey(deviceKey);
+
+    if (!device)
+    {
+        LOG(ERROR) << "DeviceStatusService::requestActuatorStatusesForDevice Device not found in repository: "
+                   << deviceKey;
+        return;
+    }
+
+    for (const auto& reference : device->getActuatorReferences())
+    {
+        std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, ActuatorGetCommand(reference));
+        m_outboundDeviceMessageHandler.addMessage(message);
+    }
 }
 
 void DataService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)

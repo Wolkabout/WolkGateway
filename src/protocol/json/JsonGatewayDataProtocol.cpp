@@ -58,7 +58,7 @@ const std::string JsonGatewayDataProtocol::ACTUATION_GET_TOPIC_ROOT = "p2d/actua
 const std::string JsonGatewayDataProtocol::CONFIGURATION_SET_REQUEST_TOPIC_ROOT = "p2d/configuration_set/";
 const std::string JsonGatewayDataProtocol::CONFIGURATION_GET_REQUEST_TOPIC_ROOT = "p2d/configuration_get/";
 
-void to_json(json& j, const ActuatorStatus& p)
+static void to_json(json& j, const ActuatorStatus& p)
 {
     const std::string status = [&]() -> std::string {
         if (p.getState() == ActuatorStatus::State::READY)
@@ -80,7 +80,7 @@ void to_json(json& j, const ActuatorStatus& p)
     j = json{{"status", status}, {"value", p.getValue()}};
 }
 
-void to_json(json& j, const std::shared_ptr<ActuatorStatus>& p)
+static void to_json(json& j, const std::shared_ptr<ActuatorStatus>& p)
 {
     if (!p)
     {
@@ -175,6 +175,15 @@ std::unique_ptr<Message> JsonGatewayDataProtocol::makeMessage(const std::string&
     const std::string payload = jPayload.dump();
 
     return std::unique_ptr<Message>(new Message(payload, topic));
+}
+
+std::unique_ptr<Message> JsonGatewayDataProtocol::makeMessage(const std::string& deviceKey,
+                                                              const ActuatorGetCommand& command) const
+{
+    const std::string topic = ACTUATION_GET_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey + CHANNEL_DELIMITER +
+                              REFERENCE_PATH_PREFIX + command.getReference();
+
+    return std::unique_ptr<Message>(new Message("", topic));
 }
 
 std::unique_ptr<ActuatorSetCommand> JsonGatewayDataProtocol::makeActuatorSetCommand(const Message& message) const

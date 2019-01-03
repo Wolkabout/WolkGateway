@@ -248,6 +248,9 @@ private:
     void registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol,
                               std::shared_ptr<DataService> dataService = nullptr);
 
+    void requestActuatorStatusesForDevices();
+    void requestActuatorStatusesForDevice(const std::string& deviceKey);
+
     Device m_device;
 
     std::unique_ptr<GatewayStatusProtocol> m_statusProtocol;

@@ -49,7 +49,7 @@ const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SLEEP = "SLE
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SERVICE = "SERVICE";
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_OFFLINE = "OFFLINE";
 
-void to_json(json& j, const DeviceStatusResponse& p)
+static void to_json(json& j, const DeviceStatusResponse& p)
 {
     const std::string status = [&]() -> std::string {
         switch (p.getStatus())
@@ -77,7 +77,7 @@ void to_json(json& j, const DeviceStatusResponse& p)
     j = json{{JsonGatewayStatusProtocol::STATUS_RESPONSE_STATE_FIELD, status}};
 }
 
-void to_json(json& j, const std::shared_ptr<DeviceStatusResponse>& p)
+static void to_json(json& j, const std::shared_ptr<DeviceStatusResponse>& p)
 {
     if (!p)
     {

@@ -305,6 +305,8 @@ void Wolk::notifyPlatformConnected()
 
         shouldRegister = false;
     }
+
+    requestActuatorStatusesForDevices();
 }
 
 void Wolk::notifyPlatformDisonnected()
@@ -431,5 +433,44 @@ void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol, s
 
     m_inboundDeviceMessageHandler->addListener(protocolResolver);
     m_inboundPlatformMessageHandler->addListener(protocolResolver);
+}
+
+void Wolk::requestActuatorStatusesForDevices()
+{
+    auto keys = m_deviceRepository->findAllDeviceKeys();
+    if (keys)
+    {
+        for (const auto& key : *keys)
+        {
+            if (key == m_device.getKey())
+            {
+                continue;
+            }
+            requestActuatorStatusesForDevice(key);
+        }
+    }
+}
+
+void Wolk::requestActuatorStatusesForDevice(const std::string& deviceKey)
+{
+    std::lock_guard<decltype(m_lock)> lg{m_lock};
+
+    auto device = m_deviceRepository->findByDeviceKey(deviceKey);
+    if (!device)
+    {
+        LOG(ERROR) << "Device not found: " << deviceKey;
+        return;
+    }
+
+    const auto protocol = device->getManifest().getProtocol();
+    auto it = m_dataServices.find(protocol);
+    if (it != m_dataServices.end())
+    {
+        std::get<0>(it->second)->requestActuatorStatusesForDevice(deviceKey);
+    }
+    else
+    {
+        LOG(WARN) << "Data service not found for protocol: " << protocol;
+    }
 }
 }    // namespace wolkabout

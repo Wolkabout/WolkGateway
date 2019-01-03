@@ -47,6 +47,8 @@ public:
 
     std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
                                          const ActuatorStatus& actuatorStatus) const override;
+    std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
+                                         const ActuatorGetCommand& command) const override;
     std::unique_ptr<ActuatorGetCommand> makeActuatorGetCommand(const Message& message) const override;
     std::unique_ptr<ActuatorSetCommand> makeActuatorSetCommand(const Message& message) const override;
     bool isActuatorSetMessage(const Message& message) const override;

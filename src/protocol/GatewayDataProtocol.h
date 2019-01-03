@@ -38,6 +38,9 @@ public:
     virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
                                                  const ActuatorStatus& actuatorStatus) const = 0;
 
+    virtual std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
+                                                 const ActuatorGetCommand& command) const = 0;
+
     virtual std::unique_ptr<ActuatorGetCommand> makeActuatorGetCommand(const Message& message) const = 0;
     virtual std::unique_ptr<ActuatorSetCommand> makeActuatorSetCommand(const Message& message) const = 0;
 

@@ -46,6 +46,8 @@ public:
 
     std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                          const DeviceRegistrationRequest& request) const override;
+    std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
+                                         const DeviceRegistrationResponse& request) const override;
     std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                          const DeviceRegistrationResponse& request) const override;
     std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,

@@ -270,3 +270,50 @@ TEST_F(DeviceStatusService, Given_When_StatusMessageFromDeviceIsReceived_Then_Me
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().front()->getChannel(),
               "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY");
 }
+
+TEST_F(DeviceStatusService, GivenGatewayInRepository_When_ConnectedToDevices_Then_StatusRequestNotSent)
+{
+    // Given
+    ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
+      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY}));
+
+    // When
+    deviceStatusService->connected();
+
+    // Then
+    ASSERT_EQ(deviceOutboundMessageHandler->getMessages().size(), 0);
+}
+
+TEST_F(DeviceStatusService,
+       GivenGatewayAndOneDeviceInRepository_When_ConnectedToDevices_Then_StatusRequestIsSentToDevice)
+{
+    // Given
+    const std::string deviceKey1 = "KEY1";
+
+    ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
+      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY, deviceKey1}));
+
+    // When
+    deviceStatusService->connected();
+
+    // Then
+    ASSERT_EQ(deviceOutboundMessageHandler->getMessages().size(), 1);
+}
+
+TEST_F(DeviceStatusService,
+       GivenGatewayAndMultipleDevicesInRepository_When_ConnectedToDevices_Then_StatusRequestIsSentToEachDevice)
+{
+    // Given
+    const std::string deviceKey1 = "KEY1";
+    const std::string deviceKey2 = "KEY2";
+    const std::string deviceKey3 = "KEY3";
+
+    ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
+      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY, deviceKey1, deviceKey2, deviceKey3}));
+
+    // When
+    deviceStatusService->connected();
+
+    // Then
+    ASSERT_EQ(deviceOutboundMessageHandler->getMessages().size(), 3);
+}

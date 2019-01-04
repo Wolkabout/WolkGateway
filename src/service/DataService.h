@@ -49,7 +49,7 @@ public:
 
     void setGatewayMessageListener(MessageListener* gatewayDevice);
 
-    void requestActuatorStatusesForDevice(const std::string& deviceKey);
+    virtual void requestActuatorStatusesForDevice(const std::string& deviceKey);
 
 private:
     void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);

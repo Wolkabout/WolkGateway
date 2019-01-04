@@ -17,7 +17,6 @@
 #include "PublishingService.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/Message.h"
-#include "persistence/GatewayPersistence.h"
 #include "utilities/Logger.h"
 
 namespace wolkabout

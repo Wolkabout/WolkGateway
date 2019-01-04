@@ -19,6 +19,7 @@
 
 #include "ConnectionStatusListener.h"
 #include "OutboundMessageHandler.h"
+#include "persistence/GatewayPersistence.h"
 #include <atomic>
 #include <condition_variable>
 #include <memory>
@@ -28,7 +29,6 @@
 namespace wolkabout
 {
 class ConnectivityService;
-class GatewayPersistence;
 
 class PublishingService : public OutboundMessageHandler, public ConnectionStatusListener
 {

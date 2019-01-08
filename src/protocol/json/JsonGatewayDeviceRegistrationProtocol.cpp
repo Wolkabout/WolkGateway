@@ -152,6 +152,25 @@ std::unique_ptr<Message> JsonGatewayDeviceRegistrationProtocol::makeMessage(
 }
 
 std::unique_ptr<Message> JsonGatewayDeviceRegistrationProtocol::makeMessage(
+  const std::string& deviceKey, const wolkabout::DeviceRegistrationResponse& response) const
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    try
+    {
+        const json jsonPayload(response);
+        const auto channel = DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey;
+
+        return std::unique_ptr<Message>(new Message(jsonPayload.dump(), channel));
+    }
+    catch (std::exception& e)
+    {
+        LOG(ERROR) << "Device registration protocol: Unable to serialize device registration response: " << e.what();
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Message> JsonGatewayDeviceRegistrationProtocol::makeMessage(
   const std::string& gatewayKey, const std::string& deviceKey,
   const wolkabout::DeviceRegistrationResponse& response) const
 {
@@ -160,15 +179,8 @@ std::unique_ptr<Message> JsonGatewayDeviceRegistrationProtocol::makeMessage(
     try
     {
         const json jsonPayload(response);
-        const auto channel = [&]() -> std::string {
-            if (deviceKey == gatewayKey)
-            {
-                return DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
-            }
-
-            return DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-                   DEVICE_PATH_PREFIX + deviceKey;
-        }();
+        const auto channel = DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey +
+                             CHANNEL_DELIMITER + DEVICE_PATH_PREFIX + deviceKey;
 
         return std::unique_ptr<Message>(new Message(jsonPayload.dump(), channel));
     }

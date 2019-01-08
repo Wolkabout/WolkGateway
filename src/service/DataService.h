@@ -49,6 +49,8 @@ public:
 
     void setGatewayMessageListener(MessageListener* gatewayDevice);
 
+    virtual void requestActuatorStatusesForDevice(const std::string& deviceKey);
+
 private:
     void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
     void routePlatformToDeviceMessage(std::shared_ptr<Message> message);

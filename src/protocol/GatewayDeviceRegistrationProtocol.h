@@ -38,6 +38,9 @@ public:
     virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                                  const DeviceRegistrationRequest& request) const = 0;
 
+    virtual std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
+                                                 const DeviceRegistrationResponse& request) const = 0;
+
     virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                                  const DeviceRegistrationResponse& request) const = 0;
 

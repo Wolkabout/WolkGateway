@@ -358,6 +358,19 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
     }
 
     m_devicesAwaitingRegistrationResponse.erase(deviceKey);
+
+    if (deviceKey != m_gatewayKey)
+    {
+        // send resopnse to device
+        std::shared_ptr<Message> registrationResponseMessage = m_protocol.makeMessage(deviceKey, response);
+        if (!registrationResponseMessage)
+        {
+            LOG(WARN) << "DeviceRegistrationService: Unable to create registration response message";
+            return;
+        }
+
+        m_outboundDeviceMessageHandler.addMessage(registrationResponseMessage);
+    }
 }
 
 void DeviceRegistrationService::addToPostponedDeviceRegistartionRequests(

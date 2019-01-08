@@ -22,9 +22,12 @@ public:
         return std::unique_ptr<wolkabout::DetailedDevice>(findByDeviceKeyProxy(key));
     }
 
-    // MOCK_METHOD1(findByDeviceKey, std::unique_ptr<wolkabout::Device>(const std::string& key));
+    std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override
+    {
+        return std::unique_ptr<std::vector<std::string>>(findAllDeviceKeysProxy());
+    }
 
-    MOCK_METHOD0(findAllDeviceKeys, std::unique_ptr<std::vector<std::string>>());
+    MOCK_METHOD0(findAllDeviceKeysProxy, std::vector<std::string>*());
 
     MOCK_METHOD1(containsDeviceWithKey, bool(const std::string& deviceKey));
 

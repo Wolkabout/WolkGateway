@@ -162,6 +162,29 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         throw std::logic_error("No protocol defined.");
     }
 
+    if (m_device.getActuatorReferences().size() != 0)
+    {
+        if (m_actuationHandler == nullptr && m_actuationHandlerLambda == nullptr)
+        {
+            throw std::logic_error("Actuation handler not set.");
+        }
+
+        if (m_actuatorStatusProvider == nullptr && m_actuatorStatusProviderLambda == nullptr)
+        {
+            throw std::logic_error("Actuator status provider not set.");
+        }
+    }
+
+    if (!m_configurationHandlerLambda != !m_configurationProviderLambda)
+    {
+        throw std::logic_error("Both ConfigurationProvider and ConfigurationHandler must be set.");
+    }
+
+    if (!m_configurationHandler != !m_configurationProvider)
+    {
+        throw std::logic_error("Both ConfigurationProvider and ConfigurationHandler must be set.");
+    }
+
     auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
 
     wolk->m_statusProtocol = std::unique_ptr<GatewayStatusProtocol>(new JsonGatewayStatusProtocol());
@@ -209,6 +232,18 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
     wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
+
+    wolk->m_actuationHandlerLambda = m_actuationHandlerLambda;
+    wolk->m_actuationHandler = m_actuationHandler;
+
+    wolk->m_actuatorStatusProviderLambda = m_actuatorStatusProviderLambda;
+    wolk->m_actuatorStatusProvider = m_actuatorStatusProvider;
+
+    wolk->m_configurationHandlerLambda = m_configurationHandlerLambda;
+    wolk->m_configurationHandler = m_configurationHandler;
+
+    wolk->m_configurationProviderLambda = m_configurationProviderLambda;
+    wolk->m_configurationProvider = m_configurationProvider;
 
     // Setup registration service
     wolk->m_deviceRegistrationService = std::make_shared<DeviceRegistrationService>(

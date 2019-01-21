@@ -90,3 +90,52 @@ To delete device from gateway open existingDevices.json file and remove the line
 Upon starting the gateway will delete all registered devices whoose keys no longer appear in existingDevices.json file.
 
 Note that the device will be registered again if the gateway receives registration request for that device from module.
+
+
+Firmware Update
+------
+
+WolkAbout Gateway provides mechanism for updating gateway and subdevices firmware.
+
+By default this feature is disabled for gateway and enabled for subdevices.
+See code snippet below on how to enable device firmware update for gateway.
+
+```c++
+
+class CustomFirmwareInstaller: public wolkabout::FirmwareInstaller
+{
+public:
+	bool install(const std::string& firmwareFile) override
+	{
+		// Mock install
+		std::cout << "Updating firmware with file " << firmwareFile << std::endl;
+
+		// Optionally delete 'firmwareFile
+		return true;
+	}
+};
+
+auto installer = std::make_shared<CustomFirmwareInstaller>();
+
+auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+wolkabout::DeviceManifest manifest("manifestName", "manifestDescription", dataProtocol->getName(), "DFU");
+wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), manifest);
+
+auto builder = wolkabout::Wolk::newBuilder(device)
+	.withDataProtocol(std::move(dataProtocol))
+	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
+	.platformHost(gatewayConfiguration.getPlatformMqttUri())
+	// Enable firmware update
+	.withFirmwareUpdate("2.1.0",								// Current firmware version of the gateway
+						installer,								// Implementation of FirmwareInstaller, which performs installation of obtained gateway firmware
+						".",									// Directory where downloaded firmware files will be stored
+						10 * 1024 * 1024,						// Maximum acceptable size of firmware file, in bytes
+						1024 * 1024,							// Size of firmware file transfer chunk, in bytes
+						urlDownloader)							// Optional implementation of UrlFileDownloader for cases when one wants to download device firmware via given URL
+    .build();
+
+    wolk->connect();
+```
+
+Firmware update for gateway subdevices is enabled by default. To change default settings without enabling firmware update for gateway use the above api
+and pass nullptr for firmwate installer.

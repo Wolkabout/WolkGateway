@@ -92,8 +92,33 @@ Upon starting the gateway will delete all registered devices whoose keys no long
 Note that the device will be registered again if the gateway receives registration request for that device from module.
 
 
-Firmware Update
+Advanced usage
 ------
+
+**Trust store**
+
+By default Gateway searches for file named 'ca.crt' in the current directory.
+
+See code snippet below on how to specify trust store for gateway.
+
+
+```c++
+
+auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), dataProtocol->getName());
+
+auto builder = wolkabout::Wolk::newBuilder(device)
+	.withDataProtocol(std::move(dataProtocol))
+	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
+	.platformHost(gatewayConfiguration.getPlatformMqttUri())
+	// Specify trust store
+	.platformTrustStore("path_to_trust_store");
+    .build();
+
+    wolk->connect();
+```
+
+**Firmware Update**
 
 WolkAbout Gateway provides mechanism for updating gateway and subdevices firmware.
 

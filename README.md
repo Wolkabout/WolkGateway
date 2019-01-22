@@ -90,3 +90,176 @@ To delete device from gateway open existingDevices.json file and remove the line
 Upon starting the gateway will delete all registered devices whoose keys no longer appear in existingDevices.json file.
 
 Note that the device will be registered again if the gateway receives registration request for that device from module.
+
+
+Advanced usage
+------
+
+Gateway can have its own feeds, configuration and firmware update.
+
+**Specifying gateway manifest**
+
+```cpp
+
+auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+
+wolkabout::DeviceManifest gatewayManifest("gatewayManifest", "", dataProtocol->getName(), "",
+    {wolkabout::ConfigurationManifest("Heating start hour", "HSH", wolkabout::DataType::NUMERIC, "", "8", 0, 24)},
+    {wolkabout::SensorManifest("Temperature", "T", wolkabout::DataType::NUMERIC, "", -20, 70)},
+    {wolkabout::AlarmManifest("Humidity alarm", wolkabout::AlarmManifest::AlarmSeverity::ALERT, "HH", "High humidity", "")},
+    {wolkabout::ActuatorManifest("Light switch", "SW", wolkabout::DataType::BOOLEAN, "")});
+
+
+wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), gatewayManifest;
+
+auto builder = wolkabout::Wolk::newBuilder(device)
+	.withDataProtocol(std::move(dataProtocol))
+	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
+	.platformHost(gatewayConfiguration.getPlatformMqttUri())
+    .build();
+
+    wolk->connect();
+```
+
+**Specifying actuation and configuration handlers/providers**
+```cpp
+
+auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), dataProtocol->getName());
+
+auto builder = wolkabout::Wolk::newBuilder(device)
+	.withDataProtocol(std::move(dataProtocol))
+	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
+	.platformHost(gatewayConfiguration.getPlatformMqttUri())
+    .actuationHandler([](const std::string& reference, const std::string& value) -> void {
+        // TODO Invoke your code which activates your actuator.
+
+        std::cout << "Actuation request received - Reference: " << reference << " value: " << value << std::endl;
+    })
+    .actuatorStatusProvider([](const std::string& reference) -> wolkabout::ActuatorStatus {
+        // TODO Invoke code which reads the state of the actuator.
+
+        if (reference == "ACTUATOR_REFERENCE_ONE") {
+            return wolkabout::ActuatorStatus("65", wolkabout::ActuatorStatus::State::READY);
+        } else if (reference == "ACTUATOR_REFERENCE_TWO") {
+            return wolkabout::ActuatorStatus("false", wolkabout::ActuatorStatus::State::READY);
+        }
+
+        return wolkabout::ActuatorStatus("", wolkabout::ActuatorStatus::State::READY);
+    })
+    .configurationHandler([](const std::map<std::string, std::string>& configuration) -> void {
+        // TODO invoke code which sets gateway configuration
+    })
+    .configurationProvider([]() -> const std::map<std::string, std::string>& {
+        // TODO invoke code which reads gateway configuration
+        return std::map<std::string, std::string>();
+    })
+    .build();
+
+    wolk->connect();
+```
+
+**Publishing sensor readings**
+```cpp
+wolk->addSensorReading("TEMPERATURE_REF", 23.4);
+wolk->addSensorReading("BOOL_SENSOR_REF", true);
+```
+
+**Publishing actuator statuses**
+```cpp
+wolk->publishActuatorStatus("ACTUATOR_REFERENCE_ONE ");
+```
+This will invoke the ActuationStatusProvider to read the actuator status,
+and publish actuator status.
+
+**Publish device configuration to platform**
+```cpp
+wolk->publishConfiguration();
+```
+
+**Publishing events**
+```cpp
+wolk->addAlarm("ALARM_REF", true);
+```
+
+**Data publish strategy**
+
+Sensor readings, and alarms are pushed to WolkAbout IoT platform on demand by calling
+```cpp
+wolk->publish();
+```
+
+Whereas actuator statuses are published automatically by calling:
+
+```cpp
+wolk->publishActuatorStatus("ACTUATOR_REFERENCE_ONE ");
+```
+
+**Trust store**
+
+By default Gateway searches for file named 'ca.crt' in the current directory.
+
+See code snippet below on how to specify trust store for gateway.
+
+```c++
+
+auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), dataProtocol->getName());
+
+auto builder = wolkabout::Wolk::newBuilder(device)
+	.withDataProtocol(std::move(dataProtocol))
+	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
+	.platformHost(gatewayConfiguration.getPlatformMqttUri())
+	// Specify trust store
+	.platformTrustStore("path_to_trust_store");
+    .build();
+
+    wolk->connect();
+```
+
+**Firmware Update**
+
+WolkAbout Gateway provides mechanism for updating gateway and subdevices firmware.
+
+By default this feature is disabled for gateway and enabled for subdevices.
+See code snippet below on how to enable device firmware update for gateway.
+
+```c++
+
+class CustomFirmwareInstaller: public wolkabout::FirmwareInstaller
+{
+public:
+	bool install(const std::string& firmwareFile) override
+	{
+		// Mock install
+		std::cout << "Updating firmware with file " << firmwareFile << std::endl;
+
+		// Optionally delete 'firmwareFile
+		return true;
+	}
+};
+
+auto installer = std::make_shared<CustomFirmwareInstaller>();
+
+auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+wolkabout::DeviceManifest manifest("manifestName", "manifestDescription", dataProtocol->getName(), "DFU");
+wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), manifest);
+
+auto builder = wolkabout::Wolk::newBuilder(device)
+	.withDataProtocol(std::move(dataProtocol))
+	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
+	.platformHost(gatewayConfiguration.getPlatformMqttUri())
+	// Enable firmware update
+	.withFirmwareUpdate("2.1.0",								// Current firmware version of the gateway
+						installer,								// Implementation of FirmwareInstaller, which performs installation of obtained gateway firmware
+						".",									// Directory where downloaded firmware files will be stored
+						10 * 1024 * 1024,						// Maximum acceptable size of firmware file, in bytes
+						1024 * 1024,							// Size of firmware file transfer chunk, in bytes
+						urlDownloader)							// Optional implementation of UrlFileDownloader for cases when one wants to download device firmware via given URL
+    .build();
+
+    wolk->connect();
+```
+
+Firmware update for gateway subdevices is enabled by default. To change default settings without enabling firmware update for gateway use the above api
+and pass nullptr for firmwate installer.

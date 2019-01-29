@@ -160,7 +160,7 @@ private:
                                    FirmwareDownloadStruct::FirmwareDownloadStatus status,
                                    const std::vector<std::string>& deviceKeys,
                                    const std::string& downloadedFirmwarePath = "");
-    void setFirmwareDownloadStatus(const std::string& key, const std::string& firmwareFile);
+    void setFirmwareDownloadCompletedStatus(const std::string& key, const std::string& firmwareFile);
     bool firmwareDownloadStatusExists(const std::string& key);
     bool firmwareDownloadStatusExistsForDevice(const std::string& deviceKey);
     FirmwareDownloadStruct getFirmwareDownloadStatus(const std::string& key);

@@ -389,6 +389,11 @@ void FirmwareUpdateService::fileUpload(const std::string& deviceKey, const std::
     else
     {
         m_firmwareStatuses[hash].devices.push_back(deviceKey);
+        if (m_firmwareStatuses[hash].status == FirmwareDownloadStruct::FirmwareDownloadStatus::COMPLETED)
+        {
+            const auto firmwareFile = m_firmwareStatuses[hash].downloadedFirmwarePath;
+            transferFile(deviceKey, firmwareFile);
+        }
     }
 }
 
@@ -420,6 +425,11 @@ void FirmwareUpdateService::urlDownload(const std::string& deviceKey, const std:
     else
     {
         m_firmwareStatuses[url].devices.push_back(deviceKey);
+        if (m_firmwareStatuses[url].status == FirmwareDownloadStruct::FirmwareDownloadStatus::COMPLETED)
+        {
+            const auto firmwareFile = m_firmwareStatuses[url].downloadedFirmwarePath;
+            transferFile(deviceKey, firmwareFile);
+        }
     }
 }
 
@@ -433,7 +443,7 @@ void FirmwareUpdateService::downloadCompleted(const std::string& filePath, const
                        << subChannel;
         }
 
-        setFirmwareDownloadStatus(hash, filePath);
+        setFirmwareDownloadCompletedStatus(hash, filePath);
 
         for (const std::string& deviceKey : getFirmwareDownloadStatus(hash).devices)
         {
@@ -658,6 +668,8 @@ void FirmwareUpdateService::abort(const std::string& deviceKey)
             auto firmwareStatus = getFirmwareDownloadStatusForDevice(deviceKey);
             m_wolkaboutFileDownloader.abort(firmwareStatus.channel);
             sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, firmwareStatus.channel);
+
+            installAborted(deviceKey);
         }
 
         return;
@@ -669,6 +681,8 @@ void FirmwareUpdateService::abort(const std::string& deviceKey)
             auto firmwareStatus = getFirmwareDownloadStatusForDevice(deviceKey);
             m_urlFileDownloader->abort(firmwareStatus.uri);
             sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, firmwareStatus.channel);
+
+            installAborted(deviceKey);
         }
 
         return;
@@ -680,6 +694,8 @@ void FirmwareUpdateService::abort(const std::string& deviceKey)
         if (deviceKey == m_gatewayKey)
         {
             sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, m_gatewayKey);
+
+            installAborted(deviceKey);
         }
         else
         {
@@ -774,9 +790,10 @@ FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmware
       FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, "", "", {}, ""};
 }
 
-void FirmwareUpdateService::setFirmwareDownloadStatus(const std::string& key, const std::string& firmwareFile)
+void FirmwareUpdateService::setFirmwareDownloadCompletedStatus(const std::string& key, const std::string& firmwareFile)
 {
     m_firmwareStatuses[key].downloadedFirmwarePath = firmwareFile;
+    m_firmwareStatuses[key].status = FirmwareDownloadStruct::FirmwareDownloadStatus::COMPLETED;
 }
 
 bool FirmwareUpdateService::firmwareDownloadStatusExists(const std::string& key)

@@ -41,3 +41,6 @@ dependencies
 *.creator.user
 *.files
 *.includes
+
+# CLion
+.idea

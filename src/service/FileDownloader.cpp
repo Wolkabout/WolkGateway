@@ -26,7 +26,7 @@ namespace wolkabout
 {
 const constexpr std::chrono::milliseconds FileDownloader::PACKET_REQUEST_TIMEOUT;
 
-FileDownloader::FileDownloader(uint_fast64_t maxFileSize, std::uint_fast64_t maxPacketSize)
+FileDownloader::FileDownloader(std::uint_fast64_t maxFileSize, std::uint_fast64_t maxPacketSize)
 : m_maxFileSize{maxFileSize}, m_maxPacketSize{maxPacketSize}
 {
 }

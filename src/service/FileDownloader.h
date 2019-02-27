@@ -35,9 +35,9 @@ class FilePacketRequest;
 class FileDownloader
 {
 public:
-    FileDownloader(unsigned long maxFileSize, unsigned long maxPacketSize);
+    FileDownloader(std::uint_fast64_t maxFileSize, std::uint_fast64_t maxPacketSize);
 
-    void download(const std::string& fileName, unsigned long fileSize, const ByteArray& fileHash,
+    void download(const std::string& fileName, std::uint_fast64_t fileSize, const ByteArray& fileHash,
                   const std::string& downloadDirectory, std::function<void(const FilePacketRequest&)> packetProvider,
                   std::function<void(const std::string& filePath)> onSuccessCallback,
                   std::function<void(WolkaboutFileDownloader::ErrorCode errorCode)> onFailCallback);
@@ -63,8 +63,8 @@ private:
     Timer m_timer;
 
     std::string m_currentFileName;
-    std::uint64_t m_currentFileSize;
-    std::uint64_t m_currentPacketSize;
+    std::uint_fast64_t m_currentFileSize;
+    std::uint_fast64_t m_currentPacketSize;
     unsigned m_currentPacketCount;
     unsigned m_currentPacketIndex;
     ByteArray m_currentFileHash;

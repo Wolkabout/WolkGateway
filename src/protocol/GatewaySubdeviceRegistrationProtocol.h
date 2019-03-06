@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GATEWAYDEVICEREGISTRATIONPROTOCOL_H
-#define GATEWAYDEVICEREGISTRATIONPROTOCOL_H
+#ifndef GATEWAYSUBDEVICEREGISTRATIONPROTOCOL_H
+#define GATEWAYSUBDEVICEREGISTRATIONPROTOCOL_H
 
 #include "protocol/GatewayProtocol.h"
 
@@ -26,23 +26,23 @@
 namespace wolkabout
 {
 class Message;
-class DeviceRegistrationRequest;
-class DeviceRegistrationResponse;
+class SubdeviceRegistrationRequest;
+class SubdeviceRegistrationResponse;
 class DeviceReregistrationResponse;
 
-class GatewayDeviceRegistrationProtocol : public GatewayProtocol
+class GatewaySubdeviceRegistrationProtocol : public GatewayProtocol
 {
 public:
     GatewayProtocol::Type getType() const override final { return GatewayProtocol::Type::REGISTRATION; }
 
     virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                 const DeviceRegistrationRequest& request) const = 0;
+                                                 const SubdeviceRegistrationRequest& request) const = 0;
 
     virtual std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
-                                                 const DeviceRegistrationResponse& request) const = 0;
+                                                 const SubdeviceRegistrationResponse& request) const = 0;
 
     virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                 const DeviceRegistrationResponse& request) const = 0;
+                                                 const SubdeviceRegistrationResponse& request) const = 0;
 
     virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
                                                  const DeviceReregistrationResponse& response) const = 0;
@@ -53,8 +53,8 @@ public:
     virtual std::unique_ptr<Message> makeDeviceDeletionRequestMessage(const std::string& gatewayKey,
                                                                       const std::string& deviceKey) const = 0;
 
-    virtual std::unique_ptr<DeviceRegistrationRequest> makeRegistrationRequest(const Message& message) const = 0;
-    virtual std::unique_ptr<DeviceRegistrationResponse> makeRegistrationResponse(const Message& message) const = 0;
+    virtual std::unique_ptr<SubdeviceRegistrationRequest> makeRegistrationRequest(const Message& message) const = 0;
+    virtual std::unique_ptr<SubdeviceRegistrationResponse> makeRegistrationResponse(const Message& message) const = 0;
 
     virtual bool isRegistrationRequest(const Message& message) const = 0;
     virtual bool isRegistrationResponse(const Message& message) const = 0;

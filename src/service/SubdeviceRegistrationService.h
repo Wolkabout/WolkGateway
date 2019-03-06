@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef DEVICEREGISTRATIONSERVICE_H
-#define DEVICEREGISTRATIONSERVICE_H
+#ifndef SUBDEVICEREGISTRATIONSERVICE_H
+#define SUBDEVICEREGISTRATIONSERVICE_H
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "OutboundRetryMessageHandler.h"
-#include "model/DeviceRegistrationRequest.h"
+#include "model/SubdeviceRegistrationRequest.h"
 
 #include <map>
 #include <memory>
@@ -32,8 +32,8 @@ namespace wolkabout
 {
 class DetailedDevice;
 class DeviceRepository;
-class DeviceRegistrationResponse;
-class GatewayDeviceRegistrationProtocol;
+class SubdeviceRegistrationResponse;
+class GatewaySubdeviceRegistrationProtocol;
 class Message;
 class OutboundMessageHandler;
 
@@ -61,16 +61,17 @@ protected:
     void invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const;
 
 private:
-    void handleDeviceRegistrationRequest(const std::string& deviceKey, const DeviceRegistrationRequest& request);
+    void handleSubdeviceRegistrationRequest(const std::string& deviceKey, const SubdeviceRegistrationRequest& request);
     void handleDeviceReregistrationRequest();
 
-    void handleDeviceRegistrationResponse(const std::string& deviceKey, const DeviceRegistrationResponse& response);
+    void handleSubdeviceRegistrationResponse(const std::string& deviceKey,
+                                             const SubdeviceRegistrationResponse& response);
 
     void addToPostponedDeviceRegistartionRequests(const std::string& deviceKey,
-                                                  const DeviceRegistrationRequest& request);
+                                                  const SubdeviceRegistrationRequest& request);
 
     const std::string m_gatewayKey;
-    GatewayDeviceRegistrationProtocol& m_protocol;
+    GatewaySubdeviceRegistrationProtocol& m_protocol;
 
     DeviceRepository& m_deviceRepository;
 
@@ -85,7 +86,7 @@ private:
     std::map<std::string, std::unique_ptr<DetailedDevice>> m_devicesAwaitingRegistrationResponse;
 
     std::mutex m_devicesWithPostponedRegistrationMutex;
-    std::map<std::string, std::unique_ptr<DeviceRegistrationRequest>> m_devicesWithPostponedRegistration;
+    std::map<std::string, std::unique_ptr<SubdeviceRegistrationRequest>> m_devicesWithPostponedRegistration;
 };
 }    // namespace wolkabout
 

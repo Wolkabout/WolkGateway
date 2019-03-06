@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "service/DeviceRegistrationService.h"
+#include "service/SubdeviceRegistrationService.h"
 #include "OutboundMessageHandler.h"
 #include "model/DetailedDevice.h"
-#include "model/DeviceRegistrationRequest.h"
-#include "model/DeviceRegistrationResponse.h"
 #include "model/DeviceReregistrationResponse.h"
 #include "model/Message.h"
+#include "model/SubdeviceRegistrationRequest.h"
+#include "model/SubdeviceRegistrationResponse.h"
 #include "protocol/GatewayDeviceRegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
@@ -42,11 +42,11 @@ static const std::chrono::milliseconds RETRY_TIMEOUT{5000};
 
 namespace wolkabout
 {
-DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey,
-                                                     GatewayDeviceRegistrationProtocol& protocol,
-                                                     DeviceRepository& deviceRepository,
-                                                     OutboundMessageHandler& outboundPlatformMessageHandler,
-                                                     OutboundMessageHandler& outboundDeviceMessageHandler)
+SubdeviceRegistrationService::SubdeviceRegistrationService(std::string gatewayKey,
+                                                           GatewayDeviceRegistrationProtocol& protocol,
+                                                           DeviceRepository& deviceRepository,
+                                                           OutboundMessageHandler& outboundPlatformMessageHandler,
+                                                           OutboundMessageHandler& outboundDeviceMessageHandler)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_protocol{protocol}
 , m_deviceRepository{deviceRepository}
@@ -56,13 +56,13 @@ DeviceRegistrationService::DeviceRegistrationService(std::string gatewayKey,
 {
 }
 
-void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message> message)
+void SubdeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
     if (!m_protocol.isMessageFromPlatform(*message))
     {
-        LOG(WARN) << "DeviceRegistrationService: Ignoring message on channel '" << message->getChannel()
+        LOG(WARN) << "SubdeviceRegistrationService: Ignoring message on channel '" << message->getChannel()
                   << "'. Message not from platform.";
         return;
     }
@@ -75,13 +75,13 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
         if (!response)
         {
             LOG(ERROR)
-              << "DeviceRegistrationService: Device registration response could not be deserialized. Channel: '"
+              << "SubdeviceRegistrationService: Device registration response could not be deserialized. Channel: '"
               << message->getChannel() << "' Payload: '" << message->getContent() << "'";
             return;
         }
 
         auto deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
-        handleDeviceRegistrationResponse(deviceKey, *response);
+        handleSubdeviceRegistrationResponse(deviceKey, *response);
     }
     else if (m_protocol.isReregistrationRequest(*message))
     {
@@ -89,29 +89,30 @@ void DeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message>
     }
     else if (m_protocol.isDeviceDeletionResponse(*message))
     {
-        LOG(INFO) << "DeviceRegistrationService: Received device deletion response (" << message->getChannel() << ")";
+        LOG(INFO) << "SubdeviceRegistrationService: Received device deletion response (" << message->getChannel()
+                  << ")";
     }
     else
     {
-        LOG(WARN) << "DeviceRegistrationService: Unhandled message on channel '" << message->getChannel()
+        LOG(WARN) << "SubdeviceRegistrationService: Unhandled message on channel '" << message->getChannel()
                   << "'. Unsupported message type";
     }
 }
 
-void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> message)
+void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
     if (!m_protocol.isMessageToPlatform(*message))
     {
-        LOG(WARN) << "DeviceRegistrationService: Ignoring message received on channel '" << message->getChannel()
+        LOG(WARN) << "SubdeviceRegistrationService: Ignoring message received on channel '" << message->getChannel()
                   << "'. Message not intended for platform.";
         return;
     }
 
     if (!m_protocol.isRegistrationRequest(*message))
     {
-        LOG(WARN) << "DeviceRegistrationService: unhandled message on channel '" << message->getChannel()
+        LOG(WARN) << "SubdeviceRegistrationService: unhandled message on channel '" << message->getChannel()
                   << "'. Unsupported message type";
         return;
     }
@@ -119,7 +120,7 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
     auto request = m_protocol.makeRegistrationRequest(*message);
     if (!request)
     {
-        LOG(ERROR) << "DeviceRegistrationService: Device registration request could not be deserialized. Channel: '"
+        LOG(ERROR) << "SubdeviceRegistrationService: Device registration request could not be deserialized. Channel: '"
                    << message->getChannel() << "' Payload: '" << message->getContent() << "'";
         return;
     }
@@ -131,21 +132,21 @@ void DeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message> m
         return;
     }
 
-    handleDeviceRegistrationRequest(deviceKey, *request);
+    handleSubdeviceRegistrationRequest(deviceKey, *request);
 }
 
-const GatewayProtocol& DeviceRegistrationService::getProtocol() const
+const GatewayProtocol& SubdeviceRegistrationService::getProtocol() const
 {
     return m_protocol;
 }
 
-void DeviceRegistrationService::onDeviceRegistered(
+void SubdeviceRegistrationService::onDeviceRegistered(
   std::function<void(const std::string& deviceKey, bool isGateway)> onDeviceRegistered)
 {
     m_onDeviceRegistered = onDeviceRegistered;
 }
 
-void DeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const
+void SubdeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const
 {
     if (m_onDeviceRegistered)
     {
@@ -153,7 +154,7 @@ void DeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::stri
     }
 }
 
-void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys)
+void SubdeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys)
 {
     const auto deviceKeysFromRepository = m_deviceRepository.findAllDeviceKeys();
     for (const std::string& deviceKeyFromRepository : *deviceKeysFromRepository)
@@ -173,7 +174,7 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
               m_protocol.makeDeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
             if (!deviceDeletionRequestMessage)
             {
-                LOG(WARN) << "DeviceRegistrationService: Unable to create deletion request message";
+                LOG(WARN) << "SubdeviceRegistrationService: Unable to create deletion request message";
                 continue;
             }
 
@@ -191,24 +192,25 @@ void DeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std::st
     }
 }
 
-void DeviceRegistrationService::registerDevice(const DetailedDevice& device)
+void SubdeviceRegistrationService::registerDevice(const DetailedDevice& device)
 {
-    const DeviceRegistrationRequest registrationRequest(device);
+    const SubdeviceRegistrationRequest registrationRequest(device);
 
-    handleDeviceRegistrationRequest(registrationRequest.getDeviceKey(), registrationRequest);
+    handleSubdeviceRegistrationRequest(registrationRequest.getDeviceKey(), registrationRequest);
 }
 
-void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::string& deviceKey,
-                                                                const DeviceRegistrationRequest& request)
+void SubdeviceRegistrationService::handleSubdeviceRegistrationRequest(const std::string& deviceKey,
+                                                                      const SubdeviceRegistrationRequest& request)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    LOG(INFO) << "DeviceRegistrationService: Handling registration request for device with key '" << deviceKey << "'";
+    LOG(INFO) << "SubdeviceRegistrationService: Handling registration request for device with key '" << deviceKey
+              << "'";
 
     auto gateway = m_deviceRepository.findByDeviceKey(m_gatewayKey);
     if (gateway && gateway->getManifest().getProtocol() != request.getManifest().getProtocol())
     {
-        LOG(ERROR) << "DeviceRegistrationService: Ignoring device registration request for device with key '"
+        LOG(ERROR) << "SubdeviceRegistrationService: Ignoring device registration request for device with key '"
                    << deviceKey << "'. Gateway uses protocol '" << gateway->getManifest().getProtocol()
                    << "' but device wants to register with protocol '" << request.getManifest().getProtocol() << "'";
         return;
@@ -219,7 +221,7 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
       new DetailedDevice(request.getDeviceName(), request.getDeviceKey(), request.getManifest()));
     if (savedDevice && *savedDevice == *deviceRequestingRegistration)
     {
-        LOG(WARN) << "DeviceRegistrationService: Ignoring device registration request for device with key '"
+        LOG(WARN) << "SubdeviceRegistrationService: Ignoring device registration request for device with key '"
                   << deviceKey << "'. Already registered with given device info and device manifest";
         return;
     }
@@ -232,7 +234,7 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
     std::shared_ptr<Message> registrationRequest = m_protocol.makeMessage(m_gatewayKey, deviceKey, request);
     if (!registrationRequest)
     {
-        LOG(WARN) << "DeviceRegistrationService: Unable to create registration request message";
+        LOG(WARN) << "SubdeviceRegistrationService: Unable to create registration request message";
         return;
     }
 
@@ -246,18 +248,18 @@ void DeviceRegistrationService::handleDeviceRegistrationRequest(const std::strin
     m_platformRetryMessageHandler.addMessage(retryMessage);
 }
 
-void DeviceRegistrationService::handleDeviceReregistrationRequest()
+void SubdeviceRegistrationService::handleDeviceReregistrationRequest()
 {
     LOG(TRACE) << METHOD_INFO;
 
-    LOG(INFO) << "DeviceRegistrationService: Reregistering devices connected to gateway";
+    LOG(INFO) << "SubdeviceRegistrationService: Reregistering devices connected to gateway";
 
     const auto reregistrationResponse = DeviceReregistrationResponse(DeviceReregistrationResponse::Result::OK);
     std::shared_ptr<Message> reregistrationResponseMessage =
       m_protocol.makeMessage(m_gatewayKey, reregistrationResponse);
     if (!reregistrationResponseMessage)
     {
-        LOG(WARN) << "DeviceRegistrationService: Unable to create reregistration response message";
+        LOG(WARN) << "SubdeviceRegistrationService: Unable to create reregistration response message";
         return;
     }
 
@@ -272,15 +274,15 @@ void DeviceRegistrationService::handleDeviceReregistrationRequest()
     std::shared_ptr<Message> deviceRegistrationRequest = m_protocol.makeDeviceReregistrationRequestForDevice();
     if (!deviceRegistrationRequest)
     {
-        LOG(WARN) << "DeviceRegistrationService: Unable to create registration request message";
+        LOG(WARN) << "SubdeviceRegistrationService: Unable to create registration request message";
         return;
     }
 
     m_outboundDeviceMessageHandler.addMessage(deviceRegistrationRequest);
 }
 
-void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::string& deviceKey,
-                                                                 const DeviceRegistrationResponse& response)
+void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std::string& deviceKey,
+                                                                       const SubdeviceRegistrationResponse& response)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -288,19 +290,19 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
     if (m_devicesAwaitingRegistrationResponse.find(deviceKey) == m_devicesAwaitingRegistrationResponse.end())
     {
         LOG(ERROR)
-          << "DeviceRegistrationService: Ignoring unexpected device registration response for device with key '"
+          << "SubdeviceRegistrationService: Ignoring unexpected device registration response for device with key '"
           << deviceKey << "'";
         return;
     }
 
     const auto registrationResult = response.getResult();
-    if (registrationResult == DeviceRegistrationResponse::Result::OK)
+    if (registrationResult == SubdeviceRegistrationResponse::Result::OK)
     {
-        LOG(INFO) << "DeviceRegistrationService: Device with key '" << deviceKey
+        LOG(INFO) << "SubdeviceRegistrationService: Device with key '" << deviceKey
                   << "' successfully registered on platform";
 
         const auto& device = *m_devicesAwaitingRegistrationResponse.at(deviceKey);
-        LOG(DEBUG) << "DeviceRegistrationService: Saving device with key '" << device.getKey()
+        LOG(DEBUG) << "SubdeviceRegistrationService: Saving device with key '" << device.getKey()
                    << "' to device repository";
 
         m_deviceRepository.save(device);
@@ -310,12 +312,12 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
           m_devicesWithPostponedRegistrationMutex);
         if (device.getKey() == m_gatewayKey && !m_devicesWithPostponedRegistration.empty())
         {
-            LOG(INFO) << "DeviceRegistrationService: Processing postponed device registration requests";
+            LOG(INFO) << "SubdeviceRegistrationService: Processing postponed device registration requests";
 
             for (const auto& deviceWithPostponedRegistration : m_devicesWithPostponedRegistration)
             {
-                handleDeviceRegistrationRequest(deviceWithPostponedRegistration.first,
-                                                *deviceWithPostponedRegistration.second);
+                handleSubdeviceRegistrationRequest(deviceWithPostponedRegistration.first,
+                                                   *deviceWithPostponedRegistration.second);
             }
 
             m_devicesWithPostponedRegistration.clear();
@@ -324,27 +326,28 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
     else
     {
         const auto registrationFailureReason = [&]() -> std::string {
-            if (registrationResult == DeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT)
+            if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT)
             {
                 return "Device with given key already registered";
             }
-            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED)
+            else if (registrationResult ==
+                     SubdeviceRegistrationResponse::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED)
             {
                 return "Maximum number of devices registered";
             }
-            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_READING_PAYLOAD)
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_READING_PAYLOAD)
             {
                 return "Rejected registration DTO";
             }
-            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_MANIFEST_CONFLICT)
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_MANIFEST_CONFLICT)
             {
                 return "Manifest conflict";
             }
-            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_NO_GATEWAY_MANIFEST)
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_NO_GATEWAY_MANIFEST)
             {
                 return "Gateway has been deleted on platform";
             }
-            else if (registrationResult == DeviceRegistrationResponse::Result::ERROR_GATEWAY_NOT_FOUND)
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_GATEWAY_NOT_FOUND)
             {
                 return "Gateway has been deleted on platform";
             }
@@ -353,7 +356,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
             return "Unknown";
         }();
 
-        LOG(ERROR) << "DeviceRegistrationService: Unable to register device with key '" << deviceKey
+        LOG(ERROR) << "SubdeviceRegistrationService: Unable to register device with key '" << deviceKey
                    << "'. Reason: " << registrationFailureReason;
     }
 
@@ -365,7 +368,7 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
         std::shared_ptr<Message> registrationResponseMessage = m_protocol.makeMessage(deviceKey, response);
         if (!registrationResponseMessage)
         {
-            LOG(WARN) << "DeviceRegistrationService: Unable to create registration response message";
+            LOG(WARN) << "SubdeviceRegistrationService: Unable to create registration response message";
             return;
         }
 
@@ -373,17 +376,17 @@ void DeviceRegistrationService::handleDeviceRegistrationResponse(const std::stri
     }
 }
 
-void DeviceRegistrationService::addToPostponedDeviceRegistartionRequests(
-  const std::string& deviceKey, const wolkabout::DeviceRegistrationRequest& request)
+void SubdeviceRegistrationService::addToPostponedDeviceRegistartionRequests(
+  const std::string& deviceKey, const wolkabout::SubdeviceRegistrationRequest& request)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    LOG(INFO) << "DeviceRegistrationService: Postponing registration of device with key '" << deviceKey
+    LOG(INFO) << "SubdeviceRegistrationService: Postponing registration of device with key '" << deviceKey
               << "'. Waiting for gateway to be registered";
 
     std::lock_guard<decltype(m_devicesWithPostponedRegistrationMutex)> l(m_devicesWithPostponedRegistrationMutex);
     auto postponedDeviceRegistration =
-      std::unique_ptr<DeviceRegistrationRequest>(new DeviceRegistrationRequest(request));
+      std::unique_ptr<SubdeviceRegistrationRequest>(new SubdeviceRegistrationRequest(request));
     m_devicesWithPostponedRegistration[deviceKey] = std::move(postponedDeviceRegistration);
 }
 }    // namespace wolkabout

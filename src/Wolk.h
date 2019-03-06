@@ -19,7 +19,6 @@
 
 #include "ActuationHandler.h"
 #include "ActuatorStatusProvider.h"
-#include "ChannelProtocolResolver.h"
 #include "ConfigurationHandler.h"
 #include "ConfigurationProvider.h"
 #include "GatewayInboundDeviceMessageHandler.h"
@@ -28,10 +27,10 @@
 #include "persistence/inmemory/InMemoryPersistence.h"
 #include "protocol/DataProtocol.h"
 #include "protocol/GatewayDataProtocol.h"
-#include "protocol/GatewayDeviceRegistrationProtocol.h"
 #include "protocol/GatewayFileDownloadProtocol.h"
 #include "protocol/GatewayFirmwareUpdateProtocol.h"
 #include "protocol/GatewayStatusProtocol.h"
+#include "protocol/GatewaySubdeviceRegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "service/DataService.h"
@@ -58,7 +57,7 @@ class InboundPlatformMessageHandler;
 class DeviceManager;
 class OutboundServiceDataHandler;
 class DataServiceBase;
-class DeviceRegistrationService;
+class SubdeviceRegistrationService;
 class FileDownloadService;
 class FirmwareUpdateService;
 class KeepAliveService;
@@ -231,9 +230,6 @@ private:
 
     void publishFirmwareStatus();
 
-    std::string getSensorDelimiter(const std::string& reference);
-    std::map<std::string, std::string> getConfigurationDelimiters();
-
     void notifyPlatformConnected();
     void notifyPlatformDisonnected();
     void notifyDevicesConnected();
@@ -254,7 +250,7 @@ private:
     Device m_device;
 
     std::unique_ptr<GatewayStatusProtocol> m_statusProtocol;
-    std::unique_ptr<GatewayDeviceRegistrationProtocol> m_registrationProtocol;
+    std::unique_ptr<GatewaySubdeviceRegistrationProtocol> m_registrationProtocol;
     std::unique_ptr<GatewayFileDownloadProtocol> m_fileDownloadProtocol;
     std::unique_ptr<GatewayFirmwareUpdateProtocol> m_firmwareUpdateProtocol;
 
@@ -270,15 +266,14 @@ private:
     std::unique_ptr<PublishingService> m_platformPublisher;
     std::unique_ptr<PublishingService> m_devicePublisher;
 
-    std::map<std::string, std::tuple<std::shared_ptr<DataService>, std::shared_ptr<GatewayDataProtocol>,
-                                     std::shared_ptr<ChannelProtocolResolver>>>
+    std::map<std::string, std::tuple<std::shared_ptr<DataService>, std::shared_ptr<GatewayDataProtocol>>>
       m_dataServices;
 
     std::unique_ptr<GatewayDataService> m_gatewayDataService;
     std::unique_ptr<Persistence> m_gatewayPersistence;
     std::unique_ptr<DataProtocol> m_gatewayDataProtocol;
 
-    std::shared_ptr<DeviceRegistrationService> m_deviceRegistrationService;
+    std::shared_ptr<SubdeviceRegistrationService> m_subdeviceRegistrationService;
     std::shared_ptr<KeepAliveService> m_keepAliveService;
 
     std::shared_ptr<DeviceStatusService> m_deviceStatusService;

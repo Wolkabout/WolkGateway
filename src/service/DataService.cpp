@@ -96,36 +96,36 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
     if (m_protocol.isSensorReadingMessage(*message))
     {
         const std::string sensorReference = m_protocol.extractReferenceFromChannel(channel);
-        const DeviceManifest& deviceManifest = device->getManifest();
-        if (!deviceManifest.hasSensorManifestWithReference(sensorReference))
+        const DeviceTemplate& deviceTemplate = device->getTemplate();
+        if (!deviceTemplate.hasSensorTemplateWithReference(sensorReference))
         {
             LOG(WARN) << "DataService: Not forwarding sensor reading with reference '" << sensorReference
                       << "' from device with key '" << deviceKey
-                      << "'. No sensor with given reference in device manifest";
+                      << "'. No sensor with given reference in device template";
             return;
         }
     }
     else if (m_protocol.isAlarmMessage(*message))
     {
         const std::string alarmReference = m_protocol.extractReferenceFromChannel(channel);
-        const DeviceManifest& deviceManifest = device->getManifest();
-        if (!deviceManifest.hasAlarmManifestWithReference(alarmReference))
+        const DeviceTemplate& deviceTemplate = device->getTemplate();
+        if (!deviceTemplate.hasAlarmTemplateWithReference(alarmReference))
         {
             LOG(WARN) << "DataService: Not forwarding alarm with reference '" << alarmReference
                       << "' from device with key '" << deviceKey
-                      << "'. No event with given reference in device manifest";
+                      << "'. No event with given reference in device template";
             return;
         }
     }
     else if (m_protocol.isActuatorStatusMessage(*message))
     {
         const std::string actuatorReference = m_protocol.extractReferenceFromChannel(channel);
-        const DeviceManifest& deviceManifest = device->getManifest();
-        if (!deviceManifest.hasActuatorManifestWithReference(actuatorReference))
+        const DeviceTemplate& deviceTemplate = device->getTemplate();
+        if (!deviceTemplate.hasActuatorTemplateWithReference(actuatorReference))
         {
             LOG(WARN) << "DataService: Not forwarding actuator status with reference '" << actuatorReference
                       << "' from device with key '" << deviceKey
-                      << "'. No actuator with given reference in device manifest";
+                      << "'. No actuator with given reference in device template";
             return;
         }
     }

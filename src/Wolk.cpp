@@ -23,10 +23,10 @@
 #include "protocol/Protocol.h"
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
-#include "service/DeviceRegistrationService.h"
 #include "service/FirmwareUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
+#include "service/SubdeviceRegistrationService.h"
 #include "utilities/Logger.h"
 
 #include <memory>
@@ -92,7 +92,7 @@ void Wolk::addSensorReading(const std::string& reference, const std::vector<std:
     addToCommandBuffer([=]() -> void {
         if (m_gatewayDataService)
         {
-            m_gatewayDataService->addSensorReading(reference, values, getSensorDelimiter(reference), rtc);
+            m_gatewayDataService->addSensorReading(reference, values, rtc);
         }
     });
 }
@@ -154,7 +154,7 @@ void Wolk::publishConfiguration()
 
         if (m_gatewayDataService)
         {
-            m_gatewayDataService->addConfiguration(configuration, getConfigurationDelimiters());
+            m_gatewayDataService->addConfiguration(configuration);
         }
         flushConfiguration();
     });
@@ -269,24 +269,6 @@ void Wolk::publishFirmwareStatus()
     }
 }
 
-std::string Wolk::getSensorDelimiter(const std::string& reference)
-{
-    auto delimiters = m_device.getSensorDelimiters();
-
-    auto it = delimiters.find(reference);
-    if (it != delimiters.end())
-    {
-        return it->second;
-    }
-
-    return "";
-}
-
-std::map<std::string, std::string> Wolk::getConfigurationDelimiters()
-{
-    return m_device.getConfigurationDelimiters();
-}
-
 void Wolk::notifyPlatformConnected()
 {
     m_platformPublisher->connected();
@@ -297,11 +279,11 @@ void Wolk::notifyPlatformConnected()
     }
 
     static bool shouldRegister = true;
-    if (shouldRegister && m_deviceRegistrationService)
+    if (shouldRegister && m_subdeviceRegistrationService)
     {
         // register gateway upon first connect
-        m_deviceRegistrationService->registerDevice(m_device);
-        m_deviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+        m_subdeviceRegistrationService->registerDevice(m_device);
+        m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
 
         shouldRegister = false;
     }

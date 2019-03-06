@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef JSONGATEWAYDEVICEREGISTRATIONPROTOCOL_H
-#define JSONGATEWAYDEVICEREGISTRATIONPROTOCOL_H
+#ifndef JSONGATEWAYSUBDEVICEREGISTRATIONPROTOCOL_H
+#define JSONGATEWAYSUBDEVICEREGISTRATIONPROTOCOL_H
 
-#include "protocol/GatewayDeviceRegistrationProtocol.h"
+#include "protocol/GatewaySubdeviceRegistrationProtocol.h"
 
 #include <memory>
 #include <string>
@@ -26,11 +26,11 @@
 namespace wolkabout
 {
 class Message;
-class DeviceRegistrationRequest;
-class DeviceRegistrationResponse;
+class SubdeviceRegistrationRequest;
+class SubdeviceRegistrationResponse;
 class DeviceReregistrationResponse;
 
-class JsonGatewayDeviceRegistrationProtocol : public GatewayDeviceRegistrationProtocol
+class JsonGatewaySubdeviceRegistrationProtocol : public GatewaySubdeviceRegistrationProtocol
 {
 public:
     const std::string& getName() const override;
@@ -45,19 +45,19 @@ public:
     bool isMessageFromPlatform(const Message& channel) const override;
 
     std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                         const DeviceRegistrationRequest& request) const override;
+                                         const SubdeviceRegistrationRequest& request) const override;
     std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
-                                         const DeviceRegistrationResponse& request) const override;
+                                         const SubdeviceRegistrationResponse& request) const override;
     std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                         const DeviceRegistrationResponse& request) const override;
+                                         const SubdeviceRegistrationResponse& request) const override;
     std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
                                          const DeviceReregistrationResponse& response) const override;
     std::unique_ptr<Message> makeDeviceReregistrationRequestForDevice() const override;
     std::unique_ptr<Message> makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey) const override;
     std::unique_ptr<Message> makeDeviceDeletionRequestMessage(const std::string& gatewayKey,
                                                               const std::string& deviceKey) const override;
-    std::unique_ptr<DeviceRegistrationRequest> makeRegistrationRequest(const Message& message) const override;
-    std::unique_ptr<DeviceRegistrationResponse> makeRegistrationResponse(const Message& message) const override;
+    std::unique_ptr<SubdeviceRegistrationRequest> makeRegistrationRequest(const Message& message) const override;
+    std::unique_ptr<SubdeviceRegistrationResponse> makeRegistrationResponse(const Message& message) const override;
     bool isRegistrationRequest(const Message& message) const override;
     bool isRegistrationResponse(const Message& message) const override;
     bool isReregistrationRequest(const Message& message) const override;
@@ -80,21 +80,23 @@ private:
     static const std::string DEVICE_TO_PLATFORM_DIRECTION;
     static const std::string PLATFORM_TO_DEVICE_DIRECTION;
 
-    static const std::string DEVICE_REGISTRATION_REQUEST_TOPIC_ROOT;
-    static const std::string DEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
+    static const std::string SUBDEVICE_REGISTRATION_REQUEST_TOPIC_ROOT;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
     static const std::string DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT;
     static const std::string DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT;
 
-    static const std::string DEVICE_DELETION_REQUEST_TOPIC_ROOT;
-    static const std::string DEVICE_DELETION_RESPONSE_TOPIC_ROOT;
+    static const std::string SUBDEVICE_DELETION_REQUEST_TOPIC_ROOT;
+    static const std::string SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT;
 
-    static const std::string REGISTRATION_RESPONSE_OK;
-    static const std::string REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT;
-    static const std::string REGISTRATION_RESPONSE_ERROR_MANIFEST_CONFLICT;
-    static const std::string REGISTRATION_RESPONSE_ERROR_MAX_NUMBER_OF_DEVICES_EXCEEDED;
-    static const std::string REGISTRATION_RESPONSE_ERROR_READING_PAYLOAD;
-    static const std::string REGISTRATION_RESPONSE_ERROR_GATEWAY_NOT_FOUND;
-    static const std::string REGISTRATION_RESPONSE_ERROR_NO_GATEWAY_MANIFEST;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_OK;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_GATEWAY_NOT_FOUND;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_NOT_A_GATEWAY;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_VALIDATION_ERROR;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_INVALID_DTO;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_KEY_MISSING;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_UNKNOWN;
 };
 }    // namespace wolkabout
 

@@ -20,29 +20,38 @@
 #include "connectivity/ConnectivityService.h"
 #include "model/BinaryData.h"
 #include "model/FilePacketRequest.h"
+#include "model/FileUploadStatus.h"
 #include "model/Message.h"
-#include "protocol/GatewayFileDownloadProtocol.h"
+#include "protocol/FileDownloadProtocol.h"
+#include "repository/FileRepository.h"
 #include "utilities/Logger.h"
+#include <model/FileTransferStatus.h>
 
 #include <cassert>
 #include <cmath>
+#include <utilities/StringUtils.h>
 
 namespace
 {
-static const size_t FILE_DOWNLOADER_INDEX = 0;
-static const size_t FLAG_INDEX = 1;
+static const size_t FILE_HASH_INDEX = 0;
+static const size_t FILE_DOWNLOADER_INDEX = 1;
+static const size_t FLAG_INDEX = 2;
 }    // namespace
 
 namespace wolkabout
 {
-FileDownloadService::FileDownloadService(std::string gatewayKey, GatewayFileDownloadProtocol& protocol,
-                                         uint_fast64_t maxFileSize, std::uint_fast64_t maxPacketSize,
-                                         OutboundMessageHandler& outboundMessageHandler)
+FileDownloadService::FileDownloadService(std::string gatewayKey, FileDownloadProtocol& protocol,
+                                         std::uint64_t maxFileSize, std::uint64_t maxPacketSize,
+                                         std::string fileDownloadDirectory,
+                                         OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_protocol{protocol}
 , m_maxFileSize{maxFileSize}
 , m_maxPacketSize{maxPacketSize}
+, m_fileDownloadDirectory{std::move(fileDownloadDirectory)}
 , m_outboundMessageHandler{outboundMessageHandler}
+, m_fileRepository{fileRepository}
+, m_activeDownload{""}
 , m_run{true}
 , m_garbageCollector(&FileDownloadService::clearDownloads, this)
 {
@@ -59,71 +68,9 @@ FileDownloadService::~FileDownloadService()
     }
 }
 
-void FileDownloadService::download(const std::string& fileName, uint_fast64_t fileSize, const ByteArray& fileHash,
-                                   const std::string& downloadDirectory, const std::string& subChannel,
-                                   std::function<void(const std::string& filePath)> onSuccessCallback,
-                                   std::function<void(WolkaboutFileDownloader::ErrorCode errorCode)> onFailCallback)
-{
-    addToCommandBuffer([=] {
-        std::lock_guard<decltype(m_mutex)> lg{m_mutex};
-
-        auto it = m_activeDownloads.find(subChannel);
-        if (it != m_activeDownloads.end())
-        {
-            LOG(INFO) << "Download already active for channel: " << subChannel << ", aborting";
-            std::get<FILE_DOWNLOADER_INDEX>(it->second)->abort();
-        }
-
-        LOG(INFO) << "Downloading file: " << fileName << ", on channel: " << subChannel;
-
-        auto downloader = std::unique_ptr<FileDownloader>(new FileDownloader(m_maxFileSize, m_maxPacketSize));
-        m_activeDownloads[subChannel] = std::make_tuple(std::move(downloader), false);
-
-        std::get<FILE_DOWNLOADER_INDEX>(m_activeDownloads[subChannel])
-          ->download(fileName, fileSize, fileHash, downloadDirectory,
-                     [=](const FilePacketRequest& request) { requestPacket(request, subChannel); },
-                     [=](const std::string& path) {
-                         onSuccessCallback(path);
-                         flagCompletedDownload(subChannel);
-                     },
-                     [=](WolkaboutFileDownloader::ErrorCode code) {
-                         onFailCallback(code);
-                         flagCompletedDownload(subChannel);
-                     });
-    });
-}
-
-void FileDownloadService::abort(const std::string& subChannel)
-{
-    LOG(DEBUG) << "FileDownloadService::abort " << subChannel;
-
-    addToCommandBuffer([=] {
-        std::lock_guard<decltype(m_mutex)> lg{m_mutex};
-
-        auto it = m_activeDownloads.find(subChannel);
-        if (it != m_activeDownloads.end())
-        {
-            LOG(INFO) << "Aborting file download for channel: " << subChannel;
-            std::get<FILE_DOWNLOADER_INDEX>(it->second)->abort();
-            flagCompletedDownload(subChannel);
-        }
-        else
-        {
-            LOG(DEBUG) << "FileDownloadService::abort download not active";
-        }
-    });
-}
-
 void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> message)
 {
     assert(message);
-
-    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
-    if (deviceKey.empty())
-    {
-        LOG(WARN) << "Unable to extract device key from channel: " << message->getChannel();
-        return;
-    }
 
     if (m_protocol.isBinary(*message))
     {
@@ -135,7 +82,31 @@ void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> messa
         }
 
         auto binaryData = *binary;
-        addToCommandBuffer([=] { handleBinaryData(deviceKey, binaryData); });
+        addToCommandBuffer([=] { handleBinaryData(binaryData); });
+    }
+    else if (m_protocol.isUploadInitiate(*message))
+    {
+        auto initiate = m_protocol.makeFileUploadInitiate(*message);
+        if (!initiate)
+        {
+            LOG(WARN) << "Unable to parse message contents: " << message->getContent();
+            return;
+        }
+
+        auto initiateRequest = *initiate;
+        addToCommandBuffer([=] { handleInitiateRequest(initiateRequest); });
+    }
+    else if (m_protocol.isUploadAbort(*message))
+    {
+        auto abort = m_protocol.makeFileUploadAbort(*message);
+        if (!abort)
+        {
+            LOG(WARN) << "Unable to parse message contents: " << message->getContent();
+            return;
+        }
+
+        auto abortRequest = *abort;
+        addToCommandBuffer([=] { handleAbortRequest(abortRequest); });
     }
     else
     {
@@ -143,23 +114,182 @@ void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> messa
     }
 }
 
-const GatewayProtocol& FileDownloadService::getProtocol() const
+const Protocol& FileDownloadService::getProtocol() const
 {
     return m_protocol;
 }
 
-void FileDownloadService::handleBinaryData(const std::string& deviceKey, const BinaryData& binaryData)
+void FileDownloadService::handleBinaryData(const BinaryData& binaryData)
 {
     std::lock_guard<decltype(m_mutex)> lg{m_mutex};
 
-    auto it = m_activeDownloads.find(deviceKey);
+    auto it = m_activeDownloads.find(m_activeDownload);
     if (it == m_activeDownloads.end())
     {
-        LOG(WARN) << "Unexpected binary data for device: " << deviceKey;
+        LOG(WARN) << "Unexpected binary data";
         return;
     }
 
     std::get<FILE_DOWNLOADER_INDEX>(it->second)->handleData(binaryData);
+}
+
+void FileDownloadService::handleInitiateRequest(const FileUploadInitiate& request)
+{
+    if (request.getName().empty())
+    {
+        LOG(WARN) << "Missing file name from firmware update command";
+
+        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        return;
+    }
+
+    // TODO compare with maxFileSize
+    if (request.getSize() == 0)
+    {
+        LOG(WARN) << "Missing file size from firmware update command";
+        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        return;
+    }
+
+    if (request.getHash().empty())
+    {
+        LOG(WARN) << "Missing file hash from firmware update command";
+        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        return;
+    }
+
+    auto fileInfo = m_fileRepository.getFileInfo(request.getName());
+
+    if (!fileInfo)
+    {
+        downloadFile(request.getName(), request.getSize(), request.getHash());
+    }
+    else if (fileInfo.value().hash != request.getHash())
+    {
+        sendStatus(FileUploadStatus{request.getName(), FileTransferError::FILE_HASH_MISMATCH});
+    }
+    else
+    {
+        sendStatus(FileUploadStatus{request.getName(), FileTransferStatus::FILE_READY});
+    }
+}
+
+void FileDownloadService::handleAbortRequest(const FileUploadAbort& request)
+{
+    if (request.getName().empty())
+    {
+        LOG(WARN) << "Missing file name from firmware update command";
+
+        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        return;
+    }
+
+    abortDownload(request.getName());
+}
+
+void FileDownloadService::downloadFile(const std::string& fileName, uint64_t fileSize, const std::string& fileHash)
+{
+    std::lock_guard<decltype(m_mutex)> lg{m_mutex};
+
+    auto it = m_activeDownloads.find(fileName);
+    if (it != m_activeDownloads.end())
+    {
+        auto activeHash = std::get<FILE_HASH_INDEX>(m_activeDownloads[fileName]);
+        if (activeHash != fileHash)
+        {
+            LOG(WARN) << "Download already active for file: " << fileName << ", but with different hash";
+            // TODO another error
+            sendStatus(FileUploadStatus{fileName, FileTransferError::UNSPECIFIED_ERROR});
+            return;
+        }
+
+        LOG(INFO) << "Download already active for file: " << fileName;
+        sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_TRANSFER});
+        return;
+    }
+
+    LOG(INFO) << "Downloading file: " << fileName;
+    sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_TRANSFER});
+
+    const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(fileHash));
+
+    auto downloader = std::unique_ptr<FileDownloader>(new FileDownloader(m_maxFileSize, m_maxPacketSize));
+    m_activeDownloads[fileName] = std::make_tuple(fileHash, std::move(downloader), false);
+    m_activeDownload = fileName;
+
+    std::get<FILE_DOWNLOADER_INDEX>(m_activeDownloads[fileName])
+      ->download(fileName, fileSize, byteHash, m_fileDownloadDirectory,
+                 [=](const FilePacketRequest& request) { requestPacket(request); },
+                 [=](const std::string& filePath) { downloadCompleted(fileName, filePath, fileHash); },
+                 [=](FileTransferError code) { downloadFailed(fileName, code); });
+}
+
+void FileDownloadService::abortDownload(const std::string& fileName)
+{
+    LOG(DEBUG) << "FileDownloadService::abort " << fileName;
+
+    std::lock_guard<decltype(m_mutex)> lg{m_mutex};
+
+    auto it = m_activeDownloads.find(fileName);
+    if (it != m_activeDownloads.end())
+    {
+        LOG(INFO) << "Aborting download for file: " << fileName;
+        std::get<FILE_DOWNLOADER_INDEX>(it->second)->abort();
+        flagCompletedDownload(fileName);
+        // TODO race with completed
+        sendStatus(FileUploadStatus{fileName, FileTransferStatus::ABORTED});
+
+        m_activeDownload = "";
+    }
+    else
+    {
+        LOG(DEBUG) << "FileDownloadService::abort download not active";
+    }
+}
+
+void FileDownloadService::sendStatus(const FileUploadStatus& response)
+{
+    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, response);
+
+    if (!message)
+    {
+        LOG(ERROR) << "Failed to create file upload response";
+        return;
+    }
+
+    m_outboundMessageHandler.addMessage(message);
+}
+
+void FileDownloadService::requestPacket(const FilePacketRequest& request)
+{
+    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, request);
+
+    if (!message)
+    {
+        LOG(WARN) << "Failed to create file packet request";
+        return;
+    }
+
+    // TODO retry handler
+    m_outboundMessageHandler.addMessage(message);
+}
+
+void FileDownloadService::downloadCompleted(const std::string& fileName, const std::string& filePath,
+                                            const std::string& fileHash)
+{
+    flagCompletedDownload(fileName);
+
+    addToCommandBuffer([=] {
+        m_fileRepository.storeFileInfo(FileInfo{fileName, filePath, fileHash});
+        sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_READY});
+    });
+}
+
+void FileDownloadService::downloadFailed(const std::string& fileName, FileTransferError errorCode)
+{
+    flagCompletedDownload(fileName);
+
+    sendStatus(FileUploadStatus{fileName, errorCode});
 }
 
 void FileDownloadService::addToCommandBuffer(std::function<void()> command)
@@ -215,19 +345,4 @@ void FileDownloadService::clearDownloads()
         m_condition.wait(lock);
     }
 }
-
-void FileDownloadService::requestPacket(const FilePacketRequest& request, const std::string& subChannel)
-{
-    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, subChannel, request);
-
-    if (!message)
-    {
-        LOG(WARN) << "Failed to create file packet request";
-        return;
-    }
-
-    // TODO retry handler
-    m_outboundMessageHandler.addMessage(message);
-}
-
 }    // namespace wolkabout

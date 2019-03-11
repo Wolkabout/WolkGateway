@@ -341,9 +341,9 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     }
 
     // setup file download service
-    wolk->m_fileDownloadService =
-      std::make_shared<FileDownloadService>(m_device.getKey(), *wolk->m_fileDownloadProtocol, m_maxFirmwareFileSize,
-                                            m_maxFirmwareFileChunkSize, *wolk->m_platformPublisher);
+    wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(
+      m_device.getKey(), *wolk->m_fileDownloadProtocol, m_maxFirmwareFileSize, m_maxFirmwareFileChunkSize,
+      /*TODO download dir*/ m_firmwareDownloadDirectory, *wolk->m_platformPublisher, *wolk->m_fileRepository);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
 
     // setup firmware update service

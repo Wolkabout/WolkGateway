@@ -20,6 +20,7 @@
 #include "model/DeviceStatusResponse.h"
 #include "model/Message.h"
 #include "protocol/GatewayStatusProtocol.h"
+#include "protocol/StatusProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
 
@@ -30,13 +31,14 @@ const std::chrono::seconds STATUS_RESPONSE_TIMEOUT{5};
 
 namespace wolkabout
 {
-DeviceStatusService::DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol,
-                                         DeviceRepository* deviceRepository,
+DeviceStatusService::DeviceStatusService(std::string gatewayKey, StatusProtocol& protocol,
+                                         GatewayStatusProtocol& gatewayProtocol, DeviceRepository* deviceRepository,
                                          OutboundMessageHandler& outboundPlatformMessageHandler,
                                          OutboundMessageHandler& outboundDeviceMessageHandler,
                                          std::chrono::seconds statusRequestInterval)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_protocol{protocol}
+, m_gatewayProtocol{gatewayProtocol}
 , m_deviceRepository{deviceRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
@@ -50,13 +52,6 @@ void DeviceStatusService::platformMessageReceived(std::shared_ptr<Message> messa
     LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = message->getChannel();
-
-    if (!m_protocol.isMessageFromPlatform(*message))
-    {
-        LOG(WARN) << "DeviceRegistrationService: Ignoring message on channel '" << topic
-                  << "'. Message not from platform.";
-        return;
-    }
 
     if (m_protocol.isStatusRequestMessage(*message))
     {
@@ -84,7 +79,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
 
     const std::string topic = message->getChannel();
 
-    if (!m_protocol.isMessageToPlatform(*message))
+    if (!m_gatewayProtocol.isMessageToPlatform(*message))
     {
         LOG(WARN) << "DeviceStatusService: Ignoring message on channel '" << topic
                   << "'. Message not intended for platform.";
@@ -93,7 +88,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
 
     const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(topic);
 
-    if (m_protocol.isLastWillMessage(*message))
+    if (m_gatewayProtocol.isLastWillMessage(*message))
     {
         if (!deviceKey.empty())
         {
@@ -105,7 +100,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
         }
         else    // check for list of key in payload
         {
-            const auto deviceKeys = m_protocol.extractDeviceKeysFromContent(message->getContent());
+            const auto deviceKeys = m_gatewayProtocol.extractDeviceKeysFromContent(message->getContent());
 
             for (const auto& key : deviceKeys)
             {
@@ -116,14 +111,14 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
             }
         }
     }
-    else if (m_protocol.isStatusResponseMessage(*message) || m_protocol.isStatusUpdateMessage(*message))
+    else if (m_gatewayProtocol.isStatusResponseMessage(*message) || m_gatewayProtocol.isStatusUpdateMessage(*message))
     {
         if (deviceKey.empty())
         {
             return;
         }
 
-        auto statusResponse = m_protocol.makeDeviceStatusResponse(*message);
+        auto statusResponse = m_gatewayProtocol.makeDeviceStatusResponse(*message);
         if (!statusResponse)
         {
             LOG(WARN) << "Device Status Service: Unable to parse device status response";
@@ -140,9 +135,14 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
     }
 }
 
-const GatewayProtocol& DeviceStatusService::getProtocol() const
+const Protocol& DeviceStatusService::getProtocol() const
 {
     return m_protocol;
+}
+
+const GatewayProtocol& DeviceStatusService::getGatewayProtocol() const
+{
+    return m_gatewayProtocol;
 }
 
 void DeviceStatusService::sendLastKnownStatusForDevice(const std::string& deviceKey)
@@ -236,7 +236,7 @@ void DeviceStatusService::validateDevicesStatus()
 
 void DeviceStatusService::sendStatusRequestForDevice(const std::string& deviceKey)
 {
-    std::shared_ptr<Message> message = m_protocol.makeDeviceStatusRequestMessage(deviceKey);
+    std::shared_ptr<Message> message = m_gatewayProtocol.makeDeviceStatusRequestMessage(deviceKey);
     if (!message)
     {
         LOG(WARN) << "Failed to create status request message for device: " << deviceKey;
@@ -248,7 +248,7 @@ void DeviceStatusService::sendStatusRequestForDevice(const std::string& deviceKe
 
 void DeviceStatusService::sendStatusRequestForAllDevices()
 {
-    std::shared_ptr<Message> message = m_protocol.makeDeviceStatusRequestMessage("");
+    std::shared_ptr<Message> message = m_gatewayProtocol.makeDeviceStatusRequestMessage("");
     if (!message)
     {
         LOG(WARN) << "Failed to create status request message for all devices";
@@ -260,7 +260,7 @@ void DeviceStatusService::sendStatusRequestForAllDevices()
 
 void DeviceStatusService::sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status)
 {
-    std::shared_ptr<Message> statusMessage = m_protocol.makeMessage(m_gatewayKey, deviceKey, status);
+    std::shared_ptr<Message> statusMessage = m_gatewayProtocol.makeMessage(m_gatewayKey, deviceKey, status);
 
     if (!statusMessage)
     {

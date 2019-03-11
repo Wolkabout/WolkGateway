@@ -41,38 +41,17 @@ public:
     virtual const std::string& getName() const = 0;
 
     /**
-     * @brief Get generic inbound platform channels
-     * @return
-     */
-    virtual std::vector<std::string> getInboundPlatformChannels() const = 0;
-
-    /**
-     * @brief Get inbound platform channels for provided gateway key
-     * @param deviceKey
-     * @return
-     */
-    virtual std::vector<std::string> getInboundPlatformChannelsForGatewayKey(const std::string& gatewayKey) const = 0;
-
-    /**
-     * @brief Get inbound platform channels for provided gateway and device key
-     * @param deviceKey
-     * @return
-     */
-    virtual std::vector<std::string> getInboundPlatformChannelsForKeys(const std::string& gatewayKey,
-                                                                       const std::string& deviceKey) const = 0;
-
-    /**
      * @brief Get generic inbound device channels
      * @return
      */
-    virtual std::vector<std::string> getInboundDeviceChannels() const = 0;
+    virtual std::vector<std::string> getInboundChannels() const = 0;
 
     /**
      * @brief Get inbound device channels for provided device key
      * @param deviceKey
      * @return
      */
-    virtual std::vector<std::string> getInboundDeviceChannelsForDeviceKey(const std::string& deviceKey) const = 0;
+    virtual std::vector<std::string> getInboundChannelsForDevice(const std::string& deviceKey) const = 0;
 
     virtual std::string extractDeviceKeyFromChannel(const std::string& topic) const = 0;
 

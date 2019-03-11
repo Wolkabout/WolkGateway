@@ -35,14 +35,15 @@ class DeviceRepository;
 class ConnectionStatusListener;
 class GatewayStatusProtocol;
 class OutboundMessageHandler;
+class StatusProtocol;
 
 class DeviceStatusService : public DeviceMessageListener,
                             public PlatformMessageListener,
                             public ConnectionStatusListener
 {
 public:
-    DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol, DeviceRepository* deviceRepository,
-                        OutboundMessageHandler& outboundPlatformMessageHandler,
+    DeviceStatusService(std::string gatewayKey, StatusProtocol& protocol, GatewayStatusProtocol& gatewayProtocol,
+                        DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
                         OutboundMessageHandler& outboundDeviceMessageHandler,
                         std::chrono::seconds statusRequestInterval);
 
@@ -50,7 +51,9 @@ public:
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const Protocol& getProtocol() const override;
+
+    const GatewayProtocol& getGatewayProtocol() const override;
 
     void sendLastKnownStatusForDevice(const std::string& deviceKey);
 
@@ -70,7 +73,8 @@ private:
     void logDeviceStatus(const std::string& deviceKey, DeviceStatus status);
 
     const std::string m_gatewayKey;
-    GatewayStatusProtocol& m_protocol;
+    StatusProtocol& m_protocol;
+    GatewayStatusProtocol& m_gatewayProtocol;
 
     DeviceRepository* m_deviceRepository;
 

@@ -95,55 +95,7 @@ const std::string& JsonGatewayDataProtocol::getName() const
     return NAME;
 }
 
-std::vector<std::string> JsonGatewayDataProtocol::getInboundPlatformChannels() const
-{
-    return {ACTUATION_GET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            ACTUATION_SET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            CONFIGURATION_GET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            CONFIGURATION_SET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD};
-}
-
-std::vector<std::string> JsonGatewayDataProtocol::getInboundPlatformChannelsForGatewayKey(
-  const std::string& gatewayKey) const
-{
-    return {ACTUATION_GET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + DEVICE_PATH_PREFIX +
-              CHANNEL_SINGLE_LEVEL_WILDCARD + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            ACTUATION_GET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX +
-              CHANNEL_MULTI_LEVEL_WILDCARD,
-            ACTUATION_SET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + DEVICE_PATH_PREFIX +
-              CHANNEL_SINGLE_LEVEL_WILDCARD + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            ACTUATION_SET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX +
-              CHANNEL_MULTI_LEVEL_WILDCARD,
-            CONFIGURATION_GET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            CONFIGURATION_GET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              CHANNEL_MULTI_LEVEL_WILDCARD,
-            CONFIGURATION_SET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            CONFIGURATION_SET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              CHANNEL_MULTI_LEVEL_WILDCARD};
-}
-
-std::vector<std::string> JsonGatewayDataProtocol::getInboundPlatformChannelsForKeys(const std::string& gatewayKey,
-                                                                                    const std::string& deviceKey) const
-{
-    return {ACTUATION_GET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + DEVICE_PATH_PREFIX +
-              deviceKey + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            ACTUATION_GET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX +
-              CHANNEL_MULTI_LEVEL_WILDCARD,
-            ACTUATION_SET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + DEVICE_PATH_PREFIX +
-              deviceKey + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            ACTUATION_SET_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX +
-              CHANNEL_MULTI_LEVEL_WILDCARD,
-            CONFIGURATION_GET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + deviceKey,
-            CONFIGURATION_GET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
-            CONFIGURATION_SET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + deviceKey,
-            CONFIGURATION_SET_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey};
-}
-
-std::vector<std::string> JsonGatewayDataProtocol::getInboundDeviceChannels() const
+std::vector<std::string> JsonGatewayDataProtocol::getInboundChannels() const
 {
     return {SENSOR_READING_TOPIC_ROOT + DEVICE_PATH_PREFIX + CHANNEL_SINGLE_LEVEL_WILDCARD + CHANNEL_DELIMITER +
               REFERENCE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
@@ -154,8 +106,7 @@ std::vector<std::string> JsonGatewayDataProtocol::getInboundDeviceChannels() con
             CONFIGURATION_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 
-std::vector<std::string> JsonGatewayDataProtocol::getInboundDeviceChannelsForDeviceKey(
-  const std::string& deviceKey) const
+std::vector<std::string> JsonGatewayDataProtocol::getInboundChannelsForDevice(const std::string& deviceKey) const
 {
     return {SENSOR_READING_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX +
               CHANNEL_MULTI_LEVEL_WILDCARD,

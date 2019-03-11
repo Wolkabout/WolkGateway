@@ -96,45 +96,17 @@ const std::string& JsonGatewayStatusProtocol::getName() const
     return NAME;
 }
 
-std::vector<std::string> JsonGatewayStatusProtocol::getInboundPlatformChannels() const
-{
-    return {PLATFORM_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_SINGLE_LEVEL_WILDCARD +
-              CHANNEL_DELIMITER + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            PLATFORM_STATUS_CONFIRM_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_SINGLE_LEVEL_WILDCARD +
-              CHANNEL_DELIMITER + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            PONG_TOPIC_ROOT + CHANNEL_MULTI_LEVEL_WILDCARD};
-}
-
-std::vector<std::string> JsonGatewayStatusProtocol::getInboundPlatformChannelsForGatewayKey(
-  const std::string& gatewayKey) const
-{
-    return {PLATFORM_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            PLATFORM_STATUS_CONFIRM_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            PONG_TOPIC_ROOT + gatewayKey};
-}
-
-std::vector<std::string> JsonGatewayStatusProtocol::getInboundPlatformChannelsForKeys(
-  const std::string& gatewayKey, const std::string& deviceKey) const
-{
-    return {PLATFORM_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + deviceKey,
-            PLATFORM_STATUS_CONFIRM_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + deviceKey,
-            PONG_TOPIC_ROOT + gatewayKey};
-}
-
-std::vector<std::string> JsonGatewayStatusProtocol::getInboundDeviceChannels() const
+std::vector<std::string> JsonGatewayStatusProtocol::getInboundChannels() const
 {
     return {DEVICE_STATUS_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
+            DEVICE_STATUS_UPDATE_TOPIC_ROOT + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
             LAST_WILL_TOPIC_ROOT + CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 
-std::vector<std::string> JsonGatewayStatusProtocol::getInboundDeviceChannelsForDeviceKey(
-  const std::string& deviceKey) const
+std::vector<std::string> JsonGatewayStatusProtocol::getInboundChannelsForDevice(const std::string& deviceKey) const
 {
     return {DEVICE_STATUS_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey,
+            DEVICE_STATUS_UPDATE_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey,
             LAST_WILL_TOPIC_ROOT + CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 

@@ -53,29 +53,12 @@ const std::string& JsonGatewayWolkDownloadProtocol::getName() const
     return NAME;
 }
 
-std::vector<std::string> JsonGatewayWolkDownloadProtocol::getInboundPlatformChannels() const
-{
-    return {BINARY_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD};
-}
-
-std::vector<std::string> JsonGatewayWolkDownloadProtocol::getInboundPlatformChannelsForGatewayKey(
-  const std::string& gatewayKey) const
-{
-    return {BINARY_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + CHANNEL_MULTI_LEVEL_WILDCARD};
-}
-
-std::vector<std::string> JsonGatewayWolkDownloadProtocol::getInboundPlatformChannelsForKeys(
-  const std::string& gatewayKey, const std::string& deviceKey) const
-{
-    return {BINARY_TOPIC_ROOT + gatewayKey + CHANNEL_DELIMITER + deviceKey};
-}
-
-std::vector<std::string> JsonGatewayWolkDownloadProtocol::getInboundDeviceChannels() const
+std::vector<std::string> JsonGatewayWolkDownloadProtocol::getInboundChannels() const
 {
     return {};
 }
 
-std::vector<std::string> JsonGatewayWolkDownloadProtocol::getInboundDeviceChannelsForDeviceKey(
+std::vector<std::string> JsonGatewayWolkDownloadProtocol::getInboundChannelsForDevice(
   const std::string& /*deviceKey*/) const
 {
     return {};

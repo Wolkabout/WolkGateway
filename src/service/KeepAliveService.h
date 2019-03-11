@@ -24,17 +24,17 @@
 namespace wolkabout
 {
 class OutboundMessageHandler;
-class GatewayStatusProtocol;
+class StatusProtocol;
 
 class KeepAliveService : public PlatformMessageListener, public ConnectionStatusListener
 {
 public:
-    KeepAliveService(std::string gatewayKey, GatewayStatusProtocol& protocol,
-                     OutboundMessageHandler& outboundMessageHandler, std::chrono::seconds keepAliveInterval);
+    KeepAliveService(std::string gatewayKey, StatusProtocol& protocol, OutboundMessageHandler& outboundMessageHandler,
+                     std::chrono::seconds keepAliveInterval);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const Protocol& getProtocol() const override;
 
     void connected() override;
     void disconnected() override;
@@ -44,7 +44,7 @@ public:
 private:
     const std::string m_gatewayKey;
 
-    GatewayStatusProtocol& m_protocol;
+    StatusProtocol& m_protocol;
     OutboundMessageHandler& m_outboundMessageHandler;
 
     const std::chrono::seconds m_keepAliveInterval;

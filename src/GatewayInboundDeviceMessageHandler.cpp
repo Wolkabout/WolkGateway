@@ -65,7 +65,7 @@ void GatewayInboundDeviceMessageHandler::addListener(std::weak_ptr<DeviceMessage
 
     if (auto handler = listener.lock())
     {
-        for (const auto& channel : handler->getProtocol().getInboundDeviceChannels())
+        for (const auto& channel : handler->getGatewayProtocol().getInboundChannels())
         {
             LOG(DEBUG) << "Adding listener for channel: " << channel;
             m_channelHandlers[channel] = listener;

@@ -260,32 +260,13 @@ const std::string& JsonGatewayDFUProtocol::getName() const
     return NAME;
 }
 
-std::vector<std::string> JsonGatewayDFUProtocol::getInboundPlatformChannels() const
-{
-    return {FIRMWARE_UPDATE_COMMAND_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD};
-}
-
-std::vector<std::string> JsonGatewayDFUProtocol::getInboundPlatformChannelsForGatewayKey(
-  const std::string& gatewayKey) const
-{
-    return {FIRMWARE_UPDATE_COMMAND_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-            CHANNEL_MULTI_LEVEL_WILDCARD};
-}
-
-std::vector<std::string> JsonGatewayDFUProtocol::getInboundPlatformChannelsForKeys(const std::string& gatewayKey,
-                                                                                   const std::string& deviceKey) const
-{
-    return {FIRMWARE_UPDATE_COMMAND_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER + deviceKey};
-}
-
-std::vector<std::string> JsonGatewayDFUProtocol::getInboundDeviceChannels() const
+std::vector<std::string> JsonGatewayDFUProtocol::getInboundChannels() const
 {
     return {FIRMWARE_UPDATE_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
             FIRMWARE_VERSION_TOPIC_ROOT + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 
-std::vector<std::string> JsonGatewayDFUProtocol::getInboundDeviceChannelsForDeviceKey(
-  const std::string& deviceKey) const
+std::vector<std::string> JsonGatewayDFUProtocol::getInboundChannelsForDevice(const std::string& deviceKey) const
 {
     return {FIRMWARE_UPDATE_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey,
             FIRMWARE_VERSION_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey};

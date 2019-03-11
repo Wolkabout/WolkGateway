@@ -33,7 +33,6 @@
 
 namespace wolkabout
 {
-class GatewayDataProtocol;
 class Wolk;
 
 class WolkBuilder final

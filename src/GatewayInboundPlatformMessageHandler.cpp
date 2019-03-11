@@ -16,7 +16,7 @@
 
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "model/Message.h"
-#include "protocol/GatewayProtocol.h"
+#include "protocol/Protocol.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
 
@@ -69,7 +69,7 @@ void GatewayInboundPlatformMessageHandler::addListener(std::weak_ptr<PlatformMes
 
     if (auto handler = listener.lock())
     {
-        for (const auto& channel : handler->getProtocol().getInboundPlatformChannelsForGatewayKey(m_gatewayKey))
+        for (const auto& channel : handler->getProtocol().getInboundChannelsForDevice(m_gatewayKey))
         {
             LOG(DEBUG) << "Adding listener for channel: " << channel;
             m_channelHandlers[channel] = listener;

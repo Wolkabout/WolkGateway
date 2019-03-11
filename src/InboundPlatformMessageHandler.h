@@ -23,14 +23,14 @@
 namespace wolkabout
 {
 class Message;
-class GatewayProtocol;
+class Protocol;
 
 class PlatformMessageListener
 {
 public:
     virtual ~PlatformMessageListener() = default;
     virtual void platformMessageReceived(std::shared_ptr<Message> message) = 0;
-    virtual const GatewayProtocol& getProtocol() const = 0;
+    virtual const Protocol& getProtocol() const = 0;
 };
 
 class InboundPlatformMessageHandler

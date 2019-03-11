@@ -21,6 +21,7 @@
 #include "model/ActuatorStatus.h"
 #include "model/DetailedDevice.h"
 #include "model/Message.h"
+#include "protocol/DataProtocol.h"
 #include "protocol/GatewayDataProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
@@ -30,11 +31,12 @@
 
 namespace wolkabout
 {
-DataService::DataService(const std::string& gatewayKey, GatewayDataProtocol& protocol,
+DataService::DataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayDataProtocol& gatewayProtocol,
                          DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
                          OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice)
 : m_gatewayKey{gatewayKey}
 , m_protocol{protocol}
+, m_gatewayProtocol{gatewayProtocol}
 , m_deviceRepository{deviceRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
@@ -47,12 +49,6 @@ void DataService::platformMessageReceived(std::shared_ptr<Message> message)
     LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = message->getChannel();
-
-    if (!m_protocol.isMessageFromPlatform(*message))
-    {
-        LOG(WARN) << "DataService: Ignoring message on channel '" << topic << "'. Message not from platform.";
-        return;
-    }
 
     const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(topic);
 
@@ -78,7 +74,7 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
     LOG(TRACE) << METHOD_INFO;
 
     const std::string channel = message->getChannel();
-    if (!m_protocol.isMessageToPlatform(*message))
+    if (!m_gatewayProtocol.isMessageToPlatform(*message))
     {
         LOG(WARN) << "DataService: Ignoring message on channel '" << channel << "'. Message not intended for platform.";
         return;
@@ -95,7 +91,7 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
             return;
         }
 
-        if (m_protocol.isSensorReadingMessage(*message))
+        if (m_gatewayProtocol.isSensorReadingMessage(*message))
         {
             const std::string sensorReference = m_protocol.extractReferenceFromChannel(channel);
             const DeviceTemplate& deviceTemplate = device->getTemplate();
@@ -107,7 +103,7 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
                 return;
             }
         }
-        else if (m_protocol.isAlarmMessage(*message))
+        else if (m_gatewayProtocol.isAlarmMessage(*message))
         {
             const std::string alarmReference = m_protocol.extractReferenceFromChannel(channel);
             const DeviceTemplate& deviceTemplate = device->getTemplate();
@@ -119,7 +115,7 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
                 return;
             }
         }
-        else if (m_protocol.isActuatorStatusMessage(*message))
+        else if (m_gatewayProtocol.isActuatorStatusMessage(*message))
         {
             const std::string actuatorReference = m_protocol.extractReferenceFromChannel(channel);
             const DeviceTemplate& deviceTemplate = device->getTemplate();
@@ -131,7 +127,7 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
                 return;
             }
         }
-        else if (m_protocol.isConfigurationCurrentMessage(*message))
+        else if (m_gatewayProtocol.isConfigurationCurrentMessage(*message))
         {
         }
         else
@@ -147,9 +143,14 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
     routeDeviceToPlatformMessage(message);
 }
 
-const GatewayProtocol& DataService::getProtocol() const
+const Protocol& DataService::getProtocol() const
 {
     return m_protocol;
+}
+
+const GatewayProtocol& DataService::getGatewayProtocol() const
+{
+    return m_gatewayProtocol;
 }
 
 void DataService::addMessage(std::shared_ptr<Message> message)
@@ -180,7 +181,7 @@ void DataService::requestActuatorStatusesForDevice(const std::string& deviceKey)
 
     for (const auto& reference : device->getActuatorReferences())
     {
-        std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, ActuatorGetCommand(reference));
+        std::shared_ptr<Message> message = m_gatewayProtocol.makeMessage(deviceKey, ActuatorGetCommand(reference));
         m_outboundDeviceMessageHandler.addMessage(message);
     }
 }
@@ -195,7 +196,7 @@ void DataService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string channel = m_protocol.routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
+    const std::string channel = m_gatewayProtocol.routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
     if (channel.empty())
     {
         LOG(WARN) << "Failed to route device message: " << message->getChannel();
@@ -210,7 +211,7 @@ void DataService::routePlatformToDeviceMessage(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string channel = m_protocol.routePlatformToDeviceMessage(message->getChannel(), m_gatewayKey);
+    const std::string channel = m_gatewayProtocol.routePlatformToDeviceMessage(message->getChannel(), m_gatewayKey);
     if (channel.empty())
     {
         LOG(WARN) << "Failed to route platform message: " << message->getChannel();
@@ -225,33 +226,35 @@ void DataService::routeGatewayToPlatformMessage(std::shared_ptr<Message> message
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string channel = m_protocol.routeGatewayToPlatformMessage(message->getChannel());
-    if (channel.empty())
-    {
-        LOG(WARN) << "Failed to route device message: " << message->getChannel();
-        return;
-    }
-
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
-    m_outboundPlatformMessageHandler.addMessage(routedMessage);
+    // TODO
+    //    const std::string channel = m_protocol.routeGatewayToPlatformMessage(message->getChannel());
+    //    if (channel.empty())
+    //    {
+    //        LOG(WARN) << "Failed to route device message: " << message->getChannel();
+    //        return;
+    //    }
+    //
+    //    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
+    m_outboundPlatformMessageHandler.addMessage(message);
 }
 
 void DataService::routePlatformToGatewayMessage(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string channel = m_protocol.routePlatformToGatewayMessage(message->getChannel());
-    if (channel.empty())
-    {
-        LOG(WARN) << "Failed to route platform message: " << message->getChannel();
-        return;
-    }
-
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
+    // TODO
+    //    const std::string channel = m_protocol.routePlatformToGatewayMessage(message->getChannel());
+    //    if (channel.empty())
+    //    {
+    //        LOG(WARN) << "Failed to route platform message: " << message->getChannel();
+    //        return;
+    //    }
+    //
+    //    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
 
     if (m_gatewayDevice)
     {
-        m_gatewayDevice->messageReceived(routedMessage);
+        m_gatewayDevice->messageReceived(message);
     }
 }
 }    // namespace wolkabout

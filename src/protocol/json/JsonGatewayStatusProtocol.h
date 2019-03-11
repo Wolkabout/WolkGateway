@@ -31,12 +31,9 @@ class JsonGatewayStatusProtocol : public GatewayStatusProtocol
 {
 public:
     const std::string& getName() const override;
-    std::vector<std::string> getInboundPlatformChannels() const override;
-    std::vector<std::string> getInboundPlatformChannelsForGatewayKey(const std::string& gatewayKey) const override;
-    std::vector<std::string> getInboundPlatformChannelsForKeys(const std::string& gatewayKey,
-                                                               const std::string& deviceKey) const override;
-    std::vector<std::string> getInboundDeviceChannels() const override;
-    std::vector<std::string> getInboundDeviceChannelsForDeviceKey(const std::string& deviceKey) const override;
+
+    std::vector<std::string> getInboundChannels() const override;
+    std::vector<std::string> getInboundChannelsForDevice(const std::string& deviceKey) const override;
     std::string extractDeviceKeyFromChannel(const std::string& topic) const override;
     bool isMessageToPlatform(const Message& channel) const override;
     bool isMessageFromPlatform(const Message& channel) const override;

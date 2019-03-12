@@ -85,17 +85,20 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
 
     // Type parameters
     statement << "CREATE TABLE IF NOT EXISTS type_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key "
-                 "TEXT, value TEXT, FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
+                 "TEXT, value TEXT, device_template_id INTEGER, "
+                 "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
     // Connectivity parameters
     statement
       << "CREATE TABLE IF NOT EXISTS connectivity_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key "
-         "TEXT, value TEXT, FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
+         "TEXT, value TEXT, device_template_id INTEGER, "
+         "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
     // Firmware update parameters
     statement
       << "CREATE TABLE IF NOT EXISTS firmware_update_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key "
-         "TEXT, value TEXT, FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
+         "TEXT, value TEXT, device_template_id INTEGER, "
+         "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
     // Device
     statement

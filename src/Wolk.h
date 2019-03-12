@@ -266,8 +266,7 @@ private:
     std::unique_ptr<PublishingService> m_platformPublisher;
     std::unique_ptr<PublishingService> m_devicePublisher;
 
-    std::map<std::string, std::tuple<std::shared_ptr<DataService>, std::shared_ptr<GatewayDataProtocol>>>
-      m_dataServices;
+    std::shared_ptr<DataService> m_dataService;
 
     std::unique_ptr<GatewayDataService> m_gatewayDataService;
     std::unique_ptr<Persistence> m_gatewayPersistence;

@@ -17,7 +17,6 @@
 #include "service/SubdeviceRegistrationService.h"
 #include "OutboundMessageHandler.h"
 #include "model/DetailedDevice.h"
-// #include "model/DeviceReregistrationResponse.h"
 #include "model/Message.h"
 #include "model/SubdeviceRegistrationRequest.h"
 #include "model/SubdeviceRegistrationResponse.h"
@@ -83,10 +82,6 @@ void SubdeviceRegistrationService::platformMessageReceived(std::shared_ptr<Messa
         auto deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
         handleSubdeviceRegistrationResponse(deviceKey, *response);
     }
-    else if (m_protocol.isReregistrationRequest(*message))
-    {
-        handleDeviceReregistrationRequest();
-    }
     else if (m_protocol.isSubdeviceDeletionResponse(*message))
     {
         LOG(INFO) << "SubdeviceRegistrationService: Received subdevice deletion response (" << message->getChannel()
@@ -129,7 +124,7 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
     auto deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
     if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
     {
-        addToPostponedSubdeviceRegistartionRequests(deviceKey, *request);
+        addToPostponedSubdeviceRegistrationRequests(deviceKey, *request);
         return;
     }
 
@@ -171,17 +166,17 @@ void SubdeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std:
             LOG(INFO) << "Deleting device with key " << deviceKeyFromRepository;
             m_deviceRepository.remove(deviceKeyFromRepository);
 
-            std::shared_ptr<Message> deviceDeletionRequestMessage =
-              m_protocol.makeDeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
-            if (!deviceDeletionRequestMessage)
+            std::shared_ptr<Message> subdeviceDeletionRequestMessage =
+              m_protocol.makeSubdeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
+            if (!subdeviceDeletionRequestMessage)
             {
                 LOG(WARN) << "SubdeviceRegistrationService: Unable to create deletion request message";
                 continue;
             }
 
             auto responseChannel =
-              m_protocol.getResponseChannel(*deviceDeletionRequestMessage, m_gatewayKey, deviceKeyFromRepository);
-            RetryMessageStruct retryMessage{deviceDeletionRequestMessage, responseChannel,
+              m_protocol.getResponseChannel(*subdeviceDeletionRequestMessage, m_gatewayKey, deviceKeyFromRepository);
+            RetryMessageStruct retryMessage{subdeviceDeletionRequestMessage, responseChannel,
                                             [=](std::shared_ptr<Message>) {
                                                 LOG(ERROR)
                                                   << "Failed to delete device with key: " << deviceKeyFromRepository
@@ -196,7 +191,7 @@ void SubdeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std:
 void SubdeviceRegistrationService::registerDevice(const DetailedDevice& device)
 {
     const SubdeviceRegistrationRequest registrationRequest(device.getName(), device.getKey(), device.getTemplate(),
-                                                           device.getDefaultBinding());
+                                                           true);    // TODO : default binding
 
     handleSubdeviceRegistrationRequest(registrationRequest.getSubdeviceKey(), registrationRequest);
 }
@@ -239,39 +234,6 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationRequest(const std:
                                     },
                                     RETRY_COUNT, RETRY_TIMEOUT};
     m_platformRetryMessageHandler.addMessage(retryMessage);
-}
-
-void SubdeviceRegistrationService::handleDeviceReregistrationRequest()
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    LOG(INFO) << "SubdeviceRegistrationService: Reregistering devices connected to gateway";
-
-    const auto reregistrationResponse = DeviceReregistrationResponse(DeviceReregistrationResponse::Result::OK);
-    std::shared_ptr<Message> reregistrationResponseMessage =
-      m_protocol.makeMessage(m_gatewayKey, reregistrationResponse);
-    if (!reregistrationResponseMessage)
-    {
-        LOG(WARN) << "SubdeviceRegistrationService: Unable to create reregistration response message";
-        return;
-    }
-
-    m_outboundPlatformMessageHandler.addMessage(reregistrationResponseMessage);
-
-    const auto registeredDevicesKeys = m_deviceRepository.findAllDeviceKeys();
-    for (const std::string& deviceKey : *registeredDevicesKeys)
-    {
-        m_deviceRepository.remove(deviceKey);
-    }
-
-    std::shared_ptr<Message> deviceRegistrationRequest = m_protocol.makeDeviceReregistrationRequestForDevice();
-    if (!deviceRegistrationRequest)
-    {
-        LOG(WARN) << "SubdeviceRegistrationService: Unable to create registration request message";
-        return;
-    }
-
-    m_outboundDeviceMessageHandler.addMessage(deviceRegistrationRequest);
 }
 
 void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std::string& deviceKey,
@@ -381,7 +343,7 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
     }
 }
 
-void SubdeviceRegistrationService::addToPostponedDeviceRegistartionRequests(
+void SubdeviceRegistrationService::addToPostponedSubdeviceRegistrationRequests(
   const std::string& deviceKey, const wolkabout::SubdeviceRegistrationRequest& request)
 {
     LOG(TRACE) << METHOD_INFO;

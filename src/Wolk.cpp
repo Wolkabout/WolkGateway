@@ -356,45 +356,9 @@ void Wolk::connectToDevices()
     });
 }
 
-void Wolk::routePlatformData(const std::string& protocol, std::shared_ptr<Message> message)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(protocol);
-    if (it != m_dataServices.end())
-    {
-        std::get<0>(it->second)->platformMessageReceived(message);
-    }
-    else
-    {
-        LOG(WARN) << "Data service not found for protocol: " << protocol;
-    }
-}
-
-void Wolk::routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(protocol);
-    if (it != m_dataServices.end())
-    {
-        std::get<0>(it->second)->deviceMessageReceived(message);
-    }
-    else
-    {
-        LOG(WARN) << "Data service not found for protocol: " << protocol;
-    }
-}
-
 void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol, std::shared_ptr<DataService> dataService)
 {
     std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    if (auto it = m_dataServices.find(protocol->getName()) != m_dataServices.end())
-    {
-        LOG(INFO) << "Data protocol already registered";
-        return;
-    }
 
     if (!dataService)
     {
@@ -402,19 +366,10 @@ void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol, s
                                                     *m_platformPublisher, *m_devicePublisher);
     }
 
-    auto protocolResolver =
-      std::make_shared<ChannelProtocolResolver>(*protocol, *m_deviceRepository,
-                                                [&](const std::string& protocolName, std::shared_ptr<Message> message) {
-                                                    routePlatformData(protocolName, message);
-                                                },
-                                                [&](const std::string& protocolName, std::shared_ptr<Message> message) {
-                                                    routeDeviceData(protocolName, message);
-                                                });
+    m_dataService = dataService;
 
-    m_dataServices[protocol->getName()] = std::make_tuple(dataService, protocol, protocolResolver);
-
-    m_inboundDeviceMessageHandler->addListener(protocolResolver);
-    m_inboundPlatformMessageHandler->addListener(protocolResolver);
+    m_inboundDeviceMessageHandler->addListener(dataService);
+    m_inboundPlatformMessageHandler->addListener(dataService);
 }
 
 void Wolk::requestActuatorStatusesForDevices()
@@ -436,23 +391,6 @@ void Wolk::requestActuatorStatusesForDevices()
 void Wolk::requestActuatorStatusesForDevice(const std::string& deviceKey)
 {
     std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto device = m_deviceRepository->findByDeviceKey(deviceKey);
-    if (!device)
-    {
-        LOG(ERROR) << "Device not found: " << deviceKey;
-        return;
-    }
-
-    const auto protocol = device->getTemplate().getProtocol();
-    auto it = m_dataServices.find(protocol);
-    if (it != m_dataServices.end())
-    {
-        std::get<0>(it->second)->requestActuatorStatusesForDevice(deviceKey);
-    }
-    else
-    {
-        LOG(WARN) << "Data service not found for protocol: " << protocol;
-    }
+    m_dataService->requestActuatorStatusesForDevice(deviceKey);
 }
 }    // namespace wolkabout

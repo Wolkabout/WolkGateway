@@ -67,7 +67,7 @@ private:
     void handleSubdeviceRegistrationResponse(const std::string& deviceKey,
                                              const SubdeviceRegistrationResponse& response);
 
-    void addToPostponedSubdeviceRegistartionRequests(const std::string& deviceKey,
+    void addToPostponedSubdeviceRegistrationRequests(const std::string& deviceKey,
                                                      const SubdeviceRegistrationRequest& request);
 
     const std::string m_gatewayKey;

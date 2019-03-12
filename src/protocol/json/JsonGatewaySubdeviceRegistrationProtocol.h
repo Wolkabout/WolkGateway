@@ -50,20 +50,14 @@ public:
                                          const SubdeviceRegistrationResponse& request) const override;
     std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                          const SubdeviceRegistrationResponse& request) const override;
-    std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
-                                         const DeviceReregistrationResponse& response) const override;
-    std::unique_ptr<Message> makeDeviceReregistrationRequestForDevice() const override;
-    std::unique_ptr<Message> makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey) const override;
-    std::unique_ptr<Message> makeDeviceDeletionRequestMessage(const std::string& gatewayKey,
-                                                              const std::string& deviceKey) const override;
+    std::unique_ptr<Message> makeSubdeviceDeletionRequestMessage(const std::string& gatewayKey,
+                                                                 const std::string& deviceKey) const override;
     std::unique_ptr<SubdeviceRegistrationRequest> makeSubdeviceRegistrationRequest(
       const Message& message) const override;
     std::unique_ptr<SubdeviceRegistrationResponse> makeSubdeviceRegistrationResponse(
       const Message& message) const override;
     bool isSubdeviceRegistrationRequest(const Message& message) const override;
     bool isSubdeviceRegistrationResponse(const Message& message) const override;
-    bool isReregistrationRequest(const Message& message) const override;
-    bool isReregistrationResponse(const Message& message) const override;
     bool isSubdeviceDeletionRequest(const Message& message) const override;
     bool isSubdeviceDeletionResponse(const Message& message) const override;
 
@@ -84,8 +78,6 @@ private:
 
     static const std::string SUBDEVICE_REGISTRATION_REQUEST_TOPIC_ROOT;
     static const std::string SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
-    static const std::string DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT;
-    static const std::string DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT;
 
     static const std::string SUBDEVICE_DELETION_REQUEST_TOPIC_ROOT;
     static const std::string SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT;

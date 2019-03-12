@@ -15,7 +15,6 @@
  */
 
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
-// #include "model/DeviceReregistrationResponse.h"
 #include "model/Message.h"
 #include "model/SubdeviceRegistrationRequest.h"
 #include "model/SubdeviceRegistrationResponse.h"
@@ -47,10 +46,6 @@ const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATI
   "d2p/register_subdevice_request/";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT =
   "p2d/register_subdevice_response/";
-const std::string JsonGatewaySubdeviceRegistrationProtocol::DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT =
-  "p2d/reregister_device/";
-const std::string JsonGatewaySubdeviceRegistrationProtocol::DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT =
-  "d2p/reregister_device/";
 
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_DELETION_REQUEST_TOPIC_ROOT =
   "d2p/delete_device/";
@@ -85,8 +80,6 @@ std::vector<std::string> JsonGatewaySubdeviceRegistrationProtocol::getInboundPla
 {
     return {SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
 
-            DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-
             SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 
@@ -96,9 +89,6 @@ std::vector<std::string> JsonGatewaySubdeviceRegistrationProtocol::getInboundPla
     return {SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
               DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
             SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
-            DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
             SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
               DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
             SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey};
@@ -110,9 +100,6 @@ std::vector<std::string> JsonGatewaySubdeviceRegistrationProtocol::getInboundPla
     return {SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
               DEVICE_PATH_PREFIX + deviceKey,
             SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
-            DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + deviceKey,
-            DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
             SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
               DEVICE_PATH_PREFIX + deviceKey,
             SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey};
@@ -198,39 +185,7 @@ std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeMessage(
     }
 }
 
-std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeMessage(
-  const std::string& gatewayKey, const DeviceReregistrationResponse& response) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    try
-    {
-        const json jsonPayload(response);
-        const std::string channel = DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
-
-        return std::unique_ptr<Message>(new Message(jsonPayload.dump(), channel));
-    }
-    catch (std::exception& e)
-    {
-        LOG(ERROR) << "Device registration protocol: Unable to serialize device registration response: " << e.what();
-        return nullptr;
-    }
-}
-
-std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeDeviceReregistrationRequestForDevice() const
-{
-    const std::string channel = DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + DEVICE_PATH_PREFIX;
-    return std::unique_ptr<Message>(new Message("", channel));
-}
-
-std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeDeviceReregistrationRequestForGateway(
-  const std::string& gatewayKey) const
-{
-    const std::string channel = DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
-    return std::unique_ptr<Message>(new Message("", channel));
-}
-
-std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeDeviceDeletionRequestMessage(
+std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeSubdeviceDeletionRequestMessage(
   const std::string& gatewayKey, const std::string& deviceKey) const
 {
     std::stringstream channel;
@@ -251,8 +206,7 @@ JsonGatewaySubdeviceRegistrationProtocol::makeSubdeviceRegistrationRequest(const
     try
     {
         const json jsonRequest = json::parse(message.getContent());
-        SubdeviceRegistrationRequest request;
-        request = jsonRequest;
+        SubdeviceRegistrationRequest request = subdevice_registration_request_from_json(jsonRequest);
 
         return std::unique_ptr<SubdeviceRegistrationRequest>(new SubdeviceRegistrationRequest(request));
     }
@@ -352,20 +306,6 @@ bool JsonGatewaySubdeviceRegistrationProtocol::isSubdeviceRegistrationResponse(c
     LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(message.getChannel(), SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT);
-}
-
-bool JsonGatewaySubdeviceRegistrationProtocol::isReregistrationRequest(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    return StringUtils::startsWith(message.getChannel(), DEVICE_REREGISTRATION_REQUEST_TOPIC_ROOT);
-}
-
-bool JsonGatewaySubdeviceRegistrationProtocol::isReregistrationResponse(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    return StringUtils::startsWith(message.getChannel(), DEVICE_REREGISTRATION_RESPONSE_TOPIC_ROOT);
 }
 
 bool JsonGatewaySubdeviceRegistrationProtocol::isSubdeviceDeletionRequest(const Message& message) const

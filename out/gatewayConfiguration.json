@@ -1,10 +1,10 @@
 {
-    "name": "",
+    "name": "danilo_gw",
 
-    "key": "",
-    "password": "",
+    "key": "danilo_gw_key",
+    "password": "9ab90a1f-f700-4be6-b9ac-8cb9ad9f9c3f",
 
-    "platformMqttUri": "ssl://api-demo.wolkabout.com:8883",
+    "platformMqttUri": "ssl://api-integration4.wolkabout.com:8883",
     "localMqttUri": "tcp://localhost:1883",
 
     "platformTrustStore": "ca.crt"

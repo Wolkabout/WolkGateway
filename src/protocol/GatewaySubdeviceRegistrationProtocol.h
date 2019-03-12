@@ -43,14 +43,8 @@ public:
     virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
                                                  const SubdeviceRegistrationResponse& request) const = 0;
 
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
-                                                 const DeviceReregistrationResponse& response) const = 0;
-
-    virtual std::unique_ptr<Message> makeDeviceReregistrationRequestForDevice() const = 0;
-    virtual std::unique_ptr<Message> makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey) const = 0;
-
-    virtual std::unique_ptr<Message> makeDeviceDeletionRequestMessage(const std::string& gatewayKey,
-                                                                      const std::string& deviceKey) const = 0;
+    virtual std::unique_ptr<Message> makeSubdeviceDeletionRequestMessage(const std::string& gatewayKey,
+                                                                         const std::string& deviceKey) const = 0;
 
     virtual std::unique_ptr<SubdeviceRegistrationRequest> makeSubdeviceRegistrationRequest(
       const Message& message) const = 0;
@@ -59,9 +53,6 @@ public:
 
     virtual bool isSubdeviceRegistrationRequest(const Message& message) const = 0;
     virtual bool isSubdeviceRegistrationResponse(const Message& message) const = 0;
-
-    virtual bool isReregistrationRequest(const Message& message) const = 0;
-    virtual bool isReregistrationResponse(const Message& message) const = 0;
 
     virtual bool isSubdeviceDeletionRequest(const Message& message) const = 0;
     virtual bool isSubdeviceDeletionResponse(const Message& message) const = 0;

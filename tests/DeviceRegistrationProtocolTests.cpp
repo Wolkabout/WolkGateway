@@ -1,5 +1,5 @@
 #include "model/Message.h"
-#include "protocol/json/JsonGatewayDeviceRegistrationProtocol.h"
+#include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -8,26 +8,26 @@
 
 namespace
 {
-class JsonGatewayDeviceRegistrationProtocol : public ::testing::Test
+class JsonGatewaySubdeviceRegistrationProtocol : public ::testing::Test
 {
 public:
     void SetUp() override
     {
-        protocol = std::unique_ptr<wolkabout::JsonGatewayDeviceRegistrationProtocol>(
-          new wolkabout::JsonGatewayDeviceRegistrationProtocol());
+        protocol = std::unique_ptr<wolkabout::JsonGatewaySubdeviceRegistrationProtocol>(
+          new wolkabout::JsonGatewaySubdeviceRegistrationProtocol());
     }
 
     void TearDown() override {}
 
-    std::unique_ptr<wolkabout::JsonGatewayDeviceRegistrationProtocol> protocol;
+    std::unique_ptr<wolkabout::JsonGatewaySubdeviceRegistrationProtocol> protocol;
 };
 }    // namespace
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_RegistrationRequestChannelForGateway_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToGatewayKey)
 {
     // Given
-    const std::string registrationRequestChannel = "d2p/register_device/g/GATEWAY_KEY/";
+    const std::string registrationRequestChannel = "d2p/register_subdevice/g/GATEWAY_KEY/";
 
     // When
     const std::string deviceKey = protocol->extractDeviceKeyFromChannel(registrationRequestChannel);
@@ -36,11 +36,11 @@ TEST_F(JsonGatewayDeviceRegistrationProtocol,
     ASSERT_EQ("GATEWAY_KEY", deviceKey);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_RegistrationRequestChannelForDevice_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsValid)
 {
     // Given
-    const std::string registrationRequestChannel = "d2p/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string registrationRequestChannel = "d2p/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
 
     // When
     const std::string deviceKey = protocol->extractDeviceKeyFromChannel(registrationRequestChannel);
@@ -49,11 +49,11 @@ TEST_F(JsonGatewayDeviceRegistrationProtocol,
     ASSERT_EQ("DEVICE_KEY", deviceKey);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_RegistrationResponseChannel_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsValid)
 {
     // Given
-    const std::string registrationRespoonseChannel = "p2d/register_device/g/GATEWAY_KEY/d/DEVICE_KEY_";
+    const std::string registrationRespoonseChannel = "p2d/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY_";
 
     // When
     const std::string deviceKey = protocol->extractDeviceKeyFromChannel(registrationRespoonseChannel);
@@ -62,11 +62,11 @@ TEST_F(JsonGatewayDeviceRegistrationProtocol,
     ASSERT_EQ("DEVICE_KEY_", deviceKey);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_ReregistrationRequestChannel_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsValid)
 {
     // Given
-    const std::string reregistrationRequestChannel = "p2d/reregister_device/g/GATEWAY_KEY/d/__DEVICE_KEY";
+    const std::string reregistrationRequestChannel = "p2d/reregister_subdevice/g/GATEWAY_KEY/d/__DEVICE_KEY";
 
     // When
     const std::string deviceKey = protocol->extractDeviceKeyFromChannel(reregistrationRequestChannel);
@@ -75,11 +75,11 @@ TEST_F(JsonGatewayDeviceRegistrationProtocol,
     ASSERT_EQ("__DEVICE_KEY", deviceKey);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_ReregistrationResponseChannel_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsValid)
 {
     // Given
-    const std::string reregistrationResponseChannel = "d2p/reregister_device/g/GATEWAY_KEY/d/__DEVICE_KEY__";
+    const std::string reregistrationResponseChannel = "d2p/reregister_subdevice/g/GATEWAY_KEY/d/__DEVICE_KEY__";
 
     // When
     const std::string deviceKey = protocol->extractDeviceKeyFromChannel(reregistrationResponseChannel);
@@ -88,67 +88,68 @@ TEST_F(JsonGatewayDeviceRegistrationProtocol,
     ASSERT_EQ("__DEVICE_KEY__", deviceKey);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_RegistrationRequestMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsRegistrationRequest)
 {
     // Given
-    const std::string registrationRequestChannel = "d2p/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string registrationRequestChannel = "d2p/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
     auto registrationRequestMessage = std::make_shared<wolkabout::Message>("", registrationRequestChannel);
 
     // When
-    const bool isRegistrationRequest = protocol->isRegistrationRequest(*registrationRequestMessage);
+    const bool isSubdeviceRegistrationRequest = protocol->isSubdeviceRegistrationRequest(*registrationRequestMessage);
 
     // Then
-    ASSERT_TRUE(isRegistrationRequest);
+    ASSERT_TRUE(isSubdeviceRegistrationRequest);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_RegistrationResponseMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsRegistrationResponse)
 {
     // Given
-    const std::string registrationResponseChannel = "p2d/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string registrationResponseChannel = "p2d/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
     auto registrationResponseMessage = std::make_shared<wolkabout::Message>("", registrationResponseChannel);
 
     // When
-    const bool isRegistrationResponse = protocol->isRegistrationResponse(*registrationResponseMessage);
+    const bool isSubdeviceRegistrationResponse =
+      protocol->isSubdeviceRegistrationResponse(*registrationResponseMessage);
 
     // Then
-    ASSERT_TRUE(isRegistrationResponse);
+    ASSERT_TRUE(isSubdeviceRegistrationResponse);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_ReregistrationRequestMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsReregistrationRequest)
 {
     // Given
-    const std::string reregistrationRequestChannel = "d2p/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string reregistrationRequestChannel = "d2p/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
     auto reregistrationRequestMessage = std::make_shared<wolkabout::Message>("", reregistrationRequestChannel);
 
     // When
-    const bool isReregistrationRequest = protocol->isRegistrationRequest(*reregistrationRequestMessage);
+    const bool isReregistrationRequest = protocol->isSubdeviceRegistrationRequest(*reregistrationRequestMessage);
 
     // Then
     ASSERT_TRUE(isReregistrationRequest);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_ReregistrationResponseMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsReregistrationResponse)
 {
     // Given
-    const std::string registrationResponseChannel = "p2d/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string registrationResponseChannel = "p2d/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
     auto registrationResponseMessage = std::make_shared<wolkabout::Message>("", registrationResponseChannel);
 
     // When
-    const bool isReregistrationResponse = protocol->isRegistrationResponse(*registrationResponseMessage);
+    const bool isReregistrationResponse = protocol->isSubdeviceRegistrationResponse(*registrationResponseMessage);
 
     // Then
     ASSERT_TRUE(isReregistrationResponse);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_DeviceDeletionRequestMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsDeviceDeletionRequest)
 {
     // Given
-    const std::string deviceDeletionRequestChannel = "d2p/delete_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string deviceDeletionRequestChannel = "d2p/delete_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
     auto deviceDeletionRequestMessage = std::make_shared<wolkabout::Message>("", deviceDeletionRequestChannel);
 
     // When
@@ -158,25 +159,25 @@ TEST_F(JsonGatewayDeviceRegistrationProtocol,
     ASSERT_TRUE(isDeviceDeletionRequest);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_DeviceDeletionResponseMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsDeviceDeletionResponse)
 {
     // Given
-    const std::string deviceDeletionResponseChannel = "p2d/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string deviceDeletionResponseChannel = "p2d/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
     auto deviceDeletionResponseMessage = std::make_shared<wolkabout::Message>("", deviceDeletionResponseChannel);
 
     // When
-    const bool isDeviceDeletionResponse = protocol->isRegistrationResponse(*deviceDeletionResponseMessage);
+    const bool isDeviceDeletionResponse = protocol->isSubdeviceRegistrationResponse(*deviceDeletionResponseMessage);
 
     // Then
     ASSERT_TRUE(isDeviceDeletionResponse);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_MessageFromPlatform_When_MessageDirectionIsChecked_Then_MessageDirectionEqualsFromPlatform)
 {
     // Given
-    const std::string registrationResponseChannel = "p2d/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string registrationResponseChannel = "p2d/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
     auto message = std::make_shared<wolkabout::Message>("", registrationResponseChannel);
 
     // When
@@ -186,11 +187,11 @@ TEST_F(JsonGatewayDeviceRegistrationProtocol,
     ASSERT_TRUE(isMessageFromPlatform);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol,
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol,
        Given_MessageToPlatform_When_MessageDirectionIsChecked_Then_MessageDirectionEqualsToPlatform)
 {
     // Given
-    const std::string registrationResponseChannel = "d2p/register_device/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string registrationResponseChannel = "d2p/register_subdevice/g/GATEWAY_KEY/d/DEVICE_KEY";
     auto message = std::make_shared<wolkabout::Message>("", registrationResponseChannel);
 
     // When
@@ -200,17 +201,18 @@ TEST_F(JsonGatewayDeviceRegistrationProtocol,
     ASSERT_TRUE(isMessageToPlatform);
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol, VerifyDeviceTopics)
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol, VerifyDeviceTopics)
 {
     std::vector<std::string> deviceTopics = protocol->getInboundDeviceChannels();
 
-    ASSERT_THAT(deviceTopics, ::testing::ElementsAre("d2p/register_device/d/#"));
+    ASSERT_THAT(deviceTopics, ::testing::ElementsAre("d2p/register_subdevice/d/#"));
 }
 
-TEST_F(JsonGatewayDeviceRegistrationProtocol, VerifyPlatformTopics)
+TEST_F(JsonGatewaySubdeviceRegistrationProtocol, VerifyPlatformTopics)
 {
     std::vector<std::string> platformTopics = protocol->getInboundPlatformChannels();
 
-    ASSERT_THAT(platformTopics, ::testing::UnorderedElementsAre("p2d/register_device/g/#", "p2d/reregister_device/g/#",
-                                                                "p2d/delete_device/g/#"));
+    ASSERT_THAT(platformTopics,
+                ::testing::UnorderedElementsAre("p2d/register_subdevice/g/#", "p2d/reregister_subdevice/g/#",
+                                                "p2d/delete_subdevice/g/#"));
 }

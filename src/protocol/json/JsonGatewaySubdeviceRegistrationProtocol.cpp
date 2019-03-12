@@ -15,6 +15,8 @@
  */
 
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
+#include "model/GatewayUpdateRequest.h"
+#include "model/GatewayUpdateResponse.h"
 #include "model/Message.h"
 #include "model/SubdeviceRegistrationRequest.h"
 #include "model/SubdeviceRegistrationResponse.h"
@@ -37,6 +39,7 @@ const std::string JsonGatewaySubdeviceRegistrationProtocol::NAME = "Registration
 const std::string JsonGatewaySubdeviceRegistrationProtocol::CHANNEL_DELIMITER = "/";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::CHANNEL_MULTI_LEVEL_WILDCARD = "#";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::CHANNEL_SINGLE_LEVEL_WILDCARD = "+";
+
 const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_PATH_PREFIX = "g/";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::DEVICE_PATH_PREFIX = "d/";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::DEVICE_TO_PLATFORM_DIRECTION = "d2p/";
@@ -47,10 +50,28 @@ const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATI
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT =
   "p2d/register_subdevice_response/";
 
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_REQUEST_TOPIC_ROOT =
+  "d2p/update_gateway_request/";
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_TOPIC_ROOT =
+  "p2d/update_gateway_response/";
+
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_DELETION_REQUEST_TOPIC_ROOT =
   "d2p/delete_device/";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT =
   "p2d/delete_device/";
+
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_OK = "OK";
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_ERROR_GATEWAY_NOT_FOUND =
+  "ERROR_GATEWAY_NOT_FOUND";
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_ERROR_NOT_A_GATEWAY =
+  "ERROR_NOT_A_GATEWAY";
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_ERROR_VALIDATION_ERROR =
+  "ERROR_VALIDATION_ERROR";
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_ERROR_INVALID_DTO =
+  "ERROR_INVALID_DTO";
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_ERROR_KEY_MISSING =
+  "ERROR_KEY_MISSING";
+const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_ERROR_UNKNOWN = "ERROR_UNKNOWN";
 
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATION_RESPONSE_OK = "OK";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATION_RESPONSE_ERROR_GATEWAY_NOT_FOUND =
@@ -66,6 +87,9 @@ const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATI
   "ERROR_VALIDATION_ERROR";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATION_RESPONSE_ERROR_INVALID_DTO =
   "ERROR_INVALID_DTO";
+const std::string
+  JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATION_RESPONSE_ERROR_SUBDEVICE_MANAGEMENT_FORBIDDEN =
+    "ERROR_SUBDEVICE_MANAGEMENT_FORBIDDEN";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATION_RESPONSE_ERROR_KEY_MISSING =
   "ERROR_KEY_MISSING";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_REGISTRATION_RESPONSE_ERROR_UNKNOWN =
@@ -80,17 +104,15 @@ std::vector<std::string> JsonGatewaySubdeviceRegistrationProtocol::getInboundPla
 {
     return {SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
 
+            GATEWAY_UPDATE_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
             SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 
 std::vector<std::string> JsonGatewaySubdeviceRegistrationProtocol::getInboundPlatformChannelsForGatewayKey(
   const std::string& gatewayKey) const
 {
-    return {SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
-            SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
-            SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
+    return {SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
+            GATEWAY_UPDATE_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
             SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey};
 }
 
@@ -117,22 +139,14 @@ std::vector<std::string> JsonGatewaySubdeviceRegistrationProtocol::getInboundDev
 }
 
 std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeMessage(
-  const std::string& gatewayKey, const std::string& deviceKey, const SubdeviceRegistrationRequest& request) const
+  const std::string& gatewayKey, const SubdeviceRegistrationRequest& request) const
 {
     LOG(TRACE) << METHOD_INFO;
 
     try
     {
         const json jsonPayload(request);
-        const auto channel = [&]() -> std::string {
-            if (deviceKey == gatewayKey)
-            {
-                return SUBDEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
-            }
-
-            return SUBDEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-                   DEVICE_PATH_PREFIX + deviceKey;
-        }();
+        const std::string channel = SUBDEVICE_REGISTRATION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
 
         auto r = jsonPayload.dump();
 
@@ -140,47 +154,27 @@ std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeMessage(
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "Device registration protocol: Unable to serialize device registration request: " << e.what();
+        LOG(ERROR) << "Subdevice registration protocol: Unable to serialize subdevice registration request: "
+                   << e.what();
         return nullptr;
     }
 }
 
 std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeMessage(
-  const std::string& deviceKey, const wolkabout::SubdeviceRegistrationResponse& response) const
+  const std::string& gatewayKey, const wolkabout::GatewayUpdateRequest& request) const
 {
     LOG(TRACE) << METHOD_INFO;
 
     try
     {
-        const json jsonPayload(response);
-        const auto channel = SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey;
+        const json jsonPayload(request);
+        const auto channel = GATEWAY_UPDATE_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
 
         return std::unique_ptr<Message>(new Message(jsonPayload.dump(), channel));
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "Device registration protocol: Unable to serialize device registration response: " << e.what();
-        return nullptr;
-    }
-}
-
-std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeMessage(
-  const std::string& gatewayKey, const std::string& deviceKey,
-  const wolkabout::SubdeviceRegistrationResponse& response) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    try
-    {
-        const json jsonPayload(response);
-        const auto channel = SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey +
-                             CHANNEL_DELIMITER + DEVICE_PATH_PREFIX + deviceKey;
-
-        return std::unique_ptr<Message>(new Message(jsonPayload.dump(), channel));
-    }
-    catch (std::exception& e)
-    {
-        LOG(ERROR) << "Device registration protocol: Unable to serialize device registration response: " << e.what();
+        LOG(ERROR) << "Subdevice registration protocol: Unable to serialize gateway update request: " << e.what();
         return nullptr;
     }
 }
@@ -212,7 +206,27 @@ JsonGatewaySubdeviceRegistrationProtocol::makeSubdeviceRegistrationRequest(const
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "Device registration protocol: Unable to deserialize device registration request: " << e.what();
+        LOG(ERROR) << "Subdevice registration protocol: Unable to deserialize subdevice registration request: "
+                   << e.what();
+        return nullptr;
+    }
+}
+
+std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeMessage(
+  const std::string& deviceKey, const wolkabout::SubdeviceRegistrationResponse& response) const
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    try
+    {
+        const json jsonPayload(response);
+        const auto channel = SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey;
+
+        return std::unique_ptr<Message>(new Message(jsonPayload.dump(), channel));
+    }
+    catch (std::exception& e)
+    {
+        LOG(ERROR) << "Device registration protocol: Unable to serialize device registration response: " << e.what();
         return nullptr;
     }
 }
@@ -245,6 +259,10 @@ JsonGatewaySubdeviceRegistrationProtocol::makeSubdeviceRegistrationResponse(cons
             {
                 return SubdeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT;
             }
+            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_SUBDEVICE_MANAGEMENT_FORBIDDEN)
+            {
+                return SubdeviceRegistrationResponse::Result::ERROR_SUBDEVICE_MANAGEMENT_FORBIDDEN;
+            }
             else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_MAX_NUMBER_OF_DEVICES_EXCEEDED)
             {
                 return SubdeviceRegistrationResponse::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED;
@@ -270,12 +288,33 @@ JsonGatewaySubdeviceRegistrationProtocol::makeSubdeviceRegistrationResponse(cons
             throw std::logic_error("");
         }();
 
-        return std::unique_ptr<SubdeviceRegistrationResponse>(
-          new SubdeviceRegistrationResponse(result, j.at("description").get<std::string>()));
+        return std::unique_ptr<SubdeviceRegistrationResponse>(new SubdeviceRegistrationResponse(
+          j.at("payload").at("deviceKey").get<std::string>(), result, j.at("description").get<std::string>()));
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "Device registration protocol: Unable to deserialize device registration response: " << e.what();
+        LOG(ERROR) << "Subdevice registration protocol: Unable to deserialize subdevice registration response: "
+                   << e.what();
+        return nullptr;
+    }
+}
+
+std::unique_ptr<GatewayUpdateResponse> JsonGatewaySubdeviceRegistrationProtocol::makeGatewayUpdateResponse(
+  const Message& message) const
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    try
+    {
+        const json jsonRequest = json::parse(message.getContent());
+        GatewayUpdateResponse request = gateway_update_response_from_json(jsonRequest);
+
+        return std::unique_ptr<GatewayUpdateResponse>(new GatewayUpdateResponse(request));
+    }
+    catch (std::exception& e)
+    {
+        LOG(ERROR) << "Subdevice registration protocol: Unable to deserialize subdevice registration response: "
+                   << e.what();
         return nullptr;
     }
 }
@@ -320,6 +359,13 @@ bool JsonGatewaySubdeviceRegistrationProtocol::isSubdeviceDeletionResponse(const
     LOG(TRACE) << METHOD_INFO;
 
     return StringUtils::startsWith(message.getChannel(), SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT);
+}
+
+bool JsonGatewaySubdeviceRegistrationProtocol::isGatewayUpdateResponse(const Message& message) const
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    return StringUtils::startsWith(message.getChannel(), GATEWAY_UPDATE_RESPONSE_TOPIC_ROOT);
 }
 
 std::string JsonGatewaySubdeviceRegistrationProtocol::getResponseChannel(const Message& message,

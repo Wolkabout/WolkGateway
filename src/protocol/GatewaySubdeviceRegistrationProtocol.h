@@ -28,20 +28,21 @@ namespace wolkabout
 class Message;
 class SubdeviceRegistrationRequest;
 class SubdeviceRegistrationResponse;
-class DeviceReregistrationResponse;
+class GatewayUpdateRequest;
+class GatewayUpdateResponse;
 class GatewaySubdeviceRegistrationProtocol : public GatewayProtocol
 {
 public:
     GatewayProtocol::Type getType() const override final { return GatewayProtocol::Type::REGISTRATION; }
 
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
+    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
                                                  const SubdeviceRegistrationRequest& request) const = 0;
 
-    virtual std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
+    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
                                                  const SubdeviceRegistrationResponse& request) const = 0;
 
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                 const SubdeviceRegistrationResponse& request) const = 0;
+    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
+                                                 const GatewayUpdateRequest& request) const = 0;
 
     virtual std::unique_ptr<Message> makeSubdeviceDeletionRequestMessage(const std::string& gatewayKey,
                                                                          const std::string& deviceKey) const = 0;
@@ -51,8 +52,12 @@ public:
     virtual std::unique_ptr<SubdeviceRegistrationResponse> makeSubdeviceRegistrationResponse(
       const Message& message) const = 0;
 
+    virtual std::unique_ptr<GatewayUpdateResponse> makeGatewayUpdateResponse(const Message& message) const = 0;
+
     virtual bool isSubdeviceRegistrationRequest(const Message& message) const = 0;
     virtual bool isSubdeviceRegistrationResponse(const Message& message) const = 0;
+
+    virtual bool isGatewayUpdateResponse(const Message& message) const = 0;
 
     virtual bool isSubdeviceDeletionRequest(const Message& message) const = 0;
     virtual bool isSubdeviceDeletionResponse(const Message& message) const = 0;

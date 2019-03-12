@@ -235,7 +235,7 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationRequest(const std:
       new DetailedDevice(request.getSubdeviceName(), request.getSubdeviceKey(), request.getTemplate()));
     m_devicesAwaitingRegistrationResponse[deviceKey] = std::move(device);
 
-    std::shared_ptr<Message> registrationRequest = m_protocol.makeMessage(m_gatewayKey, deviceKey, request);
+    std::shared_ptr<Message> registrationRequest = m_protocol.makeMessage(m_gatewayKey, request);
     if (!registrationRequest)
     {
         LOG(WARN) << "SubdeviceRegistrationService: Unable to create registration request message";

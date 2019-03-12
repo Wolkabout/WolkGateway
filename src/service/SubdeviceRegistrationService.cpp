@@ -137,16 +137,16 @@ const GatewayProtocol& SubdeviceRegistrationService::getProtocol() const
 }
 
 void SubdeviceRegistrationService::onDeviceRegistered(
-  std::function<void(const std::string& deviceKey, bool isGateway)> onDeviceRegistered)
+  std::function<void(const std::string& deviceKey)> onDeviceRegistered)
 {
     m_onDeviceRegistered = onDeviceRegistered;
 }
 
-void SubdeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const
+void SubdeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::string& deviceKey) const
 {
     if (m_onDeviceRegistered)
     {
-        m_onDeviceRegistered(deviceKey, isGateway);
+        m_onDeviceRegistered(deviceKey);
     }
 }
 
@@ -188,18 +188,34 @@ void SubdeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std:
     }
 }
 
-void SubdeviceRegistrationService::registerDevice(const DetailedDevice& device)
+void SubdeviceRegistrationService::registerPostponedDevices()
 {
-    const SubdeviceRegistrationRequest registrationRequest(device.getName(), device.getKey(), device.getTemplate(),
-                                                           true);    // TODO : default binding
+    std::lock_guard<decltype(m_devicesWithPostponedRegistrationMutex)> devicesWithPostponedRegistrationLock(
+      m_devicesWithPostponedRegistrationMutex);
+    if (!m_devicesWithPostponedRegistration.empty())
+    {
+        LOG(INFO) << "SubdeviceRegistrationService: Processing postponed device registration requests";
 
-    handleSubdeviceRegistrationRequest(registrationRequest.getSubdeviceKey(), registrationRequest);
+        for (const auto& deviceWithPostponedRegistration : m_devicesWithPostponedRegistration)
+        {
+            handleSubdeviceRegistrationRequest(deviceWithPostponedRegistration.first,
+                                               *deviceWithPostponedRegistration.second);
+        }
+
+        m_devicesWithPostponedRegistration.clear();
+    }
 }
 
 void SubdeviceRegistrationService::handleSubdeviceRegistrationRequest(const std::string& deviceKey,
                                                                       const SubdeviceRegistrationRequest& request)
 {
     LOG(TRACE) << METHOD_INFO;
+
+    if (deviceKey == m_gatewayKey)
+    {
+        LOG(ERROR) << "SubdeviceRegistrationService: Skipping registration of gateway";
+        return;
+    }
 
     LOG(INFO) << "SubdeviceRegistrationService: Handling registration request for device with key '" << deviceKey
               << "'";
@@ -241,6 +257,12 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
 {
     LOG(TRACE) << METHOD_INFO;
 
+    if (deviceKey == m_gatewayKey)
+    {
+        LOG(ERROR) << "SubdeviceRegistrationService: Ignoring registration response for gateway";
+        return;
+    }
+
     std::lock_guard<decltype(m_devicesAwaitingRegistrationResponseMutex)> l(m_devicesAwaitingRegistrationResponseMutex);
     if (m_devicesAwaitingRegistrationResponse.find(deviceKey) == m_devicesAwaitingRegistrationResponse.end())
     {
@@ -261,22 +283,7 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
                    << "' to device repository";
 
         m_deviceRepository.save(device);
-        invokeOnDeviceRegisteredListener(deviceKey, deviceKey == m_gatewayKey);
-
-        std::lock_guard<decltype(m_devicesWithPostponedRegistrationMutex)> devicesWithPostponedRegistrationLock(
-          m_devicesWithPostponedRegistrationMutex);
-        if (device.getKey() == m_gatewayKey && !m_devicesWithPostponedRegistration.empty())
-        {
-            LOG(INFO) << "SubdeviceRegistrationService: Processing postponed device registration requests";
-
-            for (const auto& deviceWithPostponedRegistration : m_devicesWithPostponedRegistration)
-            {
-                handleSubdeviceRegistrationRequest(deviceWithPostponedRegistration.first,
-                                                   *deviceWithPostponedRegistration.second);
-            }
-
-            m_devicesWithPostponedRegistration.clear();
-        }
+        invokeOnDeviceRegisteredListener(deviceKey);
     }
     else
     {
@@ -329,18 +336,15 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
 
     m_devicesAwaitingRegistrationResponse.erase(deviceKey);
 
-    if (deviceKey != m_gatewayKey)
+    // send response to device
+    std::shared_ptr<Message> registrationResponseMessage = m_protocol.makeMessage(deviceKey, response);
+    if (!registrationResponseMessage)
     {
-        // send resopnse to device
-        std::shared_ptr<Message> registrationResponseMessage = m_protocol.makeMessage(deviceKey, response);
-        if (!registrationResponseMessage)
-        {
-            LOG(WARN) << "SubdeviceRegistrationService: Unable to create registration response message";
-            return;
-        }
-
-        m_outboundDeviceMessageHandler.addMessage(registrationResponseMessage);
+        LOG(WARN) << "SubdeviceRegistrationService: Unable to create registration response message";
+        return;
     }
+
+    m_outboundDeviceMessageHandler.addMessage(registrationResponseMessage);
 }
 
 void SubdeviceRegistrationService::addToPostponedSubdeviceRegistrationRequests(
@@ -349,7 +353,7 @@ void SubdeviceRegistrationService::addToPostponedSubdeviceRegistrationRequests(
     LOG(TRACE) << METHOD_INFO;
 
     LOG(INFO) << "SubdeviceRegistrationService: Postponing registration of device with key '" << deviceKey
-              << "'. Waiting for gateway to be registered";
+              << "'. Waiting for gateway to be updated";
 
     std::lock_guard<decltype(m_devicesWithPostponedRegistrationMutex)> l(m_devicesWithPostponedRegistrationMutex);
     auto postponedDeviceRegistration =

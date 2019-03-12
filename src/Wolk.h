@@ -57,6 +57,7 @@ class InboundPlatformMessageHandler;
 class DeviceManager;
 class OutboundServiceDataHandler;
 class DataServiceBase;
+class GatewayUpdateService;
 class SubdeviceRegistrationService;
 class FileDownloadService;
 class FirmwareUpdateService;
@@ -68,7 +69,7 @@ class Wolk
     friend class WolkBuilder;
 
 public:
-    virtual ~Wolk() = default;
+    virtual ~Wolk();
 
     /**
      * @brief Initiates wolkabout::WolkBuilder that configures device to connect to WolkAbout IoT Cloud
@@ -238,9 +239,6 @@ private:
     void connectToPlatform();
     void connectToDevices();
 
-    void routePlatformData(const std::string& protocol, std::shared_ptr<Message> message);
-    void routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message);
-
     void registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol,
                               std::shared_ptr<DataService> dataService = nullptr);
 
@@ -272,6 +270,7 @@ private:
     std::unique_ptr<Persistence> m_gatewayPersistence;
     std::unique_ptr<DataProtocol> m_gatewayDataProtocol;
 
+    std::shared_ptr<GatewayUpdateService> m_gatewayUpdateService;
     std::shared_ptr<SubdeviceRegistrationService> m_subdeviceRegistrationService;
     std::shared_ptr<KeepAliveService> m_keepAliveService;
 

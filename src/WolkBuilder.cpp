@@ -37,6 +37,7 @@
 #include "service/DeviceStatusService.h"
 #include "service/FileDownloadService.h"
 #include "service/FirmwareUpdateService.h"
+#include "service/GatewayUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 #include "service/SubdeviceRegistrationService.h"
@@ -245,6 +246,20 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_configurationProviderLambda = m_configurationProviderLambda;
     wolk->m_configurationProvider = m_configurationProvider;
 
+    // Setup gateway update service
+    wolk->m_gatewayUpdateService = std::make_shared<GatewayUpdateService>(
+      m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher);
+
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_gatewayUpdateService);
+
+    wolk->m_gatewayUpdateService->onGatewayUpdated([&] {
+        wolk->m_keepAliveService->sendPingMessage();
+        if (wolk->m_subdeviceRegistrationService)
+        {
+            wolk->m_subdeviceRegistrationService->registerPostponedDevices();
+        }
+    });
+
     // Setup registration service
     wolk->m_subdeviceRegistrationService = std::make_shared<SubdeviceRegistrationService>(
       m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher,
@@ -253,16 +268,9 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_subdeviceRegistrationService);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_subdeviceRegistrationService);
 
-    wolk->m_subdeviceRegistrationService->onDeviceRegistered([&](const std::string& deviceKey, bool isGateway) {
-        if (isGateway)
-        {
-            wolk->m_keepAliveService->sendPingMessage();
-        }
-        else
-        {
-            wolk->m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
-            wolk->m_existingDevicesRepository->addDeviceKey(deviceKey);
-        }
+    wolk->m_subdeviceRegistrationService->onDeviceRegistered([&](const std::string& deviceKey) {
+        wolk->m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
+        wolk->m_existingDevicesRepository->addDeviceKey(deviceKey);
     });
 
     // Setup device status and keep alive service

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,14 +51,14 @@ public:
 
     const GatewayProtocol& getProtocol() const override;
 
-    void onDeviceRegistered(std::function<void(const std::string& deviceKey, bool isGateway)> onDeviceRegistered);
+    void onDeviceRegistered(std::function<void(const std::string& deviceKey)> onDeviceRegistered);
 
     void deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys);
 
-    void registerDevice(const DetailedDevice& device);
+    void registerPostponedDevices();
 
 protected:
-    void invokeOnDeviceRegisteredListener(const std::string& deviceKey, bool isGateway) const;
+    void invokeOnDeviceRegisteredListener(const std::string& deviceKey) const;
 
 private:
     void handleSubdeviceRegistrationRequest(const std::string& deviceKey, const SubdeviceRegistrationRequest& request);
@@ -80,7 +80,7 @@ private:
 
     OutboundRetryMessageHandler m_platformRetryMessageHandler;
 
-    std::function<void(const std::string& deviceKey, bool isGateway)> m_onDeviceRegistered;
+    std::function<void(const std::string& deviceKey)> m_onDeviceRegistered;
 
     std::recursive_mutex m_devicesAwaitingRegistrationResponseMutex;
     std::map<std::string, std::unique_ptr<DetailedDevice>> m_devicesAwaitingRegistrationResponse;

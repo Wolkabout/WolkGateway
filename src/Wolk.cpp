@@ -24,6 +24,7 @@
 #include "repository/DeviceRepository.h"
 #include "service/DataService.h"
 #include "service/FirmwareUpdateService.h"
+#include "service/GatewayUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 #include "service/SubdeviceRegistrationService.h"
@@ -175,6 +176,8 @@ Wolk::Wolk(Device device) : m_device{device}
     m_commandBuffer = std::unique_ptr<CommandBuffer>(new CommandBuffer());
 }
 
+Wolk::~Wolk() = default;
+
 void Wolk::addToCommandBuffer(std::function<void()> command)
 {
     m_commandBuffer->pushCommand(std::make_shared<std::function<void()>>(command));
@@ -278,14 +281,17 @@ void Wolk::notifyPlatformConnected()
         m_keepAliveService->connected();
     }
 
-    static bool shouldRegister = true;
-    if (shouldRegister && m_subdeviceRegistrationService)
+    static bool shouldUpdate = true;
+    if (shouldUpdate)
     {
         // register gateway upon first connect
-        m_subdeviceRegistrationService->registerDevice(m_device);
-        m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+        m_gatewayUpdateService->updateGateway(m_device);
+        shouldUpdate = false;
 
-        shouldRegister = false;
+        if (m_subdeviceRegistrationService)
+        {
+            m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+        }
     }
 
     requestActuatorStatusesForDevices();

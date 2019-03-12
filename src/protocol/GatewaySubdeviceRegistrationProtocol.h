@@ -29,7 +29,6 @@ class Message;
 class SubdeviceRegistrationRequest;
 class SubdeviceRegistrationResponse;
 class DeviceReregistrationResponse;
-
 class GatewaySubdeviceRegistrationProtocol : public GatewayProtocol
 {
 public:
@@ -53,17 +52,19 @@ public:
     virtual std::unique_ptr<Message> makeDeviceDeletionRequestMessage(const std::string& gatewayKey,
                                                                       const std::string& deviceKey) const = 0;
 
-    virtual std::unique_ptr<SubdeviceRegistrationRequest> makeRegistrationRequest(const Message& message) const = 0;
-    virtual std::unique_ptr<SubdeviceRegistrationResponse> makeRegistrationResponse(const Message& message) const = 0;
+    virtual std::unique_ptr<SubdeviceRegistrationRequest> makeSubdeviceRegistrationRequest(
+      const Message& message) const = 0;
+    virtual std::unique_ptr<SubdeviceRegistrationResponse> makeSubdeviceRegistrationResponse(
+      const Message& message) const = 0;
 
-    virtual bool isRegistrationRequest(const Message& message) const = 0;
-    virtual bool isRegistrationResponse(const Message& message) const = 0;
+    virtual bool isSubdeviceRegistrationRequest(const Message& message) const = 0;
+    virtual bool isSubdeviceRegistrationResponse(const Message& message) const = 0;
 
     virtual bool isReregistrationRequest(const Message& message) const = 0;
     virtual bool isReregistrationResponse(const Message& message) const = 0;
 
-    virtual bool isDeviceDeletionRequest(const Message& message) const = 0;
-    virtual bool isDeviceDeletionResponse(const Message& message) const = 0;
+    virtual bool isSubdeviceDeletionRequest(const Message& message) const = 0;
+    virtual bool isSubdeviceDeletionResponse(const Message& message) const = 0;
 
     virtual std::string getResponseChannel(const Message& message, const std::string& gatewayKey,
                                            const std::string& deviceKey) const = 0;

@@ -189,7 +189,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     wolk->m_statusProtocol = std::unique_ptr<GatewayStatusProtocol>(new JsonGatewayStatusProtocol());
     wolk->m_registrationProtocol =
-      std::unique_ptr<GatewayDeviceRegistrationProtocol>(new JsonGatewaySubdeviceRegistrationProtocol());
+      std::unique_ptr<GatewaySubdeviceRegistrationProtocol>(new JsonGatewaySubdeviceRegistrationProtocol());
     wolk->m_fileDownloadProtocol = std::unique_ptr<GatewayFileDownloadProtocol>(new JsonGatewayWolkDownloadProtocol());
     wolk->m_firmwareUpdateProtocol = std::unique_ptr<GatewayFirmwareUpdateProtocol>(new JsonGatewayDFUProtocol());
 

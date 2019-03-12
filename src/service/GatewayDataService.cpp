@@ -134,11 +134,9 @@ void GatewayDataService::addSensorReading(const std::string& reference, const st
 }
 
 void GatewayDataService::addSensorReading(const std::string& reference, const std::vector<std::string>& values,
-                                          const std::string& delimiter, unsigned long long int rtc)
+                                          unsigned long long int rtc)
 {
     auto sensorReading = std::make_shared<SensorReading>(values, reference, rtc);
-
-    m_sensorDelimiters[reference] = delimiter;
 
     m_persistence.putSensorReading(reference, sensorReading);
 }
@@ -158,12 +156,9 @@ void GatewayDataService::addActuatorStatus(const std::string& reference, const s
     m_persistence.putActuatorStatus(reference, actuatorStatusWithRef);
 }
 
-void GatewayDataService::addConfiguration(const std::vector<ConfigurationItem>& configuration,
-                                          const std::map<std::string, std::string>& delimiters)
+void GatewayDataService::addConfiguration(const std::vector<ConfigurationItem>& configuration)
 {
     auto conf = std::make_shared<std::vector<ConfigurationItem>>(configuration);
-
-    m_configurationDelimiters = delimiters;
 
     m_persistence.putConfiguration(m_deviceKey, conf);
 }

@@ -55,14 +55,13 @@ public:
     void addSensorReading(const std::string& reference, const std::string& value, unsigned long long int rtc);
 
     void addSensorReading(const std::string& reference, const std::vector<std::string>& values,
-                          const std::string& delimiter, unsigned long long int rtc);
+                          unsigned long long int rtc);
 
     void addAlarm(const std::string& reference, bool active, unsigned long long int rtc);
 
     void addActuatorStatus(const std::string& reference, const std::string& value, ActuatorStatus::State state);
 
-    void addConfiguration(const std::vector<ConfigurationItem>& configuration,
-                          const std::map<std::string, std::string>& delimiters);
+    void addConfiguration(const std::vector<ConfigurationItem>& configuration);
 
     void publishSensorReadings();
 

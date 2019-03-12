@@ -37,13 +37,13 @@ class GatewaySubdeviceRegistrationProtocol;
 class Message;
 class OutboundMessageHandler;
 
-class DeviceRegistrationService : public DeviceMessageListener, public PlatformMessageListener
+class SubdeviceRegistrationService : public DeviceMessageListener, public PlatformMessageListener
 {
 public:
-    DeviceRegistrationService(std::string gatewayKey, GatewayDeviceRegistrationProtocol& protocol,
-                              DeviceRepository& deviceRepository,
-                              OutboundMessageHandler& outboundPlatformMessageHandler,
-                              OutboundMessageHandler& outboundDeviceMessageHandler);
+    SubdeviceRegistrationService(std::string gatewayKey, GatewaySubdeviceRegistrationProtocol& protocol,
+                                 DeviceRepository& deviceRepository,
+                                 OutboundMessageHandler& outboundPlatformMessageHandler,
+                                 OutboundMessageHandler& outboundDeviceMessageHandler);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
@@ -67,8 +67,8 @@ private:
     void handleSubdeviceRegistrationResponse(const std::string& deviceKey,
                                              const SubdeviceRegistrationResponse& response);
 
-    void addToPostponedDeviceRegistartionRequests(const std::string& deviceKey,
-                                                  const SubdeviceRegistrationRequest& request);
+    void addToPostponedSubdeviceRegistartionRequests(const std::string& deviceKey,
+                                                     const SubdeviceRegistrationRequest& request);
 
     const std::string m_gatewayKey;
     GatewaySubdeviceRegistrationProtocol& m_protocol;

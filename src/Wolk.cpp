@@ -444,7 +444,7 @@ void Wolk::requestActuatorStatusesForDevice(const std::string& deviceKey)
         return;
     }
 
-    const auto protocol = device->getManifest().getProtocol();
+    const auto protocol = device->getTemplate().getProtocol();
     auto it = m_dataServices.find(protocol);
     if (it != m_dataServices.end())
     {

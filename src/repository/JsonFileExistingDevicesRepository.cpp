@@ -19,6 +19,7 @@
 #include "utilities/json.hpp"
 
 #include <fstream>
+#include <iomanip>
 #include <mutex>
 #include <stdexcept>
 #include <string>

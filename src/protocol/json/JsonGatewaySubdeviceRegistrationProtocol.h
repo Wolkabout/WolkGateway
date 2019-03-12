@@ -56,14 +56,16 @@ public:
     std::unique_ptr<Message> makeDeviceReregistrationRequestForGateway(const std::string& gatewayKey) const override;
     std::unique_ptr<Message> makeDeviceDeletionRequestMessage(const std::string& gatewayKey,
                                                               const std::string& deviceKey) const override;
-    std::unique_ptr<SubdeviceRegistrationRequest> makeRegistrationRequest(const Message& message) const override;
-    std::unique_ptr<SubdeviceRegistrationResponse> makeRegistrationResponse(const Message& message) const override;
-    bool isRegistrationRequest(const Message& message) const override;
-    bool isRegistrationResponse(const Message& message) const override;
+    std::unique_ptr<SubdeviceRegistrationRequest> makeSubdeviceRegistrationRequest(
+      const Message& message) const override;
+    std::unique_ptr<SubdeviceRegistrationResponse> makeSubdeviceRegistrationResponse(
+      const Message& message) const override;
+    bool isSubdeviceRegistrationRequest(const Message& message) const override;
+    bool isSubdeviceRegistrationResponse(const Message& message) const override;
     bool isReregistrationRequest(const Message& message) const override;
     bool isReregistrationResponse(const Message& message) const override;
-    bool isDeviceDeletionRequest(const Message& message) const override;
-    bool isDeviceDeletionResponse(const Message& message) const override;
+    bool isSubdeviceDeletionRequest(const Message& message) const override;
+    bool isSubdeviceDeletionResponse(const Message& message) const override;
 
     std::string getResponseChannel(const Message& message, const std::string& gatewayKey,
                                    const std::string& deviceKey) const override;
@@ -92,7 +94,7 @@ private:
     static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_GATEWAY_NOT_FOUND;
     static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_NOT_A_GATEWAY;
     static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT;
-    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED;
+    static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_MAX_NUMBER_OF_DEVICES_EXCEEDED;
     static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_VALIDATION_ERROR;
     static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_INVALID_DTO;
     static const std::string SUBDEVICE_REGISTRATION_RESPONSE_ERROR_KEY_MISSING;

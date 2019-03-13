@@ -364,17 +364,25 @@ void Wolk::connectToDevices()
 
 void Wolk::requestActuatorStatusesForDevices()
 {
-    auto keys = m_deviceRepository->findAllDeviceKeys();
-    if (keys)
+    if (m_device.getSubdeviceManagement().value() == SubdeviceManagent::GATEWAY)
     {
-        for (const auto& key : *keys)
+        auto keys = m_deviceRepository->findAllDeviceKeys();
+        if (keys)
         {
-            if (key == m_device.getKey())
+            for (const auto& key : *keys)
             {
-                continue;
+                if (key == m_device.getKey())
+                {
+                    continue;
+                }
+                requestActuatorStatusesForDevice(key);
             }
-            requestActuatorStatusesForDevice(key);
         }
+    }
+    else
+    {
+        std::lock_guard<decltype(m_lock)> lg{m_lock};
+        m_dataService->requestActuatorStatusesForAllDevices();
     }
 }
 

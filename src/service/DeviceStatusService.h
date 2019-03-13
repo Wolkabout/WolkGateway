@@ -41,7 +41,7 @@ class DeviceStatusService : public DeviceMessageListener,
                             public ConnectionStatusListener
 {
 public:
-    DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol, DeviceRepository& deviceRepository,
+    DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol, DeviceRepository* deviceRepository,
                         OutboundMessageHandler& outboundPlatformMessageHandler,
                         OutboundMessageHandler& outboundDeviceMessageHandler,
                         std::chrono::seconds statusRequestInterval);
@@ -65,6 +65,7 @@ private:
     void validateDevicesStatus();
 
     void sendStatusRequestForDevice(const std::string& deviceKey);
+    void sendStatusRequestForAllDevices();
     void sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus status);
 
     bool containsDeviceStatus(const std::string& deviceKey);
@@ -74,7 +75,7 @@ private:
     const std::string m_gatewayKey;
     GatewayStatusProtocol& m_protocol;
 
-    DeviceRepository& m_deviceRepository;
+    DeviceRepository* m_deviceRepository;
 
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;

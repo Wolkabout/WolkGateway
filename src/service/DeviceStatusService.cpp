@@ -31,7 +31,7 @@ const std::chrono::seconds STATUS_RESPONSE_TIMEOUT{5};
 namespace wolkabout
 {
 DeviceStatusService::DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol,
-                                         DeviceRepository& deviceRepository,
+                                         DeviceRepository* deviceRepository,
                                          OutboundMessageHandler& outboundPlatformMessageHandler,
                                          OutboundMessageHandler& outboundDeviceMessageHandler,
                                          std::chrono::seconds statusRequestInterval)
@@ -194,25 +194,37 @@ void DeviceStatusService::routePlatformMessage(std::shared_ptr<Message> message)
 
 void DeviceStatusService::requestDevicesStatus()
 {
-    auto keys = m_deviceRepository.findAllDeviceKeys();
-
-    for (const auto& key : *keys)
+    if (m_deviceRepository)
     {
-        if (key == m_gatewayKey)
+        auto keys = m_deviceRepository->findAllDeviceKeys();
+
+        for (const auto& key : *keys)
         {
-            continue;
+            if (key == m_gatewayKey)
+            {
+                continue;
+            }
+
+            sendStatusRequestForDevice(key);
         }
 
-        sendStatusRequestForDevice(key);
+        m_responseTimer.start(std::chrono::duration_cast<std::chrono::milliseconds>(m_statusResponseInterval),
+                              [=] { validateDevicesStatus(); });
     }
-
-    m_responseTimer.start(std::chrono::duration_cast<std::chrono::milliseconds>(m_statusResponseInterval),
-                          [=] { validateDevicesStatus(); });
+    else
+    {
+        sendStatusRequestForAllDevices();
+    }
 }
 
 void DeviceStatusService::validateDevicesStatus()
 {
-    auto keys = m_deviceRepository.findAllDeviceKeys();
+    if (!m_deviceRepository)
+    {
+        return;
+    }
+
+    auto keys = m_deviceRepository->findAllDeviceKeys();
 
     for (const auto& key : *keys)
     {
@@ -252,6 +264,18 @@ void DeviceStatusService::sendStatusRequestForDevice(const std::string& deviceKe
     if (!message)
     {
         LOG(WARN) << "Failed to create status request message for device: " << deviceKey;
+        return;
+    }
+
+    m_outboundDeviceMessageHandler.addMessage(message);
+}
+
+void DeviceStatusService::sendStatusRequestForAllDevices()
+{
+    std::shared_ptr<Message> message = m_protocol.makeDeviceStatusRequestMessage("");
+    if (!message)
+    {
+        LOG(WARN) << "Failed to create status request message for all devices";
         return;
     }
 

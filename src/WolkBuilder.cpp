@@ -276,9 +276,18 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_registrationMessageRouter);
 
     // Setup device status and keep alive service
-    wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
-      m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher,
-      *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL);
+    if (m_device.getSubdeviceManagement().value() == SubdeviceManagent::GATEWAY)
+    {
+        wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
+          m_device.getKey(), *wolk->m_statusProtocol, wolk->m_deviceRepository.get(), *wolk->m_platformPublisher,
+          *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL);
+    }
+    else
+    {
+        wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
+          m_device.getKey(), *wolk->m_statusProtocol, nullptr, *wolk->m_platformPublisher, *wolk->m_devicePublisher,
+          Wolk::KEEP_ALIVE_INTERVAL);
+    }
 
     if (m_keepAliveEnabled)
     {
@@ -293,9 +302,17 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_statusMessageRouter);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
 
-    wolk->m_dataService =
-      std::make_shared<DataService>(m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_deviceRepository,
-                                    *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+    if (m_device.getSubdeviceManagement().value() == SubdeviceManagent::GATEWAY)
+    {
+        wolk->m_dataService =
+          std::make_shared<DataService>(m_device.getKey(), *wolk->m_dataProtocol, wolk->m_deviceRepository.get(),
+                                        *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+    }
+    else
+    {
+        wolk->m_dataService = std::make_shared<DataService>(m_device.getKey(), *wolk->m_dataProtocol, nullptr,
+                                                            *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+    }
 
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_dataService);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_dataService);

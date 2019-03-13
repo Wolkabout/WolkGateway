@@ -17,6 +17,7 @@
 #include "WolkBuilder.h"
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
+#include "RegistrationMessageRouter.h"
 #include "StatusMessageRouter.h"
 #include "Wolk.h"
 #include "connectivity/ConnectivityService.h"
@@ -290,6 +291,17 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_statusMessageRouter);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
+
+    // Setup gateway update service
+    wolk->m_gatewayUpdateService = std::make_shared<GatewayUpdateService>(
+      m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher);
+
+    wolk->m_registrationMessageRouter = std::make_shared<RegistrationMessageRouter>(
+      *wolk->m_registrationProtocol, wolk->m_gatewayUpdateService.get(), wolk->m_subdeviceRegistrationService.get(),
+      wolk->m_subdeviceRegistrationService.get(), wolk->m_subdeviceRegistrationService.get());
+
+    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_registrationMessageRouter);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_registrationMessageRouter);
 
     // setup gateway data service if gateway template is not empty
     const auto gwTemplate = m_device.getTemplate();

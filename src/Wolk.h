@@ -63,6 +63,7 @@ class FileDownloadService;
 class FirmwareUpdateService;
 class KeepAliveService;
 class StatusMessageRouter;
+class RegistrationMessageRouter;
 
 class Wolk
 {
@@ -272,6 +273,7 @@ private:
 
     std::shared_ptr<GatewayUpdateService> m_gatewayUpdateService;
     std::shared_ptr<SubdeviceRegistrationService> m_subdeviceRegistrationService;
+    std::shared_ptr<RegistrationMessageRouter> m_registrationMessageRouter;
     std::shared_ptr<KeepAliveService> m_keepAliveService;
 
     std::shared_ptr<DeviceStatusService> m_deviceStatusService;

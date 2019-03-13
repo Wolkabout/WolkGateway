@@ -368,6 +368,13 @@ bool JsonGatewaySubdeviceRegistrationProtocol::isGatewayUpdateResponse(const Mes
     return StringUtils::startsWith(message.getChannel(), GATEWAY_UPDATE_RESPONSE_TOPIC_ROOT);
 }
 
+bool JsonGatewaySubdeviceRegistrationProtocol::isGatewayUpdateRequest(const Message& message) const
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    return StringUtils::startsWith(message.getChannel(), GATEWAY_UPDATE_REQUEST_TOPIC_ROOT);
+}
+
 std::string JsonGatewaySubdeviceRegistrationProtocol::getResponseChannel(const Message& message,
                                                                          const std::string& gatewayKey,
                                                                          const std::string& deviceKey) const
@@ -397,6 +404,10 @@ std::string JsonGatewaySubdeviceRegistrationProtocol::getResponseChannel(const M
             return SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
                    DEVICE_PATH_PREFIX + deviceKey;
         }
+    }
+    else if (isGatewayUpdateRequest(message))
+    {
+        return GATEWAY_UPDATE_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
     }
 
     return "";

@@ -58,6 +58,7 @@ public:
     virtual bool isSubdeviceRegistrationResponse(const Message& message) const = 0;
 
     virtual bool isGatewayUpdateResponse(const Message& message) const = 0;
+    virtual bool isGatewayUpdateRequest(const Message& message) const = 0;
 
     virtual bool isSubdeviceDeletionRequest(const Message& message) const = 0;
     virtual bool isSubdeviceDeletionResponse(const Message& message) const = 0;

@@ -62,6 +62,7 @@ public:
     bool isSubdeviceRegistrationRequest(const Message& message) const override;
     bool isSubdeviceRegistrationResponse(const Message& message) const override;
     bool isGatewayUpdateResponse(const Message& message) const override;
+    bool isGatewayUpdateRequest(const Message& message) const override;
     bool isSubdeviceDeletionRequest(const Message& message) const override;
     bool isSubdeviceDeletionResponse(const Message& message) const override;
 

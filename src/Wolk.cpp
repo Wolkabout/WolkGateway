@@ -364,7 +364,7 @@ void Wolk::connectToDevices()
 
 void Wolk::requestActuatorStatusesForDevices()
 {
-    if (m_device.getSubdeviceManagement().value() == SubdeviceManagent::GATEWAY)
+    if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
         auto keys = m_deviceRepository->findAllDeviceKeys();
         if (keys)

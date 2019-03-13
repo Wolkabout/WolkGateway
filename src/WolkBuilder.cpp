@@ -255,7 +255,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         }
     });
 
-    if (m_device.getSubdeviceManagement().value() == SubdeviceManagent::GATEWAY)
+    if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
         // Setup registration service
         wolk->m_subdeviceRegistrationService = std::make_shared<SubdeviceRegistrationService>(
@@ -276,7 +276,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_registrationMessageRouter);
 
     // Setup device status and keep alive service
-    if (m_device.getSubdeviceManagement().value() == SubdeviceManagent::GATEWAY)
+    if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
         wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
           m_device.getKey(), *wolk->m_statusProtocol, wolk->m_deviceRepository.get(), *wolk->m_platformPublisher,
@@ -302,7 +302,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_statusMessageRouter);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
 
-    if (m_device.getSubdeviceManagement().value() == SubdeviceManagent::GATEWAY)
+    if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
         wolk->m_dataService =
           std::make_shared<DataService>(m_device.getKey(), *wolk->m_dataProtocol, wolk->m_deviceRepository.get(),

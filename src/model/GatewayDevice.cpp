@@ -28,7 +28,7 @@ const std::string GatewayDevice::FIRMWARE_UPDATE_PARAMETER = "supportsFirmwareUp
 const std::string GatewayDevice::FILE_DOWNLOAD_PARAMETER = "supportsFileDownload";
 const std::string GatewayDevice::FILE_URL_PARAMETER = "supportsFileURL";
 
-GatewayDevice::GatewayDevice(std::string key, std::string password, SubdeviceManagent subdeviceManagent,
+GatewayDevice::GatewayDevice(std::string key, std::string password, SubdeviceManagement subdeviceManagent,
                              bool firmwareUpdateEnabled, bool urlDownloadEnabled)
 : DetailedDevice{
     "", std::move(key), std::move(password),
@@ -52,21 +52,21 @@ GatewayDevice::GatewayDevice(std::string key, std::string password, DeviceTempla
 {
 }
 
-WolkOptional<SubdeviceManagent> GatewayDevice::getSubdeviceManagement() const
+WolkOptional<SubdeviceManagement> GatewayDevice::getSubdeviceManagement() const
 {
     auto it = m_deviceTemplate.getTypeParameters().find(SUBDEVICE_MANAGEMENT_PARAMETER);
     if (it != m_deviceTemplate.getTypeParameters().end())
     {
         if (it->second == GATEWAY_SUBDEVICE_MANAGEMENT)
         {
-            return WolkOptional<SubdeviceManagent>(SubdeviceManagent::GATEWAY);
+            return WolkOptional<SubdeviceManagement>(SubdeviceManagement::GATEWAY);
         }
         else if (it->second == PLATFORM_SUBDEVICE_MANAGEMENT)
         {
-            return WolkOptional<SubdeviceManagent>(SubdeviceManagent::PLATFORM);
+            return WolkOptional<SubdeviceManagement>(SubdeviceManagement::PLATFORM);
         }
     }
 
-    return WolkOptional<SubdeviceManagent>();
+    return WolkOptional<SubdeviceManagement>();
 }
 }    // namespace wolkabout

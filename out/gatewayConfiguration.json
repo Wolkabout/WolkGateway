@@ -7,5 +7,7 @@
     "platformMqttUri": "ssl://api-demo.wolkabout.com:8883",
     "localMqttUri": "tcp://localhost:1883",
 
-    "platformTrustStore": "ca.crt"
+    "platformTrustStore": "ca.crt",
+
+    "subdeviceManagement": "gateway"
 }

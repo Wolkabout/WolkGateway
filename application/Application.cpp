@@ -92,7 +92,7 @@ int main(int argc, char** argv)
     }
 
     wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
-                                    wolkabout::SubdeviceManagent::GATEWAY);
+                                    gatewayConfiguration.getSubdeviceManagement());
     auto builder = wolkabout::Wolk::newBuilder(device)
                      .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                      .platformHost(gatewayConfiguration.getPlatformMqttUri());

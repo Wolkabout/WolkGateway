@@ -18,26 +18,21 @@
 #define GATEWAYDEVICE_H
 
 #include "model/DetailedDevice.h"
+#include "model/SubdeviceManagement.h"
 #include "model/WolkOptional.h"
 
 #include <string>
 
 namespace wolkabout
 {
-enum class SubdeviceManagent : bool
-{
-    GATEWAY = true,
-    PLATFORM = false
-};
-
 class GatewayDevice : public DetailedDevice
 {
 public:
-    GatewayDevice(std::string key, std::string password, SubdeviceManagent subdeviceManagent,
+    GatewayDevice(std::string key, std::string password, SubdeviceManagement subdeviceManagent,
                   bool firmwareUpdateEnabled = false, bool urlDownloadEnabled = false);
     GatewayDevice(std::string key, std::string password, DeviceTemplate deviceTemplate);
 
-    WolkOptional<SubdeviceManagent> getSubdeviceManagement() const;
+    WolkOptional<SubdeviceManagement> getSubdeviceManagement() const;
 
 private:
     static const std::string FIRMWARE_UPDATE_TYPE;

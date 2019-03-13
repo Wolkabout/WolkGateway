@@ -1,5 +1,5 @@
 #include "OutboundMessageHandler.h"
-#include "model/Device.h"
+#include "model/GatewayDevice.h"
 #include "model/Message.h"
 #include "model/SubdeviceRegistrationRequest.h"
 #include "model/SubdeviceRegistrationResponse.h"

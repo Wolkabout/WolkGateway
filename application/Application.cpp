@@ -91,12 +91,9 @@ int main(int argc, char** argv)
         }
     }
 
-    auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
-
-    wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
-                             dataProtocol->getName());
+    wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
+                                    wolkabout::SubdeviceManagent::GATEWAY);
     auto builder = wolkabout::Wolk::newBuilder(device)
-                     .withDataProtocol(std::move(dataProtocol))
                      .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                      .platformHost(gatewayConfiguration.getPlatformMqttUri());
 

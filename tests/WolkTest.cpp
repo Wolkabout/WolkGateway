@@ -78,7 +78,7 @@ public:
         deviceConnectivityService = new MockConnectivityService();
 
         wolk = std::unique_ptr<wolkabout::Wolk>(
-          new wolkabout::Wolk(wolkabout::Device{GATEWAY_KEY, "password", "JsonProtocol"}));
+          new wolkabout::Wolk(wolkabout::GatewayDevice{GATEWAY_KEY, "password", "JsonProtocol"}));
         wolk->m_platformConnectivityService.reset(platformConnectivityService);
         wolk->m_deviceConnectivityService.reset(deviceConnectivityService);
         wolk->m_platformPublisher.reset(new Publisher(*platformConnectivityService, nullptr));

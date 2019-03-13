@@ -45,7 +45,7 @@ namespace wolkabout
 {
 const constexpr std::chrono::seconds Wolk::KEEP_ALIVE_INTERVAL;
 
-WolkBuilder Wolk::newBuilder(Device device)
+WolkBuilder Wolk::newBuilder(GatewayDevice device)
 {
     return WolkBuilder(device);
 }
@@ -171,7 +171,7 @@ void Wolk::publish()
     });
 }
 
-Wolk::Wolk(Device device) : m_device{device}
+Wolk::Wolk(GatewayDevice device) : m_device{device}
 {
     m_commandBuffer = std::unique_ptr<CommandBuffer>(new CommandBuffer());
 }
@@ -360,22 +360,6 @@ void Wolk::connectToDevices()
             connectToDevices();
         }
     });
-}
-
-void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol, std::shared_ptr<DataService> dataService)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    if (!dataService)
-    {
-        dataService = std::make_shared<DataService>(m_device.getKey(), *protocol, *m_deviceRepository,
-                                                    *m_platformPublisher, *m_devicePublisher);
-    }
-
-    m_dataService = dataService;
-
-    m_inboundDeviceMessageHandler->addListener(dataService);
-    m_inboundPlatformMessageHandler->addListener(dataService);
 }
 
 void Wolk::requestActuatorStatusesForDevices()

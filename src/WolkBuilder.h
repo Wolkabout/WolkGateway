@@ -23,7 +23,7 @@
 #include "ConfigurationProvider.h"
 #include "FirmwareInstaller.h"
 #include "connectivity/ConnectivityService.h"
-#include "model/Device.h"
+#include "model/GatewayDevice.h"
 #include "service/UrlFileDownloader.h"
 
 #include <cstdint>
@@ -43,7 +43,7 @@ public:
      * @brief WolkBuilder Initiates wolkabout::Wolk builder
      * @param device Device for which wolkabout::WolkBuilder is instantiated
      */
-    WolkBuilder(Device device);
+    WolkBuilder(GatewayDevice device);
 
     /**
      * @brief Allows passing of URI to custom WolkAbout IoT platform instance
@@ -126,13 +126,6 @@ public:
     WolkBuilder& configurationProvider(std::shared_ptr<ConfigurationProvider> configurationProvider);
 
     /**
-     * @brief withDataProtocol Defines which data protocol to use
-     * @tparam Protocol protocol type to register
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& withDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol);
-
-    /**
      * @brief withFirmwareUpdate Enables firmware update for gateway
      * @param firmwareVersion Current version of the firmware
      * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
@@ -173,7 +166,7 @@ private:
     std::string m_platformHost;
     std::string m_platformTrustStore = TRUST_STORE;
     std::string m_gatewayHost;
-    Device m_device;
+    GatewayDevice m_device;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;
     std::shared_ptr<ActuationHandler> m_actuationHandler;
@@ -186,8 +179,6 @@ private:
 
     std::function<std::vector<ConfigurationItem>()> m_configurationProviderLambda;
     std::shared_ptr<ConfigurationProvider> m_configurationProvider;
-
-    std::shared_ptr<GatewayDataProtocol> m_dataProtocol;
 
     std::string m_firmwareVersion;
     std::string m_firmwareDownloadDirectory = "";

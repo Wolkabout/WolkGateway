@@ -381,7 +381,8 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         statement << "SELECT firmware_update_protocol FROM device_template WHERE id=?;", useRef(deviceTemplateId),
           into(firmwareUpdateProtocol), now;
 
-        auto deviceTemplate = std::unique_ptr<DeviceTemplate>(new DeviceTemplate(firmwareUpdateProtocol));
+        auto deviceTemplate =
+          std::unique_ptr<DeviceTemplate>(new DeviceTemplate({}, {}, {}, {}, firmwareUpdateProtocol));
 
         // Alarm templates
         std::string alarmReference;

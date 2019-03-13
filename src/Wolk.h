@@ -23,7 +23,7 @@
 #include "ConfigurationProvider.h"
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "WolkBuilder.h"
-#include "model/Device.h"
+#include "model/GatewayDevice.h"
 #include "persistence/inmemory/InMemoryPersistence.h"
 #include "protocol/DataProtocol.h"
 #include "protocol/GatewayDataProtocol.h"
@@ -77,7 +77,7 @@ public:
      * @param device wolkabout::Device
      * @return wolkabout::WolkBuilder instance
      */
-    static WolkBuilder newBuilder(Device device);
+    static WolkBuilder newBuilder(GatewayDevice device);
 
     /**
      * @brief connect Establishes connection with WolkAbout IoT platform
@@ -213,7 +213,7 @@ public:
 private:
     static const constexpr std::chrono::seconds KEEP_ALIVE_INTERVAL{600};
 
-    Wolk(Device device);
+    Wolk(GatewayDevice device);
 
     void addToCommandBuffer(std::function<void()> command);
 
@@ -240,13 +240,10 @@ private:
     void connectToPlatform();
     void connectToDevices();
 
-    void registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol,
-                              std::shared_ptr<DataService> dataService = nullptr);
-
     void requestActuatorStatusesForDevices();
     void requestActuatorStatusesForDevice(const std::string& deviceKey);
 
-    Device m_device;
+    GatewayDevice m_device;
 
     std::unique_ptr<GatewayStatusProtocol> m_statusProtocol;
     std::unique_ptr<GatewaySubdeviceRegistrationProtocol> m_registrationProtocol;
@@ -266,6 +263,7 @@ private:
     std::unique_ptr<PublishingService> m_devicePublisher;
 
     std::shared_ptr<DataService> m_dataService;
+    std::unique_ptr<GatewayDataProtocol> m_dataProtocol;
 
     std::unique_ptr<GatewayDataService> m_gatewayDataService;
     std::unique_ptr<Persistence> m_gatewayPersistence;

@@ -57,20 +57,20 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
 
     // Actuator template
     statement << "CREATE TABLE IF NOT EXISTS actuator_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-                 "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, data_type TEXT, "
+                 "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, "
                  "minimum REAL, maximum REAL, device_template_id INTEGER, "
                  "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
     // Sensor template
     statement << "CREATE TABLE IF NOT EXISTS sensor_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-                 "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, data_type TEXT, "
+                 "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, "
                  "minimum REAL, maximum REAL, device_template_id INTEGER, "
                  "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
     // Configuration template
     statement << "CREATE TABLE IF NOT EXISTS configuration_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
                  "reference TEXT, name TEXT, description TEXT, "
-                 "data_type TEXT, minimum REAL, maximum REAL, "
+                 "minimum REAL, maximum REAL, "
                  "default_value TEXT, device_template_id INTEGER, "
                  "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
@@ -163,95 +163,40 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
         // Actuator templates
         for (const wolkabout::ActuatorTemplate& actuatorTemplate : device.getTemplate().getActuators())
         {
-            const auto dataType = [&]() -> std::string {
-                if (actuatorTemplate.getDataType() == DataType::BOOLEAN)
-                {
-                    return "BOOLEAN";
-                }
-                else if (actuatorTemplate.getDataType() == DataType::NUMERIC)
-                {
-                    return "NUMERIC";
-                }
-                else if (actuatorTemplate.getDataType() == DataType::STRING)
-                {
-                    return "STRING";
-                }
-
-                return "";
-            }();
-
-            const auto minimum = actuatorTemplate.getMinimum();
-            const auto maximum = actuatorTemplate.getMaximum();
-            statement
-              << "INSERT INTO actuator_template(reference, name, description, unit_symbol, reading_type, data_type, "
-                 "minimum, maximum, device_template_id) "
-                 "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);",
+            const double minimum = actuatorTemplate.getMinimum();
+            const double maximum = actuatorTemplate.getMaximum();
+            statement << "INSERT INTO actuator_template(reference, name, description, unit_symbol, reading_type, "
+                         "minimum, maximum, device_template_id) "
+                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
               useRef(actuatorTemplate.getReference()), useRef(actuatorTemplate.getName()),
               useRef(actuatorTemplate.getDescription()), useRef(actuatorTemplate.getUnitSymbol()),
-              useRef(actuatorTemplate.getReadingTypeName()), bind(dataType), bind(minimum), bind(maximum),
-              useRef(deviceTemplateId);
+              useRef(actuatorTemplate.getReadingTypeName()), bind(minimum), bind(maximum), useRef(deviceTemplateId);
         }
 
         // Sensor templates
         for (const wolkabout::SensorTemplate& sensorTemplate : device.getTemplate().getSensors())
         {
-            const auto dataType = [&]() -> std::string {
-                if (sensorTemplate.getDataType() == DataType::BOOLEAN)
-                {
-                    return "BOOLEAN";
-                }
-                else if (sensorTemplate.getDataType() == DataType::NUMERIC)
-                {
-                    return "NUMERIC";
-                }
-                else if (sensorTemplate.getDataType() == DataType::STRING)
-                {
-                    return "STRING";
-                }
-
-                return "";
-            }();
-
-            const auto minimum = sensorTemplate.getMinimum();
-            const auto maximum = sensorTemplate.getMaximum();
-            statement
-              << "INSERT INTO sensor_template(reference, name, description, unit_symbol, reading_type, data_type, "
-                 "minimum, maximum, device_template_id) "
-                 "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);",
+            const double minimum = sensorTemplate.getMinimum();
+            const double maximum = sensorTemplate.getMaximum();
+            statement << "INSERT INTO sensor_template(reference, name, description, unit_symbol, reading_type, "
+                         "minimum, maximum, device_template_id) "
+                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
               useRef(sensorTemplate.getReference()), useRef(sensorTemplate.getName()),
               useRef(sensorTemplate.getDescription()), useRef(sensorTemplate.getUnitSymbol()),
-              useRef(sensorTemplate.getReadingTypeName()), bind(dataType), bind(minimum), bind(maximum),
-              useRef(deviceTemplateId);
+              useRef(sensorTemplate.getReadingTypeName()), bind(minimum), bind(maximum), useRef(deviceTemplateId);
         }
 
         // Configuration templates
         for (const wolkabout::ConfigurationTemplate& configurationTemplate : device.getTemplate().getConfigurations())
         {
-            const auto dataType = [&]() -> std::string {
-                if (configurationTemplate.getDataType() == DataType::BOOLEAN)
-                {
-                    return "BOOLEAN";
-                }
-                else if (configurationTemplate.getDataType() == DataType::NUMERIC)
-                {
-                    return "NUMERIC";
-                }
-                else if (configurationTemplate.getDataType() == DataType::STRING)
-                {
-                    return "STRING";
-                }
+            const double minimum = configurationTemplate.getMinimum();
+            const double maximum = configurationTemplate.getMaximum();
 
-                return "";
-            }();
-
-            const auto minimum = configurationTemplate.getMinimum();
-            const auto maximum = configurationTemplate.getMaximum();
-
-            statement << "INSERT INTO configuration_template(reference, name, description, data_type, minimum, "
+            statement << "INSERT INTO configuration_template(reference, name, description, minimum, "
                          "maximum, default_value, device_template_id)"
-                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
               useRef(configurationTemplate.getReference()), useRef(configurationTemplate.getName()),
-              useRef(configurationTemplate.getDescription()), bind(dataType), bind(minimum), bind(maximum),
+              useRef(configurationTemplate.getDescription()), bind(minimum), bind(maximum),
               useRef(configurationTemplate.getDefaultValue()), useRef(deviceTemplateId);
 
             for (const std::string& label : configurationTemplate.getLabels())
@@ -408,16 +353,15 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         std::string actuatorDescription;
         std::string actuatorUnitSymbol;
         std::string actuatorReadingType;
-        std::string actuatorDataTypeStr;
         double actuatorMinimum;
         double actuatorMaximum;
         statement.reset(*m_session);
-        statement << "SELECT reference, name, description, unit_symbol, reading_type, data_type, "
+        statement << "SELECT reference, name, description, unit_symbol, reading_type, "
                      "minimum, maximum "
                      "FROM actuator_template WHERE device_template_id=?;",
           useRef(deviceTemplateId), into(actuatorReference), into(actuatorName), into(actuatorDescription),
-          into(actuatorUnitSymbol), into(actuatorReadingType), into(actuatorDataTypeStr), into(actuatorMinimum),
-          into(actuatorMaximum), range(0, 1);
+          into(actuatorUnitSymbol), into(actuatorReadingType), into(actuatorMinimum), into(actuatorMaximum),
+          range(0, 1);
 
         while (!statement.done())
         {
@@ -426,26 +370,9 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
                 break;
             }
 
-            const auto actuatorDataType = [&]() -> DataType {
-                if (actuatorDataTypeStr == "BOOLEAN")
-                {
-                    return DataType::BOOLEAN;
-                }
-                else if (actuatorDataTypeStr == "NUMERIC")
-                {
-                    return DataType::NUMERIC;
-                }
-                else if (actuatorDataTypeStr == "STRING")
-                {
-                    return DataType::STRING;
-                }
-
-                return DataType::STRING;
-            }();
-
             deviceTemplate->addActuator(ActuatorTemplate(actuatorName, actuatorReference, actuatorReadingType,
-                                                         actuatorUnitSymbol, actuatorDataType, actuatorDescription,
-                                                         actuatorMinimum, actuatorMaximum));
+                                                         actuatorUnitSymbol, actuatorDescription, actuatorMinimum,
+                                                         actuatorMaximum));
         }
 
         // Sensor templates
@@ -454,16 +381,14 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         std::string sensorDescription;
         std::string sensorUnitSymbol;
         std::string sensorReadingType;
-        std::string sensorDataTypeStr;
         double sensorMinimum;
         double sensorMaximum;
         statement.reset(*m_session);
-        statement << "SELECT reference, name, description, unit_symbol, reading_type, data_type, "
+        statement << "SELECT reference, name, description, unit_symbol, reading_type, "
                      "minimum, maximum "
                      "FROM sensor_template WHERE device_template_id=?;",
           useRef(deviceTemplateId), into(sensorReference), into(sensorName), into(sensorDescription),
-          into(sensorUnitSymbol), into(sensorReadingType), into(sensorDataTypeStr), into(sensorMinimum),
-          into(sensorMaximum), range(0, 1);
+          into(sensorUnitSymbol), into(sensorReadingType), into(sensorMinimum), into(sensorMaximum), range(0, 1);
 
         while (!statement.done())
         {
@@ -472,25 +397,8 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
                 break;
             }
 
-            const auto sensorDataType = [&]() -> DataType {
-                if (sensorDataTypeStr == "BOOLEAN")
-                {
-                    return DataType::BOOLEAN;
-                }
-                else if (sensorDataTypeStr == "NUMERIC")
-                {
-                    return DataType::NUMERIC;
-                }
-                else if (sensorDataTypeStr == "STRING")
-                {
-                    return DataType::STRING;
-                }
-
-                return DataType::STRING;
-            }();
-
             deviceTemplate->addSensor(SensorTemplate(sensorName, sensorReference, sensorReadingType, sensorUnitSymbol,
-                                                     sensorDataType, sensorDescription, sensorMinimum, sensorMaximum));
+                                                     sensorDescription, sensorMinimum, sensorMaximum));
         }
 
         // Configuration templates
@@ -498,16 +406,15 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         std::string configurationReference;
         std::string configurationName;
         std::string configurationDescription;
-        std::string configurationDataTypeStr;
         double configurationMinimum;
         double configurationMaximum;
         std::string configurationDefaultValue;
         statement.reset(*m_session);
-        statement << "SELECT id, reference, name, description, data_type, minimum, maximum, default_value"
+        statement << "SELECT id, reference, name, description, minimum, maximum, default_value"
                      " FROM configuration_template WHERE device_template_id=?;",
           useRef(deviceTemplateId), into(configurationTemplateId), into(configurationReference),
-          into(configurationName), into(configurationDescription), into(configurationDataTypeStr),
-          into(configurationMinimum), into(configurationMaximum), into(configurationDefaultValue), range(0, 1);
+          into(configurationName), into(configurationDescription), into(configurationMinimum),
+          into(configurationMaximum), into(configurationDefaultValue), range(0, 1);
 
         while (!statement.done())
         {
@@ -516,31 +423,14 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
                 break;
             }
 
-            const auto configurationDataType = [&]() -> DataType {
-                if (configurationDataTypeStr == "STRING")
-                {
-                    return DataType::STRING;
-                }
-                else if (configurationDataTypeStr == "BOOLEAN")
-                {
-                    return DataType::BOOLEAN;
-                }
-                else if (configurationDataTypeStr == "NUMERIC")
-                {
-                    return DataType::NUMERIC;
-                }
-
-                return DataType::STRING;
-            }();
-
             std::vector<std::string> labels;
             Statement selectLabelsStatement(*m_session);
             selectLabelsStatement << "SELECT label FROM configuration_label WHERE configuration_template_id=?;",
               bind(configurationTemplateId), into(labels), now;
 
-            deviceTemplate->addConfiguration(ConfigurationTemplate(
-              configurationName, configurationReference, configurationDataType, configurationDescription,
-              configurationDefaultValue, labels, configurationMinimum, configurationMaximum));
+            deviceTemplate->addConfiguration(ConfigurationTemplate(configurationName, configurationReference,
+                                                                   configurationDescription, configurationDefaultValue,
+                                                                   labels, configurationMinimum, configurationMaximum));
         }
 
         // Type parameters
@@ -673,26 +563,8 @@ std::string SQLiteDeviceRepository::calculateSha256(const ActuatorTemplate& actu
     digestEngine.update(actuatorTemplate.getDescription());
     digestEngine.update(actuatorTemplate.getUnitSymbol());
     digestEngine.update(actuatorTemplate.getReadingTypeName());
-    digestEngine.update(std::to_string(actuatorTemplate.getMinimum()));
-    digestEngine.update(std::to_string(actuatorTemplate.getMaximum()));
-
-    digestEngine.update([&]() -> std::string {
-        if (actuatorTemplate.getDataType() == wolkabout::DataType::BOOLEAN)
-        {
-            return "B";
-        }
-        else if (actuatorTemplate.getDataType() == wolkabout::DataType::NUMERIC)
-        {
-            return "N";
-        }
-        else if (actuatorTemplate.getDataType() == wolkabout::DataType::STRING)
-        {
-            return "S";
-        }
-
-        poco_assert(false);
-        return "";
-    }());
+    digestEngine.update(std::to_string(actuatorTemplate.getMinimum().value()));
+    digestEngine.update(std::to_string(actuatorTemplate.getMaximum().value()));
 
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
@@ -705,26 +577,8 @@ std::string SQLiteDeviceRepository::calculateSha256(const SensorTemplate& sensor
     digestEngine.update(sensorTemplate.getDescription());
     digestEngine.update(sensorTemplate.getUnitSymbol());
     digestEngine.update(sensorTemplate.getReadingTypeName());
-    digestEngine.update(std::to_string(sensorTemplate.getMinimum()));
-    digestEngine.update(std::to_string(sensorTemplate.getMaximum()));
-
-    digestEngine.update([&]() -> std::string {
-        if (sensorTemplate.getDataType() == wolkabout::DataType::BOOLEAN)
-        {
-            return "B";
-        }
-        else if (sensorTemplate.getDataType() == wolkabout::DataType::NUMERIC)
-        {
-            return "N";
-        }
-        else if (sensorTemplate.getDataType() == wolkabout::DataType::STRING)
-        {
-            return "S";
-        }
-
-        poco_assert(false);
-        return "";
-    }());
+    digestEngine.update(std::to_string(sensorTemplate.getMinimum().value()));
+    digestEngine.update(std::to_string(sensorTemplate.getMaximum().value()));
 
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
@@ -735,27 +589,9 @@ std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationTemplate&
     digestEngine.update(configurationTemplate.getName());
     digestEngine.update(configurationTemplate.getReference());
     digestEngine.update(configurationTemplate.getDescription());
-    digestEngine.update(std::to_string(configurationTemplate.getMinimum()));
-    digestEngine.update(std::to_string(configurationTemplate.getMaximum()));
+    digestEngine.update(std::to_string(configurationTemplate.getMinimum().value()));
+    digestEngine.update(std::to_string(configurationTemplate.getMaximum().value()));
     digestEngine.update(configurationTemplate.getDefaultValue());
-
-    digestEngine.update([&]() -> std::string {
-        if (configurationTemplate.getDataType() == wolkabout::DataType::BOOLEAN)
-        {
-            return "B";
-        }
-        else if (configurationTemplate.getDataType() == wolkabout::DataType::NUMERIC)
-        {
-            return "N";
-        }
-        else if (configurationTemplate.getDataType() == wolkabout::DataType::STRING)
-        {
-            return "S";
-        }
-
-        poco_assert(false);
-        return "";
-    }());
 
     for (const std::string& label : configurationTemplate.getLabels())
     {

@@ -78,9 +78,7 @@ void SubdeviceRegistrationService::platformMessageReceived(std::shared_ptr<Messa
               << message->getChannel() << "' Payload: '" << message->getContent() << "'";
             return;
         }
-
-        auto deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
-        handleSubdeviceRegistrationResponse(deviceKey, *response);
+        handleSubdeviceRegistrationResponse(response.get()->getSubdeviceKey(), *response);
     }
     else if (m_protocol.isSubdeviceDeletionResponse(*message))
     {

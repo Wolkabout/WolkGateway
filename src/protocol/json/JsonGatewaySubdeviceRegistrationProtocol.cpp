@@ -56,9 +56,9 @@ const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPO
   "p2d/update_gateway_response/";
 
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_DELETION_REQUEST_TOPIC_ROOT =
-  "d2p/delete_device/";
+  "d2p/delete_subdevice_request/";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT =
-  "p2d/delete_device/";
+  "p2d/delete_subdevice_response/";
 
 const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_OK = "OK";
 const std::string JsonGatewaySubdeviceRegistrationProtocol::GATEWAY_UPDATE_RESPONSE_ERROR_GATEWAY_NOT_FOUND =
@@ -113,7 +113,8 @@ std::vector<std::string> JsonGatewaySubdeviceRegistrationProtocol::getInboundPla
 {
     return {SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
             GATEWAY_UPDATE_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey,
-            SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey};
+            SUBDEVICE_DELETION_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+              CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 
 std::vector<std::string> JsonGatewaySubdeviceRegistrationProtocol::getInboundPlatformChannelsForKeys(
@@ -182,6 +183,8 @@ std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeMessage(
 std::unique_ptr<Message> JsonGatewaySubdeviceRegistrationProtocol::makeSubdeviceDeletionRequestMessage(
   const std::string& gatewayKey, const std::string& deviceKey) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     std::stringstream channel;
     channel << SUBDEVICE_DELETION_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
     if (deviceKey != gatewayKey)
@@ -238,58 +241,10 @@ JsonGatewaySubdeviceRegistrationProtocol::makeSubdeviceRegistrationResponse(cons
 
     try
     {
-        const json j = json::parse(message.getContent());
+        const json jsonResponse = json::parse(message.getContent());
+        SubdeviceRegistrationResponse response = subdevice_registration_response_from_json(jsonResponse);
 
-        const std::string typeStr = j.at("result").get<std::string>();
-
-        const SubdeviceRegistrationResponse::Result result = [&] {
-            if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_OK)
-            {
-                return SubdeviceRegistrationResponse::Result::OK;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_GATEWAY_NOT_FOUND)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_GATEWAY_NOT_FOUND;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_NOT_A_GATEWAY)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_NOT_A_GATEWAY;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_KEY_CONFLICT)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_SUBDEVICE_MANAGEMENT_FORBIDDEN)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_SUBDEVICE_MANAGEMENT_FORBIDDEN;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_MAX_NUMBER_OF_DEVICES_EXCEEDED)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_VALIDATION_ERROR)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_VALIDATION_ERROR;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_INVALID_DTO)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_INVALID_DTO;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_KEY_MISSING)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_KEY_MISSING;
-            }
-            else if (typeStr == SUBDEVICE_REGISTRATION_RESPONSE_ERROR_UNKNOWN)
-            {
-                return SubdeviceRegistrationResponse::Result::ERROR_UNKNOWN;
-            }
-
-            assert(false);
-            throw std::logic_error("");
-        }();
-
-        return std::unique_ptr<SubdeviceRegistrationResponse>(new SubdeviceRegistrationResponse(
-          j.at("payload").at("deviceKey").get<std::string>(), result, j.at("description").get<std::string>()));
+        return std::unique_ptr<SubdeviceRegistrationResponse>(new SubdeviceRegistrationResponse(response));
     }
     catch (std::exception& e)
     {
@@ -306,10 +261,10 @@ std::unique_ptr<GatewayUpdateResponse> JsonGatewaySubdeviceRegistrationProtocol:
 
     try
     {
-        const json jsonRequest = json::parse(message.getContent());
-        GatewayUpdateResponse request = gateway_update_response_from_json(jsonRequest);
+        const json jsonResponse = json::parse(message.getContent());
+        GatewayUpdateResponse response = gateway_update_response_from_json(jsonResponse);
 
-        return std::unique_ptr<GatewayUpdateResponse>(new GatewayUpdateResponse(request));
+        return std::unique_ptr<GatewayUpdateResponse>(new GatewayUpdateResponse(response));
     }
     catch (std::exception& e)
     {
@@ -407,7 +362,7 @@ std::string JsonGatewaySubdeviceRegistrationProtocol::getResponseChannel(const M
     }
     else if (isGatewayUpdateRequest(message))
     {
-        return GATEWAY_UPDATE_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
+        return GATEWAY_UPDATE_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey;
     }
 
     return "";

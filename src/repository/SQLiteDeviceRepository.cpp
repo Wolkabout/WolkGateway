@@ -281,7 +281,7 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
         // Firmware update parameters
         for (auto const& parameter : device.getTemplate().getFirmwareUpdateParameters())
         {
-            statement << "INSERT INTO type_parameters(key, value, device_template_id)"
+            statement << "INSERT INTO firmware_update_parameters(key, value, device_template_id)"
                          "VALUES(?, ?, ?);",
               useRef(parameter.first), useRef(parameter.second), useRef(deviceTemplateId);
         }

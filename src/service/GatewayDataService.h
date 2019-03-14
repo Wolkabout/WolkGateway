@@ -72,8 +72,6 @@ public:
     void publishConfiguration();
 
 private:
-    std::string getSensorDelimiter(const std::string& key) const;
-
     void publishSensorReadingsForPersistanceKey(const std::string& persistanceKey);
     void publishAlarmsForPersistanceKey(const std::string& persistanceKey);
     void publishActuatorStatusesForPersistanceKey(const std::string& persistanceKey);
@@ -90,9 +88,6 @@ private:
 
     ConfigurationSetHandler m_configurationSetHandler;
     ConfigurationGetHandler m_configurationGetHandler;
-
-    std::map<std::string, std::string> m_sensorDelimiters;
-    std::map<std::string, std::string> m_configurationDelimiters;
 
     static const constexpr unsigned int PUBLISH_BATCH_ITEMS_COUNT = 50;
 };

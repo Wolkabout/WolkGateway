@@ -180,9 +180,7 @@ void GatewayDataService::publishSensorReadingsForPersistanceKey(const std::strin
         return;
     }
 
-    const auto delimiter = getSensorDelimiter(persistanceKey);
-
-    const std::shared_ptr<Message> outboundMessage = m_protocol.makeMessage(m_deviceKey, sensorReadings, delimiter);
+    const std::shared_ptr<Message> outboundMessage = m_protocol.makeMessage(m_deviceKey, sensorReadings);
 
     if (!outboundMessage)
     {
@@ -276,8 +274,7 @@ void GatewayDataService::publishConfigurationForPersistanceKey(const std::string
         return;
     }
 
-    const std::shared_ptr<Message> outboundMessage =
-      m_protocol.makeMessage(persistanceKey, *configuration, m_configurationDelimiters);
+    const std::shared_ptr<Message> outboundMessage = m_protocol.makeMessage(persistanceKey, *configuration);
 
     if (!outboundMessage)
     {
@@ -289,12 +286,5 @@ void GatewayDataService::publishConfigurationForPersistanceKey(const std::string
     m_outboundMessageHandler.addMessage(outboundMessage);
 
     m_persistence.removeConfiguration(persistanceKey);
-}
-
-std::string GatewayDataService::getSensorDelimiter(const std::string& key) const
-{
-    const auto it = m_sensorDelimiters.find(key);
-
-    return it != m_sensorDelimiters.end() ? it->second : "";
 }
 }    // namespace wolkabout

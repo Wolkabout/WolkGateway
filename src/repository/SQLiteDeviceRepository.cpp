@@ -227,7 +227,7 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
 
             statement << "INSERT INTO configuration_template(reference, name, description, data_type, minimum, "
                          "maximum, default_value, device_template_id)"
-                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
               useRef(configurationTemplate.getReference()), useRef(configurationTemplate.getName()),
               useRef(configurationTemplate.getDescription()), bind(dataType), bind(minimum), bind(maximum),
               useRef(configurationTemplate.getDefaultValue()), useRef(deviceTemplateId);

@@ -111,7 +111,7 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
     // Firmware update parameters
     statement
       << "CREATE TABLE IF NOT EXISTS firmware_update_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key "
-         "TEXT, value TEXT, device_template_id INTEGER, "
+         "TEXT, value INTEGER, device_template_id INTEGER, "
          "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
     // Device
@@ -525,7 +525,7 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         // Firmware update parameters
 
         std::string firmwareUpdateParameterKey;
-        std::string firmwareUpdateParameterValue;
+        int firmwareUpdateParameterValue;
         statement.reset(*m_session);
         statement << "SELECT key, value FROM firmware_update_parameters WHERE device_template_id=?;",
           useRef(deviceTemplateId), into(firmwareUpdateParameterKey), into(firmwareUpdateParameterValue), range(0, 1);
@@ -537,9 +537,9 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
                 break;
             }
 
-            bool firmwareUpdateParameterValueBool = (firmwareUpdateParameterValue == "true") ? true : false;
             std::pair<std::string, bool> firmwareUpdateParameterPair;
-            firmwareUpdateParameterPair = std::make_pair(firmwareUpdateParameterKey, firmwareUpdateParameterValueBool);
+            firmwareUpdateParameterPair =
+              std::make_pair(firmwareUpdateParameterKey, static_cast<bool>(firmwareUpdateParameterValue));
             deviceTemplate->addFirmwareUpdateParameter(firmwareUpdateParameterPair);
         }
 

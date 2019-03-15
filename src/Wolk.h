@@ -230,6 +230,7 @@ private:
     void handleConfigurationSetCommand(const ConfigurationSetCommand& command);
     void handleConfigurationGetCommand();
 
+    void publishEverything();
     void publishFirmwareStatus();
 
     void notifyPlatformConnected();

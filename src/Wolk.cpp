@@ -263,6 +263,20 @@ void Wolk::handleConfigurationGetCommand()
     publishConfiguration();
 }
 
+void Wolk::publishEverything()
+{
+    addToCommandBuffer([=] {
+        publishFirmwareStatus();
+
+        publishConfiguration();
+
+        for (const std::string& actuatorReference : m_device.getActuatorReferences())
+        {
+            publishActuatorStatus(actuatorReference);
+        }
+    });
+}
+
 void Wolk::publishFirmwareStatus()
 {
     if (m_firmwareUpdateService)
@@ -328,14 +342,7 @@ void Wolk::connectToPlatform()
         {
             notifyPlatformConnected();
 
-            publishFirmwareStatus();
-
-            for (const std::string& actuatorReference : m_device.getActuatorReferences())
-            {
-                publishActuatorStatus(actuatorReference);
-            }
-
-            publishConfiguration();
+            publishEverything();
 
             publish();
         }

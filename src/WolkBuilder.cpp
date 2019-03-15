@@ -249,6 +249,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     wolk->m_gatewayUpdateService->onGatewayUpdated([&] {
         wolk->m_keepAliveService->sendPingMessage();
+        wolk->publishEverything();
         if (wolk->m_subdeviceRegistrationService)
         {
             wolk->m_subdeviceRegistrationService->registerPostponedDevices();

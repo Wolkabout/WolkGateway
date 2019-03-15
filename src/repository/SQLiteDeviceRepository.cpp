@@ -70,7 +70,7 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
     // Configuration template
     statement << "CREATE TABLE IF NOT EXISTS configuration_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
                  "reference TEXT, name TEXT, description TEXT, "
-                 "minimum REAL, maximum REAL, "
+                 "data_type TEXT, minimum REAL, maximum REAL, "
                  "default_value TEXT, device_template_id INTEGER, "
                  "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
@@ -189,14 +189,31 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
         // Configuration templates
         for (const wolkabout::ConfigurationTemplate& configurationTemplate : device.getTemplate().getConfigurations())
         {
+            const auto dataType = [&]() -> std::string {
+                if (configurationTemplate.getDataType() == DataType::BOOLEAN)
+                {
+                    return "BOOLEAN";
+                }
+                else if (configurationTemplate.getDataType() == DataType::NUMERIC)
+                {
+                    return "NUMERIC";
+                }
+                else if (configurationTemplate.getDataType() == DataType::STRING)
+                {
+                    return "STRING";
+                }
+
+                return "";
+            }();
+
             const double minimum = configurationTemplate.getMinimum();
             const double maximum = configurationTemplate.getMaximum();
 
-            statement << "INSERT INTO configuration_template(reference, name, description, minimum, "
+            statement << "INSERT INTO configuration_template(reference, name, description, data_type, minimum, "
                          "maximum, default_value, device_template_id)"
-                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
+                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);",
               useRef(configurationTemplate.getReference()), useRef(configurationTemplate.getName()),
-              useRef(configurationTemplate.getDescription()), bind(minimum), bind(maximum),
+              useRef(configurationTemplate.getDescription()), bind(dataType), bind(minimum), bind(maximum),
               useRef(configurationTemplate.getDefaultValue()), useRef(deviceTemplateId);
 
             for (const std::string& label : configurationTemplate.getLabels())
@@ -406,15 +423,16 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         std::string configurationReference;
         std::string configurationName;
         std::string configurationDescription;
+        std::string configurationDataTypeStr;
         double configurationMinimum;
         double configurationMaximum;
         std::string configurationDefaultValue;
         statement.reset(*m_session);
-        statement << "SELECT id, reference, name, description, minimum, maximum, default_value"
+        statement << "SELECT id, reference, name, description, data_type, minimum, maximum, default_value"
                      " FROM configuration_template WHERE device_template_id=?;",
           useRef(deviceTemplateId), into(configurationTemplateId), into(configurationReference),
-          into(configurationName), into(configurationDescription), into(configurationMinimum),
-          into(configurationMaximum), into(configurationDefaultValue), range(0, 1);
+          into(configurationName), into(configurationDescription), into(configurationDataTypeStr),
+          into(configurationMinimum), into(configurationMaximum), into(configurationDefaultValue), range(0, 1);
 
         while (!statement.done())
         {
@@ -423,14 +441,31 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
                 break;
             }
 
+            const auto configurationDataType = [&]() -> DataType {
+                if (configurationDataTypeStr == "STRING")
+                {
+                    return DataType::STRING;
+                }
+                else if (configurationDataTypeStr == "BOOLEAN")
+                {
+                    return DataType::BOOLEAN;
+                }
+                else if (configurationDataTypeStr == "NUMERIC")
+                {
+                    return DataType::NUMERIC;
+                }
+
+                return DataType::STRING;
+            }();
+
             std::vector<std::string> labels;
             Statement selectLabelsStatement(*m_session);
             selectLabelsStatement << "SELECT label FROM configuration_label WHERE configuration_template_id=?;",
               bind(configurationTemplateId), into(labels), now;
 
-            deviceTemplate->addConfiguration(ConfigurationTemplate(configurationName, configurationReference,
-                                                                   configurationDescription, configurationDefaultValue,
-                                                                   labels, configurationMinimum, configurationMaximum));
+            deviceTemplate->addConfiguration(ConfigurationTemplate(
+              configurationName, configurationReference, configurationDataType, configurationDescription,
+              configurationDefaultValue, labels, configurationMinimum, configurationMaximum));
         }
 
         // Type parameters
@@ -592,6 +627,24 @@ std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationTemplate&
     digestEngine.update(std::to_string(configurationTemplate.getMinimum().value()));
     digestEngine.update(std::to_string(configurationTemplate.getMaximum().value()));
     digestEngine.update(configurationTemplate.getDefaultValue());
+
+    digestEngine.update([&]() -> std::string {
+        if (configurationTemplate.getDataType() == wolkabout::DataType::BOOLEAN)
+        {
+            return "B";
+        }
+        else if (configurationTemplate.getDataType() == wolkabout::DataType::NUMERIC)
+        {
+            return "N";
+        }
+        else if (configurationTemplate.getDataType() == wolkabout::DataType::STRING)
+        {
+            return "S";
+        }
+
+        poco_assert(false);
+        return "";
+    }());
 
     for (const std::string& label : configurationTemplate.getLabels())
     {

@@ -96,17 +96,18 @@ void GatewayUpdateService::updateGateway(const DetailedDevice& device)
 
     LOG(TRACE) << METHOD_INFO;
 
-    LOG(INFO) << "GatewayUpdateService: Updating gateway";
 
     auto savedGateway = m_deviceRepository.findByDeviceKey(device.getKey());
     auto newGateway =
       std::unique_ptr<DetailedDevice>(new DetailedDevice(device.getName(), device.getKey(), device.getTemplate()));
     if (savedGateway && *savedGateway == *newGateway)
     {
-        LOG(WARN) << "GatewayUpdateService: Ignoring gateway update. Already registered with given device info and "
+        LOG(INFO) << "GatewayUpdateService: Ignoring gateway update. Already registered with given device info and "
                      "device template";
         return;
     }
+
+    LOG(INFO) << "GatewayUpdateService: Updating gateway";
 
     m_pendingUpdateRequest = std::move(newGateway);
 

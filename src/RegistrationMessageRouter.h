@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef REGISTRATIONMESSAGEROUTER_H
 #define REGISTRATIONMESSAGEROUTER_H
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
+
 #include <memory>
 
 namespace wolkabout

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,22 @@
  */
 
 #include "Wolk.h"
-#include "InboundMessageHandler.h"
-#include "WolkBuilder.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/ConfigurationSetCommand.h"
-#include "model/DetailedDevice.h"
-#include "protocol/Protocol.h"
+#include "persistence/Persistence.h"
+#include "protocol/DataProtocol.h"
+#include "protocol/GatewayDataProtocol.h"
+#include "protocol/GatewayFileDownloadProtocol.h"
+#include "protocol/GatewayFirmwareUpdateProtocol.h"
+#include "protocol/GatewayStatusProtocol.h"
+#include "protocol/GatewaySubdeviceRegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
+#include "repository/ExistingDevicesRepository.h"
 #include "service/DataService.h"
+#include "service/DeviceStatusService.h"
+#include "service/FileDownloadService.h"
 #include "service/FirmwareUpdateService.h"
+#include "service/GatewayDataService.h"
 #include "service/GatewayUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
@@ -62,7 +69,7 @@ void Wolk::disconnect()
     addToCommandBuffer([=]() -> void { m_deviceConnectivityService->disconnect(); });
 }
 
-void Wolk::addSensorReading(const std::string& reference, std::string value, unsigned long long rtc)
+void Wolk::addSensorReading(const std::string& reference, const std::string& value, unsigned long long rtc)
 {
     if (rtc == 0)
     {
@@ -77,7 +84,7 @@ void Wolk::addSensorReading(const std::string& reference, std::string value, uns
     });
 }
 
-void Wolk::addSensorReading(const std::string& reference, const std::vector<std::string> values,
+void Wolk::addSensorReading(const std::string& reference, const std::vector<std::string>& values,
                             unsigned long long int rtc)
 {
     if (values.empty())

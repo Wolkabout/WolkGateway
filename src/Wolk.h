@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,49 +21,44 @@
 #include "ActuatorStatusProvider.h"
 #include "ConfigurationHandler.h"
 #include "ConfigurationProvider.h"
-#include "GatewayInboundDeviceMessageHandler.h"
 #include "WolkBuilder.h"
 #include "model/GatewayDevice.h"
-#include "persistence/inmemory/InMemoryPersistence.h"
-#include "protocol/DataProtocol.h"
-#include "protocol/GatewayDataProtocol.h"
-#include "protocol/GatewayFileDownloadProtocol.h"
-#include "protocol/GatewayFirmwareUpdateProtocol.h"
-#include "protocol/GatewayStatusProtocol.h"
-#include "protocol/GatewaySubdeviceRegistrationProtocol.h"
-#include "repository/DeviceRepository.h"
-#include "repository/ExistingDevicesRepository.h"
-#include "service/DataService.h"
-#include "service/DeviceStatusService.h"
-#include "service/GatewayDataService.h"
-#include "service/PublishingService.h"
-#include "utilities/CommandBuffer.h"
 #include "utilities/StringUtils.h"
 
 #include <algorithm>
+#include <chrono>
 #include <functional>
-#include <map>
 #include <memory>
+#include <mutex>
 #include <string>
-#include <typeindex>
 #include <vector>
 
 namespace wolkabout
 {
+class CommandBuffer;
+class ConfigurationSetCommand;
 class ConnectivityService;
-class InboundMessageHandler;
-class InboundDeviceMessageHandler;
-class InboundPlatformMessageHandler;
-class DeviceManager;
-class OutboundServiceDataHandler;
-class DataServiceBase;
-class GatewayUpdateService;
-class SubdeviceRegistrationService;
+class DataProtocol;
+class DataService;
+class DeviceStatusService;
+class DeviceRepository;
+class ExistingDevicesRepository;
 class FileDownloadService;
 class FirmwareUpdateService;
+class GatewayDataService;
+class GatewayFileDownloadProtocol;
+class GatewayFirmwareUpdateProtocol;
+class GatewayStatusProtocol;
+class GatewaySubdeviceRegistrationProtocol;
+class GatewayUpdateService;
+class InboundDeviceMessageHandler;
+class InboundPlatformMessageHandler;
 class KeepAliveService;
-class StatusMessageRouter;
+class PublishingService;
+class Persistence;
 class RegistrationMessageRouter;
+class StatusMessageRouter;
+class SubdeviceRegistrationService;
 
 class Wolk
 {
@@ -110,7 +105,8 @@ public:
      * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
      *            If omitted current POSIX time is adopted
      */
-    template <typename T> void addSensorReading(const std::string& reference, T value, unsigned long long int rtc = 0);
+    template <typename T>
+    void addSensorReading(const std::string& reference, const T& value, unsigned long long int rtc = 0);
 
     /**
      * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
@@ -120,7 +116,7 @@ public:
      * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
      *            If omitted current POSIX time is adopted
      */
-    void addSensorReading(const std::string& reference, std::string value, unsigned long long int rtc = 0);
+    void addSensorReading(const std::string& reference, const std::string& value, unsigned long long int rtc = 0);
 
     /**
      * @brief Publishes multi-value sensor reading to WolkAbout IoT Cloud<br>
@@ -144,7 +140,7 @@ public:
      *            If omitted current POSIX time is adopted
      */
     template <typename T>
-    void addSensorReading(const std::string& reference, std::initializer_list<T> values,
+    void addSensorReading(const std::string& reference, const std::initializer_list<T>& values,
                           unsigned long long int rtc = 0);
 
     /**
@@ -169,7 +165,7 @@ public:
      *            If omitted current POSIX time is adopted
      */
     template <typename T>
-    void addSensorReading(const std::string& reference, const std::vector<T> values, unsigned long long int rtc = 0);
+    void addSensorReading(const std::string& reference, const std::vector<T>& values, unsigned long long int rtc = 0);
 
     /**
      * @brief Publishes multi-value sensor reading to WolkAbout IoT Cloud<br>
@@ -179,7 +175,7 @@ public:
      * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
      *            If omitted current POSIX time is adopted
      */
-    void addSensorReading(const std::string& reference, const std::vector<std::string> values,
+    void addSensorReading(const std::string& reference, const std::vector<std::string>& values,
                           unsigned long long int rtc = 0);
 
     /**
@@ -213,7 +209,7 @@ public:
 private:
     static const constexpr std::chrono::seconds KEEP_ALIVE_INTERVAL{600};
 
-    Wolk(GatewayDevice device);
+    explicit Wolk(GatewayDevice device);
 
     void addToCommandBuffer(std::function<void()> command);
 
@@ -314,19 +310,20 @@ private:
     std::shared_ptr<ConnectivityFacade<InboundDeviceMessageHandler>> m_deviceConnectivityManager;
 };
 
-template <typename T> void Wolk::addSensorReading(const std::string& reference, T value, unsigned long long rtc)
+template <typename T> void Wolk::addSensorReading(const std::string& reference, const T& value, unsigned long long rtc)
 {
     addSensorReading(reference, StringUtils::toString(value), rtc);
 }
 
 template <typename T>
-void Wolk::addSensorReading(const std::string& reference, std::initializer_list<T> values, unsigned long long int rtc)
+void Wolk::addSensorReading(const std::string& reference, const std::initializer_list<T>& values,
+                            unsigned long long int rtc)
 {
     addSensorReading(reference, std::vector<T>(values), rtc);
 }
 
 template <typename T>
-void Wolk::addSensorReading(const std::string& reference, const std::vector<T> values, unsigned long long int rtc)
+void Wolk::addSensorReading(const std::string& reference, const std::vector<T>& values, unsigned long long int rtc)
 {
     std::vector<std::string> stringifiedValues(values.size());
     std::transform(values.cbegin(), values.cend(), stringifiedValues.begin(),

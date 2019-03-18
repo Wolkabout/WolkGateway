@@ -16,6 +16,7 @@
 
 #include "model/SubdeviceManagement.h"
 #include "model/WolkOptional.h"
+
 #include <string>
 
 namespace wolkabout

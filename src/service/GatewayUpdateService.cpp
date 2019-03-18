@@ -96,7 +96,6 @@ void GatewayUpdateService::updateGateway(const DetailedDevice& device)
 
     LOG(TRACE) << METHOD_INFO;
 
-
     auto savedGateway = m_deviceRepository.findByDeviceKey(device.getKey());
     auto newGateway =
       std::unique_ptr<DetailedDevice>(new DetailedDevice(device.getName(), device.getKey(), device.getTemplate()));
@@ -179,6 +178,10 @@ void GatewayUpdateService::handleUpdateResponse(const GatewayUpdateResponse& res
             {
                 return "Gateway has been deleted on platform";
             }
+            else if (updateResult == GatewayUpdateResponse::Result::ERROR_SUBDEVICE_MANAGEMENT_CHANGE_NOT_ALLOWED)
+            {
+                return "Changing subdevice management is not allowed";
+            }
             else if (updateResult == GatewayUpdateResponse::Result::ERROR_UNKNOWN)
             {
                 return "Unknown gateway update error";
@@ -188,7 +191,7 @@ void GatewayUpdateService::handleUpdateResponse(const GatewayUpdateResponse& res
             return "Unknown";
         }();
 
-        LOG(ERROR) << "GatewayUpdateService: Unable update gateway . Reason: '" << updateFailureReason
+        LOG(ERROR) << "GatewayUpdateService: Unable to perform update gateway. Reason: '" << updateFailureReason
                    << "' Description: " << response.getDescription();
     }
 

@@ -182,6 +182,10 @@ void GatewayUpdateService::handleUpdateResponse(const GatewayUpdateResponse& res
             {
                 return "Changing subdevice management is not allowed";
             }
+            else if (updateResult == GatewayUpdateResponse::Result::ERROR_GATEWAY_UPDATE_FORBIDDEN)
+            {
+                return "Performing gateway update is not allowed more than once";
+            }
             else if (updateResult == GatewayUpdateResponse::Result::ERROR_UNKNOWN)
             {
                 return "Unknown gateway update error";

@@ -266,12 +266,12 @@ private:
     std::unique_ptr<Persistence> m_gatewayPersistence;
     std::unique_ptr<DataProtocol> m_gatewayDataProtocol;
 
-    std::shared_ptr<GatewayUpdateService> m_gatewayUpdateService;
-    std::shared_ptr<SubdeviceRegistrationService> m_subdeviceRegistrationService;
+    std::unique_ptr<GatewayUpdateService> m_gatewayUpdateService;
+    std::unique_ptr<SubdeviceRegistrationService> m_subdeviceRegistrationService;
     std::shared_ptr<RegistrationMessageRouter> m_registrationMessageRouter;
-    std::shared_ptr<KeepAliveService> m_keepAliveService;
 
-    std::shared_ptr<DeviceStatusService> m_deviceStatusService;
+    std::unique_ptr<KeepAliveService> m_keepAliveService;
+    std::unique_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
 
     std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;

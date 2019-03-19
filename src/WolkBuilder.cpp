@@ -247,8 +247,8 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_configurationProvider = m_configurationProvider;
 
     // Setup gateway update service
-    wolk->m_gatewayUpdateService = std::make_shared<GatewayUpdateService>(
-      m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher);
+    wolk->m_gatewayUpdateService = std::unique_ptr<GatewayUpdateService>(new GatewayUpdateService(
+      m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher));
 
     wolk->m_gatewayUpdateService->onGatewayUpdated([&] {
         wolk->m_keepAliveService->sendPingMessage();
@@ -262,9 +262,9 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
         // Setup registration service
-        wolk->m_subdeviceRegistrationService = std::make_shared<SubdeviceRegistrationService>(
-          m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_deviceRepository, *wolk->m_platformPublisher,
-          *wolk->m_devicePublisher);
+        wolk->m_subdeviceRegistrationService = std::unique_ptr<SubdeviceRegistrationService>(
+          new SubdeviceRegistrationService(m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_deviceRepository,
+                                           *wolk->m_platformPublisher, *wolk->m_devicePublisher));
 
         wolk->m_subdeviceRegistrationService->onDeviceRegistered([&](const std::string& deviceKey) {
             wolk->m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
@@ -282,21 +282,21 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     // Setup device status and keep alive service
     if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
-        wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
-          m_device.getKey(), *wolk->m_statusProtocol, wolk->m_deviceRepository.get(), *wolk->m_platformPublisher,
-          *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL);
+        wolk->m_deviceStatusService = std::unique_ptr<DeviceStatusService>(
+          new DeviceStatusService(m_device.getKey(), *wolk->m_statusProtocol, wolk->m_deviceRepository.get(),
+                                  *wolk->m_platformPublisher, *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL));
     }
     else
     {
-        wolk->m_deviceStatusService = std::make_shared<DeviceStatusService>(
-          m_device.getKey(), *wolk->m_statusProtocol, nullptr, *wolk->m_platformPublisher, *wolk->m_devicePublisher,
-          Wolk::KEEP_ALIVE_INTERVAL);
+        wolk->m_deviceStatusService = std::unique_ptr<DeviceStatusService>(
+          new DeviceStatusService(m_device.getKey(), *wolk->m_statusProtocol, nullptr, *wolk->m_platformPublisher,
+                                  *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL));
     }
 
     if (m_keepAliveEnabled)
     {
-        wolk->m_keepAliveService = std::make_shared<KeepAliveService>(
-          m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_platformPublisher, Wolk::KEEP_ALIVE_INTERVAL);
+        wolk->m_keepAliveService = std::unique_ptr<KeepAliveService>(new KeepAliveService(
+          m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_platformPublisher, Wolk::KEEP_ALIVE_INTERVAL));
     }
 
     wolk->m_statusMessageRouter = std::make_shared<StatusMessageRouter>(

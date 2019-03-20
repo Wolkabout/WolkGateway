@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,123 +15,113 @@
  */
 
 #include "service/FirmwareUpdateService.h"
-#include "FirmwareInstaller.h"
 #include "OutboundMessageHandler.h"
-#include "model/FirmwareUpdateCommand.h"
-#include "model/FirmwareUpdateResponse.h"
+#include "model/FirmwareUpdateAbort.h"
+#include "model/FirmwareUpdateInstall.h"
+#include "model/FirmwareVersion.h"
 #include "model/Message.h"
 #include "protocol/GatewayFirmwareUpdateProtocol.h"
+#include "protocol/json/JsonDFUProtocol.h"
+#include "repository/FileRepository.h"
+#include "service/FirmwareInstaller.h"
 #include "utilities/FileSystemUtils.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
 
-#include <algorithm>
+#include <utility>
 
 namespace wolkabout
 {
-FirmwareUpdateService::FirmwareUpdateService(std::string gatewayKey, GatewayFirmwareUpdateProtocol& protocol,
+FirmwareUpdateService::FirmwareUpdateService(std::string gatewayKey, JsonDFUProtocol& protocol,
+                                             GatewayFirmwareUpdateProtocol& gatewayProtocol,
+                                             FileRepository& fileRepository,
                                              OutboundMessageHandler& outboundPlatformMessageHandler,
-                                             OutboundMessageHandler& outboundDeviceMessageHandler,
-                                             WolkaboutFileDownloader& wolkaboutFileDownloader,
-                                             std::string firmwareDownloadDirectory,
-                                             std::shared_ptr<UrlFileDownloader> urlFileDownloader)
+                                             OutboundMessageHandler& outboundDeviceMessageHandler)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_protocol{protocol}
+, m_gatewayProtocol{gatewayProtocol}
+, m_fileRepository{fileRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
-, m_wolkaboutFileDownloader{wolkaboutFileDownloader}
-, m_firmwareDownloadDirectory{std::move(firmwareDownloadDirectory)}
 , m_firmwareInstaller{nullptr}
 , m_currentFirmwareVersion{""}
-, m_urlFileDownloader{urlFileDownloader}
 {
 }
 
-FirmwareUpdateService::FirmwareUpdateService(std::string gatewayKey, GatewayFirmwareUpdateProtocol& protocol,
+FirmwareUpdateService::FirmwareUpdateService(std::string gatewayKey, JsonDFUProtocol& protocol,
+                                             GatewayFirmwareUpdateProtocol& gatewayProtocol,
+                                             FileRepository& fileRepository,
                                              OutboundMessageHandler& outboundPlatformMessageHandler,
                                              OutboundMessageHandler& outboundDeviceMessageHandler,
-                                             WolkaboutFileDownloader& wolkaboutFileDownloader,
-                                             std::string firmwareDownloadDirectory,
                                              std::shared_ptr<FirmwareInstaller> firmwareInstaller,
-                                             std::string currentFirmwareVersion,
-                                             std::shared_ptr<UrlFileDownloader> urlFileDownloader)
+                                             std::string currentFirmwareVersion)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_protocol{protocol}
+, m_gatewayProtocol{gatewayProtocol}
+, m_fileRepository{fileRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
-, m_wolkaboutFileDownloader{wolkaboutFileDownloader}
-, m_firmwareDownloadDirectory{std::move(firmwareDownloadDirectory)}
-, m_firmwareInstaller{firmwareInstaller}
-, m_currentFirmwareVersion{currentFirmwareVersion}
-, m_urlFileDownloader{urlFileDownloader}
+, m_firmwareInstaller{std::move(firmwareInstaller)}
+, m_currentFirmwareVersion{std::move(currentFirmwareVersion)}
 {
 }
 
 void FirmwareUpdateService::platformMessageReceived(std::shared_ptr<Message> message)
 {
-    if (!m_protocol.isMessageFromPlatform(*message))
+    auto installCommand = m_protocol.makeFirmwareUpdateInstall(*message);
+    if (installCommand)
     {
-        LOG(WARN) << "DataService: Ignoring message on channel '" << message->getChannel()
-                  << "'. Message not from platform.";
+        auto installDto = *installCommand;
+        addToCommandBuffer([=] { handleFirmwareUpdateCommand(installDto); });
+
         return;
     }
 
-    if (!m_protocol.isFirmwareUpdateCommandMessage(*message))
+    auto abortCommand = m_protocol.makeFirmwareUpdateAbort(*message);
+    if (abortCommand)
     {
-        LOG(WARN) << "Unable to parse message channel: " << message->getChannel();
+        auto abortDto = *abortCommand;
+        addToCommandBuffer([=] { handleFirmwareUpdateCommand(abortDto); });
+
         return;
     }
 
-    auto command = m_protocol.makeFirmwareUpdateCommand(*message);
-    if (!command)
-    {
-        LOG(WARN) << "Unable to parse message contents: " << message->getContent();
-        return;
-    }
-
-    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
-
-    auto dfuCommand = *command;
-    addToCommandBuffer([=] { handleFirmwareUpdateCommand(dfuCommand, deviceKey); });
+    LOG(WARN) << "Unable to parse message; channel: " << message->getChannel()
+              << ", content: " << message->getContent();
 }
 
 void FirmwareUpdateService::deviceMessageReceived(std::shared_ptr<Message> message)
 {
-    if (!m_protocol.isMessageToPlatform(*message))
+    auto statusResponse = m_gatewayProtocol.makeFirmwareUpdateStatus(*message);
+    if (statusResponse)
     {
-        LOG(WARN) << "DataService: Ignoring message on channel '" << message->getChannel()
-                  << "'. Message not from device.";
+        auto statusDto = *statusResponse;
+        addToCommandBuffer([=] { handleFirmwareUpdateStatus(statusDto); });
+
         return;
     }
 
-    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
+    auto version = m_gatewayProtocol.makeFirmwareVersion(*message);
+    if (version)
+    {
+        auto firmvareVersion = *version;
+        addToCommandBuffer([=] { handleFirmwareVersion(firmvareVersion); });
 
-    if (m_protocol.isFirmwareUpdateResponseMessage(*message))
-    {
-        auto response = m_protocol.makeFirmwareUpdateResponse(*message);
-        if (!response)
-        {
-            LOG(WARN) << "Unable to parse message contents: " << message->getContent();
-            return;
-        }
-
-        auto dfuResponse = *response;
-        addToCommandBuffer([=] { handleFirmwareUpdateResponse(dfuResponse, deviceKey); });
-    }
-    else if (m_protocol.isFirmwareVersionMessage(*message))
-    {
-        routeDeviceToPlatformMessage(message);
-    }
-    else
-    {
-        LOG(WARN) << "Unable to parse message channel: " << message->getChannel();
         return;
     }
+
+    LOG(WARN) << "Unable to parse message; channel: " << message->getChannel()
+              << ", content: " << message->getContent();
 }
 
-const GatewayProtocol& FirmwareUpdateService::getProtocol() const
+const Protocol& FirmwareUpdateService::getProtocol() const
 {
     return m_protocol;
+}
+
+const GatewayProtocol& FirmwareUpdateService::getGatewayProtocol() const
+{
+    return m_gatewayProtocol;
 }
 
 void FirmwareUpdateService::reportFirmwareUpdateResult()
@@ -146,6 +136,8 @@ void FirmwareUpdateService::reportFirmwareUpdateResult()
         return;
     }
 
+    LOG(INFO) << "Reporting firmware update result";
+
     std::string firmwareVersion;
     FileSystemUtils::readFileContent(FIRMWARE_VERSION_FILE, firmwareVersion);
 
@@ -153,15 +145,16 @@ void FirmwareUpdateService::reportFirmwareUpdateResult()
 
     if (m_currentFirmwareVersion != firmwareVersion)
     {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::COMPLETED}, m_gatewayKey);
+        LOG(INFO) << "Firmware versions differ";
+        sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Status::COMPLETED});
     }
     else
     {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::INSTALLATION_FAILED},
-                     m_gatewayKey);
+        LOG(ERROR) << "Firmware versions do not differ";
+        sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Error::INSTALLATION_FAILED});
     }
 
+    LOG(INFO) << "Deleting firmware version file";
     FileSystemUtils::deleteFile(FIRMWARE_VERSION_FILE);
 }
 
@@ -172,558 +165,277 @@ void FirmwareUpdateService::publishFirmwareVersion()
         return;
     }
 
-    const std::shared_ptr<Message> message = m_protocol.makeFromFirmwareVersion(m_gatewayKey, m_currentFirmwareVersion);
+    sendVersion(FirmwareVersion{m_gatewayKey, m_currentFirmwareVersion});
+}
 
-    if (!message)
+void FirmwareUpdateService::handleFirmwareUpdateCommand(const FirmwareUpdateInstall& command)
+{
+    if (command.getDeviceKeys().empty())
     {
-        LOG(WARN) << "Failed to create firmware version message";
+        LOG(WARN) << "Missing device keys from firmware install command";
+        sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::UNSPECIFIED_ERROR});
         return;
     }
 
-    m_outboundPlatformMessageHandler.addMessage(message);
-}
-
-void FirmwareUpdateService::handleFirmwareUpdateCommand(const FirmwareUpdateCommand& command,
-                                                        const std::string deviceKey)
-{
-    std::vector<std::string> deviceKeys;
-    std::string subChannel;
-
-    if (deviceKey.empty())    // update multiple devices
+    if (command.getFileName().empty())
     {
-        // TODO extract keys from command
-        // TODO set subChannel
-        LOG(ERROR) << "Unable to extract device keys from firmware update command";
-        return;
-    }
-    else    // update single device
-    {
-        deviceKeys.push_back(deviceKey);
-        subChannel = deviceKey;
-    }
-
-    switch (command.getType())
-    {
-    case FirmwareUpdateCommand::Type::FILE_UPLOAD:
-    {
-        if (!command.getName() || command.getName().value().empty())
-        {
-            LOG(WARN) << "Missing file name from firmware update command";
-
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                                FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                         deviceKey);
-            return;
-        }
-
-        // TODO compare with maxFileSize
-        if (!command.getSize() || command.getSize().value() == 0)
-        {
-            LOG(WARN) << "Missing file size from firmware update command";
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                                FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                         deviceKey);
-            return;
-        }
-
-        if (!command.getHash() || command.getHash().value().empty())
-        {
-            LOG(WARN) << "Missing file hash from firmware update command";
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                                FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                         deviceKey);
-            return;
-        }
-
-        bool autoInstall = command.getAutoInstall() ? command.getAutoInstall().value() : false;
-
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::FILE_TRANSFER}, subChannel);
-
-        for (const auto& key : deviceKeys)
-        {
-            fileUpload(key, command.getName().value(), command.getSize().value(), command.getHash().value(),
-                       autoInstall, subChannel);
-        }
-
-        break;
-    }
-    case FirmwareUpdateCommand::Type::URL_DOWNLOAD:
-    {
-        if (!m_urlFileDownloader)
-        {
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                                FirmwareUpdateResponse::ErrorCode::FILE_UPLOAD_DISABLED},
-                         m_gatewayKey);
-            return;
-        }
-
-        if (!command.getUrl() || command.getUrl().value().empty())
-        {
-            LOG(WARN) << "Missing url from firmware update command";
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                                FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                         deviceKey);
-            return;
-        }
-
-        bool autoInstall = command.getAutoInstall() ? false : command.getAutoInstall().value();
-
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::FILE_TRANSFER}, subChannel);
-
-        for (const auto& key : deviceKeys)
-        {
-            urlDownload(key, command.getUrl().value(), autoInstall, subChannel);
-        }
-
-        break;
-    }
-    case FirmwareUpdateCommand::Type::INSTALL:
-    {
-        install(deviceKey);
-        break;
-    }
-    case FirmwareUpdateCommand::Type::ABORT:
-    {
-        abort(deviceKey);
-        break;
-    }
-    default:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                     deviceKey);
-    }
-    }
-}
-
-void FirmwareUpdateService::handleFirmwareUpdateResponse(const FirmwareUpdateResponse& response,
-                                                         const std::string deviceKey)
-{
-    if (!deviceUpdateStatusExists(deviceKey))
-    {
-        LOG(ERROR) << "Missing firmware update info for device: " << deviceKey;
-    }
-
-    switch (response.getStatus())
-    {
-    case FirmwareUpdateResponse::Status::FILE_TRANSFER:
-    {
-        LOG(INFO) << "Firmware file transfer in progress for device: " << deviceKey;
-        setDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::TRANSFER);
-        break;
-    }
-    case FirmwareUpdateResponse::Status::FILE_READY:
-    {
-        LOG(INFO) << "Firmware file ready for device: " << deviceKey;
-        auto deviceUpdateStatus = getDeviceUpdateStatus(deviceKey);
-
-        setDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::READY);
-        break;
-    }
-    case FirmwareUpdateResponse::Status::INSTALLATION:
-    {
-        LOG(INFO) << "Firmware installation in progress for device: " << deviceKey;
-        setDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::INSTALL);
-        break;
-    }
-    case FirmwareUpdateResponse::Status::COMPLETED:
-    {
-        LOG(INFO) << "Firmware update completed for device: " << deviceKey;
-        installCompleted(deviceKey);
-        break;
-    }
-    case FirmwareUpdateResponse::Status::ABORTED:
-    {
-        LOG(INFO) << "Firmware update aborted for device: " << deviceKey;
-        installAborted(deviceKey);
-        break;
-    }
-    case FirmwareUpdateResponse::Status::ERROR:
-    {
-        LOG(INFO) << "Firmware update error for device: " << deviceKey;
-        installFailed(deviceKey);
-        break;
-    }
-    }
-
-    sendResponse(response, deviceKey);
-}
-
-void FirmwareUpdateService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string channel = m_protocol.routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
-    if (channel.empty())
-    {
-        LOG(WARN) << "Failed to route device message: " << message->getChannel();
+        LOG(WARN) << "Missing file name from firmware install command";
+        sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::FILE_NOT_PRESENT});
         return;
     }
 
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
-    m_outboundPlatformMessageHandler.addMessage(routedMessage);
-}
-
-void FirmwareUpdateService::fileUpload(const std::string& deviceKey, const std::string& name, std::uint_fast64_t size,
-                                       const std::string& hash, bool autoInstall, const std::string& subChannel)
-{
-    if (deviceUpdateStatusExists(deviceKey))
+    if (command.getFileHash().empty())
     {
-        removeDeviceFromFirmwareStatus(deviceKey);
+        LOG(WARN) << "Missing file hash from firmware install command";
+        sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::FILE_HASH_MISMATCH});
+        return;
     }
 
-    addDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::WOLK_DOWNLOAD, autoInstall);
+    auto fileInfo = m_fileRepository.getFileInfo(command.getFileName());
 
-    if (!firmwareDownloadStatusExists(hash))
+    if (!fileInfo)
     {
-        addFirmwareDownloadStatus(hash, subChannel, name, FirmwareDownloadStruct::FirmwareDownloadStatus::IN_PROGRESS,
-                                  {deviceKey});
-
-        const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(hash));
-
-        m_wolkaboutFileDownloader.download(
-          name, size, byteHash, m_firmwareDownloadDirectory, subChannel,
-          [=](const std::string& filePath) { downloadCompleted(filePath, hash, subChannel); },
-          [=](WolkaboutFileDownloader::ErrorCode errorCode) { downloadFailed(errorCode, hash, subChannel); });
+        LOG(WARN) << "Firmware file not present: " << command.getFileName();
+        sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::FILE_NOT_PRESENT});
+    }
+    else if (fileInfo.value().hash != command.getFileHash())
+    {
+        LOG(WARN) << "Firmware file mismatch: " << command.getFileName();
+        sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::FILE_HASH_MISMATCH});
     }
     else
     {
-        m_firmwareStatuses[hash].devices.push_back(deviceKey);
-        if (m_firmwareStatuses[hash].status == FirmwareDownloadStruct::FirmwareDownloadStatus::COMPLETED)
-        {
-            const auto firmwareFile = m_firmwareStatuses[hash].downloadedFirmwarePath;
-            transferFile(deviceKey, firmwareFile);
-        }
+        install(command.getDeviceKeys(), command.getFileName());
     }
 }
 
-void FirmwareUpdateService::urlDownload(const std::string& deviceKey, const std::string& url, bool autoInstall,
-                                        const std::string& subChannel)
+void FirmwareUpdateService::handleFirmwareUpdateCommand(const FirmwareUpdateAbort& command)
 {
-    if (deviceUpdateStatusExists(deviceKey))
+    if (command.getDeviceKeys().empty())
     {
-        removeDeviceFromFirmwareStatus(deviceKey);
-    }
-
-    addDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::URL_DOWNLOAD, autoInstall);
-
-    if (!firmwareDownloadStatusExists(url))
-    {
-        addFirmwareDownloadStatus(url, subChannel, url, FirmwareDownloadStruct::FirmwareDownloadStatus::IN_PROGRESS,
-                                  {deviceKey});
-
-        const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(url));
-
-        m_urlFileDownloader->download(url, m_firmwareDownloadDirectory,
-                                      [=](const std::string& callbackUrl, const std::string& filePath) {
-                                          downloadCompleted(filePath, callbackUrl, subChannel);
-                                      },
-                                      [=](const std::string& callbackUrl, UrlFileDownloader::Error errorCode) {
-                                          downloadFailed(errorCode, callbackUrl, subChannel);
-                                      });
-    }
-    else
-    {
-        m_firmwareStatuses[url].devices.push_back(deviceKey);
-        if (m_firmwareStatuses[url].status == FirmwareDownloadStruct::FirmwareDownloadStatus::COMPLETED)
-        {
-            const auto firmwareFile = m_firmwareStatuses[url].downloadedFirmwarePath;
-            transferFile(deviceKey, firmwareFile);
-        }
-    }
-}
-
-void FirmwareUpdateService::downloadCompleted(const std::string& filePath, const std::string& hash,
-                                              const std::string& subChannel)
-{
-    addToCommandBuffer([=] {
-        if (!firmwareDownloadStatusExists(hash))
-        {
-            LOG(ERROR) << "Missing device info for downloaded firmware file: " << filePath << ", on channel "
-                       << subChannel;
-        }
-
-        setFirmwareDownloadCompletedStatus(hash, filePath);
-
-        for (const std::string& deviceKey : getFirmwareDownloadStatus(hash).devices)
-        {
-            if (!deviceUpdateStatusExists(deviceKey))
-            {
-                LOG(ERROR) << "Missing firmware update info for device: " << deviceKey;
-                continue;
-            }
-
-            if (deviceKey == m_gatewayKey)
-            {
-                sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::FILE_READY}, m_gatewayKey);
-
-                if (getDeviceUpdateStatus(m_gatewayKey).autoinstall)
-                {
-                    install(m_gatewayKey);
-                }
-            }
-            else
-            {
-                transferFile(deviceKey, filePath);
-            }
-        }
-
-        // TODO update download status
-    });
-}
-
-void FirmwareUpdateService::downloadFailed(WolkaboutFileDownloader::ErrorCode errorCode, const std::string& hash,
-                                           const std::string& subChannel)
-{
-    switch (errorCode)
-    {
-    case WolkaboutFileDownloader::ErrorCode::FILE_SYSTEM_ERROR:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::FILE_SYSTEM_ERROR},
-                     subChannel);
-        break;
-    }
-    case WolkaboutFileDownloader::ErrorCode::RETRY_COUNT_EXCEEDED:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::RETRY_COUNT_EXCEEDED},
-                     subChannel);
-        break;
-    }
-    case WolkaboutFileDownloader::ErrorCode::UNSUPPORTED_FILE_SIZE:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::UNSUPPORTED_FILE_SIZE},
-                     subChannel);
-        break;
-    }
-    case WolkaboutFileDownloader::ErrorCode::UNSPECIFIED_ERROR:
-    default:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                     subChannel);
-        break;
-    }
-    }
-
-    removeFirmwareStatus(hash);
-}
-
-void FirmwareUpdateService::downloadFailed(UrlFileDownloader::Error errorCode, const std::string& url,
-                                           const std::string& subChannel)
-{
-    switch (errorCode)
-    {
-    case UrlFileDownloader::Error::MALFORMED_URL:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::MALFORMED_URL},
-                     subChannel);
-        break;
-    }
-    case UrlFileDownloader::Error::FILE_SYSTEM_ERROR:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::FILE_SYSTEM_ERROR},
-                     subChannel);
-        break;
-    }
-    case UrlFileDownloader::Error::UNSUPPORTED_FILE_SIZE:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::UNSUPPORTED_FILE_SIZE},
-                     subChannel);
-        break;
-    }
-    case UrlFileDownloader::Error::UNSPECIFIED_ERROR:
-    default:
-    {
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                     subChannel);
-        break;
-    }
-    }
-
-    removeFirmwareStatus(url);
-}
-
-void FirmwareUpdateService::transferFile(const std::string& deviceKey, const std::string& filePath)
-{
-    if (!deviceUpdateStatusExists(deviceKey))
-    {
-        LOG(ERROR) << "Missing firmware update info for device: " << deviceKey;
+        LOG(WARN) << "Missing device keys from firmware abort command";
+        sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::UNSPECIFIED_ERROR});
         return;
     }
 
-    auto status = getDeviceUpdateStatus(deviceKey);
-
-    setDeviceUpdateStatus(deviceKey, DeviceUpdateStruct::DeviceUpdateStatus::TRANSFER);
-
-    auto fullPath = FileSystemUtils::absolutePath(filePath);
-
-    FirmwareUpdateCommand command{FirmwareUpdateCommand::Type::URL_DOWNLOAD, fullPath, status.autoinstall};
-
-    sendCommand(command, deviceKey);
+    abort(command.getDeviceKeys());
 }
 
-void FirmwareUpdateService::install(const std::string& deviceKey)
+void FirmwareUpdateService::handleFirmwareUpdateStatus(const FirmwareUpdateStatus& status)
 {
-    if (deviceKey == m_gatewayKey)
+    if (status.getDeviceKeys().empty())
     {
-        if (!deviceUpdateStatusExists(m_gatewayKey))
+        LOG(WARN) << "No keys specified in firmware update status";
+        return;
+    }
+
+    switch (status.getStatus())
+    {
+    case FirmwareUpdateStatus::Status::INSTALLATION:
+    {
+        installationInProgress(status.getDeviceKeys());
+        break;
+    }
+    case FirmwareUpdateStatus::Status::COMPLETED:
+    {
+        installationCompleted(status.getDeviceKeys());
+        break;
+    }
+    case FirmwareUpdateStatus::Status::ABORTED:
+    {
+        installationAborted(status.getDeviceKeys());
+        break;
+    }
+    case FirmwareUpdateStatus::Status::ERROR:
+    {
+        installationFailed(status.getDeviceKeys(), status.getErrorCode());
+        break;
+    }
+    }
+
+    // forward status to platform
+    sendStatus(status);
+}
+
+void FirmwareUpdateService::handleFirmwareVersion(const FirmwareVersion& version)
+{
+    if (version.getVersion().empty())
+    {
+        LOG(WARN) << "Empty firmware version";
+        return;
+    }
+
+    if (version.getDeviceKey().empty())
+    {
+        LOG(WARN) << "No key specified in firmware version";
+        return;
+    }
+
+    sendVersion(version);
+}
+
+void FirmwareUpdateService::install(const std::vector<std::string>& deviceKeys, const std::string& fileName)
+{
+    for (const auto& key : deviceKeys)
+    {
+        if (key == m_gatewayKey)
         {
-            LOG(ERROR) << "Missing firmware update info for gateway";
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                                FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                         m_gatewayKey);
+            installGatewayFirmware(fileName);
         }
+        else
+        {
+            auto fileInfo = m_fileRepository.getFileInfo(fileName);
+            if (!fileInfo)
+            {
+                LOG(ERROR) << "Missing file info: " << fileName;
+                return;
+            }
 
-        auto fullPath =
-          FileSystemUtils::absolutePath(getFirmwareDownloadStatusForDevice(m_gatewayKey).downloadedFirmwarePath);
-
-        installGwFirmware(fullPath);
-    }
-    else
-    {
-        FirmwareUpdateCommand command{FirmwareUpdateCommand::Type::INSTALL};
-
-        sendCommand(command, deviceKey);
+            installDeviceFirmware(key, fileInfo.value().path, fileInfo.value().hash);
+        }
     }
 }
 
-void FirmwareUpdateService::installGwFirmware(const std::string& filePath)
+void FirmwareUpdateService::installGatewayFirmware(const std::string& filePath)
 {
-    LOG(INFO) << "Gateway firmware install";
+    LOG(INFO) << "Handling gateway firmware install";
 
     if (!m_firmwareInstaller)
     {
         LOG(ERROR) << "Firmware installer not set for gateway";
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::UNSPECIFIED_ERROR},
-                     m_gatewayKey);
+        sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Error::UNSPECIFIED_ERROR});
         return;
     }
-
-    sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::INSTALLATION}, m_gatewayKey);
 
     if (!FileSystemUtils::createFileWithContent(FIRMWARE_VERSION_FILE, m_currentFirmwareVersion))
     {
-        removeDeviceUpdateStatus(m_gatewayKey);
-
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::INSTALLATION_FAILED},
-                     m_gatewayKey);
+        LOG(ERROR) << "Failed to create firmware version file";
+        sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Error::FILE_SYSTEM_ERROR});
         return;
     }
+
+    sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Status::INSTALLATION});
 
     if (!m_firmwareInstaller->install(filePath))
     {
-        removeDeviceUpdateStatus(m_gatewayKey);
+        LOG(ERROR) << "Failed to install gateway firmware";
 
-        sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ERROR,
-                                            FirmwareUpdateResponse::ErrorCode::INSTALLATION_FAILED},
-                     m_gatewayKey);
+        sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Error::INSTALLATION_FAILED});
     }
 }
 
-void FirmwareUpdateService::installCompleted(const std::string& deviceKey)
+void FirmwareUpdateService::installDeviceFirmware(const std::string& deviceKey, const std::string& filePath,
+                                                  const std::string& fileHash)
 {
-    removeDeviceUpdateStatus(deviceKey);
-    removeDeviceFromFirmwareStatus(deviceKey);
-    clearUsedFirmwareFiles();
+    sendCommand(FirmwareUpdateInstall{{deviceKey}, filePath, fileHash});
 }
 
-void FirmwareUpdateService::installAborted(const std::string& deviceKey)
+void FirmwareUpdateService::installationInProgress(const std::vector<std::string>& deviceKeys)
 {
-    removeDeviceUpdateStatus(deviceKey);
-    removeDeviceFromFirmwareStatus(deviceKey);
-    clearUsedFirmwareFiles();
-}
-
-void FirmwareUpdateService::installFailed(const std::string& deviceKey)
-{
-    removeDeviceUpdateStatus(deviceKey);
-    removeDeviceFromFirmwareStatus(deviceKey);
-    clearUsedFirmwareFiles();
-}
-
-void FirmwareUpdateService::abort(const std::string& deviceKey)
-{
-    if (!deviceUpdateStatusExists(deviceKey))
+    for (const auto& key : deviceKeys)
     {
-        LOG(ERROR) << "Missing firmware update info for device: " << deviceKey;
-        return;
+        LOG(INFO) << "Firmware installation in progress for device: " << key;
     }
+}
 
-    auto status = getDeviceUpdateStatus(deviceKey);
-
-    // if download is active just abort download
-    if (status.status == DeviceUpdateStruct::DeviceUpdateStatus::WOLK_DOWNLOAD)
+void FirmwareUpdateService::installationCompleted(const std::vector<std::string>& deviceKeys)
+{
+    for (const auto& key : deviceKeys)
     {
-        if (firmwareDownloadStatusExistsForDevice(deviceKey))
+        LOG(INFO) << "Firmware installation completed for device: " << key;
+    }
+}
+
+void FirmwareUpdateService::installationAborted(const std::vector<std::string>& deviceKeys)
+{
+    for (const auto& key : deviceKeys)
+    {
+        LOG(INFO) << "Firmware installation aborted for device: " << key;
+    }
+}
+
+void FirmwareUpdateService::installationFailed(const std::vector<std::string>& deviceKeys,
+                                               WolkOptional<FirmwareUpdateStatus::Error> errorCode)
+{
+    for (const auto& key : deviceKeys)
+    {
+        LOG(INFO) << "Firmware installation failed for device: " << key
+                  << (errorCode ? std::to_string(static_cast<int>(errorCode.value())) : "");
+    }
+}
+
+void FirmwareUpdateService::abort(const std::vector<std::string>& deviceKeys)
+{
+    for (const auto& key : deviceKeys)
+    {
+        if (key == m_gatewayKey)
         {
-            auto firmwareStatus = getFirmwareDownloadStatusForDevice(deviceKey);
-            m_wolkaboutFileDownloader.abort(firmwareStatus.channel);
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, firmwareStatus.channel);
-
-            installAborted(deviceKey);
-        }
-
-        return;
-    }
-    else if (status.status == DeviceUpdateStruct::DeviceUpdateStatus::URL_DOWNLOAD && m_urlFileDownloader)
-    {
-        if (firmwareDownloadStatusExistsForDevice(deviceKey))
-        {
-            auto firmwareStatus = getFirmwareDownloadStatusForDevice(deviceKey);
-            m_urlFileDownloader->abort(firmwareStatus.uri);
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, firmwareStatus.channel);
-
-            installAborted(deviceKey);
-        }
-
-        return;
-    }
-
-    if (status.status == DeviceUpdateStruct::DeviceUpdateStatus::READY ||
-        status.status == DeviceUpdateStruct::DeviceUpdateStatus::TRANSFER)
-    {
-        if (deviceKey == m_gatewayKey)
-        {
-            sendResponse(FirmwareUpdateResponse{FirmwareUpdateResponse::Status::ABORTED}, m_gatewayKey);
-
-            installAborted(deviceKey);
+            abortGatewayFirmware();
         }
         else
         {
-            sendCommand(FirmwareUpdateCommand(FirmwareUpdateCommand::Type::ABORT), deviceKey);
+            abortDeviceFirmware(key);
         }
     }
 }
 
-void FirmwareUpdateService::sendResponse(const FirmwareUpdateResponse& response, const std::string& deviceKey)
+void FirmwareUpdateService::abortGatewayFirmware()
 {
-    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, deviceKey, response);
+    LOG(INFO) << "Not aborting gateway firmware install";
+}
+
+void FirmwareUpdateService::abortDeviceFirmware(const std::string& deviceKey)
+{
+    LOG(INFO) << "Handling firmware update abort for device: " << deviceKey;
+    sendCommand(FirmwareUpdateAbort{{deviceKey}});
+}
+
+void FirmwareUpdateService::sendStatus(const FirmwareUpdateStatus& status)
+{
+    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, status);
 
     if (!message)
     {
-        LOG(WARN) << "Failed to create firmware update response";
+        LOG(WARN) << "Failed to create firmware update status";
         return;
     }
 
     m_outboundPlatformMessageHandler.addMessage(message);
 }
 
-void FirmwareUpdateService::sendCommand(const FirmwareUpdateCommand& command, const std::string& deviceKey)
+void FirmwareUpdateService::sendVersion(const FirmwareVersion& version)
 {
-    std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, command);
+    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, version);
 
     if (!message)
     {
-        LOG(WARN) << "Failed to create firmware update command";
+        LOG(WARN) << "Failed to create firmware version";
+        return;
+    }
+
+    m_outboundPlatformMessageHandler.addMessage(message);
+}
+
+void FirmwareUpdateService::sendCommand(const FirmwareUpdateInstall& command)
+{
+    std::shared_ptr<Message> message = m_gatewayProtocol.makeMessage(m_gatewayKey, command);
+
+    if (!message)
+    {
+        LOG(ERROR) << "Failed to create firmware install command";
+        return;
+    }
+
+    m_outboundDeviceMessageHandler.addMessage(message);
+}
+
+void FirmwareUpdateService::sendCommand(const FirmwareUpdateAbort& command)
+{
+    std::shared_ptr<Message> message = m_gatewayProtocol.makeMessage(m_gatewayKey, command);
+
+    if (!message)
+    {
+        LOG(ERROR) << "Failed to create firmware update abort command";
         return;
     }
 
@@ -734,147 +446,149 @@ void FirmwareUpdateService::addToCommandBuffer(std::function<void()> command)
 {
     m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(command));
 }
-
-void FirmwareUpdateService::addDeviceUpdateStatus(const std::string& deviceKey,
-                                                  DeviceUpdateStruct::DeviceUpdateStatus status, bool autoInstall)
-{
-    m_deviceUpdateStatuses[deviceKey] = {autoInstall, status};
-}
-
-void FirmwareUpdateService::setDeviceUpdateStatus(const std::string& deviceKey,
-                                                  DeviceUpdateStruct::DeviceUpdateStatus status)
-{
-    m_deviceUpdateStatuses[deviceKey].status = status;
-}
-
-bool FirmwareUpdateService::deviceUpdateStatusExists(const std::string& deviceKey)
-{
-    return m_deviceUpdateStatuses.find(deviceKey) != m_deviceUpdateStatuses.end();
-}
-
-FirmwareUpdateService::DeviceUpdateStruct FirmwareUpdateService::getDeviceUpdateStatus(const std::string& deviceKey)
-{
-    if (deviceUpdateStatusExists(deviceKey))
-    {
-        return m_deviceUpdateStatuses.at(deviceKey);
-    }
-
-    return FirmwareUpdateService::DeviceUpdateStruct{false, DeviceUpdateStruct::DeviceUpdateStatus::UNKNOWN};
-}
-
-void FirmwareUpdateService::removeDeviceUpdateStatus(const std::string& deviceKey)
-{
-    if (deviceUpdateStatusExists(deviceKey))
-    {
-        m_deviceUpdateStatuses.erase(m_deviceUpdateStatuses.find(deviceKey));
-    }
-}
-
-void FirmwareUpdateService::addFirmwareDownloadStatus(const std::string& key, const std::string& channel,
-                                                      const std::string& uri,
-                                                      FirmwareDownloadStruct::FirmwareDownloadStatus status,
-                                                      const std::vector<std::string>& deviceKeys,
-                                                      const std::string& firmwareFile)
-{
-    m_firmwareStatuses[key] = {status, channel, uri, deviceKeys, firmwareFile};
-}
-
-FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmwareDownloadStatus(const std::string& key)
-{
-    if (firmwareDownloadStatusExists(key))
-    {
-        return m_firmwareStatuses.at(key);
-    }
-
-    return FirmwareUpdateService::FirmwareDownloadStruct{
-      FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, "", "", {}, ""};
-}
-
-void FirmwareUpdateService::setFirmwareDownloadCompletedStatus(const std::string& key, const std::string& firmwareFile)
-{
-    m_firmwareStatuses[key].downloadedFirmwarePath = firmwareFile;
-    m_firmwareStatuses[key].status = FirmwareDownloadStruct::FirmwareDownloadStatus::COMPLETED;
-}
-
-bool FirmwareUpdateService::firmwareDownloadStatusExists(const std::string& key)
-{
-    return m_firmwareStatuses.find(key) != m_firmwareStatuses.end();
-}
-
-bool FirmwareUpdateService::firmwareDownloadStatusExistsForDevice(const std::string& deviceKey)
-{
-    for (auto& pair : m_firmwareStatuses)
-    {
-        auto& deviceList = pair.second.devices;
-
-        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
-        if (it != deviceList.end())
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmwareDownloadStatusForDevice(
-  const std::string& deviceKey)
-{
-    for (auto& pair : m_firmwareStatuses)
-    {
-        auto& deviceList = pair.second.devices;
-
-        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
-        if (it != deviceList.end())
-        {
-            return pair.second;
-        }
-    }
-
-    return FirmwareUpdateService::FirmwareDownloadStruct{
-      FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, "", "", {}, ""};
-}
-
-void FirmwareUpdateService::removeDeviceFromFirmwareStatus(const std::string& deviceKey)
-{
-    for (auto& pair : m_firmwareStatuses)
-    {
-        auto& deviceList = pair.second.devices;
-
-        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
-        if (it != deviceList.end())
-        {
-            deviceList.erase(it);
-        }
-    }
-}
-
-void FirmwareUpdateService::removeFirmwareStatus(const std::string& key)
-{
-    auto it = m_firmwareStatuses.find(key);
-    if (it != m_firmwareStatuses.end())
-    {
-        for (const auto& deviceKey : it->second.devices)
-        {
-            removeDeviceUpdateStatus(deviceKey);
-        }
-        m_firmwareStatuses.erase(it);
-    }
-}
-
-void FirmwareUpdateService::clearUsedFirmwareFiles()
-{
-    for (auto it = m_firmwareStatuses.begin(); it != m_firmwareStatuses.end();)
-    {
-        if (it->second.devices.empty())
-        {
-            FileSystemUtils::deleteFile(it->second.downloadedFirmwarePath);
-            it = m_firmwareStatuses.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
-}
+//
+// void FirmwareUpdateService::addDeviceUpdateStatus(const std::string& deviceKey,
+//                                                  DeviceUpdateStruct::DeviceUpdateStatus status, bool autoInstall)
+//{
+//    m_deviceUpdateStatuses[deviceKey] = {autoInstall, status};
+//}
+//
+// void FirmwareUpdateService::setDeviceUpdateStatus(const std::string& deviceKey,
+//                                                  DeviceUpdateStruct::DeviceUpdateStatus status)
+//{
+//    m_deviceUpdateStatuses[deviceKey].status = status;
+//}
+//
+// bool FirmwareUpdateService::deviceUpdateStatusExists(const std::string& deviceKey)
+//{
+//    return m_deviceUpdateStatuses.find(deviceKey) != m_deviceUpdateStatuses.end();
+//}
+//
+// FirmwareUpdateService::DeviceUpdateStruct FirmwareUpdateService::getDeviceUpdateStatus(const std::string& deviceKey)
+//{
+//    if (deviceUpdateStatusExists(deviceKey))
+//    {
+//        return m_deviceUpdateStatuses.at(deviceKey);
+//    }
+//
+//    return FirmwareUpdateService::DeviceUpdateStruct{false, DeviceUpdateStruct::DeviceUpdateStatus::UNKNOWN};
+//}
+//
+// void FirmwareUpdateService::removeDeviceUpdateStatus(const std::string& deviceKey)
+//{
+//    if (deviceUpdateStatusExists(deviceKey))
+//    {
+//        m_deviceUpdateStatuses.erase(m_deviceUpdateStatuses.find(deviceKey));
+//    }
+//}
+//
+// void FirmwareUpdateService::addFirmwareDownloadStatus(const std::string& key, const std::string& channel,
+//                                                      const std::string& uri,
+//                                                      FirmwareDownloadStruct::FirmwareDownloadStatus status,
+//                                                      const std::vector<std::string>& deviceKeys,
+//                                                      const std::string& firmwareFile)
+//{
+//    m_firmwareStatuses[key] = {status, channel, uri, deviceKeys, firmwareFile};
+//}
+//
+// FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmwareDownloadStatus(const std::string&
+// key)
+//{
+//    if (firmwareDownloadStatusExists(key))
+//    {
+//        return m_firmwareStatuses.at(key);
+//    }
+//
+//    return FirmwareUpdateService::FirmwareDownloadStruct{
+//      FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, "", "", {}, ""};
+//}
+//
+// void FirmwareUpdateService::setFirmwareDownloadCompletedStatus(const std::string& key, const std::string&
+// firmwareFile)
+//{
+//    m_firmwareStatuses[key].downloadedFirmwarePath = firmwareFile;
+//    m_firmwareStatuses[key].status = FirmwareDownloadStruct::FirmwareDownloadStatus::COMPLETED;
+//}
+//
+// bool FirmwareUpdateService::firmwareDownloadStatusExists(const std::string& key)
+//{
+//    return m_firmwareStatuses.find(key) != m_firmwareStatuses.end();
+//}
+//
+// bool FirmwareUpdateService::firmwareDownloadStatusExistsForDevice(const std::string& deviceKey)
+//{
+//    for (auto& pair : m_firmwareStatuses)
+//    {
+//        auto& deviceList = pair.second.devices;
+//
+//        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
+//        if (it != deviceList.end())
+//        {
+//            return true;
+//        }
+//    }
+//
+//    return false;
+//}
+//
+// FirmwareUpdateService::FirmwareDownloadStruct FirmwareUpdateService::getFirmwareDownloadStatusForDevice(
+//  const std::string& deviceKey)
+//{
+//    for (auto& pair : m_firmwareStatuses)
+//    {
+//        auto& deviceList = pair.second.devices;
+//
+//        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
+//        if (it != deviceList.end())
+//        {
+//            return pair.second;
+//        }
+//    }
+//
+//    return FirmwareUpdateService::FirmwareDownloadStruct{
+//      FirmwareDownloadStruct::FirmwareDownloadStatus::UNKNOWN, "", "", {}, ""};
+//}
+//
+// void FirmwareUpdateService::removeDeviceFromFirmwareStatus(const std::string& deviceKey)
+//{
+//    for (auto& pair : m_firmwareStatuses)
+//    {
+//        auto& deviceList = pair.second.devices;
+//
+//        auto it = std::find(deviceList.begin(), deviceList.end(), deviceKey);
+//        if (it != deviceList.end())
+//        {
+//            deviceList.erase(it);
+//        }
+//    }
+//}
+//
+// void FirmwareUpdateService::removeFirmwareStatus(const std::string& key)
+//{
+//    auto it = m_firmwareStatuses.find(key);
+//    if (it != m_firmwareStatuses.end())
+//    {
+//        for (const auto& deviceKey : it->second.devices)
+//        {
+//            removeDeviceUpdateStatus(deviceKey);
+//        }
+//        m_firmwareStatuses.erase(it);
+//    }
+//}
+//
+// void FirmwareUpdateService::clearUsedFirmwareFiles()
+//{
+//    for (auto it = m_firmwareStatuses.begin(); it != m_firmwareStatuses.end();)
+//    {
+//        if (it->second.devices.empty())
+//        {
+//            FileSystemUtils::deleteFile(it->second.downloadedFirmwarePath);
+//            it = m_firmwareStatuses.erase(it);
+//        }
+//        else
+//        {
+//            ++it;
+//        }
+//    }
+//}
 }    // namespace wolkabout

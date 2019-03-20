@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,159 +18,150 @@
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
-#include "service/UrlFileDownloader.h"
-#include "service/WolkaboutFileDownloader.h"
+#include "model/FirmwareUpdateStatus.h"
+#include "utilities/CommandBuffer.h"
 
-#include <map>
+#include <functional>
+#include <memory>
 #include <string>
-#include <tuple>
 #include <vector>
 
 namespace wolkabout
 {
+class FileRepository;
 class FirmwareInstaller;
-class FirmwareUpdateCommand;
-class FirmwareUpdateResponse;
+class FirmwareUpdateAbort;
+class FirmwareUpdateInstall;
+class FirmwareUpdateStatus;
+class FirmwareVersion;
 class GatewayFirmwareUpdateProtocol;
+class JsonDFUProtocol;
 class OutboundMessageHandler;
-class UrlFileDownloader;
 
 class FirmwareUpdateService : public DeviceMessageListener, public PlatformMessageListener
 {
 public:
-    FirmwareUpdateService(std::string gatewayKey, GatewayFirmwareUpdateProtocol& protocol,
+    FirmwareUpdateService(std::string gatewayKey, JsonDFUProtocol& protocol,
+                          GatewayFirmwareUpdateProtocol& gatewayProtocol, FileRepository& fileRepository,
                           OutboundMessageHandler& outboundPlatformMessageHandler,
-                          OutboundMessageHandler& outboundDeviceMessageHandler,
-                          WolkaboutFileDownloader& wolkaboutFileDownloader, std::string firmwareDownloadDirectory,
-                          std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr);
+                          OutboundMessageHandler& outboundDeviceMessageHandler);
 
-    FirmwareUpdateService(std::string gatewayKey, GatewayFirmwareUpdateProtocol& protocol,
+    FirmwareUpdateService(std::string gatewayKey, JsonDFUProtocol& protocol,
+                          GatewayFirmwareUpdateProtocol& gatewayProtocol, FileRepository& fileRepository,
                           OutboundMessageHandler& outboundPlatformMessageHandler,
                           OutboundMessageHandler& outboundDeviceMessageHandler,
-                          WolkaboutFileDownloader& wolkaboutFileDownloader, std::string firmwareDownloadDirectory,
-                          std::shared_ptr<FirmwareInstaller> firmwareInstaller, std::string currentFirmwareVersion,
-                          std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr);
+                          std::shared_ptr<FirmwareInstaller> firmwareInstaller, std::string currentFirmwareVersion);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const Protocol& getProtocol() const override;
+
+    const GatewayProtocol& getGatewayProtocol() const override;
 
     void reportFirmwareUpdateResult();
 
     void publishFirmwareVersion();
 
 private:
-    void handleFirmwareUpdateCommand(const FirmwareUpdateCommand& command, const std::string deviceKey);
+    void handleFirmwareUpdateCommand(const FirmwareUpdateInstall& command);
+    void handleFirmwareUpdateCommand(const FirmwareUpdateAbort& command);
 
-    void handleFirmwareUpdateResponse(const FirmwareUpdateResponse& response, const std::string deviceKey);
+    void handleFirmwareUpdateStatus(const FirmwareUpdateStatus& status);
+    void handleFirmwareVersion(const FirmwareVersion& version);
 
-    void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
+    void install(const std::vector<std::string>& deviceKeys, const std::string& fileName);
+    void installGatewayFirmware(const std::string& filePath);
+    void installDeviceFirmware(const std::string& deviceKey, const std::string& filePath, const std::string& fileHash);
 
-    void fileUpload(const std::string& deviceKey, const std::string& name, std::uint_fast64_t size,
-                    const std::string& hash, bool autoInstall, const std::string& subChannel);
+    void installationInProgress(const std::vector<std::string>& deviceKeys);
+    void installationCompleted(const std::vector<std::string>& deviceKeys);
+    void installationAborted(const std::vector<std::string>& deviceKeys);
+    void installationFailed(const std::vector<std::string>& deviceKeys,
+                            WolkOptional<FirmwareUpdateStatus::Error> errorCode);
 
-    void urlDownload(const std::string& deviceKey, const std::string& url, bool autoInstall,
-                     const std::string& subChannel);
+    void abort(const std::vector<std::string>& deviceKeys);
+    void abortGatewayFirmware();
+    void abortDeviceFirmware(const std::string& deviceKey);
 
-    void downloadCompleted(const std::string& filePath, const std::string& hash, const std::string& subChannel);
+    void sendStatus(const FirmwareUpdateStatus& status);
+    void sendVersion(const FirmwareVersion& version);
 
-    void downloadFailed(WolkaboutFileDownloader::ErrorCode errorCode, const std::string& hash,
-                        const std::string& subChannel);
-
-    void downloadFailed(UrlFileDownloader::Error errorCode, const std::string& url, const std::string& subChannel);
-
-    void transferFile(const std::string& deviceKey, const std::string& filePath);
-
-    void install(const std::string& deviceKey);
-
-    void installGwFirmware(const std::string& filePath);
-
-    void installCompleted(const std::string& deviceKey);
-
-    void installAborted(const std::string& deviceKey);
-
-    void installFailed(const std::string& deviceKey);
-
-    void abort(const std::string& deviceKey);
-
-    void sendResponse(const FirmwareUpdateResponse& response, const std::string& deviceKey);
-
-    void sendCommand(const FirmwareUpdateCommand& command, const std::string& deviceKey);
+    void sendCommand(const FirmwareUpdateInstall& command);
+    void sendCommand(const FirmwareUpdateAbort& command);
 
     void addToCommandBuffer(std::function<void()> command);
 
     const std::string m_gatewayKey;
-    GatewayFirmwareUpdateProtocol& m_protocol;
+    JsonDFUProtocol& m_protocol;
+    GatewayFirmwareUpdateProtocol& m_gatewayProtocol;
+
+    FileRepository& m_fileRepository;
 
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;
 
-    WolkaboutFileDownloader& m_wolkaboutFileDownloader;
-
-    const std::string m_firmwareDownloadDirectory;
-
     std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
     const std::string m_currentFirmwareVersion;
 
-    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
-
-    struct FirmwareDownloadStruct
-    {
-        enum class FirmwareDownloadStatus
-        {
-            IN_PROGRESS,
-            COMPLETED,
-            UNKNOWN
-        } status;
-
-        std::string channel;
-        std::string uri;
-        std::vector<std::string> devices;
-        std::string downloadedFirmwarePath;
-    };
-
-    std::map<std::string, FirmwareDownloadStruct> m_firmwareStatuses;
-
-    struct DeviceUpdateStruct
-    {
-        bool autoinstall;
-
-        enum class DeviceUpdateStatus
-        {
-            WOLK_DOWNLOAD,
-            URL_DOWNLOAD,
-            TRANSFER,
-            READY,
-            INSTALL,
-            ERROR,
-            UNKNOWN
-        } status;
-    };
-
-    void addDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status,
-                               bool autoInstall);
-    void setDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status);
-    bool deviceUpdateStatusExists(const std::string& deviceKey);
-    DeviceUpdateStruct getDeviceUpdateStatus(const std::string& deviceKey);
-    void removeDeviceUpdateStatus(const std::string& deviceKey);
-
-    void addFirmwareDownloadStatus(const std::string& key, const std::string& channel, const std::string& uri,
-                                   FirmwareDownloadStruct::FirmwareDownloadStatus status,
-                                   const std::vector<std::string>& deviceKeys,
-                                   const std::string& downloadedFirmwarePath = "");
-    void setFirmwareDownloadCompletedStatus(const std::string& key, const std::string& firmwareFile);
-    bool firmwareDownloadStatusExists(const std::string& key);
-    bool firmwareDownloadStatusExistsForDevice(const std::string& deviceKey);
-    FirmwareDownloadStruct getFirmwareDownloadStatus(const std::string& key);
-    FirmwareDownloadStruct getFirmwareDownloadStatusForDevice(const std::string& deviceKey);
-    void removeDeviceFromFirmwareStatus(const std::string& deviceKey);
-    void removeFirmwareStatus(const std::string& key);
-    void clearUsedFirmwareFiles();
-
-    // TODO move to database
-    std::map<std::string, DeviceUpdateStruct> m_deviceUpdateStatuses;
+    //    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
+    //
+    //    struct FirmwareDownloadStruct
+    //    {
+    //        enum class FirmwareDownloadStatus
+    //        {
+    //            IN_PROGRESS,
+    //            COMPLETED,
+    //            UNKNOWN
+    //        } status;
+    //
+    //        std::string channel;
+    //        std::string uri;
+    //        std::vector<std::string> devices;
+    //        std::string downloadedFirmwarePath;
+    //    };
+    //
+    //    std::map<std::string, FirmwareDownloadStruct> m_firmwareStatuses;
+    //
+    //    struct DeviceUpdateStruct
+    //    {
+    //        bool autoinstall;
+    //
+    //        enum class DeviceUpdateStatus
+    //        {
+    //            WOLK_DOWNLOAD,
+    //            URL_DOWNLOAD,
+    //            TRANSFER,
+    //            READY,
+    //            INSTALL,
+    //            ERROR,
+    //            UNKNOWN
+    //        } status;
+    //    };
+    //
+    //    void addDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status,
+    //                               bool autoInstall);
+    //    void setDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status);
+    //    bool deviceUpdateStatusExists(const std::string& deviceKey);
+    //    DeviceUpdateStruct getDeviceUpdateStatus(const std::string& deviceKey);
+    //    void removeDeviceUpdateStatus(const std::string& deviceKey);
+    //
+    //    void addFirmwareDownloadStatus(const std::string& key, const std::string& channel, const std::string& uri,
+    //                                   FirmwareDownloadStruct::FirmwareDownloadStatus status,
+    //                                   const std::vector<std::string>& deviceKeys,
+    //                                   const std::string& downloadedFirmwarePath = "");
+    //    void setFirmwareDownloadCompletedStatus(const std::string& key, const std::string& firmwareFile);
+    //    bool firmwareDownloadStatusExists(const std::string& key);
+    //    bool firmwareDownloadStatusExistsForDevice(const std::string& deviceKey);
+    //    FirmwareDownloadStruct getFirmwareDownloadStatus(const std::string& key);
+    //    FirmwareDownloadStruct getFirmwareDownloadStatusForDevice(const std::string& deviceKey);
+    //    void removeDeviceFromFirmwareStatus(const std::string& deviceKey);
+    //    void removeFirmwareStatus(const std::string& key);
+    //    void clearUsedFirmwareFiles();
+    //
+    //    // TODO move to database
+    //    std::map<std::string, DeviceUpdateStruct> m_deviceUpdateStatuses;
 
     CommandBuffer m_commandBuffer;
 

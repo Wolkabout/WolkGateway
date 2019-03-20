@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,44 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef GATEWAYFIRMWAREUPDATEPROTOCOL_H
 #define GATEWAYFIRMWAREUPDATEPROTOCOL_H
 
 #include "protocol/GatewayProtocol.h"
 
 #include <memory>
+#include <string>
 
 namespace wolkabout
 {
-class FirmwareUpdateCommand;
-class FirmwareUpdateResponse;
+class FirmwareUpdateAbort;
+class FirmwareUpdateInstall;
+class FirmwareUpdateStatus;
+class FirmwareVersion;
 class Message;
 
 class GatewayFirmwareUpdateProtocol : public GatewayProtocol
 {
 public:
-    GatewayProtocol::Type getType() const override final { return GatewayProtocol::Type::FIRMWARE_UPDATE; }
+    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
+                                                 const FirmwareUpdateAbort& command) const = 0;
 
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                 const FirmwareUpdateResponse& firmwareUpdateResponse) const = 0;
+    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
+                                                 const FirmwareUpdateInstall& command) const = 0;
 
-    virtual std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
-                                                 const FirmwareUpdateCommand& firmwareUpdateCommand) const = 0;
+    virtual std::unique_ptr<FirmwareVersion> makeFirmwareVersion(const Message& message) const = 0;
 
-    virtual std::unique_ptr<Message> makeFromFirmwareVersion(const std::string& deviceKey,
-                                                             const std::string& firmwareVerion) const = 0;
-
-    virtual bool isFirmwareUpdateCommandMessage(const Message& message) const = 0;
-
-    virtual bool isFirmwareUpdateResponseMessage(const Message& message) const = 0;
-
-    virtual bool isFirmwareVersionMessage(const Message& message) const = 0;
-
-    virtual std::string routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey) const = 0;
-
-    virtual std::unique_ptr<FirmwareUpdateCommand> makeFirmwareUpdateCommand(const Message& message) const = 0;
-
-    virtual std::unique_ptr<FirmwareUpdateResponse> makeFirmwareUpdateResponse(const Message& message) const = 0;
+    virtual std::unique_ptr<FirmwareUpdateStatus> makeFirmwareUpdateStatus(const Message& message) const = 0;
 };
 }    // namespace wolkabout
 

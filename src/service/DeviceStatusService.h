@@ -58,15 +58,12 @@ public:
     void disconnected() override;
 
 private:
-    void routeDeviceMessage(std::shared_ptr<Message> message);
-    void routePlatformMessage(std::shared_ptr<Message> message);
-
     void requestDevicesStatus();
     void validateDevicesStatus();
 
     void sendStatusRequestForDevice(const std::string& deviceKey);
     void sendStatusRequestForAllDevices();
-    void sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus status);
+    void sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status);
 
     bool containsDeviceStatus(const std::string& deviceKey);
     std::pair<std::time_t, DeviceStatus> getDeviceStatus(const std::string& deviceKey);

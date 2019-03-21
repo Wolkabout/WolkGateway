@@ -38,6 +38,10 @@ const std::string JsonGatewayStatusProtocol::DEVICE_TO_PLATFORM_DIRECTION = "d2p
 const std::string JsonGatewayStatusProtocol::PLATFORM_TO_DEVICE_DIRECTION = "p2d/";
 
 const std::string JsonGatewayStatusProtocol::LAST_WILL_TOPIC_ROOT = "lastwill/";
+const std::string JsonGatewayStatusProtocol::PLATFORM_STATUS_REQUEST_TOPIC_ROOT = "p2d/subdevice_status_request/";
+const std::string JsonGatewayStatusProtocol::PLATFORM_STATUS_RESPONSE_TOPIC_ROOT = "d2p/subdevice_status_response/";
+const std::string JsonGatewayStatusProtocol::PLATFORM_STATUS_CONFIRM_TOPIC_ROOT = "p2d/subdevice_status_confirm/";
+const std::string JsonGatewayStatusProtocol::PLATFORM_STATUS_UPDATE_TOPIC_ROOT = "d2p/subdevice_status_update/";
 const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_REQUEST_TOPIC_ROOT = "p2d/status/";
 const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_RESPONSE_TOPIC_ROOT = "d2p/status/";
 const std::string JsonGatewayStatusProtocol::PING_TOPIC_ROOT = "ping/";
@@ -94,15 +98,19 @@ const std::string& JsonGatewayStatusProtocol::getName() const
 
 std::vector<std::string> JsonGatewayStatusProtocol::getInboundPlatformChannels() const
 {
-    return {DEVICE_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_SINGLE_LEVEL_WILDCARD + CHANNEL_DELIMITER +
-              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
+    return {PLATFORM_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_SINGLE_LEVEL_WILDCARD +
+              CHANNEL_DELIMITER + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
+            PLATFORM_STATUS_CONFIRM_TOPIC_ROOT + GATEWAY_PATH_PREFIX + CHANNEL_SINGLE_LEVEL_WILDCARD +
+              CHANNEL_DELIMITER + DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
             PONG_TOPIC_ROOT + CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 
 std::vector<std::string> JsonGatewayStatusProtocol::getInboundPlatformChannelsForGatewayKey(
   const std::string& gatewayKey) const
 {
-    return {DEVICE_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+    return {PLATFORM_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+              DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
+            PLATFORM_STATUS_CONFIRM_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
               DEVICE_PATH_PREFIX + CHANNEL_MULTI_LEVEL_WILDCARD,
             PONG_TOPIC_ROOT + gatewayKey};
 }
@@ -110,7 +118,9 @@ std::vector<std::string> JsonGatewayStatusProtocol::getInboundPlatformChannelsFo
 std::vector<std::string> JsonGatewayStatusProtocol::getInboundPlatformChannelsForKeys(
   const std::string& gatewayKey, const std::string& deviceKey) const
 {
-    return {DEVICE_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+    return {PLATFORM_STATUS_REQUEST_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+              DEVICE_PATH_PREFIX + deviceKey,
+            PLATFORM_STATUS_CONFIRM_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
               DEVICE_PATH_PREFIX + deviceKey,
             PONG_TOPIC_ROOT + gatewayKey};
 }
@@ -135,7 +145,7 @@ std::unique_ptr<Message> JsonGatewayStatusProtocol::makeMessage(const std::strin
     LOG(TRACE) << METHOD_INFO;
 
     const json jPayload(response);
-    const std::string topic = DEVICE_STATUS_RESPONSE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
+    const std::string topic = PLATFORM_STATUS_UPDATE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
                               DEVICE_PATH_PREFIX + deviceKey;
 
     const std::string payload = jPayload.dump();
@@ -226,6 +236,13 @@ bool JsonGatewayStatusProtocol::isMessageFromPlatform(const Message& message) co
     return StringUtils::startsWith(message.getChannel(), PLATFORM_TO_DEVICE_DIRECTION);
 }
 
+bool JsonGatewayStatusProtocol::isStatusUpdateMessage(const Message& message) const
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    return StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_RESPONSE_TOPIC_ROOT);
+}
+
 bool JsonGatewayStatusProtocol::isStatusResponseMessage(const Message& message) const
 {
     LOG(TRACE) << METHOD_INFO;
@@ -237,7 +254,14 @@ bool JsonGatewayStatusProtocol::isStatusRequestMessage(const Message& message) c
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_REQUEST_TOPIC_ROOT);
+    return StringUtils::startsWith(message.getChannel(), PLATFORM_STATUS_REQUEST_TOPIC_ROOT);
+}
+
+bool JsonGatewayStatusProtocol::isStatusConfirmMessage(const Message& message) const
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    return StringUtils::startsWith(message.getChannel(), PLATFORM_STATUS_CONFIRM_TOPIC_ROOT);
 }
 
 bool JsonGatewayStatusProtocol::isLastWillMessage(const Message& message) const

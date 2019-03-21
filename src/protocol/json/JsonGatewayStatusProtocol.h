@@ -48,7 +48,9 @@ public:
     std::unique_ptr<Message> makeLastWillMessage(const std::string& gatewayKey) const override;
     std::unique_ptr<DeviceStatusResponse> makeDeviceStatusResponse(const Message& message) const override;
     bool isStatusResponseMessage(const Message& message) const override;
+    bool isStatusUpdateMessage(const Message& message) const override;
     bool isStatusRequestMessage(const Message& message) const override;
+    bool isStatusConfirmMessage(const Message& message) const override;
     bool isLastWillMessage(const Message& message) const override;
     bool isPongMessage(const Message& message) const override;
     std::string routeDeviceMessage(const std::string& channel, const std::string& gatewayKey) const override;
@@ -74,6 +76,10 @@ private:
     static const std::string PLATFORM_TO_DEVICE_DIRECTION;
 
     static const std::string LAST_WILL_TOPIC_ROOT;
+    static const std::string PLATFORM_STATUS_REQUEST_TOPIC_ROOT;
+    static const std::string PLATFORM_STATUS_RESPONSE_TOPIC_ROOT;
+    static const std::string PLATFORM_STATUS_CONFIRM_TOPIC_ROOT;
+    static const std::string PLATFORM_STATUS_UPDATE_TOPIC_ROOT;
     static const std::string DEVICE_STATUS_REQUEST_TOPIC_ROOT;
     static const std::string DEVICE_STATUS_RESPONSE_TOPIC_ROOT;
     static const std::string PING_TOPIC_ROOT;

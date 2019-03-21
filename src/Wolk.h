@@ -43,21 +43,26 @@ class DataService;
 class DeviceStatusService;
 class DeviceRepository;
 class ExistingDevicesRepository;
+class FileDownloadProtocol;
 class FileDownloadService;
+class FileRepository;
 class FirmwareUpdateService;
+class GatewayDataProtocol;
 class GatewayDataService;
-class GatewayFileDownloadProtocol;
 class GatewayFirmwareUpdateProtocol;
 class GatewayStatusProtocol;
 class GatewaySubdeviceRegistrationProtocol;
 class GatewayUpdateService;
 class InboundDeviceMessageHandler;
 class InboundPlatformMessageHandler;
+class JsonDFUProtocol;
 class KeepAliveService;
 class PublishingService;
 class Persistence;
 class RegistrationMessageRouter;
+class RegistrationProtocol;
 class StatusMessageRouter;
+class StatusProtocol;
 class SubdeviceRegistrationService;
 
 class Wolk
@@ -242,13 +247,11 @@ private:
 
     GatewayDevice m_device;
 
-    std::unique_ptr<GatewayStatusProtocol> m_statusProtocol;
-    std::unique_ptr<GatewaySubdeviceRegistrationProtocol> m_registrationProtocol;
-    std::unique_ptr<GatewayFileDownloadProtocol> m_fileDownloadProtocol;
-    std::unique_ptr<GatewayFirmwareUpdateProtocol> m_firmwareUpdateProtocol;
-
     std::unique_ptr<DeviceRepository> m_deviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
+    std::unique_ptr<FileRepository> m_fileRepository;
+
+    std::unique_ptr<Persistence> m_gatewayPersistence;
 
     std::unique_ptr<ConnectivityService> m_platformConnectivityService;
     std::unique_ptr<ConnectivityService> m_deviceConnectivityService;
@@ -259,22 +262,28 @@ private:
     std::unique_ptr<PublishingService> m_platformPublisher;
     std::unique_ptr<PublishingService> m_devicePublisher;
 
-    std::shared_ptr<DataService> m_dataService;
-    std::unique_ptr<GatewayDataProtocol> m_dataProtocol;
-
+    std::unique_ptr<DataProtocol> m_dataProtocol;
+    std::unique_ptr<GatewayDataProtocol> m_gatewayDataProtocol;
     std::unique_ptr<GatewayDataService> m_gatewayDataService;
-    std::unique_ptr<Persistence> m_gatewayPersistence;
-    std::unique_ptr<DataProtocol> m_gatewayDataProtocol;
+    std::shared_ptr<DataService> m_dataService;
 
+    std::unique_ptr<RegistrationProtocol> m_registrationProtocol;
+    std::unique_ptr<GatewaySubdeviceRegistrationProtocol> m_gatewayRegistrationProtocol;
     std::unique_ptr<GatewayUpdateService> m_gatewayUpdateService;
     std::unique_ptr<SubdeviceRegistrationService> m_subdeviceRegistrationService;
     std::shared_ptr<RegistrationMessageRouter> m_registrationMessageRouter;
 
+    std::unique_ptr<StatusProtocol> m_statusProtocol;
+    std::unique_ptr<GatewayStatusProtocol> m_gatewayStatusProtocol;
     std::unique_ptr<KeepAliveService> m_keepAliveService;
     std::unique_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
 
+    std::unique_ptr<JsonDFUProtocol> m_firmwareUpdateProtocol;
+    std::unique_ptr<GatewayFirmwareUpdateProtocol> m_gatewayFirmwareUpdateProtocol;
     std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
+
+    std::unique_ptr<FileDownloadProtocol> m_fileDownloadProtocol;
     std::shared_ptr<FileDownloadService> m_fileDownloadService;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;
@@ -335,7 +344,7 @@ void Wolk::addSensorReading(const std::string& reference, const std::vector<T>& 
 template <class MessageHandler>
 Wolk::ConnectivityFacade<MessageHandler>::ConnectivityFacade(MessageHandler& handler,
                                                              std::function<void()> connectionLostHandler)
-: m_messageHandler{handler}, m_connectionLostHandler{connectionLostHandler}
+: m_messageHandler{handler}, m_connectionLostHandler{std::move(connectionLostHandler)}
 {
 }
 

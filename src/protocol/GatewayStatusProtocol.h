@@ -26,30 +26,20 @@
 namespace wolkabout
 {
 class Message;
-class DeviceStatusResponse;
+class DeviceStatus;
 
 class GatewayStatusProtocol : public GatewayProtocol
 {
 public:
-    Type getType() const final override { return GatewayProtocol::Type::STATUS; }
-
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                                 const DeviceStatusResponse& response) const = 0;
-
     virtual std::unique_ptr<Message> makeDeviceStatusRequestMessage(const std::string& deviceKey) const = 0;
 
-    virtual std::unique_ptr<Message> makeFromPingRequest(const std::string& gatewayKey) const = 0;
-
-    virtual std::unique_ptr<Message> makeLastWillMessage(const std::string& gatewayKey) const = 0;
-
-    virtual std::unique_ptr<DeviceStatusResponse> makeDeviceStatusResponse(const Message& message) const = 0;
+    virtual std::unique_ptr<DeviceStatus> makeDeviceStatusResponse(const Message& message) const = 0;
+    virtual std::unique_ptr<DeviceStatus> makeDeviceStatusUpdate(const Message& message) const = 0;
 
     virtual bool isStatusResponseMessage(const Message& message) const = 0;
     virtual bool isStatusUpdateMessage(const Message& message) const = 0;
-    virtual bool isStatusRequestMessage(const Message& message) const = 0;
-    virtual bool isStatusConfirmMessage(const Message& message) const = 0;
+
     virtual bool isLastWillMessage(const Message& message) const = 0;
-    virtual bool isPongMessage(const Message& message) const = 0;
 
     virtual std::string routeDeviceMessage(const std::string& channel, const std::string& gatewayKey) const = 0;
     virtual std::string routePlatformMessage(const std::string& channel, const std::string& gatewayKey) const = 0;

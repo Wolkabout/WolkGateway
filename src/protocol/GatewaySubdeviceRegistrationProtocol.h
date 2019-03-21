@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,43 +28,16 @@ namespace wolkabout
 class Message;
 class SubdeviceRegistrationRequest;
 class SubdeviceRegistrationResponse;
-class GatewayUpdateRequest;
-class GatewayUpdateResponse;
+
 class GatewaySubdeviceRegistrationProtocol : public GatewayProtocol
 {
 public:
-    GatewayProtocol::Type getType() const override final { return GatewayProtocol::Type::REGISTRATION; }
-
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
-                                                 const SubdeviceRegistrationRequest& request) const = 0;
-
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
-                                                 const SubdeviceRegistrationResponse& request) const = 0;
-
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
-                                                 const GatewayUpdateRequest& request) const = 0;
-
-    virtual std::unique_ptr<Message> makeSubdeviceDeletionRequestMessage(const std::string& gatewayKey,
-                                                                         const std::string& deviceKey) const = 0;
+    virtual std::unique_ptr<Message> makeMessage(const SubdeviceRegistrationResponse& request) const = 0;
 
     virtual std::unique_ptr<SubdeviceRegistrationRequest> makeSubdeviceRegistrationRequest(
       const Message& message) const = 0;
-    virtual std::unique_ptr<SubdeviceRegistrationResponse> makeSubdeviceRegistrationResponse(
-      const Message& message) const = 0;
-
-    virtual std::unique_ptr<GatewayUpdateResponse> makeGatewayUpdateResponse(const Message& message) const = 0;
 
     virtual bool isSubdeviceRegistrationRequest(const Message& message) const = 0;
-    virtual bool isSubdeviceRegistrationResponse(const Message& message) const = 0;
-
-    virtual bool isGatewayUpdateResponse(const Message& message) const = 0;
-    virtual bool isGatewayUpdateRequest(const Message& message) const = 0;
-
-    virtual bool isSubdeviceDeletionRequest(const Message& message) const = 0;
-    virtual bool isSubdeviceDeletionResponse(const Message& message) const = 0;
-
-    virtual std::string getResponseChannel(const Message& message, const std::string& gatewayKey,
-                                           const std::string& deviceKey) const = 0;
 };
 }    // namespace wolkabout
 

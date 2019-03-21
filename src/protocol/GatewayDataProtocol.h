@@ -33,22 +33,8 @@ class ActuatorGetCommand;
 class GatewayDataProtocol : public GatewayProtocol
 {
 public:
-    Type getType() const final override { return GatewayProtocol::Type::DATA; }
-
-    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey,
-                                                 const ActuatorStatus& actuatorStatus) const = 0;
-
     virtual std::unique_ptr<Message> makeMessage(const std::string& deviceKey,
                                                  const ActuatorGetCommand& command) const = 0;
-
-    virtual std::unique_ptr<ActuatorGetCommand> makeActuatorGetCommand(const Message& message) const = 0;
-    virtual std::unique_ptr<ActuatorSetCommand> makeActuatorSetCommand(const Message& message) const = 0;
-
-    virtual bool isActuatorSetMessage(const Message& message) const = 0;
-    virtual bool isActuatorGetMessage(const Message& message) const = 0;
-
-    virtual bool isConfigurationSetMessage(const Message& message) const = 0;
-    virtual bool isConfigurationGetMessage(const Message& message) const = 0;
 
     virtual bool isSensorReadingMessage(const Message& message) const = 0;
     virtual bool isAlarmMessage(const Message& message) const = 0;

@@ -20,6 +20,7 @@
 #include "model/ActuatorStatus.h"
 #include "model/Alarm.h"
 #include "model/Message.h"
+#include "protocol/json/Json.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
 #include "utilities/json.hpp"
@@ -30,24 +31,6 @@ using nlohmann::json;
 
 namespace wolkabout
 {
-const std::string JsonGatewayDataProtocol::NAME = "JsonProtocol";
-
-const std::string JsonGatewayDataProtocol::CHANNEL_DELIMITER = "/";
-const std::string JsonGatewayDataProtocol::CHANNEL_MULTI_LEVEL_WILDCARD = "#";
-const std::string JsonGatewayDataProtocol::CHANNEL_SINGLE_LEVEL_WILDCARD = "+";
-
-const std::string JsonGatewayDataProtocol::GATEWAY_TYPE = "g";
-const std::string JsonGatewayDataProtocol::DEVICE_TYPE = "d";
-const std::string JsonGatewayDataProtocol::REFERENCE_TYPE = "r";
-const std::string JsonGatewayDataProtocol::DEVICE_TO_PLATFORM_TYPE = "d2p";
-const std::string JsonGatewayDataProtocol::PLATFORM_TO_DEVICE_TYPE = "p2d";
-
-const std::string JsonGatewayDataProtocol::GATEWAY_PATH_PREFIX = "g/";
-const std::string JsonGatewayDataProtocol::DEVICE_PATH_PREFIX = "d/";
-const std::string JsonGatewayDataProtocol::REFERENCE_PATH_PREFIX = "r/";
-const std::string JsonGatewayDataProtocol::DEVICE_TO_PLATFORM_DIRECTION = "d2p/";
-const std::string JsonGatewayDataProtocol::PLATFORM_TO_DEVICE_DIRECTION = "p2d/";
-
 const std::string JsonGatewayDataProtocol::SENSOR_READING_TOPIC_ROOT = "d2p/sensor_reading/";
 const std::string JsonGatewayDataProtocol::EVENTS_TOPIC_ROOT = "d2p/events/";
 const std::string JsonGatewayDataProtocol::ACTUATION_STATUS_TOPIC_ROOT = "d2p/actuator_status/";
@@ -90,11 +73,6 @@ static void to_json(json& j, const std::shared_ptr<ActuatorStatus>& p)
     to_json(j, *p);
 }
 
-const std::string& JsonGatewayDataProtocol::getName() const
-{
-    return NAME;
-}
-
 std::vector<std::string> JsonGatewayDataProtocol::getInboundChannels() const
 {
     return {SENSOR_READING_TOPIC_ROOT + DEVICE_PATH_PREFIX + CHANNEL_SINGLE_LEVEL_WILDCARD + CHANNEL_DELIMITER +
@@ -117,20 +95,11 @@ std::vector<std::string> JsonGatewayDataProtocol::getInboundChannelsForDevice(co
             CONFIGURATION_RESPONSE_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey};
 }
 
-std::unique_ptr<Message> JsonGatewayDataProtocol::makeMessage(const std::string& gatewayKey,
-                                                              const ActuatorStatus& actuatorStatus) const
-{
-    const json jPayload(actuatorStatus);
-    const std::string topic = ACTUATION_STATUS_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-                              REFERENCE_PATH_PREFIX + actuatorStatus.getReference();
-    const std::string payload = jPayload.dump();
-
-    return std::unique_ptr<Message>(new Message(payload, topic));
-}
-
 std::unique_ptr<Message> JsonGatewayDataProtocol::makeMessage(const std::string& deviceKey,
                                                               const ActuatorGetCommand& command) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     std::string topic;
     if (!deviceKey.empty())
     {
@@ -145,109 +114,39 @@ std::unique_ptr<Message> JsonGatewayDataProtocol::makeMessage(const std::string&
     return std::unique_ptr<Message>(new Message("", topic));
 }
 
-std::unique_ptr<ActuatorSetCommand> JsonGatewayDataProtocol::makeActuatorSetCommand(const Message& message) const
-{
-    try
-    {
-        json j = json::parse(message.getContent());
-
-        const std::string value = [&]() -> std::string {
-            if (j.find("value") != j.end())
-            {
-                return j.at("value").get<std::string>();
-            }
-
-            return "";
-        }();
-
-        const auto reference = extractReferenceFromChannel(message.getChannel());
-
-        return std::unique_ptr<ActuatorSetCommand>(new ActuatorSetCommand(reference, value));
-    }
-    catch (...)
-    {
-        LOG(DEBUG) << "Unable to parse ActuatorSetCommand: " << message.getContent();
-        return nullptr;
-    }
-}
-
-std::unique_ptr<ActuatorGetCommand> JsonGatewayDataProtocol::makeActuatorGetCommand(const Message& message) const
-{
-    try
-    {
-        const auto reference = extractReferenceFromChannel(message.getChannel());
-
-        if (reference.empty())
-        {
-            return nullptr;
-        }
-
-        return std::unique_ptr<ActuatorGetCommand>(new ActuatorGetCommand(reference));
-    }
-    catch (...)
-    {
-        LOG(DEBUG) << "Unable to parse ActuatorGetCommand: " << message.getContent();
-        return nullptr;
-    }
-}
-
-bool JsonGatewayDataProtocol::isMessageToPlatform(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    return StringUtils::startsWith(message.getChannel(), DEVICE_TO_PLATFORM_DIRECTION);
-}
-
-bool JsonGatewayDataProtocol::isMessageFromPlatform(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    return StringUtils::startsWith(message.getChannel(), PLATFORM_TO_DEVICE_DIRECTION);
-}
-
-bool JsonGatewayDataProtocol::isActuatorSetMessage(const Message& message) const
-{
-    return StringUtils::startsWith(message.getChannel(), ACTUATION_SET_TOPIC_ROOT);
-}
-
-bool JsonGatewayDataProtocol::isActuatorGetMessage(const Message& message) const
-{
-    return StringUtils::startsWith(message.getChannel(), ACTUATION_GET_TOPIC_ROOT);
-}
-
-bool JsonGatewayDataProtocol::isConfigurationSetMessage(const Message& message) const
-{
-    return StringUtils::startsWith(message.getChannel(), CONFIGURATION_SET_REQUEST_TOPIC_ROOT);
-}
-
-bool JsonGatewayDataProtocol::isConfigurationGetMessage(const Message& message) const
-{
-    return StringUtils::startsWith(message.getChannel(), CONFIGURATION_GET_REQUEST_TOPIC_ROOT);
-}
-
 bool JsonGatewayDataProtocol::isSensorReadingMessage(const Message& message) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     return StringUtils::startsWith(message.getChannel(), SENSOR_READING_TOPIC_ROOT);
 }
 
 bool JsonGatewayDataProtocol::isAlarmMessage(const Message& message) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     return StringUtils::startsWith(message.getChannel(), EVENTS_TOPIC_ROOT);
 }
 
 bool JsonGatewayDataProtocol::isActuatorStatusMessage(const Message& message) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     return StringUtils::startsWith(message.getChannel(), ACTUATION_STATUS_TOPIC_ROOT);
 }
 
 bool JsonGatewayDataProtocol::isConfigurationCurrentMessage(const Message& message) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     return StringUtils::startsWith(message.getChannel(), CONFIGURATION_RESPONSE_TOPIC_ROOT);
 }
 
 std::string JsonGatewayDataProtocol::routePlatformToDeviceMessage(const std::string& topic,
                                                                   const std::string& gatewayKey) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     const std::string gwTopicPart = GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER;
     if (topic.find(gwTopicPart) != std::string::npos)
     {
@@ -260,6 +159,8 @@ std::string JsonGatewayDataProtocol::routePlatformToDeviceMessage(const std::str
 std::string JsonGatewayDataProtocol::routeDeviceToPlatformMessage(const std::string& topic,
                                                                   const std::string& gatewayKey) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
     const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX + gatewayKey;
 
@@ -275,6 +176,8 @@ std::string JsonGatewayDataProtocol::routeDeviceToPlatformMessage(const std::str
 
 std::string JsonGatewayDataProtocol::routePlatformToGatewayMessage(const std::string& topic) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
     const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX;
 
@@ -290,6 +193,8 @@ std::string JsonGatewayDataProtocol::routePlatformToGatewayMessage(const std::st
 
 std::string JsonGatewayDataProtocol::routeGatewayToPlatformMessage(const std::string& topic) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
     const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX;
 

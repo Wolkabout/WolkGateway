@@ -69,8 +69,8 @@ private:
     void sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status);
 
     bool containsDeviceStatus(const std::string& deviceKey);
-    std::pair<std::time_t, DeviceStatus> getDeviceStatus(const std::string& deviceKey);
-    void logDeviceStatus(const std::string& deviceKey, DeviceStatus status);
+    std::pair<std::time_t, DeviceStatus::Status> getDeviceStatus(const std::string& deviceKey);
+    void logDeviceStatus(const std::string& deviceKey, DeviceStatus::Status status);
 
     const std::string m_gatewayKey;
     StatusProtocol& m_protocol;
@@ -87,7 +87,7 @@ private:
     Timer m_responseTimer;
 
     std::mutex m_deviceStatusMutex;
-    std::map<std::string, std::pair<std::time_t, DeviceStatus>> m_deviceStatuses;
+    std::map<std::string, std::pair<std::time_t, DeviceStatus::Status>> m_deviceStatuses;
 };
 }    // namespace wolkabout
 

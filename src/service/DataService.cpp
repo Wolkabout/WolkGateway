@@ -74,11 +74,6 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
     LOG(TRACE) << METHOD_INFO;
 
     const std::string channel = message->getChannel();
-    if (!m_gatewayProtocol.isMessageToPlatform(*message))
-    {
-        LOG(WARN) << "DataService: Ignoring message on channel '" << channel << "'. Message not intended for platform.";
-        return;
-    }
 
     if (m_deviceRepository)
     {
@@ -188,7 +183,7 @@ void DataService::requestActuatorStatusesForDevice(const std::string& deviceKey)
 
 void DataService::requestActuatorStatusesForAllDevices()
 {
-    std::shared_ptr<Message> message = m_protocol.makeMessage("", ActuatorGetCommand(""));
+    std::shared_ptr<Message> message = m_gatewayProtocol.makeMessage("", ActuatorGetCommand(""));
     m_outboundDeviceMessageHandler.addMessage(message);
 }
 
@@ -226,15 +221,14 @@ void DataService::routeGatewayToPlatformMessage(std::shared_ptr<Message> message
 {
     LOG(TRACE) << METHOD_INFO;
 
-    // TODO
-    //    const std::string channel = m_protocol.routeGatewayToPlatformMessage(message->getChannel());
-    //    if (channel.empty())
-    //    {
-    //        LOG(WARN) << "Failed to route device message: " << message->getChannel();
-    //        return;
-    //    }
-    //
-    //    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
+    const std::string channel = m_gatewayProtocol.routeGatewayToPlatformMessage(message->getChannel());
+    if (channel.empty())
+    {
+        LOG(WARN) << "Failed to route device message: " << message->getChannel();
+        return;
+    }
+
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
     m_outboundPlatformMessageHandler.addMessage(message);
 }
 
@@ -242,15 +236,14 @@ void DataService::routePlatformToGatewayMessage(std::shared_ptr<Message> message
 {
     LOG(TRACE) << METHOD_INFO;
 
-    // TODO
-    //    const std::string channel = m_protocol.routePlatformToGatewayMessage(message->getChannel());
-    //    if (channel.empty())
-    //    {
-    //        LOG(WARN) << "Failed to route platform message: " << message->getChannel();
-    //        return;
-    //    }
-    //
-    //    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
+    const std::string channel = m_gatewayProtocol.routePlatformToGatewayMessage(message->getChannel());
+    if (channel.empty())
+    {
+        LOG(WARN) << "Failed to route platform message: " << message->getChannel();
+        return;
+    }
+
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
 
     if (m_gatewayDevice)
     {

@@ -18,9 +18,11 @@
 #include "OutboundMessageHandler.h"
 #include "model/DetailedDevice.h"
 #include "model/Message.h"
+#include "model/SubdeviceDeletionRequest.h"
 #include "model/SubdeviceRegistrationRequest.h"
 #include "model/SubdeviceRegistrationResponse.h"
 #include "protocol/GatewaySubdeviceRegistrationProtocol.h"
+#include "protocol/RegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
 
@@ -41,13 +43,14 @@ static const std::chrono::milliseconds RETRY_TIMEOUT{5000};
 
 namespace wolkabout
 {
-SubdeviceRegistrationService::SubdeviceRegistrationService(std::string gatewayKey,
-                                                           GatewaySubdeviceRegistrationProtocol& protocol,
+SubdeviceRegistrationService::SubdeviceRegistrationService(std::string gatewayKey, RegistrationProtocol& protocol,
+                                                           GatewaySubdeviceRegistrationProtocol& gatewayProtocol,
                                                            DeviceRepository& deviceRepository,
                                                            OutboundMessageHandler& outboundPlatformMessageHandler,
                                                            OutboundMessageHandler& outboundDeviceMessageHandler)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_protocol{protocol}
+, m_gatewayProtocol{gatewayProtocol}
 , m_deviceRepository{deviceRepository}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
@@ -58,13 +61,6 @@ SubdeviceRegistrationService::SubdeviceRegistrationService(std::string gatewayKe
 void SubdeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
-
-    if (!m_protocol.isMessageFromPlatform(*message))
-    {
-        LOG(WARN) << "SubdeviceRegistrationService: Ignoring message on channel '" << message->getChannel()
-                  << "'. Message not from platform.";
-        return;
-    }
 
     m_platformRetryMessageHandler.messageReceived(message);
 
@@ -96,21 +92,14 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
 {
     LOG(TRACE) << METHOD_INFO;
 
-    if (!m_protocol.isMessageToPlatform(*message))
-    {
-        LOG(WARN) << "SubdeviceRegistrationService: Ignoring message received on channel '" << message->getChannel()
-                  << "'. Message not intended for platform.";
-        return;
-    }
-
-    if (!m_protocol.isSubdeviceRegistrationRequest(*message))
+    if (!m_gatewayProtocol.isSubdeviceRegistrationRequest(*message))
     {
         LOG(WARN) << "SubdeviceRegistrationService: unhandled message on channel '" << message->getChannel()
                   << "'. Unsupported message type";
         return;
     }
 
-    auto request = m_protocol.makeSubdeviceRegistrationRequest(*message);
+    auto request = m_gatewayProtocol.makeSubdeviceRegistrationRequest(*message);
     if (!request)
     {
         LOG(ERROR)
@@ -129,7 +118,12 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
     handleSubdeviceRegistrationRequest(deviceKey, *request);
 }
 
-const GatewayProtocol& SubdeviceRegistrationService::getProtocol() const
+const GatewayProtocol& SubdeviceRegistrationService::getGatewayProtocol() const
+{
+    return m_gatewayProtocol;
+}
+
+const Protocol& SubdeviceRegistrationService::getProtocol() const
 {
     return m_protocol;
 }
@@ -165,15 +159,14 @@ void SubdeviceRegistrationService::deleteDevicesOtherThan(const std::vector<std:
             m_deviceRepository.remove(deviceKeyFromRepository);
 
             std::shared_ptr<Message> subdeviceDeletionRequestMessage =
-              m_protocol.makeSubdeviceDeletionRequestMessage(m_gatewayKey, deviceKeyFromRepository);
+              m_protocol.makeMessage(m_gatewayKey, SubdeviceDeletionRequest{deviceKeyFromRepository});
             if (!subdeviceDeletionRequestMessage)
             {
                 LOG(WARN) << "SubdeviceRegistrationService: Unable to create deletion request message";
                 continue;
             }
 
-            auto responseChannel =
-              m_protocol.getResponseChannel(*subdeviceDeletionRequestMessage, m_gatewayKey, deviceKeyFromRepository);
+            auto responseChannel = m_protocol.getResponseChannel(m_gatewayKey, *subdeviceDeletionRequestMessage);
             RetryMessageStruct retryMessage{subdeviceDeletionRequestMessage, responseChannel,
                                             [=](std::shared_ptr<Message>) {
                                                 LOG(ERROR)
@@ -240,7 +233,7 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationRequest(const std:
         return;
     }
 
-    auto responseChannel = m_protocol.getResponseChannel(*registrationRequest, m_gatewayKey, deviceKey);
+    auto responseChannel = m_protocol.getResponseChannel(m_gatewayKey, *registrationRequest);
     RetryMessageStruct retryMessage{registrationRequest, responseChannel,
                                     [=](std::shared_ptr<Message>) {
                                         LOG(ERROR) << "Failed to register device with key: " << deviceKey
@@ -335,7 +328,7 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
     m_devicesAwaitingRegistrationResponse.erase(deviceKey);
 
     // send response to device
-    std::shared_ptr<Message> registrationResponseMessage = m_protocol.makeMessage(deviceKey, response);
+    std::shared_ptr<Message> registrationResponseMessage = m_gatewayProtocol.makeMessage(response);
     if (!registrationResponseMessage)
     {
         LOG(WARN) << "SubdeviceRegistrationService: Unable to create registration response message";

@@ -15,8 +15,10 @@
  */
 
 #include "protocol/json/JsonGatewayDFUProtocol.h"
-#include "model/FirmwareUpdateCommand.h"
-#include "model/FirmwareUpdateResponse.h"
+#include "model/FirmwareUpdateAbort.h"
+#include "model/FirmwareUpdateInstall.h"
+#include "model/FirmwareUpdateStatus.h"
+#include "model/FirmwareVersion.h"
 #include "model/Message.h"
 #include "protocol/json/Json.h"
 #include "utilities/Logger.h"
@@ -33,51 +35,64 @@ const std::string JsonGatewayDFUProtocol::FIRMWARE_VERSION_TOPIC_ROOT = "d2p/fir
 const std::string JsonGatewayDFUProtocol::FIRMWARE_UPDATE_INSTALL_TOPIC_ROOT = "p2d/firmware_update_install/";
 const std::string JsonGatewayDFUProtocol::FIRMWARE_UPDATE_ABORT_TOPIC_ROOT = "p2d/firmware_update_abort/";
 
-///*** FIRMWARE UPDATE RESPONSE ***/
-// static void from_json(const json& j, FirmwareUpdateResponse& p)
-//{
-//    const std::string statusStr = j.at("status").get<std::string>();
-//
-//    FirmwareUpdateResponse::Status status;
-//    if (statusStr == "FILE_TRANSFER")
-//    {
-//        status = FirmwareUpdateResponse::Status::FILE_TRANSFER;
-//    }
-//    else if (statusStr == "FILE_READY")
-//    {
-//        status = FirmwareUpdateResponse::Status::FILE_READY;
-//    }
-//    else if (statusStr == "INSTALLATION")
-//    {
-//        status = FirmwareUpdateResponse::Status::INSTALLATION;
-//    }
-//    else if (statusStr == "COMPLETED")
-//    {
-//        status = FirmwareUpdateResponse::Status::COMPLETED;
-//    }
-//    else if (statusStr == "ABORTED")
-//    {
-//        status = FirmwareUpdateResponse::Status::ABORTED;
-//    }
-//    else
-//    {
-//        status = FirmwareUpdateResponse::Status::ERROR;
-//    }
-//
-//    if (j.find("error") != j.end())
-//    {
-//        const int errorCode = j.at("error").get<int>();
-//
-//        auto error = static_cast<FirmwareUpdateResponse::ErrorCode>(errorCode);
-//
-//        p = FirmwareUpdateResponse{status, error};
-//    }
-//    else
-//    {
-//        p = FirmwareUpdateResponse{status};
-//    }
-//}
-///*** FIRMWARE UPDATE RESPONSE ***/
+/*** FIRMWARE UPDATE INSTALL ***/
+void to_json(json& j, const FirmwareUpdateInstall& command)
+{
+    json commandJson;
+    commandJson["fileName"] = command.getFileName();
+
+    j = commandJson;
+}
+/*** FIRMWARE UPDATE INSTALL ***/
+
+/*** FIRMWARE UPDATE STATUS ***/
+static FirmwareUpdateStatus firmware_update_status_from_json(const json& j)
+{
+    FirmwareUpdateStatus::Status status = [&] {
+        const std::string statusStr = j.at("status").get<std::string>();
+
+        if (statusStr == "INSTALLATION")
+        {
+            return FirmwareUpdateStatus::Status::INSTALLATION;
+        }
+        else if (statusStr == "COMPLETED")
+        {
+            return FirmwareUpdateStatus::Status::COMPLETED;
+        }
+        else if (statusStr == "ABORTED")
+        {
+            return FirmwareUpdateStatus::Status::ABORTED;
+        }
+        else if (statusStr == "ERROR")
+        {
+            return FirmwareUpdateStatus::Status::ERROR;
+        }
+
+        throw std::logic_error("Invalid value for firmware update status");
+    }();
+
+    if (j.find("error") != j.end())
+    {
+        if (status != FirmwareUpdateStatus::Status::ERROR && !j["error"].is_null())
+        {
+            throw std::logic_error("Invalid value for firmware update error");
+        }
+
+        const int errorCode = j.at("error").get<int>();
+
+        if (errorCode > static_cast<int>(FirmwareUpdateStatus::Error::SUBDEVICE_NOT_PRESENT))
+        {
+            throw std::logic_error("Invalid value for firmware update error");
+        }
+
+        auto error = static_cast<FirmwareUpdateStatus::Error>(errorCode);
+
+        return FirmwareUpdateStatus{{}, error};
+    }
+
+    return FirmwareUpdateStatus{{}, status};
+}
+/*** FIRMWARE UPDATE STATUS ***/
 
 std::vector<std::string> JsonGatewayDFUProtocol::getInboundChannels() const
 {
@@ -94,35 +109,67 @@ std::vector<std::string> JsonGatewayDFUProtocol::getInboundChannelsForDevice(con
 std::unique_ptr<Message> JsonGatewayDFUProtocol::makeMessage(const std::string& gatewayKey,
                                                              const FirmwareUpdateAbort& command) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     if (command.getDeviceKeys().size() != 1)
     {
         return nullptr;
     }
 
-    const json jPayload(command);
-    const std::string payload = jPayload.dump();
-    const std::string topic = FIRMWARE_UPDATE_ABORT_TOPIC_ROOT + DEVICE_PATH_PREFIX + command.getDeviceKeys().front();
+    try
+    {
+        const std::string topic =
+          FIRMWARE_UPDATE_ABORT_TOPIC_ROOT + DEVICE_PATH_PREFIX + command.getDeviceKeys().front();
 
-    return std::unique_ptr<Message>(new Message(payload, topic));
+        return std::unique_ptr<Message>(new Message("", topic));
+    }
+    catch (const std::exception& e)
+    {
+        LOG(DEBUG) << "Gateway firmware update protocol: Unable to serialize firmware abort command: " << e.what();
+        return nullptr;
+    }
+    catch (...)
+    {
+        LOG(DEBUG) << "Gateway firmware update protocol: Unable to serialize firmware abort command";
+        return nullptr;
+    }
 }
 
 std::unique_ptr<Message> JsonGatewayDFUProtocol::makeMessage(const std::string& gatewayKey,
                                                              const FirmwareUpdateInstall& command) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     if (command.getDeviceKeys().size() != 1)
     {
         return nullptr;
     }
 
-    const json jPayload(command);
-    const std::string payload = jPayload.dump();
-    const std::string topic = FIRMWARE_UPDATE_INSTALL_TOPIC_ROOT + DEVICE_PATH_PREFIX + command.getDeviceKeys().front();
+    try
+    {
+        const json jPayload(command);
+        const std::string payload = jPayload.dump();
+        const std::string topic =
+          FIRMWARE_UPDATE_INSTALL_TOPIC_ROOT + DEVICE_PATH_PREFIX + command.getDeviceKeys().front();
 
-    return std::unique_ptr<Message>(new Message(payload, topic));
+        return std::unique_ptr<Message>(new Message(payload, topic));
+    }
+    catch (const std::exception& e)
+    {
+        LOG(DEBUG) << "Gateway firmware update protocol: Unable to serialize firmware install command: " << e.what();
+        return nullptr;
+    }
+    catch (...)
+    {
+        LOG(DEBUG) << "Gateway firmware update protocol: Unable to serialize firmware install command";
+        return nullptr;
+    }
 }
 
 std::unique_ptr<FirmwareVersion> JsonGatewayDFUProtocol::makeFirmwareVersion(const Message& message) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     if (!StringUtils::startsWith(message.getChannel(), FIRMWARE_VERSION_TOPIC_ROOT))
     {
         return nullptr;
@@ -130,10 +177,25 @@ std::unique_ptr<FirmwareVersion> JsonGatewayDFUProtocol::makeFirmwareVersion(con
 
     try
     {
-        return std::unique_ptr<FirmwareVersion>(new FirmwareVersion(firmwareVersionFromMessage(message)));
+        const auto key = extractDeviceKeyFromChannel(message.getChannel());
+        if (key.empty())
+        {
+            LOG(DEBUG) << "Gateway firmware update protocol: Unable to extract device key: " << message.getChannel();
+            return nullptr;
+        }
+
+        const auto& version = message.getContent();
+
+        return std::unique_ptr<FirmwareVersion>(new FirmwareVersion(key, version));
+    }
+    catch (const std::exception& e)
+    {
+        LOG(DEBUG) << "Gateway firmware update protocol: Unable to deserialize firmware version: " << e.what();
+        return nullptr;
     }
     catch (...)
     {
+        LOG(DEBUG) << "Gateway firmware update protocol: Unable to deserialize firmware version";
         return nullptr;
     }
 }
@@ -141,6 +203,8 @@ std::unique_ptr<FirmwareVersion> JsonGatewayDFUProtocol::makeFirmwareVersion(con
 std::unique_ptr<FirmwareUpdateStatus> JsonGatewayDFUProtocol::makeFirmwareUpdateStatus(
   const wolkabout::Message& message) const
 {
+    LOG(TRACE) << METHOD_INFO;
+
     if (!StringUtils::startsWith(message.getChannel(), FIRMWARE_UPDATE_STATUS_TOPIC_ROOT))
     {
         return nullptr;
@@ -148,23 +212,32 @@ std::unique_ptr<FirmwareUpdateStatus> JsonGatewayDFUProtocol::makeFirmwareUpdate
 
     try
     {
-        const std::string content = message.getContent();
+        const auto key = extractDeviceKeyFromChannel(message.getChannel());
+        if (key.empty())
+        {
+            LOG(DEBUG) << "Gateway firmware update protocol: Unable to extract device key: " << message.getChannel();
+            return nullptr;
+        }
 
-        json j = json::parse(content);
+        json j = json::parse(message.getContent());
+        const auto status = firmware_update_status_from_json(j);
 
-        return std::unique_ptr<FirmwareUpdateResponse>(new FirmwareUpdateResponse(j.get<FirmwareUpdateResponse>()));
+        if (status.getErrorCode())
+        {
+            return std::unique_ptr<FirmwareUpdateStatus>(
+              new FirmwareUpdateStatus({key}, status.getErrorCode().value()));
+        }
+        return std::unique_ptr<FirmwareUpdateStatus>(new FirmwareUpdateStatus({key}, status.getStatus()));
+    }
+    catch (const std::exception& e)
+    {
+        LOG(DEBUG) << "Gateway firmware update protocol: Unable to deserialize firmware update status: " << e.what();
+        return nullptr;
     }
     catch (...)
     {
+        LOG(DEBUG) << "Gateway firmware update protocol: Unable to deserialize firmware update status";
         return nullptr;
     }
-}
-
-FirmwareVersion JsonGatewayDFUProtocol::firmwareVersionFromMessage(const Message& message) const
-{
-    auto key = extractDeviceKeyFromChannel(message.getChannel());
-    auto version = message.getContent();
-
-    return FirmwareVersion{key, version};
 }
 }    // namespace wolkabout

@@ -73,7 +73,7 @@ private:
 
     void install(const std::vector<std::string>& deviceKeys, const std::string& fileName);
     void installGatewayFirmware(const std::string& filePath);
-    void installDeviceFirmware(const std::string& deviceKey, const std::string& filePath, const std::string& fileHash);
+    void installDeviceFirmware(const std::string& deviceKey, const std::string& filePath);
 
     void installationInProgress(const std::vector<std::string>& deviceKeys);
     void installationCompleted(const std::vector<std::string>& deviceKeys);

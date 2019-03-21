@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #include "service/DeviceStatusService.h"
 #include "ConnectionStatusListener.h"
 #include "OutboundMessageHandler.h"
-#include "model/DeviceStatusResponse.h"
+#include "model/DeviceStatus.h"
 #include "model/Message.h"
 #include "protocol/GatewayStatusProtocol.h"
 #include "protocol/StatusProtocol.h"
@@ -78,13 +78,6 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
     LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = message->getChannel();
-
-    if (!m_gatewayProtocol.isMessageToPlatform(*message))
-    {
-        LOG(WARN) << "DeviceStatusService: Ignoring message on channel '" << topic
-                  << "'. Message not intended for platform.";
-        return;
-    }
 
     const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(topic);
 
@@ -221,10 +214,10 @@ void DeviceStatusService::validateDevicesStatus()
 
         std::time_t lastReportTime = statusReport.first;
         std::time_t currentTime = std::time(nullptr);
-        DeviceStatus lastStatus = statusReport.second;
+        DeviceStatus::Status lastStatus = statusReport.second;
 
         if (std::difftime(lastReportTime, currentTime) > m_statusResponseInterval.count() &&
-            lastStatus == DeviceStatus::CONNECTED)
+            lastStatus == DeviceStatus::Status::CONNECTED)
         {
             // device has not reported status in time and last status was CONNECTED, send offline status
             logDeviceStatus(key, DeviceStatus::OFFLINE);
@@ -260,7 +253,9 @@ void DeviceStatusService::sendStatusRequestForAllDevices()
 
 void DeviceStatusService::sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status)
 {
-    std::shared_ptr<Message> statusMessage = m_gatewayProtocol.makeMessage(m_gatewayKey, deviceKey, status);
+    // TODO protocol
+    std::shared_ptr<Message> statusMessage =
+      m_protocol.makeStatusResponseMessage(m_gatewayKey, DeviceStatus{deviceKey, status});
 
     if (!statusMessage)
     {
@@ -278,7 +273,7 @@ bool DeviceStatusService::containsDeviceStatus(const std::string& deviceKey)
     return m_deviceStatuses.find(deviceKey) != m_deviceStatuses.end();
 }
 
-std::pair<std::time_t, DeviceStatus> DeviceStatusService::getDeviceStatus(const std::string& deviceKey)
+std::pair<std::time_t, DeviceStatus::Status> DeviceStatusService::getDeviceStatus(const std::string& deviceKey)
 {
     std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
 
@@ -289,10 +284,10 @@ std::pair<std::time_t, DeviceStatus> DeviceStatusService::getDeviceStatus(const 
         return it->second;
     }
 
-    return std::make_pair(0, DeviceStatus::OFFLINE);
+    return std::make_pair(0, DeviceStatus::Status::OFFLINE);
 }
 
-void DeviceStatusService::logDeviceStatus(const std::string& deviceKey, DeviceStatus status)
+void DeviceStatusService::logDeviceStatus(const std::string& deviceKey, DeviceStatus::Status status)
 {
     std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
 

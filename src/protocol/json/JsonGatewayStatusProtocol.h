@@ -30,26 +30,20 @@ class Message;
 class JsonGatewayStatusProtocol : public GatewayStatusProtocol
 {
 public:
-    const std::string& getName() const override;
-
     std::vector<std::string> getInboundChannels() const override;
     std::vector<std::string> getInboundChannelsForDevice(const std::string& deviceKey) const override;
     std::string extractDeviceKeyFromChannel(const std::string& topic) const override;
-    bool isMessageToPlatform(const Message& channel) const override;
-    bool isMessageFromPlatform(const Message& channel) const override;
 
-    std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
-                                         const DeviceStatusResponse& response) const override;
     std::unique_ptr<Message> makeDeviceStatusRequestMessage(const std::string& deviceKey) const override;
-    std::unique_ptr<Message> makeFromPingRequest(const std::string& gatewayKey) const override;
-    std::unique_ptr<Message> makeLastWillMessage(const std::string& gatewayKey) const override;
-    std::unique_ptr<DeviceStatusResponse> makeDeviceStatusResponse(const Message& message) const override;
+
+    std::unique_ptr<DeviceStatus> makeDeviceStatusResponse(const Message& message) const override;
+    std::unique_ptr<DeviceStatus> makeDeviceStatusUpdate(const Message& message) const override;
+
     bool isStatusResponseMessage(const Message& message) const override;
     bool isStatusUpdateMessage(const Message& message) const override;
-    bool isStatusRequestMessage(const Message& message) const override;
-    bool isStatusConfirmMessage(const Message& message) const override;
+
     bool isLastWillMessage(const Message& message) const override;
-    bool isPongMessage(const Message& message) const override;
+
     std::string routeDeviceMessage(const std::string& channel, const std::string& gatewayKey) const override;
     std::string routePlatformMessage(const std::string& channel, const std::string& gatewayKey) const override;
     std::vector<std::string> extractDeviceKeysFromContent(const std::string& content) const override;
@@ -61,29 +55,10 @@ public:
     static const std::string STATUS_RESPONSE_STATUS_OFFLINE;
 
 private:
-    static const std::string NAME;
-
-    static const std::string CHANNEL_DELIMITER;
-    static const std::string CHANNEL_MULTI_LEVEL_WILDCARD;
-    static const std::string CHANNEL_SINGLE_LEVEL_WILDCARD;
-
-    static const std::string GATEWAY_PATH_PREFIX;
-    static const std::string DEVICE_PATH_PREFIX;
-    static const std::string DEVICE_TO_PLATFORM_DIRECTION;
-    static const std::string PLATFORM_TO_DEVICE_DIRECTION;
-
     static const std::string LAST_WILL_TOPIC_ROOT;
-    static const std::string PLATFORM_STATUS_REQUEST_TOPIC_ROOT;
-    static const std::string PLATFORM_STATUS_RESPONSE_TOPIC_ROOT;
-    static const std::string PLATFORM_STATUS_CONFIRM_TOPIC_ROOT;
-    static const std::string PLATFORM_STATUS_UPDATE_TOPIC_ROOT;
-    static const std::string DEVICE_STATUS_REQUEST_TOPIC_ROOT;
     static const std::string DEVICE_STATUS_RESPONSE_TOPIC_ROOT;
-    static const std::string PING_TOPIC_ROOT;
-    static const std::string PONG_TOPIC_ROOT;
-
-    static const std::vector<std::string> DEVICE_CHANNELS;
-    static const std::vector<std::string> PLATFORM_CHANNELS;
+    static const std::string DEVICE_STATUS_UPDATE_TOPIC_ROOT;
+    static const std::string DEVICE_STATUS_REQUEST_TOPIC_ROOT;
 };
 }    // namespace wolkabout
 

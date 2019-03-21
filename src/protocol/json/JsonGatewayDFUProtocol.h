@@ -38,8 +38,6 @@ public:
     std::unique_ptr<FirmwareUpdateStatus> makeFirmwareUpdateStatus(const Message& message) const override;
 
 private:
-    FirmwareVersion firmwareVersionFromMessage(const Message& message) const;
-
     static const std::string FIRMWARE_UPDATE_STATUS_TOPIC_ROOT;
     static const std::string FIRMWARE_VERSION_TOPIC_ROOT;
 

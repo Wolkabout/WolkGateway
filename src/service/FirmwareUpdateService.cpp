@@ -184,24 +184,12 @@ void FirmwareUpdateService::handleFirmwareUpdateCommand(const FirmwareUpdateInst
         return;
     }
 
-    if (command.getFileHash().empty())
-    {
-        LOG(WARN) << "Missing file hash from firmware install command";
-        sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::FILE_HASH_MISMATCH});
-        return;
-    }
-
     auto fileInfo = m_fileRepository.getFileInfo(command.getFileName());
 
     if (!fileInfo)
     {
         LOG(WARN) << "Firmware file not present: " << command.getFileName();
         sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::FILE_NOT_PRESENT});
-    }
-    else if (fileInfo.value().hash != command.getFileHash())
-    {
-        LOG(WARN) << "Firmware file mismatch: " << command.getFileName();
-        sendStatus(FirmwareUpdateStatus{command.getDeviceKeys(), FirmwareUpdateStatus::Error::FILE_HASH_MISMATCH});
     }
     else
     {
@@ -291,7 +279,7 @@ void FirmwareUpdateService::install(const std::vector<std::string>& deviceKeys, 
                 return;
             }
 
-            installDeviceFirmware(key, fileInfo.value().path, fileInfo.value().hash);
+            installDeviceFirmware(key, fileInfo.value().path);
         }
     }
 }
@@ -324,10 +312,9 @@ void FirmwareUpdateService::installGatewayFirmware(const std::string& filePath)
     }
 }
 
-void FirmwareUpdateService::installDeviceFirmware(const std::string& deviceKey, const std::string& filePath,
-                                                  const std::string& fileHash)
+void FirmwareUpdateService::installDeviceFirmware(const std::string& deviceKey, const std::string& filePath)
 {
-    sendCommand(FirmwareUpdateInstall{{deviceKey}, filePath, fileHash});
+    sendCommand(FirmwareUpdateInstall{{deviceKey}, filePath});
 }
 
 void FirmwareUpdateService::installationInProgress(const std::vector<std::string>& deviceKeys)

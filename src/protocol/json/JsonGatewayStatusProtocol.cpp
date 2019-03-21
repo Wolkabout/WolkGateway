@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  */
 
 #include "protocol/json/JsonGatewayStatusProtocol.h"
-#include "model/DeviceStatusResponse.h"
+#include "model/DeviceStatus.h"
 #include "model/Message.h"
+#include "protocol/json/Json.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
 #include "utilities/json.hpp"
@@ -27,25 +28,10 @@ using nlohmann::json;
 
 namespace wolkabout
 {
-const std::string JsonGatewayStatusProtocol::NAME = "StatusProtocol";
-
-const std::string JsonGatewayStatusProtocol::CHANNEL_DELIMITER = "/";
-const std::string JsonGatewayStatusProtocol::CHANNEL_MULTI_LEVEL_WILDCARD = "#";
-const std::string JsonGatewayStatusProtocol::CHANNEL_SINGLE_LEVEL_WILDCARD = "+";
-const std::string JsonGatewayStatusProtocol::GATEWAY_PATH_PREFIX = "g/";
-const std::string JsonGatewayStatusProtocol::DEVICE_PATH_PREFIX = "d/";
-const std::string JsonGatewayStatusProtocol::DEVICE_TO_PLATFORM_DIRECTION = "d2p/";
-const std::string JsonGatewayStatusProtocol::PLATFORM_TO_DEVICE_DIRECTION = "p2d/";
-
 const std::string JsonGatewayStatusProtocol::LAST_WILL_TOPIC_ROOT = "lastwill/";
-const std::string JsonGatewayStatusProtocol::PLATFORM_STATUS_REQUEST_TOPIC_ROOT = "p2d/subdevice_status_request/";
-const std::string JsonGatewayStatusProtocol::PLATFORM_STATUS_RESPONSE_TOPIC_ROOT = "d2p/subdevice_status_response/";
-const std::string JsonGatewayStatusProtocol::PLATFORM_STATUS_CONFIRM_TOPIC_ROOT = "p2d/subdevice_status_confirm/";
-const std::string JsonGatewayStatusProtocol::PLATFORM_STATUS_UPDATE_TOPIC_ROOT = "d2p/subdevice_status_update/";
-const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_REQUEST_TOPIC_ROOT = "p2d/status/";
-const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_RESPONSE_TOPIC_ROOT = "d2p/status/";
-const std::string JsonGatewayStatusProtocol::PING_TOPIC_ROOT = "ping/";
-const std::string JsonGatewayStatusProtocol::PONG_TOPIC_ROOT = "pong/";
+const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_RESPONSE_TOPIC_ROOT = "d2p/subdevice_status_response/";
+const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_UPDATE_TOPIC_ROOT = "d2p/subdevice_status_update/";
+const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_REQUEST_TOPIC_ROOT = "p2d/subdevice_status_request/";
 
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATE_FIELD = "state";
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED = "CONNECTED";
@@ -53,47 +39,30 @@ const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SLEEP = "SLE
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SERVICE = "SERVICE";
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_OFFLINE = "OFFLINE";
 
-static void to_json(json& j, const DeviceStatusResponse& p)
+static void from_json(const json& j, DeviceStatus& p)
 {
-    const std::string status = [&]() -> std::string {
-        switch (p.getStatus())
+    const std::string statusStr = j.at(JsonGatewayStatusProtocol::STATUS_RESPONSE_STATE_FIELD).get<std::string>();
+
+    const DeviceStatus::Status status = [&] {
+        if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED)
         {
-        case DeviceStatus::CONNECTED:
+            return DeviceStatus::Status::CONNECTED;
+        }
+        else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SLEEP)
         {
-            return JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED;
+            return DeviceStatus::Status::SLEEP;
         }
-        case DeviceStatus::SLEEP:
+        else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SERVICE)
         {
-            return JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SLEEP;
+            return DeviceStatus::Status::SERVICE;
         }
-        case DeviceStatus::SERVICE:
+        else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_OFFLINE)
         {
-            return JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SERVICE;
+            return DeviceStatus::Status::OFFLINE;
         }
-        case DeviceStatus::OFFLINE:
-        default:
-        {
-            return JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_OFFLINE;
-        }
-        }
+
+        throw std::logic_error("Invalid value for device status");
     }();
-
-    j = json{{JsonGatewayStatusProtocol::STATUS_RESPONSE_STATE_FIELD, status}};
-}
-
-static void to_json(json& j, const std::shared_ptr<DeviceStatusResponse>& p)
-{
-    if (!p)
-    {
-        return;
-    }
-
-    to_json(j, *p);
-}
-
-const std::string& JsonGatewayStatusProtocol::getName() const
-{
-    return NAME;
 }
 
 std::vector<std::string> JsonGatewayStatusProtocol::getInboundChannels() const
@@ -110,102 +79,83 @@ std::vector<std::string> JsonGatewayStatusProtocol::getInboundChannelsForDevice(
             LAST_WILL_TOPIC_ROOT + CHANNEL_MULTI_LEVEL_WILDCARD};
 }
 
-std::unique_ptr<Message> JsonGatewayStatusProtocol::makeMessage(const std::string& gatewayKey,
-                                                                const std::string& deviceKey,
-                                                                const DeviceStatusResponse& response) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const json jPayload(response);
-    const std::string topic = PLATFORM_STATUS_UPDATE_TOPIC_ROOT + GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER +
-                              DEVICE_PATH_PREFIX + deviceKey;
-
-    const std::string payload = jPayload.dump();
-
-    return std::unique_ptr<Message>(new Message(payload, topic));
-}
-
 std::unique_ptr<Message> JsonGatewayStatusProtocol::makeDeviceStatusRequestMessage(const std::string& deviceKey) const
 {
     LOG(TRACE) << METHOD_INFO;
 
     const std::string topic = DEVICE_STATUS_REQUEST_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey;
 
-    const std::string payload = "";
-
-    return std::unique_ptr<Message>(new Message(payload, topic));
-}
-
-std::unique_ptr<Message> JsonGatewayStatusProtocol::makeFromPingRequest(const std::string& gatewayKey) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string topic = PING_TOPIC_ROOT + gatewayKey;
     return std::unique_ptr<Message>(new Message("", topic));
 }
 
-std::unique_ptr<Message> JsonGatewayStatusProtocol::makeLastWillMessage(const std::string& gatewayKey) const
+std::unique_ptr<DeviceStatus> JsonGatewayStatusProtocol::makeDeviceStatusResponse(const Message& message) const
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = LAST_WILL_TOPIC_ROOT + gatewayKey;
-    const std::string payload = "";
-
-    return std::unique_ptr<Message>(new Message(payload, topic));
-}
-
-std::unique_ptr<DeviceStatusResponse> JsonGatewayStatusProtocol::makeDeviceStatusResponse(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
+    if (!StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_RESPONSE_TOPIC_ROOT))
+    {
+        return nullptr;
+    }
 
     try
     {
+        const auto key = extractDeviceKeyFromChannel(message.getChannel());
+        if (key.empty())
+        {
+            LOG(DEBUG) << "Gateway status protocol: Unable to extract device key: " << message.getChannel();
+            return nullptr;
+        }
+
         const json j = json::parse(message.getContent());
+        DeviceStatus::Status state = j;
 
-        const std::string statusStr = j.at(STATUS_RESPONSE_STATE_FIELD).get<std::string>();
-
-        const DeviceStatus status = [&] {
-            if (statusStr == STATUS_RESPONSE_STATUS_CONNECTED)
-            {
-                return DeviceStatus::CONNECTED;
-            }
-            else if (statusStr == STATUS_RESPONSE_STATUS_SLEEP)
-            {
-                return DeviceStatus::SLEEP;
-            }
-            else if (statusStr == STATUS_RESPONSE_STATUS_SERVICE)
-            {
-                return DeviceStatus::SERVICE;
-            }
-            else if (statusStr == STATUS_RESPONSE_STATUS_OFFLINE)
-            {
-                return DeviceStatus::OFFLINE;
-            }
-
-            throw std::logic_error("");
-        }();
-
-        return std::unique_ptr<DeviceStatusResponse>(new DeviceStatusResponse(status));
+        return std::unique_ptr<DeviceStatus>(new DeviceStatus{key, state});
+    }
+    catch (const std::exception& e)
+    {
+        LOG(DEBUG) << "Gateway Status protocol: Unable to deserialize device status response: " << e.what();
+        return nullptr;
     }
     catch (...)
     {
-        LOG(TRACE) << "Status protocol: Unable to parse DeviceRegistrationResponseDto: " << message.getContent();
+        LOG(DEBUG) << "Gateway Status protocol: Unable to deserialize device status response";
         return nullptr;
     }
 }
 
-bool JsonGatewayStatusProtocol::isMessageToPlatform(const Message& message) const
+std::unique_ptr<DeviceStatus> JsonGatewayStatusProtocol::makeDeviceStatusUpdate(const Message& message) const
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return isLastWillMessage(message) || StringUtils::startsWith(message.getChannel(), DEVICE_TO_PLATFORM_DIRECTION);
-}
+    if (!StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_UPDATE_TOPIC_ROOT))
+    {
+        return nullptr;
+    }
 
-bool JsonGatewayStatusProtocol::isMessageFromPlatform(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
+    try
+    {
+        const auto key = extractDeviceKeyFromChannel(message.getChannel());
+        if (key.empty())
+        {
+            LOG(DEBUG) << "Gateway status protocol: Unable to extract device key: " << message.getChannel();
+            return nullptr;
+        }
 
-    return StringUtils::startsWith(message.getChannel(), PLATFORM_TO_DEVICE_DIRECTION);
+        const json j = json::parse(message.getContent());
+        DeviceStatus::Status state = j;
+
+        return std::unique_ptr<DeviceStatus>(new DeviceStatus{key, state});
+    }
+    catch (const std::exception& e)
+    {
+        LOG(DEBUG) << "Gateway Status protocol: Unable to deserialize device status update: " << e.what();
+        return nullptr;
+    }
+    catch (...)
+    {
+        LOG(DEBUG) << "Gateway Status protocol: Unable to deserialize device status update";
+        return nullptr;
+    }
 }
 
 bool JsonGatewayStatusProtocol::isStatusUpdateMessage(const Message& message) const
@@ -222,18 +172,11 @@ bool JsonGatewayStatusProtocol::isStatusResponseMessage(const Message& message) 
     return StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_RESPONSE_TOPIC_ROOT);
 }
 
-bool JsonGatewayStatusProtocol::isStatusRequestMessage(const Message& message) const
+bool JsonGatewayStatusProtocol::isStatusUpdateMessage(const Message& message) const
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(message.getChannel(), PLATFORM_STATUS_REQUEST_TOPIC_ROOT);
-}
-
-bool JsonGatewayStatusProtocol::isStatusConfirmMessage(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    return StringUtils::startsWith(message.getChannel(), PLATFORM_STATUS_CONFIRM_TOPIC_ROOT);
+    return StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_UPDATE_TOPIC_ROOT);
 }
 
 bool JsonGatewayStatusProtocol::isLastWillMessage(const Message& message) const
@@ -248,13 +191,6 @@ bool JsonGatewayStatusProtocol::isLastWillMessage(const Message& message) const
     }
 
     return StringUtils::startsWith(top, LAST_WILL_TOPIC_ROOT);
-}
-
-bool JsonGatewayStatusProtocol::isPongMessage(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    return StringUtils::startsWith(message.getChannel(), PONG_TOPIC_ROOT);
 }
 
 std::string JsonGatewayStatusProtocol::routeDeviceMessage(const std::string& topic, const std::string& gatewayKey) const
@@ -309,34 +245,7 @@ std::string JsonGatewayStatusProtocol::extractDeviceKeyFromChannel(const std::st
         return top.substr(delimiterPosition + CHANNEL_DELIMITER.size(), std::string::npos);
     }
 
-    if (StringUtils::startsWith(top, PONG_TOPIC_ROOT))
-    {
-        auto delimiterPosition = top.find(CHANNEL_DELIMITER);
-        if (delimiterPosition == std::string::npos)
-        {
-            return "";
-        }
-
-        return top.substr(delimiterPosition + CHANNEL_DELIMITER.size(), std::string::npos);
-    }
-
-    const auto deviceKeyStartPosition = top.find(DEVICE_PATH_PREFIX);
-    if (deviceKeyStartPosition != std::string::npos)
-    {
-        const auto keyEndPosition = top.find(CHANNEL_DELIMITER, deviceKeyStartPosition + DEVICE_PATH_PREFIX.size());
-
-        return top.substr(deviceKeyStartPosition + DEVICE_PATH_PREFIX.size(), keyEndPosition);
-    }
-
-    const auto gatewayKeyStartPosition = top.find(GATEWAY_PATH_PREFIX);
-    if (gatewayKeyStartPosition == std::string::npos)
-    {
-        return "";
-    }
-
-    const auto keyEndPosition = top.find(CHANNEL_DELIMITER, gatewayKeyStartPosition + GATEWAY_PATH_PREFIX.size());
-
-    return top.substr(gatewayKeyStartPosition + GATEWAY_PATH_PREFIX.size(), keyEndPosition);
+    return GatewayProtocol::extractDeviceKeyFromChannel(top);
 }
 
 std::vector<std::string> JsonGatewayStatusProtocol::extractDeviceKeysFromContent(const std::string& content) const
@@ -360,9 +269,14 @@ std::vector<std::string> JsonGatewayStatusProtocol::extractDeviceKeysFromContent
 
         return keys;
     }
+    catch (std::exception& e)
+    {
+        LOG(TRACE) << "Gateway status protocol: Unable extract file keys from content: " << e.what();
+        return {};
+    }
     catch (...)
     {
-        LOG(TRACE) << "Status protocol: Unable to parse content: " << content;
+        LOG(TRACE) << "Gateway status protocol: Unable extract file keys from content";
         return {};
     }
 }

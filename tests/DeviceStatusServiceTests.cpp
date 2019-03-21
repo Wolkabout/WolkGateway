@@ -49,7 +49,7 @@ public:
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
         deviceStatusService = std::unique_ptr<wolkabout::DeviceStatusService>(
-          new wolkabout::DeviceStatusService(GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler,
+          new wolkabout::DeviceStatusService(GATEWAY_KEY, *protocol, deviceRepository.get(), *platformOutboundMessageHandler,
                                              *deviceOutboundMessageHandler, std::chrono::seconds{60}));
     }
 

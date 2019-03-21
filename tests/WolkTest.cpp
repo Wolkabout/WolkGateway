@@ -26,6 +26,7 @@
 #include "MockRepository.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
 #include "service/DataService.h"
+#include "service/PublishingService.h"
 
 #include <memory>
 
@@ -78,7 +79,7 @@ public:
         deviceConnectivityService = new MockConnectivityService();
 
         wolk = std::unique_ptr<wolkabout::Wolk>(
-          new wolkabout::Wolk(wolkabout::GatewayDevice{GATEWAY_KEY, "password", "JsonProtocol"}));
+                    new wolkabout::Wolk(wolkabout::GatewayDevice{GATEWAY_KEY, "password", {}}));
         wolk->m_platformConnectivityService.reset(platformConnectivityService);
         wolk->m_deviceConnectivityService.reset(deviceConnectivityService);
         wolk->m_platformPublisher.reset(new Publisher(*platformConnectivityService, nullptr));
@@ -88,11 +89,9 @@ public:
 
         deviceRepository = new MockRepository();
         wolk->m_deviceRepository.reset(deviceRepository);
-
         dataProtocol = std::make_shared<wolkabout::JsonGatewayDataProtocol>();
-        dataService = std::make_shared<MockDataService>("", *dataProtocol, *wolk->m_deviceRepository,
-                                                        *wolk->m_platformPublisher, *wolk->m_devicePublisher);
-        wolk->registerDataProtocol(dataProtocol, dataService);
+        wolk->m_dataService  = std::make_shared<MockDataService>("", *dataProtocol, wolk->m_deviceRepository.get(),
+                                                              *wolk->m_platformPublisher, *wolk->m_devicePublisher);
     }
 
     void TearDown() override {}
@@ -177,15 +176,14 @@ TEST_F(Wolk,
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey))
       .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", deviceKey,
-        wolkabout::DeviceManifest{
-          "",
-          "",
-          dataProtocol->getName(),
-          "",
-          {},
-          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
-          {},
-          {}})));
+        wolkabout::DeviceTemplate{{},
+                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
+                                  {},
+                                  {},
+                                  "",
+                                  {},
+                                  {},
+                                  {}})));
 
     // When
     wolk->connectToPlatform();
@@ -212,15 +210,14 @@ TEST_F(
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey))
       .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", deviceKey,
-        wolkabout::DeviceManifest{
-          "",
-          "",
-          dataProtocol->getName(),
-          "",
-          {},
-          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
-          {},
-          {}})));
+        wolkabout::DeviceTemplate{{},
+                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
+                                  {},
+                                  {},
+                                  "",
+                                  {},
+                                  {},
+                                  {}})));
 
     // When
     wolk->connectToPlatform();
@@ -249,39 +246,36 @@ TEST_F(
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey1))
       .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", deviceKey1,
-        wolkabout::DeviceManifest{
-          "",
-          "",
-          dataProtocol->getName(),
-          "",
-          {},
-          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
-          {},
-          {}})));
+        wolkabout::DeviceTemplate{{},
+                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
+                                  {},
+                                  {},
+                                  "",
+                                  {},
+                                  {},
+                                  {}})));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey2))
       .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", deviceKey2,
-        wolkabout::DeviceManifest{
-          "",
-          "",
-          dataProtocol->getName(),
-          "",
-          {},
-          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
-          {},
-          {}})));
+        wolkabout::DeviceTemplate{{},
+                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
+                                  {},
+                                  {},
+                                  "",
+                                  {},
+                                  {},
+                                  {}})));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey3))
       .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", deviceKey2,
-        wolkabout::DeviceManifest{
-          "",
-          "",
-          dataProtocol->getName(),
-          "",
-          {},
-          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
-          {},
-          {}})));
+        wolkabout::DeviceTemplate{{},
+                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
+                                  {},
+                                  {},
+                                  "",
+                                  {},
+                                  {},
+                                  {}})));
 
     // When
     wolk->connectToPlatform();

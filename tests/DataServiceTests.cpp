@@ -46,7 +46,7 @@ public:
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
         dataService = std::unique_ptr<wolkabout::DataService>(new wolkabout::DataService(
-          GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
+          GATEWAY_KEY, *protocol, deviceRepository.get(), *platformOutboundMessageHandler, *deviceOutboundMessageHandler, nullptr));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
@@ -153,15 +153,14 @@ TEST_F(DataService, Given_When_MessageFromDeviceWithIncorrectDeviceTypeIsReceive
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
       .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "GATEWAY_KEY",
-        wolkabout::DeviceManifest{
-          "",
-          "",
-          "",
-          "",
-          {},
-          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
-          {},
-          {}})));
+        wolkabout::DeviceTemplate{{},
+                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
+                                  {},
+                                  {},
+                                  "",
+                                  {},
+                                  {},
+                                  {}})));
 
     // When
     auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/k/GATEWAY_KEY/r/REF");
@@ -178,15 +177,14 @@ TEST_F(DataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToP
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
       .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "DEVICE_KEY",
-        wolkabout::DeviceManifest{
-          "",
-          "",
-          "",
-          "",
-          {},
-          {wolkabout::SensorManifest{"", "REF", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
-          {},
-          {}})));
+        wolkabout::DeviceTemplate{{},
+                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
+                                  {},
+                                  {},
+                                  "",
+                                  {},
+                                  {},
+                                  {}})));
 
     // When
     auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/DEVICE_KEY/r/REF");
@@ -200,7 +198,7 @@ TEST_F(DataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToP
 }
 
 TEST_F(DataService,
-       Given_MessageThatIsNotInLineWithDeviceManifest_When_MessageIsReceived_Then_MessageIsNotSentToPlatform)
+       Given_MessageThatIsNotInLineWithDeviceTemplate_When_MessageIsReceived_Then_MessageIsNotSentToPlatform)
 {
     // Given
     auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/DEVICE_KEY/r/REF");
@@ -208,15 +206,14 @@ TEST_F(DataService,
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
       .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
         "", "DEVICE_KEY",
-        wolkabout::DeviceManifest{
-          "",
-          "",
-          "",
-          "",
-          {},
-          {wolkabout::SensorManifest{"", "REF2", "", "", wolkabout::DataType::NUMERIC, 1, "", {}, 0, 100}},
-          {},
-          {}})));
+        wolkabout::DeviceTemplate{{},
+                                  {wolkabout::SensorTemplate{"", "ref", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
+                                  {},
+                                  {},
+                                  "",
+                                  {},
+                                  {},
+                                  {}})));
 
     // When
     dataService->deviceMessageReceived(message);

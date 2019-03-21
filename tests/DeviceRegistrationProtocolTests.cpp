@@ -158,7 +158,7 @@ TEST_F(JsonGatewaySubdeviceRegistrationProtocol, VerifyPlatformTopics)
 {
     std::vector<std::string> platformTopics = protocol->getInboundPlatformChannels();
 
-    ASSERT_THAT(platformTopics,
-                ::testing::UnorderedElementsAre("p2d/register_subdevice_response/g/#", "p2d/update_gateway_response/g/#",
-                                                "p2d/delete_subdevice_response/g/#"));
+    ASSERT_THAT(platformTopics, ::testing::UnorderedElementsAre("p2d/register_subdevice_response/g/#",
+                                                                "p2d/update_gateway_response/g/#",
+                                                                "p2d/delete_subdevice_response/g/#"));
 }

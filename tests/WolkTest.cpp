@@ -78,8 +78,8 @@ public:
         platformConnectivityService = new MockConnectivityService();
         deviceConnectivityService = new MockConnectivityService();
 
-        wolk = std::unique_ptr<wolkabout::Wolk>(
-                    new wolkabout::Wolk(wolkabout::GatewayDevice{GATEWAY_KEY, "password", {}}));
+        wolk =
+          std::unique_ptr<wolkabout::Wolk>(new wolkabout::Wolk(wolkabout::GatewayDevice{GATEWAY_KEY, "password", {}}));
         wolk->m_platformConnectivityService.reset(platformConnectivityService);
         wolk->m_deviceConnectivityService.reset(deviceConnectivityService);
         wolk->m_platformPublisher.reset(new Publisher(*platformConnectivityService, nullptr));
@@ -90,8 +90,8 @@ public:
         deviceRepository = new MockRepository();
         wolk->m_deviceRepository.reset(deviceRepository);
         dataProtocol = std::make_shared<wolkabout::JsonGatewayDataProtocol>();
-        wolk->m_dataService  = std::make_shared<MockDataService>("", *dataProtocol, wolk->m_deviceRepository.get(),
-                                                              *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+        wolk->m_dataService = std::make_shared<MockDataService>("", *dataProtocol, wolk->m_deviceRepository.get(),
+                                                                *wolk->m_platformPublisher, *wolk->m_devicePublisher);
     }
 
     void TearDown() override {}

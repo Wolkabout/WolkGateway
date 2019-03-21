@@ -233,9 +233,8 @@ TEST_F(
     // Given
     std::string registeredDeviceKey;
     bool isRegisteredDeviceGateway;
-    deviceRegistrationService->onDeviceRegistered([&](const std::string& deviceKey) -> void {
-        registeredDeviceKey = deviceKey;
-    });
+    deviceRegistrationService->onDeviceRegistered(
+      [&](const std::string& deviceKey) -> void { registeredDeviceKey = deviceKey; });
 
     wolkabout::DeviceTemplate gatewayTemplate;
     wolkabout::SubdeviceRegistrationRequest gatewayRegistrationRequest("Gateway name", GATEWAY_KEY, gatewayTemplate);
@@ -264,9 +263,8 @@ TEST_F(
     // Given
     std::string registeredDeviceKey;
     bool isRegisteredDeviceGateway;
-    deviceRegistrationService->onDeviceRegistered([&](const std::string& deviceKey) -> void {
-        registeredDeviceKey = deviceKey;
-    });
+    deviceRegistrationService->onDeviceRegistered(
+      [&](const std::string& deviceKey) -> void { registeredDeviceKey = deviceKey; });
 
     wolkabout::DeviceTemplate gatewayTemplate;
     wolkabout::DetailedDevice gateway("Gateway", GATEWAY_KEY, gatewayTemplate);
@@ -307,7 +305,8 @@ TEST_F(
 
     // When
     wolkabout::GatewayUpdateResponse gatewayRegistrationResponse(wolkabout::GatewayUpdateResponse::Result::OK, "");
-    auto message = std::make_shared<wolkabout::Message>("{\"result\":\"OK\"}", "p2d/gateway_update_response/g/GATEWAY_KEY");
+    auto message =
+      std::make_shared<wolkabout::Message>("{\"result\":\"OK\"}", "p2d/gateway_update_response/g/GATEWAY_KEY");
     deviceRegistrationService->platformMessageReceived(message);
 
     // Then
@@ -332,8 +331,8 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    wolkabout::SubdeviceRegistrationResponse deviceRegistrationResponse(deviceKey,
-      wolkabout::SubdeviceRegistrationResponse::Result::OK);
+    wolkabout::SubdeviceRegistrationResponse deviceRegistrationResponse(
+      deviceKey, wolkabout::SubdeviceRegistrationResponse::Result::OK);
     std::shared_ptr<wolkabout::Message> deviceRegistrationResponseMessage =
       protocol->makeMessage(GATEWAY_KEY, deviceRegistrationResponse);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);

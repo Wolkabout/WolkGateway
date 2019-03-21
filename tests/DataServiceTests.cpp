@@ -45,8 +45,9 @@ public:
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
-        dataService = std::unique_ptr<wolkabout::DataService>(new wolkabout::DataService(
-          GATEWAY_KEY, *protocol, deviceRepository.get(), *platformOutboundMessageHandler, *deviceOutboundMessageHandler, nullptr));
+        dataService = std::unique_ptr<wolkabout::DataService>(
+          new wolkabout::DataService(GATEWAY_KEY, *protocol, deviceRepository.get(), *platformOutboundMessageHandler,
+                                     *deviceOutboundMessageHandler, nullptr));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }

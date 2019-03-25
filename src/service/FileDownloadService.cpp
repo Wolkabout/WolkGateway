@@ -164,7 +164,7 @@ void FileDownloadService::handleInitiateRequest(const FileUploadInitiate& reques
     {
         downloadFile(request.getName(), request.getSize(), request.getHash());
     }
-    else if (fileInfo.value().hash != request.getHash())
+    else if (fileInfo->hash != request.getHash())
     {
         sendStatus(FileUploadStatus{request.getName(), FileTransferError::FILE_HASH_MISMATCH});
     }
@@ -280,7 +280,7 @@ void FileDownloadService::downloadCompleted(const std::string& fileName, const s
     flagCompletedDownload(fileName);
 
     addToCommandBuffer([=] {
-        m_fileRepository.storeFileInfo(FileInfo{fileName, filePath, fileHash});
+        m_fileRepository.store(FileInfo{fileName, fileHash, filePath});
         sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_READY});
     });
 }

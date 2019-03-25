@@ -39,6 +39,7 @@
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
+#include "repository/SQLiteFileRepository.h"
 #include "service/DataService.h"
 #include "service/DeviceStatusService.h"
 #include "service/FileDownloadService.h"
@@ -211,7 +212,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
 
     // Setup file repository
-    // TODO
+    wolk->m_fileRepository.reset(new SQLiteFileRepository(DATABASE));
 
     // Setup connectivity services
     wolk->m_platformConnectivityService.reset(new MqttConnectivityService(std::make_shared<PahoMqttClient>(),

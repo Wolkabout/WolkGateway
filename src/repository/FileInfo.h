@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,20 @@
 #define FILEINFO_H
 
 #include <string>
+#include <utility>
 
 namespace wolkabout
 {
 struct FileInfo
 {
-    FileInfo(std::string name_, std::string path_, std::string hash_)
-    : name{std::move(name_)}, path{std::move(path_)}, hash{std::move(hash_)}
+    FileInfo(std::string name_, std::string hash_, std::string path_)
+    : name{std::move(name_)}, hash{std::move(hash_)}, path{std::move(path_)}
     {
     }
 
     std::string name;
-    std::string path;
     std::string hash;
+    std::string path;
 };
 }    // namespace wolkabout
 

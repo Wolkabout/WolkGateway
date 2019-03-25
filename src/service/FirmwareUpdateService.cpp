@@ -279,7 +279,7 @@ void FirmwareUpdateService::install(const std::vector<std::string>& deviceKeys, 
                 return;
             }
 
-            installDeviceFirmware(key, fileInfo.value().path);
+            installDeviceFirmware(key, fileInfo->path);
         }
     }
 }

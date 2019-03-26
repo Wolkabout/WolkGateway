@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <model/FileDelete.h>
 #include <model/FileUploadAbort.h>
 #include <model/FileUploadInitiate.h>
 #include <mutex>
@@ -37,7 +38,8 @@
 namespace wolkabout
 {
 class BinaryData;
-class FileDownloadProtocol;
+class JsonDownloadProtocol;
+class FileDelete;
 class FileRepository;
 class FileUploadAbort;
 class FileUploadInitiate;
@@ -47,7 +49,7 @@ class OutboundMessageHandler;
 class FileDownloadService : public PlatformMessageListener
 {
 public:
-    FileDownloadService(std::string gatewayKey, FileDownloadProtocol& protocol, uint64_t maxFileSize,
+    FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol, uint64_t maxFileSize,
                         std::uint64_t maxPacketSize, std::string fileDownloadDirectory,
                         OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository);
 
@@ -60,14 +62,22 @@ public:
 
     const Protocol& getProtocol() const override;
 
+    void sendFileList();
+
 private:
-    void handleBinaryData(const BinaryData& binaryData);
-    void handleInitiateRequest(const FileUploadInitiate& request);
-    void handleAbortRequest(const FileUploadAbort& request);
+    void handle(const BinaryData& binaryData);
+    void handle(const FileUploadInitiate& request);
+    void handle(const FileUploadAbort& request);
+    void handle(const FileDelete& request);
 
     void downloadFile(const std::string& fileName, std::uint64_t fileSize, const std::string& fileHash);
     void abortDownload(const std::string& fileName);
+    void deleteFile(const std::string& fileName);
+    void purgeFiles();
+
     void sendStatus(const FileUploadStatus& response);
+    void sendFileListUpdate();
+    void sendFileListResponse();
 
     void requestPacket(const FilePacketRequest& request);
     void downloadCompleted(const std::string& fileName, const std::string& filePath, const std::string& fileHash);
@@ -82,7 +92,7 @@ private:
     const std::string m_gatewayKey;
     const std::string m_fileDownloadDirectory;
 
-    FileDownloadProtocol& m_protocol;
+    JsonDownloadProtocol& m_protocol;
 
     const uint64_t m_maxFileSize;
     const uint64_t m_maxPacketSize;

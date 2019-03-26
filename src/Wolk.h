@@ -43,7 +43,6 @@ class DataService;
 class DeviceStatusService;
 class DeviceRepository;
 class ExistingDevicesRepository;
-class FileDownloadProtocol;
 class FileDownloadService;
 class FileRepository;
 class FirmwareUpdateService;
@@ -56,6 +55,7 @@ class GatewayUpdateService;
 class InboundDeviceMessageHandler;
 class InboundPlatformMessageHandler;
 class JsonDFUProtocol;
+class JsonDownloadProtocol;
 class KeepAliveService;
 class PublishingService;
 class Persistence;
@@ -283,7 +283,7 @@ private:
     std::unique_ptr<GatewayFirmwareUpdateProtocol> m_gatewayFirmwareUpdateProtocol;
     std::shared_ptr<FirmwareUpdateService> m_firmwareUpdateService;
 
-    std::unique_ptr<FileDownloadProtocol> m_fileDownloadProtocol;
+    std::unique_ptr<JsonDownloadProtocol> m_fileDownloadProtocol;
     std::shared_ptr<FileDownloadService> m_fileDownloadService;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;

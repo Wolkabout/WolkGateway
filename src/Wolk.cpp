@@ -19,7 +19,6 @@
 #include "model/ConfigurationSetCommand.h"
 #include "persistence/Persistence.h"
 #include "protocol/DataProtocol.h"
-#include "protocol/FileDownloadProtocol.h"
 #include "protocol/GatewayDataProtocol.h"
 #include "protocol/GatewayFirmwareUpdateProtocol.h"
 #include "protocol/GatewayStatusProtocol.h"
@@ -27,6 +26,7 @@
 #include "protocol/RegistrationProtocol.h"
 #include "protocol/StatusProtocol.h"
 #include "protocol/json/JsonDFUProtocol.h"
+#include "protocol/json/JsonDownloadProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/FileRepository.h"
@@ -320,6 +320,11 @@ void Wolk::notifyPlatformConnected()
     }
 
     requestActuatorStatusesForDevices();
+
+    if (m_fileDownloadService)
+    {
+        m_fileDownloadService->sendFileList();
+    }
 }
 
 void Wolk::notifyPlatformDisonnected()

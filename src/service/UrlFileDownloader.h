@@ -17,6 +17,8 @@
 #ifndef URLFILEDOWNLOADER_H
 #define URLFILEDOWNLOADER_H
 
+#include "model/FileTransferStatus.h"
+
 #include <functional>
 #include <string>
 
@@ -25,32 +27,28 @@ namespace wolkabout
 class UrlFileDownloader
 {
 public:
-    enum class Error
-    {
-        UNSPECIFIED_ERROR,
-        FILE_SYSTEM_ERROR,
-        MALFORMED_URL,
-        UNSUPPORTED_FILE_SIZE
-    };
-
     virtual ~UrlFileDownloader() = default;
 
     /**
      * @brief download Starts downloading of the file from provided url
      * Should be implemented in a thread safe manner
      * Should support parallel downloads
+     * If download is completed onSuccessCallback should be called
+     * If download fails the file should be deleted and onFailCallback called
      * @param url Url of the file to download
      * @param downloadDirectory Directory where to download file
-     * @param onSuccessCallback Function to call when file is downloaded with key and file path as argument
+     * @param onSuccessCallback Function to call when file is downloaded with url, file name and file path as argument
      * @param onFailCallback Function to call when download fails with key and error code as argument
      */
     virtual void download(
       const std::string& url, const std::string& downloadDirectory,
-      std::function<void(const std::string& url, const std::string& filePath)> onSuccessCallback,
-      std::function<void(const std::string& url, UrlFileDownloader::Error errorCode)> onFailCallback) = 0;
+      std::function<void(const std::string& url, const std::string& fileName, const std::string& filePath)>
+        onSuccessCallback,
+      std::function<void(const std::string& url, FileTransferError errorCode)> onFailCallback) = 0;
     /**
      * @brief abort Aborts file download and removes any saved data
      * Should be implemented in a thread safe manner
+     * If abort is called, file should be deleted and no error should be reported
      * @param url Url of the file being downloaded
      */
     virtual void abort(const std::string& url) = 0;

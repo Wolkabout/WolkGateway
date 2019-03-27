@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "FileDownloadService.h"
+#include "service/FileDownloadService.h"
 #include "FileHandler.h"
 #include "OutboundMessageHandler.h"
 #include "connectivity/ConnectivityService.h"
@@ -23,9 +23,14 @@
 #include "model/FilePacketRequest.h"
 #include "model/FileTransferStatus.h"
 #include "model/FileUploadStatus.h"
+#include "model/FileUrlDownloadAbort.h"
+#include "model/FileUrlDownloadInitiate.h"
+#include "model/FileUrlDownloadStatus.h"
 #include "model/Message.h"
 #include "protocol/json/JsonDownloadProtocol.h"
 #include "repository/FileRepository.h"
+#include "service/UrlFileDownloader.h"
+#include "utilities/ByteUtils.h"
 #include "utilities/FileSystemUtils.h"
 #include "utilities/Logger.h"
 
@@ -43,16 +48,15 @@ static const size_t FLAG_INDEX = 2;
 namespace wolkabout
 {
 FileDownloadService::FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol,
-                                         std::uint64_t maxFileSize, std::uint64_t maxPacketSize,
                                          std::string fileDownloadDirectory,
-                                         OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository)
+                                         OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository,
+                                         std::shared_ptr<UrlFileDownloader> urlFileDownloader)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_protocol{protocol}
-, m_maxFileSize{maxFileSize}
-, m_maxPacketSize{maxPacketSize}
 , m_fileDownloadDirectory{std::move(fileDownloadDirectory)}
 , m_outboundMessageHandler{outboundMessageHandler}
 , m_fileRepository{fileRepository}
+, m_urlFileDownloader{std::move(urlFileDownloader)}
 , m_activeDownload{""}
 , m_run{true}
 , m_garbageCollector(&FileDownloadService::clearDownloads, this)
@@ -131,6 +135,24 @@ void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> messa
         return;
     }
 
+    auto urlDownloadInit = m_protocol.makeFileUrlDownloadInitiate(*message);
+    if (urlDownloadInit)
+    {
+        auto initiateRequest = *urlDownloadInit;
+        addToCommandBuffer([=] { handle(initiateRequest); });
+
+        return;
+    }
+
+    auto urlDownloadAbort = m_protocol.makeFileUrlDownloadAbort(*message);
+    if (urlDownloadAbort)
+    {
+        auto abortRequest = *urlDownloadAbort;
+        addToCommandBuffer([=] { handle(abortRequest); });
+
+        return;
+    }
+
     LOG(WARN) << "Unable to parse message; channel: " << message->getChannel()
               << ", content: " << message->getContent();
 }
@@ -183,7 +205,7 @@ void FileDownloadService::handle(const FileUploadInitiate& request)
 
     if (!fileInfo)
     {
-        downloadFile(request.getName(), request.getSize(), request.getHash());
+        download(request.getName(), request.getSize(), request.getHash());
     }
     else if (fileInfo->hash != request.getHash())
     {
@@ -221,7 +243,49 @@ void FileDownloadService::handle(const FileDelete& request)
     deleteFile(request.getName());
 }
 
-void FileDownloadService::downloadFile(const std::string& fileName, uint64_t fileSize, const std::string& fileHash)
+void FileDownloadService::handle(const FileUrlDownloadInitiate& request)
+{
+    if (!m_urlFileDownloader)
+    {
+        LOG(WARN) << "Url downloader not available";
+
+        sendStatus(FileUrlDownloadStatus{request.getUrl(), FileTransferError::TRANSFER_PROTOCOL_DISABLED});
+        return;
+    }
+
+    if (request.getUrl().empty())
+    {
+        LOG(WARN) << "Missing file url from file url download initiate";
+
+        sendStatus(FileUrlDownloadStatus{request.getUrl(), FileTransferError::UNSPECIFIED_ERROR});
+        return;
+    }
+
+    urlDownload(request.getUrl());
+}
+
+void FileDownloadService::handle(const FileUrlDownloadAbort& request)
+{
+    if (!m_urlFileDownloader)
+    {
+        LOG(WARN) << "Url downloader not available";
+
+        sendStatus(FileUrlDownloadStatus{request.getUrl(), FileTransferError::TRANSFER_PROTOCOL_DISABLED});
+        return;
+    }
+
+    if (request.getUrl().empty())
+    {
+        LOG(WARN) << "Missing file url from file url download abort";
+
+        sendStatus(FileUrlDownloadStatus{request.getUrl(), FileTransferError::UNSPECIFIED_ERROR});
+        return;
+    }
+
+    abortUrlDownload(request.getUrl());
+}
+
+void FileDownloadService::download(const std::string& fileName, uint64_t fileSize, const std::string& fileHash)
 {
     std::lock_guard<decltype(m_mutex)> lg{m_mutex};
 
@@ -247,7 +311,7 @@ void FileDownloadService::downloadFile(const std::string& fileName, uint64_t fil
 
     const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(fileHash));
 
-    auto downloader = std::unique_ptr<FileDownloader>(new FileDownloader(m_maxFileSize, m_maxPacketSize));
+    auto downloader = std::unique_ptr<FileDownloader>(new FileDownloader(MAX_PACKET_SIZE));
     m_activeDownloads[fileName] = std::make_tuple(fileHash, std::move(downloader), false);
     m_activeDownload = fileName;
 
@@ -256,6 +320,18 @@ void FileDownloadService::downloadFile(const std::string& fileName, uint64_t fil
                  [=](const FilePacketRequest& request) { requestPacket(request); },
                  [=](const std::string& filePath) { downloadCompleted(fileName, filePath, fileHash); },
                  [=](FileTransferError code) { downloadFailed(fileName, code); });
+}
+
+void FileDownloadService::urlDownload(const std::string& fileUrl)
+{
+    LOG(DEBUG) << "FileDownloadService::urlDownload " << fileUrl;
+
+    m_urlFileDownloader->download(
+      fileUrl, m_fileDownloadDirectory,
+      [=](const std::string& url, const std::string& fileName, const std::string& filePath) {
+          urlDownloadCompleted(url, fileName, filePath);
+      },
+      [=](const std::string& url, FileTransferError errorCode) { urlDownloadFailed(url, errorCode); });
 }
 
 void FileDownloadService::abortDownload(const std::string& fileName)
@@ -279,6 +355,16 @@ void FileDownloadService::abortDownload(const std::string& fileName)
     {
         LOG(DEBUG) << "FileDownloadService::abort download not active";
     }
+}
+
+void FileDownloadService::abortUrlDownload(const std::string& fileUrl)
+{
+    LOG(DEBUG) << "FileDownloadService::abortUrlDownload " << fileUrl;
+
+    LOG(INFO) << "Aborting download for file: " << fileUrl;
+    m_urlFileDownloader->abort(fileUrl);
+
+    sendStatus(FileUrlDownloadStatus{fileUrl, FileTransferStatus::ABORTED});
 }
 
 void FileDownloadService::deleteFile(const std::string& fileName)
@@ -350,7 +436,20 @@ void FileDownloadService::sendStatus(const FileUploadStatus& response)
 
     if (!message)
     {
-        LOG(ERROR) << "Failed to create file upload response";
+        LOG(ERROR) << "Failed to create file upload status";
+        return;
+    }
+
+    m_outboundMessageHandler.addMessage(message);
+}
+
+void FileDownloadService::sendStatus(const FileUrlDownloadStatus& response)
+{
+    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, response);
+
+    if (!message)
+    {
+        LOG(ERROR) << "Failed to create file url download status";
         return;
     }
 
@@ -431,6 +530,32 @@ void FileDownloadService::downloadFailed(const std::string& fileName, FileTransf
     flagCompletedDownload(fileName);
 
     sendStatus(FileUploadStatus{fileName, errorCode});
+}
+
+void FileDownloadService::urlDownloadCompleted(const std::string& fileUrl, const std::string& fileName,
+                                               const std::string& filePath)
+{
+    addToCommandBuffer([=] {
+        ByteArray fileContent;
+        if (!FileSystemUtils::readBinaryFileContent(filePath, fileContent))
+        {
+            LOG(ERROR) << "Failed to open downloaded file: " << filePath;
+            FileSystemUtils::deleteFile(filePath);
+            sendStatus(FileUrlDownloadStatus{fileUrl, FileTransferError::FILE_SYSTEM_ERROR});
+            return;
+        }
+
+        auto byteHash = ByteUtils::hashSHA256(fileContent);
+        auto hashStr = StringUtils::base64Encode(byteHash);
+
+        m_fileRepository.store(FileInfo{fileName, hashStr, filePath});
+        sendStatus(FileUrlDownloadStatus{fileUrl, fileName});
+    });
+}
+
+void FileDownloadService::urlDownloadFailed(const std::string& fileUrl, FileTransferError errorCode)
+{
+    sendStatus(FileUrlDownloadStatus{fileUrl, errorCode});
 }
 
 void FileDownloadService::addToCommandBuffer(std::function<void()> command)

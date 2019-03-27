@@ -44,14 +44,18 @@ class FileRepository;
 class FileUploadAbort;
 class FileUploadInitiate;
 class FileUploadStatus;
+class FileUrlDownloadAbort;
+class FileUrlDownloadInitiate;
+class FileUrlDownloadStatus;
 class OutboundMessageHandler;
+class UrlFileDownloader;
 
 class FileDownloadService : public PlatformMessageListener
 {
 public:
-    FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol, uint64_t maxFileSize,
-                        std::uint64_t maxPacketSize, std::string fileDownloadDirectory,
-                        OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository);
+    FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol, std::string fileDownloadDirectory,
+                        OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository,
+                        std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr);
 
     ~FileDownloadService();
 
@@ -69,19 +73,27 @@ private:
     void handle(const FileUploadInitiate& request);
     void handle(const FileUploadAbort& request);
     void handle(const FileDelete& request);
+    void handle(const FileUrlDownloadInitiate& request);
+    void handle(const FileUrlDownloadAbort& request);
 
-    void downloadFile(const std::string& fileName, std::uint64_t fileSize, const std::string& fileHash);
+    void download(const std::string& fileName, std::uint64_t fileSize, const std::string& fileHash);
+    void urlDownload(const std::string& fileUrl);
     void abortDownload(const std::string& fileName);
+    void abortUrlDownload(const std::string& fileUrl);
     void deleteFile(const std::string& fileName);
     void purgeFiles();
 
     void sendStatus(const FileUploadStatus& response);
+    void sendStatus(const FileUrlDownloadStatus& response);
     void sendFileListUpdate();
     void sendFileListResponse();
 
     void requestPacket(const FilePacketRequest& request);
     void downloadCompleted(const std::string& fileName, const std::string& filePath, const std::string& fileHash);
     void downloadFailed(const std::string& fileName, FileTransferError errorCode);
+
+    void urlDownloadCompleted(const std::string& fileUrl, const std::string& fileName, const std::string& filePath);
+    void urlDownloadFailed(const std::string& fileUrl, FileTransferError errorCode);
 
     void addToCommandBuffer(std::function<void()> command);
 
@@ -94,11 +106,10 @@ private:
 
     JsonDownloadProtocol& m_protocol;
 
-    const uint64_t m_maxFileSize;
-    const uint64_t m_maxPacketSize;
-
     OutboundMessageHandler& m_outboundMessageHandler;
     FileRepository& m_fileRepository;
+
+    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
     // temporary to disallow simultaneous downloads
     std::string m_activeDownload;
@@ -110,6 +121,8 @@ private:
     std::thread m_garbageCollector;
 
     CommandBuffer m_commandBuffer;
+
+    static const constexpr std::uint64_t MAX_PACKET_SIZE = 10 * 1024 * 1024;    // 10MB
 };
 }    // namespace wolkabout
 

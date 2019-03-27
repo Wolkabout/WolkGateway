@@ -72,32 +72,31 @@ WolkBuilder& WolkBuilder::gatewayHost(const std::string& host)
     return *this;
 }
 
-WolkBuilder& WolkBuilder::actuationHandler(
-  const std::function<void(const std::string&, const std::string&)>& actuationHandler)
+WolkBuilder& WolkBuilder::actuationHandler(std::function<void(const std::string&, const std::string&)> actuationHandler)
 {
-    m_actuationHandlerLambda = actuationHandler;
+    m_actuationHandlerLambda = std::move(actuationHandler);
     m_actuationHandler.reset();
     return *this;
 }
 
 WolkBuilder& WolkBuilder::actuationHandler(std::shared_ptr<ActuationHandler> actuationHandler)
 {
-    m_actuationHandler = actuationHandler;
+    m_actuationHandler = std::move(actuationHandler);
     m_actuationHandlerLambda = nullptr;
     return *this;
 }
 
 WolkBuilder& WolkBuilder::actuatorStatusProvider(
-  const std::function<ActuatorStatus(const std::string&)>& actuatorStatusProvider)
+  std::function<ActuatorStatus(const std::string&)> actuatorStatusProvider)
 {
-    m_actuatorStatusProviderLambda = actuatorStatusProvider;
+    m_actuatorStatusProviderLambda = std::move(actuatorStatusProvider);
     m_actuatorStatusProvider.reset();
     return *this;
 }
 
 WolkBuilder& WolkBuilder::actuatorStatusProvider(std::shared_ptr<ActuatorStatusProvider> actuatorStatusProvider)
 {
-    m_actuatorStatusProvider = actuatorStatusProvider;
+    m_actuatorStatusProvider = std::move(actuatorStatusProvider);
     m_actuatorStatusProviderLambda = nullptr;
     return *this;
 }
@@ -105,45 +104,49 @@ WolkBuilder& WolkBuilder::actuatorStatusProvider(std::shared_ptr<ActuatorStatusP
 WolkBuilder& WolkBuilder::configurationHandler(
   std::function<void(const std::vector<ConfigurationItem>& configuration)> configurationHandler)
 {
-    m_configurationHandlerLambda = configurationHandler;
+    m_configurationHandlerLambda = std::move(configurationHandler);
     m_configurationHandler.reset();
     return *this;
 }
 
 wolkabout::WolkBuilder& WolkBuilder::configurationHandler(std::shared_ptr<ConfigurationHandler> configurationHandler)
 {
-    m_configurationHandler = configurationHandler;
+    m_configurationHandler = std::move(configurationHandler);
     m_configurationHandlerLambda = nullptr;
     return *this;
 }
 
 WolkBuilder& WolkBuilder::configurationProvider(std::function<std::vector<ConfigurationItem>()> configurationProvider)
 {
-    m_configurationProviderLambda = configurationProvider;
+    m_configurationProviderLambda = std::move(configurationProvider);
     m_configurationProvider.reset();
     return *this;
 }
 
 wolkabout::WolkBuilder& WolkBuilder::configurationProvider(std::shared_ptr<ConfigurationProvider> configurationProvider)
 {
-    m_configurationProvider = configurationProvider;
+    m_configurationProvider = std::move(configurationProvider);
     m_configurationProviderLambda = nullptr;
     return *this;
 }
 
 WolkBuilder& WolkBuilder::withFirmwareUpdate(const std::string& firmwareVersion,
-                                             std::shared_ptr<FirmwareInstaller> installer,
-                                             const std::string& firmwareDownloadDirectory,
-                                             uint_fast64_t maxFirmwareFileSize,
-                                             std::uint_fast64_t maxFirmwareFileChunkSize,
-                                             std::shared_ptr<UrlFileDownloader> urlDownloader)
+                                             std::shared_ptr<FirmwareInstaller> installer)
 {
     m_firmwareVersion = firmwareVersion;
-    m_firmwareDownloadDirectory = firmwareDownloadDirectory;
-    m_maxFirmwareFileSize = maxFirmwareFileSize;
-    m_maxFirmwareFileChunkSize = maxFirmwareFileChunkSize;
-    m_firmwareInstaller = installer;
-    m_urlFileDownloader = urlDownloader;
+    m_firmwareInstaller = std::move(installer);
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::withUrlFileDownload(std::shared_ptr<UrlFileDownloader> urlDownloader)
+{
+    m_urlFileDownloader = std::move(urlDownloader);
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::fileDownloadDirectory(const std::string& path)
+{
+    m_fileDownloadDirectory = path;
     return *this;
 }
 
@@ -160,7 +163,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         throw std::logic_error("No device key present.");
     }
 
-    if (m_device.getActuatorReferences().size() != 0)
+    if (!m_device.getActuatorReferences().empty())
     {
         if (m_actuationHandler == nullptr && m_actuationHandlerLambda == nullptr)
         {
@@ -186,6 +189,17 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     if (!m_device.getSubdeviceManagement())
     {
         throw std::logic_error("Subdevice management must be specified");
+    }
+
+    if (m_device.getFirmwareUpdate() && m_device.getFirmwareUpdate().value() &&
+        m_device.getTemplate().getFirmwareUpdateType().empty())
+    {
+        throw std::logic_error("Firmware installer must be provided when firmware update is enabled");
+    }
+
+    if (m_device.getUrlDownload() && m_device.getUrlDownload().value() && !m_urlFileDownloader)
+    {
+        throw std::logic_error("Url downloader must be provided when url download is enabled");
     }
 
     auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
@@ -357,9 +371,9 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     }
 
     // setup file download service
-    wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(
-      m_device.getKey(), *wolk->m_fileDownloadProtocol, m_maxFirmwareFileSize, m_maxFirmwareFileChunkSize,
-      /*TODO download dir*/ m_firmwareDownloadDirectory, *wolk->m_platformPublisher, *wolk->m_fileRepository);
+    wolk->m_fileDownloadService =
+      std::make_shared<FileDownloadService>(m_device.getKey(), *wolk->m_fileDownloadProtocol, m_fileDownloadDirectory,
+                                            *wolk->m_platformPublisher, *wolk->m_fileRepository, m_urlFileDownloader);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
 
     // setup firmware update service

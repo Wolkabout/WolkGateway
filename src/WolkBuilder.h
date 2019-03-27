@@ -71,7 +71,7 @@ public:
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& actuationHandler(
-      const std::function<void(const std::string& reference, const std::string& value)>& actuationHandler);
+      std::function<void(const std::string& reference, const std::string& value)> actuationHandler);
 
     /**
      * @brief Sets actuation handler
@@ -86,7 +86,7 @@ public:
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& actuatorStatusProvider(
-      const std::function<ActuatorStatus(const std::string& reference)>& actuatorStatusProvider);
+      std::function<ActuatorStatus(const std::string& reference)> actuatorStatusProvider);
 
     /**
      * @brief Sets actuation status provider
@@ -128,15 +128,25 @@ public:
      * @brief withFirmwareUpdate Enables firmware update for gateway
      * @param firmwareVersion Current version of the firmware
      * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
-     * @param firmwareDownloadDirectory Directory where to download firmware file
-     * @param maxFirmwareFileSize Maximum size of firmware file that can be handled
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::shared_ptr<FirmwareInstaller> installer);
+
+    /**
+     * @brief withUrlFileDownload Enables downloading file from url
+     * Url download must be enabled in GatewayDevice
      * @param urlDownloader Instance of wolkabout::UrlFileDownloader used to downlad firmware from provided url
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::shared_ptr<FirmwareInstaller> installer,
-                                    const std::string& firmwareDownloadDirectory,
-                                    std::uint_fast64_t maxFirmwareFileSize, std::uint_fast64_t maxFirmwareFileChunkSize,
-                                    std::shared_ptr<UrlFileDownloader> urlDownloader = nullptr);
+    WolkBuilder& withUrlFileDownload(std::shared_ptr<UrlFileDownloader> urlDownloader);
+
+    /**
+     * @brief fileDownloadDirectory specifies directory where to download files
+     * By default files are stored in the working directory of gateway
+     * @param path Path to directory where files will be stored
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& fileDownloadDirectory(const std::string& path);
 
     /**
      * @brief withoutKeepAlive Disables ping mechanism used to notify WolkAbout IOT Platform
@@ -179,11 +189,11 @@ private:
     std::function<std::vector<ConfigurationItem>()> m_configurationProviderLambda;
     std::shared_ptr<ConfigurationProvider> m_configurationProvider;
 
+    std::string m_fileDownloadDirectory = "";
+
     std::string m_firmwareVersion;
-    std::string m_firmwareDownloadDirectory = "";
-    std::uint_fast64_t m_maxFirmwareFileSize = 10 * 1024 * 1024;
-    std::uint_fast64_t m_maxFirmwareFileChunkSize = 10 * 1024;
     std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
+
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
     bool m_keepAliveEnabled;

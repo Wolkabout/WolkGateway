@@ -35,7 +35,7 @@ class FilePacketRequest;
 class FileDownloader
 {
 public:
-    FileDownloader(std::uint64_t maxFileSize, std::uint64_t maxPacketSize);
+    FileDownloader(std::uint64_t maxPacketSize);
 
     void download(const std::string& fileName, std::uint64_t fileSize, const ByteArray& fileHash,
                   const std::string& downloadDirectory, std::function<void(const FilePacketRequest&)> packetProvider,
@@ -55,7 +55,6 @@ private:
 
     void clear();
 
-    const std::uint64_t m_maxFileSize;
     const std::uint64_t m_maxPacketSize;
 
     FileHandler m_fileHandler;

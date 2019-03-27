@@ -26,10 +26,7 @@ namespace wolkabout
 {
 const constexpr std::chrono::milliseconds FileDownloader::PACKET_REQUEST_TIMEOUT;
 
-FileDownloader::FileDownloader(std::uint64_t maxFileSize, std::uint64_t maxPacketSize)
-: m_maxFileSize{maxFileSize}, m_maxPacketSize{maxPacketSize}
-{
-}
+FileDownloader::FileDownloader(std::uint64_t maxPacketSize) : m_maxPacketSize{maxPacketSize} {}
 
 void FileDownloader::download(const std::string& fileName, std::uint64_t fileSize, const ByteArray& fileHash,
                               const std::string& downloadDirectory,
@@ -40,15 +37,6 @@ void FileDownloader::download(const std::string& fileName, std::uint64_t fileSiz
     addToCommandBuffer([=] {
         m_timer.stop();
         clear();
-
-        if (fileSize > m_maxFileSize)
-        {
-            if (onFailCallback)
-            {
-                onFailCallback(FileTransferError::UNSUPPORTED_FILE_SIZE);
-            }
-            return;
-        }
 
         if (fileSize <= m_maxPacketSize - (2 * ByteUtils::SHA_256_HASH_BYTE_LENGTH))
         {

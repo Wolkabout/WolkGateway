@@ -119,7 +119,7 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
         return;
     }
 
-    auto deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
+    auto deviceKey = request->getSubdeviceKey();
     if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
     {
         addToPostponedSubdeviceRegistrationRequests(deviceKey, *request);

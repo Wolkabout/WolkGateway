@@ -309,7 +309,7 @@ void Wolk::notifyPlatformConnected()
         m_gatewayUpdateService->updateGateway(m_device);
         shouldUpdate = false;
 
-        if (m_subdeviceRegistrationService)
+        if (m_subdeviceRegistrationService && m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
         {
             m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
         }

@@ -172,13 +172,6 @@ bool JsonGatewayStatusProtocol::isStatusResponseMessage(const Message& message) 
     return StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_RESPONSE_TOPIC_ROOT);
 }
 
-bool JsonGatewayStatusProtocol::isStatusUpdateMessage(const Message& message) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    return StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_UPDATE_TOPIC_ROOT);
-}
-
 bool JsonGatewayStatusProtocol::isLastWillMessage(const Message& message) const
 {
     LOG(TRACE) << METHOD_INFO;

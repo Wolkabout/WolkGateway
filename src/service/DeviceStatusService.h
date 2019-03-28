@@ -66,7 +66,7 @@ private:
 
     void sendStatusRequestForDevice(const std::string& deviceKey);
     void sendStatusRequestForAllDevices();
-    void sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status);
+    void sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus::Status status);
 
     bool containsDeviceStatus(const std::string& deviceKey);
     std::pair<std::time_t, DeviceStatus::Status> getDeviceStatus(const std::string& deviceKey);

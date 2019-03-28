@@ -88,8 +88,8 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
             LOG(INFO) << "Device Status Service: Device got disconnected: " << deviceKey;
 
             // offline status if last will topic contains device key
-            logDeviceStatus(deviceKey, DeviceStatus::OFFLINE);
-            sendStatusUpdateForDevice(deviceKey, DeviceStatus::OFFLINE);
+            logDeviceStatus(deviceKey, DeviceStatus::Status::OFFLINE);
+            sendStatusUpdateForDevice(deviceKey, DeviceStatus::Status::OFFLINE);
         }
         else    // check for list of key in payload
         {
@@ -99,8 +99,8 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
             {
                 LOG(INFO) << "Device Status Service: Device got disconnected: " << key;
 
-                logDeviceStatus(key, DeviceStatus::OFFLINE);
-                sendStatusUpdateForDevice(key, DeviceStatus::OFFLINE);
+                logDeviceStatus(key, DeviceStatus::Status::OFFLINE);
+                sendStatusUpdateForDevice(key, DeviceStatus::Status::OFFLINE);
             }
         }
     }
@@ -205,8 +205,8 @@ void DeviceStatusService::validateDevicesStatus()
         if (!containsDeviceStatus(key))
         {
             // device has not reported status at all, send offline status
-            logDeviceStatus(key, DeviceStatus::OFFLINE);
-            sendStatusUpdateForDevice(key, DeviceStatus::OFFLINE);
+            logDeviceStatus(key, DeviceStatus::Status::OFFLINE);
+            sendStatusUpdateForDevice(key, DeviceStatus::Status::OFFLINE);
             continue;
         }
 
@@ -220,8 +220,8 @@ void DeviceStatusService::validateDevicesStatus()
             lastStatus == DeviceStatus::Status::CONNECTED)
         {
             // device has not reported status in time and last status was CONNECTED, send offline status
-            logDeviceStatus(key, DeviceStatus::OFFLINE);
-            sendStatusUpdateForDevice(key, DeviceStatus::OFFLINE);
+            logDeviceStatus(key, DeviceStatus::Status::OFFLINE);
+            sendStatusUpdateForDevice(key, DeviceStatus::Status::OFFLINE);
             continue;
         }
     }
@@ -251,7 +251,7 @@ void DeviceStatusService::sendStatusRequestForAllDevices()
     m_outboundDeviceMessageHandler.addMessage(message);
 }
 
-void DeviceStatusService::sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status)
+void DeviceStatusService::sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus::Status status)
 {
     // TODO protocol
     std::shared_ptr<Message> statusMessage =

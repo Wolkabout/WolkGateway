@@ -55,10 +55,11 @@ Running
 Before proceeding with steps from this section complete steps listed in 'Building' section.
 
 1. Change current directory to `out`
-2. Open `gatewayConfiguration.json` and fill name, key and password fields with data provided by WolkAbout IoT platform after gateway device creation
+2. Open `gatewayConfiguration.json` and fill name, key and password fields with data provided by WolkAbout IoT platform after gateway device creation and choose who will be responsible for registering and deleting devices - gateway or platform
 3. Make sure mosquitto is running by invoking `systemctl start mosquitto`
 4. Run gateway by invoking `./WolkGatewayApp gatewayConfiguration.json`
 
+**Note:** Running additional instances of WolkGateway on the same network requires having an additional mosquitto broker per gateway. Start a mosquitto daemon from the terminal with `mosquitto -p <port> -d`. The port entered here should also be entered into `gatewayConfiguration.json` for the matching gateway and into the configuration file of all of the gateway's modules. 
 
 Connecting devices
 ------
@@ -83,11 +84,12 @@ Module may be implemented in any desired language as a mqtt client.
 Deleting devices
 ------
 
-Gateway keeps track of all devices that are registered via modules. Keys of all registered devices are stored in a file existingDevices.json which is located
-in the same directory as gateway executable.
+If subdevice management was set to `platform` in `gatewayConfiguration.json`, then the deletion of devices is enabled on the web application and the gateway stores no information about registered devices, it simply forwards all received data to the platform.
 
-To delete device from gateway open existingDevices.json file and remove the line containing the key of device which should be deleted, and restart gateway.
-Upon starting the gateway will delete all registered devices whoose keys no longer appear in existingDevices.json file.
+If subdevice management was set to `gateway` in `gatewayConfiguration.json`, then the gateway keeps track of all devices that are registered via modules. Keys of all registered devices are stored in a file `existingDevices.json` which is located in the same directory as gateway executable.
+
+To delete device from gateway open `existingDevices.json` file and remove the line containing the key of device which should be deleted, and restart gateway.
+Upon starting the gateway will delete all registered devices whose keys no longer appear in `existingDevices.json` file.
 
 Note that the device will be registered again if the gateway receives registration request for that device from module.
 
@@ -97,38 +99,37 @@ Advanced usage
 
 Gateway can have its own feeds, configuration and firmware update.
 
-**Specifying gateway manifest**
+**Specifying gateway template**
 
 ```cpp
+    std::map<std::string, std::string> typeParameters;
+    typeParameters.insert(std::pair<std::string, std::string>("subdeviceManagement", "GATEWAY"));
 
-auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+    wolkabout::DeviceTemplate gatewayTemplate(
+        {wolkabout::ConfigurationTemplate("Heating start hour", "HSH", wolkabout::DataType::NUMERIC, "", "8", 0, 24)},
+        {wolkabout::SensorTemplate("Temperature", "T", wolkabout::DataType::NUMERIC, "", -20, 70)},
+        {wolkabout::AlarmTemplate("Humidity alarm", "HH", "")},
+        {wolkabout::ActuatorTemplate("Light switch", "SW", wolkabout::DataType::BOOLEAN, "")},
+        "",
+        typeParameters,
+        {},
+        {});
 
-wolkabout::DeviceManifest gatewayManifest("gatewayManifest", "", dataProtocol->getName(), "",
-    {wolkabout::ConfigurationManifest("Heating start hour", "HSH", wolkabout::DataType::NUMERIC, "", "8", 0, 24)},
-    {wolkabout::SensorManifest("Temperature", "T", wolkabout::DataType::NUMERIC, "", -20, 70)},
-    {wolkabout::AlarmManifest("Humidity alarm", wolkabout::AlarmManifest::AlarmSeverity::ALERT, "HH", "High humidity", "")},
-    {wolkabout::ActuatorManifest("Light switch", "SW", wolkabout::DataType::BOOLEAN, "")});
 
+    wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), gatewayTemplate);
 
-wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), gatewayManifest;
+    auto builder = wolkabout::Wolk::newBuilder(device)
+    	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
+    	.platformHost(gatewayConfiguration.getPlatformMqttUri())
+        .build();
 
-auto builder = wolkabout::Wolk::newBuilder(device)
-	.withDataProtocol(std::move(dataProtocol))
-	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
-	.platformHost(gatewayConfiguration.getPlatformMqttUri())
-    .build();
-
-    wolk->connect();
+        wolk->connect();
 ```
 
 **Specifying actuation and configuration handlers/providers**
 ```cpp
 
-auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
-wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), dataProtocol->getName());
-
 auto builder = wolkabout::Wolk::newBuilder(device)
-	.withDataProtocol(std::move(dataProtocol))
 	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
 	.platformHost(gatewayConfiguration.getPlatformMqttUri())
     .actuationHandler([](const std::string& reference, const std::string& value) -> void {
@@ -167,7 +168,7 @@ wolk->addSensorReading("BOOL_SENSOR_REF", true);
 
 **Publishing actuator statuses**
 ```cpp
-wolk->publishActuatorStatus("ACTUATOR_REFERENCE_ONE ");
+wolk->publishActuatorStatus("ACTUATOR_REFERENCE_ONE");
 ```
 This will invoke the ActuationStatusProvider to read the actuator status,
 and publish actuator status.
@@ -192,7 +193,7 @@ wolk->publish();
 Whereas actuator statuses are published automatically by calling:
 
 ```cpp
-wolk->publishActuatorStatus("ACTUATOR_REFERENCE_ONE ");
+wolk->publishActuatorStatus("ACTUATOR_REFERENCE_ONE");
 ```
 
 **Trust store**
@@ -203,11 +204,10 @@ See code snippet below on how to specify trust store for gateway.
 
 ```c++
 
-auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
-wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), dataProtocol->getName());
+wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
+                                gatewayConfiguration.getSubdeviceManagement());
 
 auto builder = wolkabout::Wolk::newBuilder(device)
-	.withDataProtocol(std::move(dataProtocol))
 	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
 	.platformHost(gatewayConfiguration.getPlatformMqttUri())
 	// Specify trust store
@@ -241,12 +241,10 @@ public:
 
 auto installer = std::make_shared<CustomFirmwareInstaller>();
 
-auto dataProtocol = std::unique_ptr<wolkabout::JsonGatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
-wolkabout::DeviceManifest manifest("manifestName", "manifestDescription", dataProtocol->getName(), "DFU");
-wolkabout::Device device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), manifest);
+wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), 
+                                wolkabout::SubdeviceManagement::GATEWAY, true, true);
 
 auto builder = wolkabout::Wolk::newBuilder(device)
-	.withDataProtocol(std::move(dataProtocol))
 	.gatewayHost(gatewayConfiguration.getLocalMqttUri())
 	.platformHost(gatewayConfiguration.getPlatformMqttUri())
 	// Enable firmware update
@@ -262,4 +260,4 @@ auto builder = wolkabout::Wolk::newBuilder(device)
 ```
 
 Firmware update for gateway subdevices is enabled by default. To change default settings without enabling firmware update for gateway use the above api
-and pass nullptr for firmwate installer.
+and pass false for firmwareUpdateEnabled in GatewayDevice.

@@ -48,9 +48,9 @@ public:
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
-        deviceStatusService = std::unique_ptr<wolkabout::DeviceStatusService>(
-          new wolkabout::DeviceStatusService(GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler,
-                                             *deviceOutboundMessageHandler, std::chrono::seconds{60}));
+        deviceStatusService = std::unique_ptr<wolkabout::DeviceStatusService>(new wolkabout::DeviceStatusService(
+          GATEWAY_KEY, *protocol, deviceRepository.get(), *platformOutboundMessageHandler,
+          *deviceOutboundMessageHandler, std::chrono::seconds{60}));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
@@ -167,7 +167,7 @@ TEST_F(DeviceStatusService,
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().size(), 1);
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().front()->getChannel(),
-              "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY");
+              "d2p/subdevice_status_update/g/GATEWAY_KEY/d/DEVICE_KEY");
 }
 
 TEST_F(DeviceStatusService,
@@ -215,7 +215,7 @@ TEST_F(
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().size(), 1);
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().front()->getChannel(),
-              "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY");
+              "d2p/subdevice_status_update/g/GATEWAY_KEY/d/DEVICE_KEY");
 }
 
 TEST_F(
@@ -234,11 +234,11 @@ TEST_F(
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().size(), 3);
     ASSERT_EQ(platformOutboundMessageHandler->getMessages()[0]->getChannel(),
-              "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY_1");
+              "d2p/subdevice_status_update/g/GATEWAY_KEY/d/DEVICE_KEY_1");
     ASSERT_EQ(platformOutboundMessageHandler->getMessages()[1]->getChannel(),
-              "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY_2");
+              "d2p/subdevice_status_update/g/GATEWAY_KEY/d/DEVICE_KEY_2");
     ASSERT_EQ(platformOutboundMessageHandler->getMessages()[2]->getChannel(),
-              "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY_3");
+              "d2p/subdevice_status_update/g/GATEWAY_KEY/d/DEVICE_KEY_3");
 }
 
 TEST_F(DeviceStatusService, Given_When_StatusMessageFromDeviceWithInvalidDeviceTypeIsReceived_Then_MessageIsIgnored)
@@ -268,7 +268,7 @@ TEST_F(DeviceStatusService, Given_When_StatusMessageFromDeviceIsReceived_Then_Me
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().size(), 1);
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().front()->getChannel(),
-              "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY");
+              "d2p/subdevice_status_update/g/GATEWAY_KEY/d/DEVICE_KEY");
 }
 
 TEST_F(DeviceStatusService, GivenGatewayInRepository_When_ConnectedToDevices_Then_StatusRequestNotSent)

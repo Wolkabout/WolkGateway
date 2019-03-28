@@ -180,8 +180,16 @@ std::unique_ptr<Message> JsonGatewayDataProtocol::makeMessage(const std::string&
 std::unique_ptr<Message> JsonGatewayDataProtocol::makeMessage(const std::string& deviceKey,
                                                               const ActuatorGetCommand& command) const
 {
-    const std::string topic = ACTUATION_GET_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey + CHANNEL_DELIMITER +
-                              REFERENCE_PATH_PREFIX + command.getReference();
+    std::string topic;
+    if (!deviceKey.empty())
+    {
+        topic = ACTUATION_GET_TOPIC_ROOT + DEVICE_PATH_PREFIX + deviceKey + CHANNEL_DELIMITER + REFERENCE_PATH_PREFIX +
+                command.getReference();
+    }
+    else
+    {
+        topic = ACTUATION_GET_TOPIC_ROOT + DEVICE_PATH_PREFIX;
+    }
 
     return std::unique_ptr<Message>(new Message("", topic));
 }

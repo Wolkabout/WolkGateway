@@ -31,7 +31,7 @@ const std::chrono::seconds STATUS_RESPONSE_TIMEOUT{5};
 namespace wolkabout
 {
 DeviceStatusService::DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol,
-                                         DeviceRepository& deviceRepository,
+                                         DeviceRepository* deviceRepository,
                                          OutboundMessageHandler& outboundPlatformMessageHandler,
                                          OutboundMessageHandler& outboundDeviceMessageHandler,
                                          std::chrono::seconds statusRequestInterval)
@@ -60,9 +60,17 @@ void DeviceStatusService::platformMessageReceived(std::shared_ptr<Message> messa
 
     if (m_protocol.isStatusRequestMessage(*message))
     {
-        // TODO platform does not support status request message,
-        // instead it sends OK response when device status is sent
-        // routePlatformMessage(message);
+        const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(topic);
+
+        if (deviceKey.empty())
+        {
+            return;
+        }
+
+        sendStatusRequestForDevice(deviceKey);
+    }
+    else if (m_protocol.isStatusConfirmMessage(*message))
+    {
     }
     else
     {
@@ -93,7 +101,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
 
             // offline status if last will topic contains device key
             logDeviceStatus(deviceKey, DeviceStatus::OFFLINE);
-            sendStatusResponseForDevice(deviceKey, DeviceStatus::OFFLINE);
+            sendStatusUpdateForDevice(deviceKey, DeviceStatus::OFFLINE);
         }
         else    // check for list of key in payload
         {
@@ -104,11 +112,11 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
                 LOG(INFO) << "Device Status Service: Device got disconnected: " << key;
 
                 logDeviceStatus(key, DeviceStatus::OFFLINE);
-                sendStatusResponseForDevice(key, DeviceStatus::OFFLINE);
+                sendStatusUpdateForDevice(key, DeviceStatus::OFFLINE);
             }
         }
     }
-    else if (m_protocol.isStatusResponseMessage(*message))
+    else if (m_protocol.isStatusResponseMessage(*message) || m_protocol.isStatusUpdateMessage(*message))
     {
         if (deviceKey.empty())
         {
@@ -124,7 +132,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
 
         logDeviceStatus(deviceKey, statusResponse->getStatus());
 
-        routeDeviceMessage(message);
+        sendStatusUpdateForDevice(deviceKey, statusResponse->getStatus());
     }
     else
     {
@@ -142,7 +150,7 @@ void DeviceStatusService::sendLastKnownStatusForDevice(const std::string& device
     if (containsDeviceStatus(deviceKey))
     {
         auto status = getDeviceStatus(deviceKey).second;
-        sendStatusResponseForDevice(deviceKey, status);
+        sendStatusUpdateForDevice(deviceKey, status);
     }
 }
 
@@ -160,59 +168,39 @@ void DeviceStatusService::disconnected()
     m_responseTimer.stop();
 }
 
-void DeviceStatusService::routeDeviceMessage(std::shared_ptr<Message> message)
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string topic = m_protocol.routeDeviceMessage(message->getChannel(), m_gatewayKey);
-    if (topic.empty())
-    {
-        LOG(WARN) << "Failed to route device message: " << message->getChannel();
-        return;
-    }
-
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
-
-    m_outboundPlatformMessageHandler.addMessage(routedMessage);
-}
-
-void DeviceStatusService::routePlatformMessage(std::shared_ptr<Message> message)
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string topic = m_protocol.routePlatformMessage(message->getChannel(), m_gatewayKey);
-    if (topic.empty())
-    {
-        LOG(WARN) << "Failed to route platform message: " << message->getChannel();
-        return;
-    }
-
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), topic)};
-
-    m_outboundDeviceMessageHandler.addMessage(routedMessage);
-}
-
 void DeviceStatusService::requestDevicesStatus()
 {
-    auto keys = m_deviceRepository.findAllDeviceKeys();
-
-    for (const auto& key : *keys)
+    if (m_deviceRepository)
     {
-        if (key == m_gatewayKey)
+        auto keys = m_deviceRepository->findAllDeviceKeys();
+
+        for (const auto& key : *keys)
         {
-            continue;
+            if (key == m_gatewayKey)
+            {
+                continue;
+            }
+
+            sendStatusRequestForDevice(key);
         }
 
-        sendStatusRequestForDevice(key);
+        m_responseTimer.start(std::chrono::duration_cast<std::chrono::milliseconds>(m_statusResponseInterval),
+                              [=] { validateDevicesStatus(); });
     }
-
-    m_responseTimer.start(std::chrono::duration_cast<std::chrono::milliseconds>(m_statusResponseInterval),
-                          [=] { validateDevicesStatus(); });
+    else
+    {
+        sendStatusRequestForAllDevices();
+    }
 }
 
 void DeviceStatusService::validateDevicesStatus()
 {
-    auto keys = m_deviceRepository.findAllDeviceKeys();
+    if (!m_deviceRepository)
+    {
+        return;
+    }
+
+    auto keys = m_deviceRepository->findAllDeviceKeys();
 
     for (const auto& key : *keys)
     {
@@ -225,7 +213,7 @@ void DeviceStatusService::validateDevicesStatus()
         {
             // device has not reported status at all, send offline status
             logDeviceStatus(key, DeviceStatus::OFFLINE);
-            sendStatusResponseForDevice(key, DeviceStatus::OFFLINE);
+            sendStatusUpdateForDevice(key, DeviceStatus::OFFLINE);
             continue;
         }
 
@@ -240,7 +228,7 @@ void DeviceStatusService::validateDevicesStatus()
         {
             // device has not reported status in time and last status was CONNECTED, send offline status
             logDeviceStatus(key, DeviceStatus::OFFLINE);
-            sendStatusResponseForDevice(key, DeviceStatus::OFFLINE);
+            sendStatusUpdateForDevice(key, DeviceStatus::OFFLINE);
             continue;
         }
     }
@@ -258,7 +246,19 @@ void DeviceStatusService::sendStatusRequestForDevice(const std::string& deviceKe
     m_outboundDeviceMessageHandler.addMessage(message);
 }
 
-void DeviceStatusService::sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus status)
+void DeviceStatusService::sendStatusRequestForAllDevices()
+{
+    std::shared_ptr<Message> message = m_protocol.makeDeviceStatusRequestMessage("");
+    if (!message)
+    {
+        LOG(WARN) << "Failed to create status request message for all devices";
+        return;
+    }
+
+    m_outboundDeviceMessageHandler.addMessage(message);
+}
+
+void DeviceStatusService::sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status)
 {
     std::shared_ptr<Message> statusMessage = m_protocol.makeMessage(m_gatewayKey, deviceKey, status);
 

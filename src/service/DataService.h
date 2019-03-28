@@ -35,7 +35,7 @@ class MessageListener;
 class DataService : public DeviceMessageListener, public PlatformMessageListener, public OutboundMessageHandler
 {
 public:
-    DataService(const std::string& gatewayKey, GatewayDataProtocol& protocol, DeviceRepository& deviceRepository,
+    DataService(const std::string& gatewayKey, GatewayDataProtocol& protocol, DeviceRepository* deviceRepository,
                 OutboundMessageHandler& outboundPlatformMessageHandler,
                 OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice = nullptr);
 
@@ -50,6 +50,7 @@ public:
     void setGatewayMessageListener(MessageListener* gatewayDevice);
 
     virtual void requestActuatorStatusesForDevice(const std::string& deviceKey);
+    virtual void requestActuatorStatusesForAllDevices();
 
 private:
     void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
@@ -61,7 +62,7 @@ private:
     const std::string m_gatewayKey;
     GatewayDataProtocol& m_protocol;
 
-    DeviceRepository& m_deviceRepository;
+    DeviceRepository* m_deviceRepository;
 
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;

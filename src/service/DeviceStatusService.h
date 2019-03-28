@@ -41,7 +41,7 @@ class DeviceStatusService : public DeviceMessageListener,
                             public ConnectionStatusListener
 {
 public:
-    DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol, DeviceRepository& deviceRepository,
+    DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol, DeviceRepository* deviceRepository,
                         OutboundMessageHandler& outboundPlatformMessageHandler,
                         OutboundMessageHandler& outboundDeviceMessageHandler,
                         std::chrono::seconds statusRequestInterval);
@@ -58,14 +58,12 @@ public:
     void disconnected() override;
 
 private:
-    void routeDeviceMessage(std::shared_ptr<Message> message);
-    void routePlatformMessage(std::shared_ptr<Message> message);
-
     void requestDevicesStatus();
     void validateDevicesStatus();
 
     void sendStatusRequestForDevice(const std::string& deviceKey);
-    void sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus status);
+    void sendStatusRequestForAllDevices();
+    void sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status);
 
     bool containsDeviceStatus(const std::string& deviceKey);
     std::pair<std::time_t, DeviceStatus> getDeviceStatus(const std::string& deviceKey);
@@ -74,7 +72,7 @@ private:
     const std::string m_gatewayKey;
     GatewayStatusProtocol& m_protocol;
 
-    DeviceRepository& m_deviceRepository;
+    DeviceRepository* m_deviceRepository;
 
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;

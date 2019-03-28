@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 #include "utilities/FileSystemUtils.h"
 #include "utilities/json.hpp"
 
+#include <algorithm>
 #include <stdexcept>
-#include <string>
 #include <utility>
 
 namespace wolkabout
@@ -32,13 +32,15 @@ const std::string GatewayConfiguration::PLATFORM_URI = "platformMqttUri";
 const std::string GatewayConfiguration::PLATFORM_TRUST_STORE = "platformTrustStore";
 const std::string GatewayConfiguration::LOCAL_URI = "localMqttUri";
 const std::string GatewayConfiguration::KEEP_ALIVE = "keepAlive";
+const std::string GatewayConfiguration::SUBDEVICE_MANAGEMENT = "subdeviceManagement";
 
 GatewayConfiguration::GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri,
-                                           std::string localMqttUri)
+                                           std::string localMqttUri, SubdeviceManagement management)
 : m_key(std::move(key))
 , m_password(std::move(password))
 , m_platformMqttUri(std::move(platformMqttUri))
 , m_localMqttUri(std::move(localMqttUri))
+, m_subdeviceManagement(management)
 {
 }
 
@@ -60,6 +62,11 @@ const std::string& GatewayConfiguration::getLocalMqttUri() const
 const std::string& GatewayConfiguration::getPlatformMqttUri() const
 {
     return m_platformMqttUri;
+}
+
+SubdeviceManagement GatewayConfiguration::getSubdeviceManagement() const
+{
+    return m_subdeviceManagement;
 }
 
 void GatewayConfiguration::setPlatformTrustStore(const std::string& value)
@@ -100,8 +107,26 @@ wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string
     const auto password = j.at(PASSWORD).get<std::string>();
     const auto platformMqttUri = j.at(PLATFORM_URI).get<std::string>();
     const auto localMqttUri = j.at(LOCAL_URI).get<std::string>();
+    auto subdeviceManagement = j.at(SUBDEVICE_MANAGEMENT).get<std::string>();
 
-    GatewayConfiguration configuration(key, password, platformMqttUri, localMqttUri);
+    std::transform(subdeviceManagement.begin(), subdeviceManagement.end(), subdeviceManagement.begin(), ::toupper);
+
+    SubdeviceManagement management;
+
+    if (subdeviceManagement == "PLATFORM")
+    {
+        management = SubdeviceManagement::PLATFORM;
+    }
+    else if (subdeviceManagement == "GATEWAY")
+    {
+        management = SubdeviceManagement::GATEWAY;
+    }
+    else
+    {
+        throw std::logic_error("Invalid value for subdevice management.");
+    }
+
+    GatewayConfiguration configuration(key, password, platformMqttUri, localMqttUri, management);
 
     if (j.find(KEEP_ALIVE) != j.end())
     {

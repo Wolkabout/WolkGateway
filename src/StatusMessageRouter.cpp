@@ -42,6 +42,10 @@ void StatusMessageRouter::platformMessageReceived(std::shared_ptr<Message> messa
     {
         m_platformStatusMessageHandler->platformMessageReceived(message);
     }
+    else if (m_protocol.isStatusConfirmMessage(*message) && m_platformStatusMessageHandler)
+    {
+        m_platformStatusMessageHandler->platformMessageReceived(message);
+    }
     else if (m_protocol.isPongMessage(*message) && m_platformKeepAliveMessageHandler)
     {
         m_platformKeepAliveMessageHandler->platformMessageReceived(message);
@@ -57,6 +61,10 @@ void StatusMessageRouter::deviceMessageReceived(std::shared_ptr<Message> message
     LOG(TRACE) << "Routing device status protocol message: " << message->getChannel();
 
     if (m_protocol.isStatusResponseMessage(*message) && m_deviceStatusMessageHandler)
+    {
+        m_deviceStatusMessageHandler->deviceMessageReceived(message);
+    }
+    else if (m_protocol.isStatusUpdateMessage(*message) && m_deviceStatusMessageHandler)
     {
         m_deviceStatusMessageHandler->deviceMessageReceived(message);
     }

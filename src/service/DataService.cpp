@@ -31,7 +31,7 @@
 namespace wolkabout
 {
 DataService::DataService(const std::string& gatewayKey, GatewayDataProtocol& protocol,
-                         DeviceRepository& deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
+                         DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
                          OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice)
 : m_gatewayKey{gatewayKey}
 , m_protocol{protocol}
@@ -84,61 +84,64 @@ void DataService::deviceMessageReceived(std::shared_ptr<Message> message)
         return;
     }
 
-    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(channel);
-    const std::unique_ptr<DetailedDevice> device = m_deviceRepository.findByDeviceKey(deviceKey);
-    if (!device)
+    if (m_deviceRepository)
     {
-        LOG(WARN) << "DataService: Not forwarding data message from device with key '" << deviceKey
-                  << "'. Device not registered";
-        return;
-    }
+        const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(channel);
+        const std::unique_ptr<DetailedDevice> device = m_deviceRepository->findByDeviceKey(deviceKey);
+        if (!device)
+        {
+            LOG(WARN) << "DataService: Not forwarding data message from device with key '" << deviceKey
+                      << "'. Device not registered";
+            return;
+        }
 
-    if (m_protocol.isSensorReadingMessage(*message))
-    {
-        const std::string sensorReference = m_protocol.extractReferenceFromChannel(channel);
-        const DeviceManifest& deviceManifest = device->getManifest();
-        if (!deviceManifest.hasSensorManifestWithReference(sensorReference))
+        if (m_protocol.isSensorReadingMessage(*message))
         {
-            LOG(WARN) << "DataService: Not forwarding sensor reading with reference '" << sensorReference
-                      << "' from device with key '" << deviceKey
-                      << "'. No sensor with given reference in device manifest";
-            return;
+            const std::string sensorReference = m_protocol.extractReferenceFromChannel(channel);
+            const DeviceTemplate& deviceTemplate = device->getTemplate();
+            if (!deviceTemplate.hasSensorTemplateWithReference(sensorReference))
+            {
+                LOG(WARN) << "DataService: Not forwarding sensor reading with reference '" << sensorReference
+                          << "' from device with key '" << deviceKey
+                          << "'. No sensor with given reference in device template";
+                return;
+            }
         }
-    }
-    else if (m_protocol.isAlarmMessage(*message))
-    {
-        const std::string alarmReference = m_protocol.extractReferenceFromChannel(channel);
-        const DeviceManifest& deviceManifest = device->getManifest();
-        if (!deviceManifest.hasAlarmManifestWithReference(alarmReference))
+        else if (m_protocol.isAlarmMessage(*message))
         {
-            LOG(WARN) << "DataService: Not forwarding alarm with reference '" << alarmReference
-                      << "' from device with key '" << deviceKey
-                      << "'. No event with given reference in device manifest";
-            return;
+            const std::string alarmReference = m_protocol.extractReferenceFromChannel(channel);
+            const DeviceTemplate& deviceTemplate = device->getTemplate();
+            if (!deviceTemplate.hasAlarmTemplateWithReference(alarmReference))
+            {
+                LOG(WARN) << "DataService: Not forwarding alarm with reference '" << alarmReference
+                          << "' from device with key '" << deviceKey
+                          << "'. No event with given reference in device template";
+                return;
+            }
         }
-    }
-    else if (m_protocol.isActuatorStatusMessage(*message))
-    {
-        const std::string actuatorReference = m_protocol.extractReferenceFromChannel(channel);
-        const DeviceManifest& deviceManifest = device->getManifest();
-        if (!deviceManifest.hasActuatorManifestWithReference(actuatorReference))
+        else if (m_protocol.isActuatorStatusMessage(*message))
         {
-            LOG(WARN) << "DataService: Not forwarding actuator status with reference '" << actuatorReference
-                      << "' from device with key '" << deviceKey
-                      << "'. No actuator with given reference in device manifest";
-            return;
+            const std::string actuatorReference = m_protocol.extractReferenceFromChannel(channel);
+            const DeviceTemplate& deviceTemplate = device->getTemplate();
+            if (!deviceTemplate.hasActuatorTemplateWithReference(actuatorReference))
+            {
+                LOG(WARN) << "DataService: Not forwarding actuator status with reference '" << actuatorReference
+                          << "' from device with key '" << deviceKey
+                          << "'. No actuator with given reference in device template";
+                return;
+            }
         }
-    }
-    else if (m_protocol.isConfigurationCurrentMessage(*message))
-    {
-    }
-    else
-    {
-        assert(false && "DataService: Unsupported message type");
+        else if (m_protocol.isConfigurationCurrentMessage(*message))
+        {
+        }
+        else
+        {
+            assert(false && "DataService: Unsupported message type");
 
-        LOG(ERROR) << "DataService: Not forwarding message from device on channel: '" << channel
-                   << "'. Unsupported message type";
-        return;
+            LOG(ERROR) << "DataService: Not forwarding message from device on channel: '" << channel
+                       << "'. Unsupported message type";
+            return;
+        }
     }
 
     routeDeviceToPlatformMessage(message);
@@ -161,7 +164,12 @@ void DataService::setGatewayMessageListener(MessageListener* gatewayDevice)
 
 void DataService::requestActuatorStatusesForDevice(const std::string& deviceKey)
 {
-    auto device = m_deviceRepository.findByDeviceKey(deviceKey);
+    if (!m_deviceRepository)
+    {
+        return;
+    }
+
+    auto device = m_deviceRepository->findByDeviceKey(deviceKey);
 
     if (!device)
     {
@@ -175,6 +183,12 @@ void DataService::requestActuatorStatusesForDevice(const std::string& deviceKey)
         std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, ActuatorGetCommand(reference));
         m_outboundDeviceMessageHandler.addMessage(message);
     }
+}
+
+void DataService::requestActuatorStatusesForAllDevices()
+{
+    std::shared_ptr<Message> message = m_protocol.makeMessage("", ActuatorGetCommand(""));
+    m_outboundDeviceMessageHandler.addMessage(message);
 }
 
 void DataService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)

@@ -20,17 +20,18 @@
 #include "Poco/Data/Session.h"
 #include "repository/DeviceRepository.h"
 
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
 
 namespace wolkabout
 {
-class AlarmManifest;
-class ActuatorManifest;
-class SensorManifest;
-class ConfigurationManifest;
-class DeviceManifest;
+class AlarmTemplate;
+class ActuatorTemplate;
+class SensorTemplate;
+class ConfigurationTemplate;
+class DeviceTemplate;
 
 class SQLiteDeviceRepository : public DeviceRepository
 {
@@ -51,11 +52,13 @@ public:
     bool containsDeviceWithKey(const std::string& deviceKey) override;
 
 private:
-    static std::string calculateSha256(const AlarmManifest& alarmManifest);
-    static std::string calculateSha256(const ActuatorManifest& actuatorManifest);
-    static std::string calculateSha256(const SensorManifest& sensorManifest);
-    static std::string calculateSha256(const ConfigurationManifest& configurationManifest);
-    static std::string calculateSha256(const DeviceManifest& deviceManifest);
+    static std::string calculateSha256(const AlarmTemplate& alarmTemplate);
+    static std::string calculateSha256(const ActuatorTemplate& actuatorTemplate);
+    static std::string calculateSha256(const SensorTemplate& sensorTemplate);
+    static std::string calculateSha256(const ConfigurationTemplate& configurationTemplate);
+    static std::string calculateSha256(const std::pair<std::string, std::string>& typeParameter);
+    static std::string calculateSha256(const std::pair<std::string, bool>& firmwareUpdateParameter);
+    static std::string calculateSha256(const DeviceTemplate& deviceTemplate);
 
     void update(const DetailedDevice& device);
 

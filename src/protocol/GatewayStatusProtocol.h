@@ -45,7 +45,9 @@ public:
     virtual std::unique_ptr<DeviceStatusResponse> makeDeviceStatusResponse(const Message& message) const = 0;
 
     virtual bool isStatusResponseMessage(const Message& message) const = 0;
+    virtual bool isStatusUpdateMessage(const Message& message) const = 0;
     virtual bool isStatusRequestMessage(const Message& message) const = 0;
+    virtual bool isStatusConfirmMessage(const Message& message) const = 0;
     virtual bool isLastWillMessage(const Message& message) const = 0;
     virtual bool isPongMessage(const Message& message) const = 0;
 

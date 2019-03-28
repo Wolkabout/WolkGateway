@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef DEVICE_H
-#define DEVICE_H
-
-#include "model/DetailedDevice.h"
-
-#include <string>
+#ifndef SUBDEVICEMANAGEMENT_H
+#define SUBDEVICEMANAGEMENT_H
 
 namespace wolkabout
 {
-class Device : public DetailedDevice
+enum class SubdeviceManagement : bool
 {
-public:
-    Device() = default;
-    Device(std::string key, std::string password, std::string protocol);
-    Device(std::string key, std::string password, DeviceManifest deviceManifest);
-
-    const std::string& getKey() const;
-    const std::string& getPassword() const;
+    GATEWAY = true,
+    PLATFORM = false
 };
-}    // namespace wolkabout
+}
 
-#endif    // DEVICE_H
+#endif    // SUBDEVICEMANAGEMENT_H

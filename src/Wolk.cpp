@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,26 @@
  */
 
 #include "Wolk.h"
-#include "InboundMessageHandler.h"
-#include "WolkBuilder.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/ConfigurationSetCommand.h"
-#include "model/DetailedDevice.h"
-#include "protocol/Protocol.h"
+#include "persistence/Persistence.h"
+#include "protocol/DataProtocol.h"
+#include "protocol/GatewayDataProtocol.h"
+#include "protocol/GatewayFileDownloadProtocol.h"
+#include "protocol/GatewayFirmwareUpdateProtocol.h"
+#include "protocol/GatewayStatusProtocol.h"
+#include "protocol/GatewaySubdeviceRegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
+#include "repository/ExistingDevicesRepository.h"
 #include "service/DataService.h"
-#include "service/DeviceRegistrationService.h"
+#include "service/DeviceStatusService.h"
+#include "service/FileDownloadService.h"
 #include "service/FirmwareUpdateService.h"
+#include "service/GatewayDataService.h"
+#include "service/GatewayUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
+#include "service/SubdeviceRegistrationService.h"
 #include "utilities/Logger.h"
 
 #include <memory>
@@ -44,7 +52,7 @@ namespace wolkabout
 {
 const constexpr std::chrono::seconds Wolk::KEEP_ALIVE_INTERVAL;
 
-WolkBuilder Wolk::newBuilder(Device device)
+WolkBuilder Wolk::newBuilder(GatewayDevice device)
 {
     return WolkBuilder(device);
 }
@@ -61,7 +69,7 @@ void Wolk::disconnect()
     addToCommandBuffer([=]() -> void { m_deviceConnectivityService->disconnect(); });
 }
 
-void Wolk::addSensorReading(const std::string& reference, std::string value, unsigned long long rtc)
+void Wolk::addSensorReading(const std::string& reference, const std::string& value, unsigned long long rtc)
 {
     if (rtc == 0)
     {
@@ -76,7 +84,7 @@ void Wolk::addSensorReading(const std::string& reference, std::string value, uns
     });
 }
 
-void Wolk::addSensorReading(const std::string& reference, const std::vector<std::string> values,
+void Wolk::addSensorReading(const std::string& reference, const std::vector<std::string>& values,
                             unsigned long long int rtc)
 {
     if (values.empty())
@@ -92,7 +100,7 @@ void Wolk::addSensorReading(const std::string& reference, const std::vector<std:
     addToCommandBuffer([=]() -> void {
         if (m_gatewayDataService)
         {
-            m_gatewayDataService->addSensorReading(reference, values, getSensorDelimiter(reference), rtc);
+            m_gatewayDataService->addSensorReading(reference, values, rtc);
         }
     });
 }
@@ -154,7 +162,7 @@ void Wolk::publishConfiguration()
 
         if (m_gatewayDataService)
         {
-            m_gatewayDataService->addConfiguration(configuration, getConfigurationDelimiters());
+            m_gatewayDataService->addConfiguration(configuration);
         }
         flushConfiguration();
     });
@@ -170,10 +178,12 @@ void Wolk::publish()
     });
 }
 
-Wolk::Wolk(Device device) : m_device{device}
+Wolk::Wolk(GatewayDevice device) : m_device{device}
 {
     m_commandBuffer = std::unique_ptr<CommandBuffer>(new CommandBuffer());
 }
+
+Wolk::~Wolk() = default;
 
 void Wolk::addToCommandBuffer(std::function<void()> command)
 {
@@ -260,6 +270,20 @@ void Wolk::handleConfigurationGetCommand()
     publishConfiguration();
 }
 
+void Wolk::publishEverything()
+{
+    addToCommandBuffer([=] {
+        publishFirmwareStatus();
+
+        publishConfiguration();
+
+        for (const std::string& actuatorReference : m_device.getActuatorReferences())
+        {
+            publishActuatorStatus(actuatorReference);
+        }
+    });
+}
+
 void Wolk::publishFirmwareStatus()
 {
     if (m_firmwareUpdateService)
@@ -267,24 +291,6 @@ void Wolk::publishFirmwareStatus()
         m_firmwareUpdateService->reportFirmwareUpdateResult();
         m_firmwareUpdateService->publishFirmwareVersion();
     }
-}
-
-std::string Wolk::getSensorDelimiter(const std::string& reference)
-{
-    auto delimiters = m_device.getSensorDelimiters();
-
-    auto it = delimiters.find(reference);
-    if (it != delimiters.end())
-    {
-        return it->second;
-    }
-
-    return "";
-}
-
-std::map<std::string, std::string> Wolk::getConfigurationDelimiters()
-{
-    return m_device.getConfigurationDelimiters();
 }
 
 void Wolk::notifyPlatformConnected()
@@ -296,14 +302,17 @@ void Wolk::notifyPlatformConnected()
         m_keepAliveService->connected();
     }
 
-    static bool shouldRegister = true;
-    if (shouldRegister && m_deviceRegistrationService)
+    static bool shouldUpdate = true;
+    if (shouldUpdate)
     {
-        // register gateway upon first connect
-        m_deviceRegistrationService->registerDevice(m_device);
-        m_deviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+        // update gateway upon first connect
+        m_gatewayUpdateService->updateGateway(m_device);
+        shouldUpdate = false;
 
-        shouldRegister = false;
+        if (m_subdeviceRegistrationService && m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
+        {
+            m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+        }
     }
 
     requestActuatorStatusesForDevices();
@@ -340,14 +349,7 @@ void Wolk::connectToPlatform()
         {
             notifyPlatformConnected();
 
-            publishFirmwareStatus();
-
-            for (const std::string& actuatorReference : m_device.getActuatorReferences())
-            {
-                publishActuatorStatus(actuatorReference);
-            }
-
-            publishConfiguration();
+            publishEverything();
 
             publish();
         }
@@ -374,103 +376,33 @@ void Wolk::connectToDevices()
     });
 }
 
-void Wolk::routePlatformData(const std::string& protocol, std::shared_ptr<Message> message)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(protocol);
-    if (it != m_dataServices.end())
-    {
-        std::get<0>(it->second)->platformMessageReceived(message);
-    }
-    else
-    {
-        LOG(WARN) << "Data service not found for protocol: " << protocol;
-    }
-}
-
-void Wolk::routeDeviceData(const std::string& protocol, std::shared_ptr<Message> message)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto it = m_dataServices.find(protocol);
-    if (it != m_dataServices.end())
-    {
-        std::get<0>(it->second)->deviceMessageReceived(message);
-    }
-    else
-    {
-        LOG(WARN) << "Data service not found for protocol: " << protocol;
-    }
-}
-
-void Wolk::registerDataProtocol(std::shared_ptr<GatewayDataProtocol> protocol, std::shared_ptr<DataService> dataService)
-{
-    std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    if (auto it = m_dataServices.find(protocol->getName()) != m_dataServices.end())
-    {
-        LOG(INFO) << "Data protocol already registered";
-        return;
-    }
-
-    if (!dataService)
-    {
-        dataService = std::make_shared<DataService>(m_device.getKey(), *protocol, *m_deviceRepository,
-                                                    *m_platformPublisher, *m_devicePublisher);
-    }
-
-    auto protocolResolver =
-      std::make_shared<ChannelProtocolResolver>(*protocol, *m_deviceRepository,
-                                                [&](const std::string& protocolName, std::shared_ptr<Message> message) {
-                                                    routePlatformData(protocolName, message);
-                                                },
-                                                [&](const std::string& protocolName, std::shared_ptr<Message> message) {
-                                                    routeDeviceData(protocolName, message);
-                                                });
-
-    m_dataServices[protocol->getName()] = std::make_tuple(dataService, protocol, protocolResolver);
-
-    m_inboundDeviceMessageHandler->addListener(protocolResolver);
-    m_inboundPlatformMessageHandler->addListener(protocolResolver);
-}
-
 void Wolk::requestActuatorStatusesForDevices()
 {
-    auto keys = m_deviceRepository->findAllDeviceKeys();
-    if (keys)
+    if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
-        for (const auto& key : *keys)
+        auto keys = m_deviceRepository->findAllDeviceKeys();
+        if (keys)
         {
-            if (key == m_device.getKey())
+            for (const auto& key : *keys)
             {
-                continue;
+                if (key == m_device.getKey())
+                {
+                    continue;
+                }
+                requestActuatorStatusesForDevice(key);
             }
-            requestActuatorStatusesForDevice(key);
         }
+    }
+    else
+    {
+        std::lock_guard<decltype(m_lock)> lg{m_lock};
+        m_dataService->requestActuatorStatusesForAllDevices();
     }
 }
 
 void Wolk::requestActuatorStatusesForDevice(const std::string& deviceKey)
 {
     std::lock_guard<decltype(m_lock)> lg{m_lock};
-
-    auto device = m_deviceRepository->findByDeviceKey(deviceKey);
-    if (!device)
-    {
-        LOG(ERROR) << "Device not found: " << deviceKey;
-        return;
-    }
-
-    const auto protocol = device->getManifest().getProtocol();
-    auto it = m_dataServices.find(protocol);
-    if (it != m_dataServices.end())
-    {
-        std::get<0>(it->second)->requestActuatorStatusesForDevice(deviceKey);
-    }
-    else
-    {
-        LOG(WARN) << "Data service not found for protocol: " << protocol;
-    }
+    m_dataService->requestActuatorStatusesForDevice(deviceKey);
 }
 }    // namespace wolkabout

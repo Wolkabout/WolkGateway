@@ -408,6 +408,7 @@ void FileDownloadService::purgeFiles()
         if (!info)
         {
             LOG(ERROR) << "File info missing for file: " << name << ",  can't delete";
+            continue;
         }
 
         LOG(INFO) << "Deleting file: " << info->path;

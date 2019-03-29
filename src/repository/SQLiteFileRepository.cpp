@@ -111,9 +111,7 @@ void SQLiteFileRepository::store(const FileInfo& info)
         statement << "INSERT INTO " << FILE_INFO_TABLE << " (" << NAME_COLUMN << ", " << HASH_COLUMN << ", "
                   << PATH_COLUMN << ")"
                   << " VALUES(?, ?, ?);",
-          useRef(info.name), useRef(info.hash), useRef(info.path);
-
-        statement << "COMMIT;", now;
+          useRef(info.name), useRef(info.hash), useRef(info.path), now;
     }
     catch (...)
     {

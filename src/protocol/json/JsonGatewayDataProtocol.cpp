@@ -174,40 +174,6 @@ std::string JsonGatewayDataProtocol::routeDeviceToPlatformMessage(const std::str
     return "";
 }
 
-std::string JsonGatewayDataProtocol::routePlatformToGatewayMessage(const std::string& topic) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
-    const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX;
-
-    const auto position = topic.find(gatewayTopicPart);
-    if (position != std::string::npos)
-    {
-        std::string routedTopic = topic;
-        return routedTopic.replace(position, gatewayTopicPart.size(), deviceTopicPart);
-    }
-
-    return "";
-}
-
-std::string JsonGatewayDataProtocol::routeGatewayToPlatformMessage(const std::string& topic) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
-    const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX;
-
-    const auto position = topic.find(deviceTopicPart);
-    if (position != std::string::npos)
-    {
-        std::string routedTopic = topic;
-        return routedTopic.replace(position, deviceTopicPart.size(), gatewayTopicPart);
-    }
-
-    return "";
-}
-
 std::string JsonGatewayDataProtocol::extractReferenceFromChannel(const std::string& topic) const
 {
     LOG(TRACE) << METHOD_INFO;

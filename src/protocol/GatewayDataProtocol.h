@@ -44,9 +44,6 @@ public:
     virtual std::string routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey) const = 0;
     virtual std::string routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey) const = 0;
 
-    virtual std::string routePlatformToGatewayMessage(const std::string& topic) const = 0;
-    virtual std::string routeGatewayToPlatformMessage(const std::string& topic) const = 0;
-
     virtual std::string extractReferenceFromChannel(const std::string& topic) const = 0;
 };
 }    // namespace wolkabout

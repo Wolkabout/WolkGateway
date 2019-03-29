@@ -48,8 +48,6 @@ public:
 
     std::string routePlatformToDeviceMessage(const std::string& topic, const std::string& gatewayKey) const override;
     std::string routeDeviceToPlatformMessage(const std::string& topic, const std::string& gatewayKey) const override;
-    std::string routePlatformToGatewayMessage(const std::string& topic) const override;
-    std::string routeGatewayToPlatformMessage(const std::string& topic) const override;
     std::string extractReferenceFromChannel(const std::string& topic) const override;
 
 private:

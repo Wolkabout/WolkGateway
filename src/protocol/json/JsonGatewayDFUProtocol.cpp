@@ -40,6 +40,7 @@ void to_json(json& j, const FirmwareUpdateInstall& command)
 {
     json commandJson;
     commandJson["fileName"] = command.getFileName();
+    commandJson["devices"] = command.getDeviceKeys();
 
     j = commandJson;
 }

@@ -189,7 +189,7 @@ private:
     std::function<std::vector<ConfigurationItem>()> m_configurationProviderLambda;
     std::shared_ptr<ConfigurationProvider> m_configurationProvider;
 
-    std::string m_fileDownloadDirectory = "";
+    std::string m_fileDownloadDirectory = ".";
 
     std::string m_firmwareVersion;
     std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;

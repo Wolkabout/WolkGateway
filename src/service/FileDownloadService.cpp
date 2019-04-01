@@ -186,7 +186,6 @@ void FileDownloadService::handle(const FileUploadInitiate& request)
         return;
     }
 
-    // TODO compare with maxFileSize
     if (request.getSize() == 0)
     {
         LOG(WARN) << "Missing file size from file upload initiate";

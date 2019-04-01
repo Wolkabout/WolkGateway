@@ -39,30 +39,28 @@ const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SLEEP = "SLE
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SERVICE = "SERVICE";
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_OFFLINE = "OFFLINE";
 
-static void from_json(const json& j, DeviceStatus& p)
+static DeviceStatus::Status device_status_state_from_json(const json& j)
 {
     const std::string statusStr = j.at(JsonGatewayStatusProtocol::STATUS_RESPONSE_STATE_FIELD).get<std::string>();
 
-    const DeviceStatus::Status status = [&] {
-        if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED)
-        {
-            return DeviceStatus::Status::CONNECTED;
-        }
-        else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SLEEP)
-        {
-            return DeviceStatus::Status::SLEEP;
-        }
-        else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SERVICE)
-        {
-            return DeviceStatus::Status::SERVICE;
-        }
-        else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_OFFLINE)
-        {
-            return DeviceStatus::Status::OFFLINE;
-        }
+    if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED)
+    {
+        return DeviceStatus::Status::CONNECTED;
+    }
+    else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SLEEP)
+    {
+        return DeviceStatus::Status::SLEEP;
+    }
+    else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_SERVICE)
+    {
+        return DeviceStatus::Status::SERVICE;
+    }
+    else if (statusStr == JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_OFFLINE)
+    {
+        return DeviceStatus::Status::OFFLINE;
+    }
 
-        throw std::logic_error("Invalid value for device status");
-    }();
+    throw std::logic_error("Invalid value for device status");
 }
 
 std::vector<std::string> JsonGatewayStatusProtocol::getInboundChannels() const
@@ -107,7 +105,7 @@ std::unique_ptr<DeviceStatus> JsonGatewayStatusProtocol::makeDeviceStatusRespons
         }
 
         const json j = json::parse(message.getContent());
-        DeviceStatus::Status state = j;
+        DeviceStatus::Status state = device_status_state_from_json(j);
 
         return std::unique_ptr<DeviceStatus>(new DeviceStatus{key, state});
     }
@@ -142,7 +140,7 @@ std::unique_ptr<DeviceStatus> JsonGatewayStatusProtocol::makeDeviceStatusUpdate(
         }
 
         const json j = json::parse(message.getContent());
-        DeviceStatus::Status state = j;
+        DeviceStatus::Status state = device_status_state_from_json(j);
 
         return std::unique_ptr<DeviceStatus>(new DeviceStatus{key, state});
     }
@@ -162,7 +160,7 @@ bool JsonGatewayStatusProtocol::isStatusUpdateMessage(const Message& message) co
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_RESPONSE_TOPIC_ROOT);
+    return StringUtils::startsWith(message.getChannel(), DEVICE_STATUS_UPDATE_TOPIC_ROOT);
 }
 
 bool JsonGatewayStatusProtocol::isStatusResponseMessage(const Message& message) const
@@ -184,37 +182,6 @@ bool JsonGatewayStatusProtocol::isLastWillMessage(const Message& message) const
     }
 
     return StringUtils::startsWith(top, LAST_WILL_TOPIC_ROOT);
-}
-
-std::string JsonGatewayStatusProtocol::routeDeviceMessage(const std::string& topic, const std::string& gatewayKey) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string deviceTopicPart = CHANNEL_DELIMITER + DEVICE_PATH_PREFIX;
-    const std::string gatewayTopicPart = CHANNEL_DELIMITER + GATEWAY_PATH_PREFIX + gatewayKey;
-
-    const auto position = topic.find(deviceTopicPart);
-    if (position != std::string::npos)
-    {
-        std::string routedTopic = topic;
-        return routedTopic.insert(position, gatewayTopicPart);
-    }
-
-    return "";
-}
-
-std::string JsonGatewayStatusProtocol::routePlatformMessage(const std::string& topic,
-                                                            const std::string& gatewayKey) const
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string gwTopicPart = GATEWAY_PATH_PREFIX + gatewayKey + CHANNEL_DELIMITER;
-    if (topic.find(gwTopicPart) != std::string::npos)
-    {
-        return StringUtils::removeSubstring(topic, gwTopicPart);
-    }
-
-    return "";
 }
 
 std::string JsonGatewayStatusProtocol::extractDeviceKeyFromChannel(const std::string& topic) const

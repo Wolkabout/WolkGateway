@@ -104,13 +104,8 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
             }
         }
     }
-    else if (m_gatewayProtocol.isStatusResponseMessage(*message) || m_gatewayProtocol.isStatusUpdateMessage(*message))
+    else if (m_gatewayProtocol.isStatusResponseMessage(*message))
     {
-        if (deviceKey.empty())
-        {
-            return;
-        }
-
         auto statusResponse = m_gatewayProtocol.makeDeviceStatusResponse(*message);
         if (!statusResponse)
         {
@@ -118,9 +113,34 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
             return;
         }
 
-        logDeviceStatus(deviceKey, statusResponse->getStatus());
+        if (statusResponse->getDeviceKey().empty())
+        {
+            LOG(WARN) << "Device Status Service: Missing device key in device status response";
+            return;
+        }
 
-        sendStatusUpdateForDevice(deviceKey, statusResponse->getStatus());
+        logDeviceStatus(statusResponse->getDeviceKey(), statusResponse->getStatus());
+
+        sendStatusResponseForDevice(statusResponse->getDeviceKey(), statusResponse->getStatus());
+    }
+    else if (m_gatewayProtocol.isStatusUpdateMessage(*message))
+    {
+        auto statusUpdate = m_gatewayProtocol.makeDeviceStatusUpdate(*message);
+        if (!statusUpdate)
+        {
+            LOG(WARN) << "Device Status Service: Unable to parse device status update";
+            return;
+        }
+
+        if (statusUpdate->getDeviceKey().empty())
+        {
+            LOG(WARN) << "Device Status Service: Missing device key in device status update";
+            return;
+        }
+
+        logDeviceStatus(statusUpdate->getDeviceKey(), statusUpdate->getStatus());
+
+        sendStatusUpdateForDevice(statusUpdate->getDeviceKey(), statusUpdate->getStatus());
     }
     else
     {
@@ -251,15 +271,28 @@ void DeviceStatusService::sendStatusRequestForAllDevices()
     m_outboundDeviceMessageHandler.addMessage(message);
 }
 
-void DeviceStatusService::sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus::Status status)
+void DeviceStatusService::sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus::Status status)
 {
-    // TODO protocol
     std::shared_ptr<Message> statusMessage =
       m_protocol.makeStatusResponseMessage(m_gatewayKey, DeviceStatus{deviceKey, status});
 
     if (!statusMessage)
     {
-        LOG(WARN) << "Failed to create status message for device: " << deviceKey;
+        LOG(WARN) << "Failed to create status response message for device: " << deviceKey;
+        return;
+    }
+
+    m_outboundPlatformMessageHandler.addMessage(statusMessage);
+}
+
+void DeviceStatusService::sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus::Status status)
+{
+    std::shared_ptr<Message> statusMessage =
+      m_protocol.makeStatusUpdateMessage(m_gatewayKey, DeviceStatus{deviceKey, status});
+
+    if (!statusMessage)
+    {
+        LOG(WARN) << "Failed to create status update message for device: " << deviceKey;
         return;
     }
 

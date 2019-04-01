@@ -44,8 +44,6 @@ public:
 
     bool isLastWillMessage(const Message& message) const override;
 
-    std::string routeDeviceMessage(const std::string& channel, const std::string& gatewayKey) const override;
-    std::string routePlatformMessage(const std::string& channel, const std::string& gatewayKey) const override;
     std::vector<std::string> extractDeviceKeysFromContent(const std::string& content) const override;
 
     static const std::string STATUS_RESPONSE_STATE_FIELD;

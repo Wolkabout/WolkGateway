@@ -41,9 +41,6 @@ public:
 
     virtual bool isLastWillMessage(const Message& message) const = 0;
 
-    virtual std::string routeDeviceMessage(const std::string& channel, const std::string& gatewayKey) const = 0;
-    virtual std::string routePlatformMessage(const std::string& channel, const std::string& gatewayKey) const = 0;
-
     virtual std::vector<std::string> extractDeviceKeysFromContent(const std::string& content) const = 0;
 };
 }    // namespace wolkabout

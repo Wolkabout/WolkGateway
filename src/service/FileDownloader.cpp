@@ -81,8 +81,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                 {
                 case FileHandler::StatusCode::OK:
                 {
-                    const std::string filePath =
-                      FileSystemUtils::composePath(m_currentFileName, m_currentDownloadDirectory);
+                    const auto filePath = FileSystemUtils::composePath(m_currentFileName, m_currentDownloadDirectory);
                     const auto saveResult = m_fileHandler.saveFile(m_currentFileName, m_currentDownloadDirectory);
                     switch (saveResult)
                     {
@@ -90,7 +89,8 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                     {
                         if (m_currentOnSuccessCallback)
                         {
-                            m_currentOnSuccessCallback(filePath);
+                            const auto abosolutePath = FileSystemUtils::absolutePath(filePath);
+                            m_currentOnSuccessCallback(abosolutePath);
                         }
 
                         clear();

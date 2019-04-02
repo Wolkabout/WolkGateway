@@ -1,4 +1,4 @@
-#include "model/DeviceStatusResponse.h"
+#include "model/DeviceStatus.h"
 #include "model/Message.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
 
@@ -22,18 +22,6 @@ public:
     std::unique_ptr<wolkabout::JsonGatewayStatusProtocol> protocol;
 };
 }    // namespace
-
-TEST_F(JsonGatewayStatusProtocol, Given_Name_When_ProtocolNameIsRequested_Then_NameIsEqualToProtocolName)
-{
-    // Given
-    const std::string name = "StatusProtocol";
-
-    // When
-    const std::string protocolName = protocol->getName();
-
-    // Then
-    ASSERT_EQ(name, protocolName);
-}
 
 TEST_F(JsonGatewayStatusProtocol,
        Given_StatusChannelForDevice_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToDeviceKey)
@@ -111,120 +99,13 @@ TEST_F(
     ASSERT_TRUE(it3 != deviceKeys.end());
 }
 
-TEST_F(JsonGatewayStatusProtocol,
-       Given_GatewayDeviceChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToDeviceChannel)
-{
-    // Given
-    const std::string channel = "p2d/status/g/GATEWAY_KEY/d/DEVICE_KEY";
-
-    // When
-    const std::string routedChannel = protocol->routePlatformMessage(channel, "GATEWAY_KEY");
-
-    // Then
-    ASSERT_EQ("p2d/status/d/DEVICE_KEY", routedChannel);
-}
-
-TEST_F(JsonGatewayStatusProtocol,
-       Given_InvalidGatewayDeviceChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToEmpty)
-{
-    // Given
-    const std::string channel = "p2d/status/GATEWAY_KEY/d/DEVICE_KEY";
-
-    // When
-    const std::string routedChannel = protocol->routePlatformMessage(channel, "GATEWAY_KEY");
-
-    // Then
-    ASSERT_EQ("", routedChannel);
-}
-
-TEST_F(JsonGatewayStatusProtocol,
-       Given_DeviceChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToGatewayDeviceChannel)
-{
-    // Given
-    const std::string channel = "d2p/status/d/DEVICE_KEY";
-
-    // When
-    const std::string routedChannel = protocol->routeDeviceMessage(channel, "GATEWAY_KEY");
-
-    // Then
-    ASSERT_EQ("d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY", routedChannel);
-}
-
-TEST_F(JsonGatewayStatusProtocol, Given_InvalidDeviceChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToEmpty)
-{
-    // Given
-    const std::string channel = "d2p/status/DEVICE_KEY";
-
-    // When
-    const std::string routedChannel = protocol->routeDeviceMessage(channel, "GATEWAY_KEY");
-
-    // Then
-    ASSERT_EQ("", routedChannel);
-}
-
-TEST_F(JsonGatewayStatusProtocol,
-       Given_MessageFromPlatform_When_MessageDirectionIsChecked_Then_MessageDirectionEqualsFromPlatform)
-{
-    // Given
-    const std::string statusChannel = "p2d/status/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", statusChannel);
-
-    // When
-    const bool isMessageFromPlatform = protocol->isMessageFromPlatform(*message);
-
-    // Then
-    ASSERT_TRUE(isMessageFromPlatform);
-}
-
-TEST_F(JsonGatewayStatusProtocol,
-       Given_MessageFromDevice_When_MessageDirectionIsChecked_Then_MessageDirectionDoesNotEqualFromPlatform)
-{
-    // Given
-    const std::string statusChannel = "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", statusChannel);
-
-    // When
-    const bool isMessageFromPlatform = protocol->isMessageFromPlatform(*message);
-
-    // Then
-    ASSERT_FALSE(isMessageFromPlatform);
-}
-
-TEST_F(JsonGatewayStatusProtocol,
-       Given_MessageToPlatform_When_MessageDirectionIsChecked_Then_MessageDirectionEqualsToPlatform)
-{
-    // Given
-    const std::string statusChannel = "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", statusChannel);
-
-    // When
-    const bool isMessageToPlatform = protocol->isMessageToPlatform(*message);
-
-    // Then
-    ASSERT_TRUE(isMessageToPlatform);
-}
-
-TEST_F(JsonGatewayStatusProtocol,
-       Given_MessageToDevice_When_MessageDirectionIsChecked_Then_MessageDirectionDoesNotEqualToPlatform)
-{
-    // Given
-    const std::string statusChannel = "p2d/status/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", statusChannel);
-
-    // When
-    const bool isMessageToPlatform = protocol->isMessageToPlatform(*message);
-
-    // Then
-    ASSERT_FALSE(isMessageToPlatform);
-}
-
 TEST_F(JsonGatewayStatusProtocol, Given_Channels_When_DeviceChannelsAreRequested_Then_DeviceChannelsMatchChannels)
 {
     // Given
     const std::vector<std::string> channels{"d2p/status/d/#", "lastwill/#"};
 
     // When
-    const auto deviceChannels = protocol->getInboundDeviceChannels();
+    const auto deviceChannels = protocol->getInboundChannels();
 
     // Then
     for (const auto& channel : channels)
@@ -234,39 +115,6 @@ TEST_F(JsonGatewayStatusProtocol, Given_Channels_When_DeviceChannelsAreRequested
     }
 
     ASSERT_EQ(deviceChannels.size(), channels.size());
-}
-
-TEST_F(JsonGatewayStatusProtocol, Given_Channels_When_PlatformChannelsAreRequested_Then_PlatformChannelsMatchChannels)
-{
-    // Given
-    const std::vector<std::string> channels{"p2d/subdevice_status_request/g/+/d/#",
-                                            "p2d/subdevice_status_confirm/g/+/d/#", "pong/#"};
-
-    // When
-    const auto platformChannels = protocol->getInboundPlatformChannels();
-
-    // Then
-    for (const auto& channel : channels)
-    {
-        auto it = std::find(platformChannels.begin(), platformChannels.end(), channel);
-        ASSERT_TRUE(it != platformChannels.end());
-    }
-
-    ASSERT_EQ(platformChannels.size(), channels.size());
-}
-
-TEST_F(JsonGatewayStatusProtocol,
-       Given_StatusRequestMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsStatusRequest)
-{
-    // Given
-    const std::string statusRequestChannel = "p2d/subdevice_status_request/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", statusRequestChannel);
-
-    // When
-    const bool isStatusRequest = protocol->isStatusRequestMessage(*message);
-
-    // Then
-    ASSERT_TRUE(isStatusRequest);
 }
 
 TEST_F(JsonGatewayStatusProtocol,
@@ -296,31 +144,6 @@ TEST_F(JsonGatewayStatusProtocol, Given_LastWillMessage_When_MessageTypeIsChecke
     ASSERT_TRUE(isLastwill);
 }
 
-TEST_F(JsonGatewayStatusProtocol, Given_PongMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsPong)
-{
-    // Given
-    const std::string pongChannel = "pong/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", pongChannel);
-
-    // When
-    const bool isPong = protocol->isPongMessage(*message);
-
-    // Then
-    ASSERT_TRUE(isPong);
-}
-
-TEST_F(JsonGatewayStatusProtocol, Given_DeviceStatusResponse_When_MessageIsCreated_Then_MessageChannelMatchKeys)
-{
-    // Given
-
-    // When
-    const auto message = protocol->makeMessage("GATEWAY_KEY", "DEVICE_KEY", wolkabout::DeviceStatus::CONNECTED);
-
-    // Then
-    ASSERT_TRUE(message != nullptr);
-    ASSERT_EQ(message->getChannel(), "d2p/subdevice_status_update/g/GATEWAY_KEY/d/DEVICE_KEY");
-}
-
 TEST_F(JsonGatewayStatusProtocol, Given_DeviceStatusRequest_When_MessageIsCreated_Then_MessageChannelMatchKeys)
 {
     // Given
@@ -337,7 +160,7 @@ TEST_F(JsonGatewayStatusProtocol, Given_StatusResponseMessage_When_StatusRespons
 {
     // Given
     const std::string jsonPayload = "{\"state\":\"CONNECTED\"}";
-    const std::string channel = "d2p/status/d/DEVICE_KEY";
+    const std::string channel = "d2p/subdevice_status_update/d/DEVICE_KEY";
     const auto message = std::make_shared<wolkabout::Message>(jsonPayload, channel);
 
     // When
@@ -345,5 +168,5 @@ TEST_F(JsonGatewayStatusProtocol, Given_StatusResponseMessage_When_StatusRespons
 
     // Then
     ASSERT_TRUE(response);
-    ASSERT_EQ(response->getStatus(), wolkabout::DeviceStatus::CONNECTED);
+    ASSERT_EQ(response->getStatus(), wolkabout::DeviceStatus::Status::CONNECTED);
 }

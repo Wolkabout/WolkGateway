@@ -7,6 +7,7 @@
 #include "model/SubdeviceRegistrationRequest.h"
 #include "model/SubdeviceRegistrationResponse.h"
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
+#include "protocol/json/JsonRegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/GatewayUpdateService.h"
@@ -48,24 +49,25 @@ class SubdeviceRegistrationService : public ::testing::Test
 public:
     void SetUp() override
     {
-        protocol = std::unique_ptr<wolkabout::GatewaySubdeviceRegistrationProtocol>(
-          new wolkabout::JsonGatewaySubdeviceRegistrationProtocol());
+        protocol.reset(new wolkabout::JsonRegistrationProtocol());
+        gatewayProtocol.reset(new wolkabout::JsonGatewaySubdeviceRegistrationProtocol());
         deviceRepository = std::unique_ptr<wolkabout::SQLiteDeviceRepository>(
           new wolkabout::SQLiteDeviceRepository(DEVICE_REPOSITORY_PATH));
         platformOutboundMessageHandler =
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
-        deviceRegistrationService =
-          std::unique_ptr<wolkabout::SubdeviceRegistrationService>(new wolkabout::SubdeviceRegistrationService(
-            GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
+        deviceRegistrationService = std::unique_ptr<wolkabout::SubdeviceRegistrationService>(
+          new wolkabout::SubdeviceRegistrationService(GATEWAY_KEY, *protocol, *gatewayProtocol, *deviceRepository,
+                                                      *platformOutboundMessageHandler, *deviceOutboundMessageHandler));
         gatewayUpdateService = std::unique_ptr<wolkabout::GatewayUpdateService>(new wolkabout::GatewayUpdateService(
           GATEWAY_KEY, *protocol, *deviceRepository, *platformOutboundMessageHandler));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
 
-    std::unique_ptr<wolkabout::GatewaySubdeviceRegistrationProtocol> protocol;
+    std::unique_ptr<wolkabout::RegistrationProtocol> protocol;
+    std::unique_ptr<wolkabout::GatewaySubdeviceRegistrationProtocol> gatewayProtocol;
     std::unique_ptr<wolkabout::SQLiteDeviceRepository> deviceRepository;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;
@@ -211,7 +213,6 @@ TEST_F(
 {
     // Given
     std::string registeredDeviceKey;
-    bool isRegisteredDeviceGateway;
     deviceRegistrationService->onDeviceRegistered(
       [&](const std::string& deviceKey) -> void { registeredDeviceKey = deviceKey; });
 
@@ -228,15 +229,13 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    wolkabout::SubdeviceRegistrationResponse deviceRegistrationResponse(
-      deviceKey, wolkabout::SubdeviceRegistrationResponse::Result::OK, "");
-    std::shared_ptr<wolkabout::Message> deviceRegistrationResponseMessage =
-      protocol->makeMessage(GATEWAY_KEY, deviceRegistrationResponse);
+    auto channel = std::string("p2d/subdevice_registration_response/g/") + GATEWAY_KEY;
+    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"(}, "result":"OK", "description":""})";
+    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(channel, payload);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then
     ASSERT_TRUE(deviceKey == registeredDeviceKey);
-    EXPECT_FALSE(isRegisteredDeviceGateway);
 }
 
 TEST_F(
@@ -276,10 +275,9 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    wolkabout::SubdeviceRegistrationResponse deviceRegistrationResponse(
-      deviceKey, wolkabout::SubdeviceRegistrationResponse::Result::OK);
-    std::shared_ptr<wolkabout::Message> deviceRegistrationResponseMessage =
-      protocol->makeMessage(GATEWAY_KEY, deviceRegistrationResponse);
+    auto channel = std::string("p2d/subdevice_registration_response/g/") + GATEWAY_KEY;
+    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"(}, "result":"OK", "description":""})";
+    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(channel, payload);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then
@@ -349,7 +347,6 @@ TEST_F(SubdeviceRegistrationService,
 
     // Then
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
-    ASSERT_TRUE(protocol->isSubdeviceDeletionRequest(*platformOutboundMessageHandler->getMessages().front()));
 }
 
 TEST_F(SubdeviceRegistrationService,
@@ -387,10 +384,9 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    wolkabout::SubdeviceRegistrationResponse deviceRegistrationResponse(
-      deviceKey, wolkabout::SubdeviceRegistrationResponse::Result::OK, "");
-    std::shared_ptr<wolkabout::Message> deviceRegistrationResponseMessage =
-      protocol->makeMessage(GATEWAY_KEY, deviceRegistrationResponse);
+    auto channel = std::string("p2d/subdevice_registration_response/g/") + GATEWAY_KEY;
+    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"(}, "result":"OK", "description":""})";
+    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(channel, payload);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then
@@ -415,10 +411,11 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    wolkabout::SubdeviceRegistrationResponse deviceRegistrationResponse(
-      deviceKey, wolkabout::SubdeviceRegistrationResponse::Result::ERROR_VALIDATION_ERROR, "");
-    std::shared_ptr<wolkabout::Message> deviceRegistrationResponseMessage =
-      protocol->makeMessage(GATEWAY_KEY, deviceRegistrationResponse);
+    auto channel = std::string("p2d/subdevice_registration_response/g/") + GATEWAY_KEY;
+    auto payload =
+      R"({"payload":{"deviceKey":")" + deviceKey + R"(}, "result":"ERROR_VALIDATION_ERROR", "description":""})";
+    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(channel, payload);
+
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then

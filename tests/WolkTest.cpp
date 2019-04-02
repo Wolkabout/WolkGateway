@@ -25,9 +25,9 @@
 #include "MockConnectivityService.h"
 #include "MockRepository.h"
 #include "model/SubdeviceManagement.h"
-#include "protocol/GatewaySubdeviceRegistrationProtocol.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
-#include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
+#include "protocol/json/JsonProtocol.h"
+#include "protocol/json/JsonRegistrationProtocol.h"
 #include "service/DataService.h"
 #include "service/GatewayUpdateService.h"
 #include "service/PublishingService.h"
@@ -102,11 +102,12 @@ public:
 
         deviceRepository = new MockRepository();
         wolk->m_deviceRepository.reset(deviceRepository);
-        dataProtocol = std::make_shared<wolkabout::JsonGatewayDataProtocol>();
-        deviceRegistrationProtocol = std::make_shared<wolkabout::JsonGatewaySubdeviceRegistrationProtocol>();
+        dataProtocol = std::make_shared<wolkabout::JsonProtocol>();
+        gatewayDataProtocol = std::make_shared<wolkabout::JsonGatewayDataProtocol>();
+        deviceRegistrationProtocol = std::make_shared<wolkabout::JsonRegistrationProtocol>();
         dataService = std::shared_ptr<MockDataService>(
-          new MockDataService(GATEWAY_KEY, *dataProtocol, wolk->m_deviceRepository.get(), *wolk->m_platformPublisher,
-                              *wolk->m_devicePublisher));
+          new MockDataService(GATEWAY_KEY, *dataProtocol, *gatewayDataProtocol, wolk->m_deviceRepository.get(),
+                              *wolk->m_platformPublisher, *wolk->m_devicePublisher));
         wolk->m_dataService = dataService;
 
         gatewayUpdateService = new MockGatewayUpdateService(GATEWAY_KEY, *deviceRegistrationProtocol,
@@ -120,8 +121,9 @@ public:
     MockConnectivityService* deviceConnectivityService;
 
     std::shared_ptr<MockDataService> dataService;
-    std::shared_ptr<wolkabout::JsonGatewayDataProtocol> dataProtocol;
-    std::shared_ptr<wolkabout::GatewaySubdeviceRegistrationProtocol> deviceRegistrationProtocol;
+    std::shared_ptr<wolkabout::JsonProtocol> dataProtocol;
+    std::shared_ptr<wolkabout::JsonGatewayDataProtocol> gatewayDataProtocol;
+    std::shared_ptr<wolkabout::RegistrationProtocol> deviceRegistrationProtocol;
     MockGatewayUpdateService* gatewayUpdateService;
 
     MockRepository* deviceRepository;

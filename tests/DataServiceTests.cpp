@@ -2,6 +2,7 @@
 #include "OutboundMessageHandler.h"
 #include "model/Message.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
+#include "protocol/json/JsonProtocol.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DataService.h"
 
@@ -39,20 +40,23 @@ class DataService : public ::testing::Test
 public:
     void SetUp() override
     {
-        protocol = std::unique_ptr<wolkabout::GatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+        protocol.reset(new wolkabout::JsonProtocol(true));
+        gateawayProtocol = std::unique_ptr<wolkabout::GatewayDataProtocol>(new wolkabout::JsonGatewayDataProtocol());
+
         deviceRepository = std::unique_ptr<MockRepository>(new MockRepository());
         platformOutboundMessageHandler =
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
         dataService = std::unique_ptr<wolkabout::DataService>(
-          new wolkabout::DataService(GATEWAY_KEY, *protocol, deviceRepository.get(), *platformOutboundMessageHandler,
-                                     *deviceOutboundMessageHandler, nullptr));
+          new wolkabout::DataService(GATEWAY_KEY, *protocol, *gateawayProtocol, deviceRepository.get(),
+                                     *platformOutboundMessageHandler, *deviceOutboundMessageHandler, nullptr));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
 
-    std::unique_ptr<wolkabout::GatewayDataProtocol> protocol;
+    std::unique_ptr<wolkabout::DataProtocol> protocol;
+    std::unique_ptr<wolkabout::GatewayDataProtocol> gateawayProtocol;
     std::unique_ptr<MockRepository> deviceRepository;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;

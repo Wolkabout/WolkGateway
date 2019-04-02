@@ -4,6 +4,7 @@
 #include "OutboundMessageHandler.h"
 #include "model/Message.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
+#include "protocol/json/JsonStatusProtocol.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/DeviceStatusService.h"
 
@@ -41,7 +42,8 @@ class DeviceStatusService : public ::testing::Test
 public:
     void SetUp() override
     {
-        protocol = std::unique_ptr<wolkabout::GatewayStatusProtocol>(new wolkabout::JsonGatewayStatusProtocol);
+        protocol.reset(new wolkabout::JsonStatusProtocol);
+        gatewayProtocol.reset(new wolkabout::JsonGatewayStatusProtocol);
         deviceRepository = std::unique_ptr<MockRepository>(new MockRepository());
         connectionStatusListener = std::make_shared<MockConnectionStatusListener>();
         platformOutboundMessageHandler =
@@ -49,13 +51,14 @@ public:
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
         deviceStatusService = std::unique_ptr<wolkabout::DeviceStatusService>(new wolkabout::DeviceStatusService(
-          GATEWAY_KEY, *protocol, deviceRepository.get(), *platformOutboundMessageHandler,
+          GATEWAY_KEY, *protocol, *gatewayProtocol, deviceRepository.get(), *platformOutboundMessageHandler,
           *deviceOutboundMessageHandler, std::chrono::seconds{60}));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
 
-    std::unique_ptr<wolkabout::GatewayStatusProtocol> protocol;
+    std::unique_ptr<wolkabout::StatusProtocol> protocol;
+    std::unique_ptr<wolkabout::GatewayStatusProtocol> gatewayProtocol;
     std::unique_ptr<MockRepository> deviceRepository;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;

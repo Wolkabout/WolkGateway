@@ -510,7 +510,6 @@ void FileDownloadService::requestPacket(const FilePacketRequest& request)
         return;
     }
 
-    // TODO retry handler
     m_outboundMessageHandler.addMessage(message);
 }
 

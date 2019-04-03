@@ -248,16 +248,10 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
 
     wolk->m_platformConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundPlatformMessageHandler>>(
-      *wolk->m_inboundPlatformMessageHandler, [&] {
-          wolk->notifyPlatformDisonnected();
-          wolk->connectToPlatform();
-      });
+      *wolk->m_inboundPlatformMessageHandler, [&] { wolk->platformDisconnected(); });
 
     wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
-      *wolk->m_inboundDeviceMessageHandler, [&] {
-          wolk->notifyDevicesDisonnected();
-          wolk->connectToDevices();
-      });
+      *wolk->m_inboundDeviceMessageHandler, [&] { wolk->devicesDisconnected(); });
 
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
     wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
@@ -279,14 +273,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_gatewayUpdateService.reset(new GatewayUpdateService(m_device.getKey(), *wolk->m_registrationProtocol,
                                                                 *wolk->m_deviceRepository, *wolk->m_platformPublisher));
 
-    wolk->m_gatewayUpdateService->onGatewayUpdated([&] {
-        wolk->m_keepAliveService->sendPingMessage();
-        wolk->publishEverything();
-        if (wolk->m_subdeviceRegistrationService)
-        {
-            wolk->m_subdeviceRegistrationService->registerPostponedDevices();
-        }
-    });
+    wolk->m_gatewayUpdateService->onGatewayUpdated([&] { wolk->gatewayUpdated(); });
 
     if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
@@ -295,10 +282,8 @@ std::unique_ptr<Wolk> WolkBuilder::build()
           m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_gatewayRegistrationProtocol,
           *wolk->m_deviceRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher));
 
-        wolk->m_subdeviceRegistrationService->onDeviceRegistered([&](const std::string& deviceKey) {
-            wolk->m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
-            wolk->m_existingDevicesRepository->addDeviceKey(deviceKey);
-        });
+        wolk->m_subdeviceRegistrationService->onDeviceRegistered(
+          [&](const std::string& deviceKey) { wolk->deviceRegistered(deviceKey); });
     }
 
     wolk->m_registrationMessageRouter = std::make_shared<RegistrationMessageRouter>(
@@ -365,7 +350,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
           },
           [&](const std::string& reference) { wolk->handleActuatorGetCommand(reference); },
           [&](const ConfigurationSetCommand& command) { wolk->handleConfigurationSetCommand(command); },
-          [&]() { wolk->handleConfigurationGetCommand(); }));
+          [&] { wolk->handleConfigurationGetCommand(); }));
 
         wolk->m_dataService->setGatewayMessageListener(wolk->m_gatewayDataService.get());
     }

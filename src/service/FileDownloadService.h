@@ -66,7 +66,7 @@ public:
 
     const Protocol& getProtocol() const override;
 
-    void sendFileList();
+    virtual void sendFileList();
 
 private:
     void handle(const BinaryData& binaryData);

@@ -60,9 +60,9 @@ public:
 
     const GatewayProtocol& getGatewayProtocol() const override;
 
-    void reportFirmwareUpdateResult();
+    virtual void reportFirmwareUpdateResult();
 
-    void publishFirmwareVersion();
+    virtual void publishFirmwareVersion();
 
 private:
     void handleFirmwareUpdateCommand(const FirmwareUpdateInstall& command);
@@ -104,64 +104,6 @@ private:
 
     std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
     const std::string m_currentFirmwareVersion;
-
-    //    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
-    //
-    //    struct FirmwareDownloadStruct
-    //    {
-    //        enum class FirmwareDownloadStatus
-    //        {
-    //            IN_PROGRESS,
-    //            COMPLETED,
-    //            UNKNOWN
-    //        } status;
-    //
-    //        std::string channel;
-    //        std::string uri;
-    //        std::vector<std::string> devices;
-    //        std::string downloadedFirmwarePath;
-    //    };
-    //
-    //    std::map<std::string, FirmwareDownloadStruct> m_firmwareStatuses;
-    //
-    //    struct DeviceUpdateStruct
-    //    {
-    //        bool autoinstall;
-    //
-    //        enum class DeviceUpdateStatus
-    //        {
-    //            WOLK_DOWNLOAD,
-    //            URL_DOWNLOAD,
-    //            TRANSFER,
-    //            READY,
-    //            INSTALL,
-    //            ERROR,
-    //            UNKNOWN
-    //        } status;
-    //    };
-    //
-    //    void addDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status,
-    //                               bool autoInstall);
-    //    void setDeviceUpdateStatus(const std::string& deviceKey, DeviceUpdateStruct::DeviceUpdateStatus status);
-    //    bool deviceUpdateStatusExists(const std::string& deviceKey);
-    //    DeviceUpdateStruct getDeviceUpdateStatus(const std::string& deviceKey);
-    //    void removeDeviceUpdateStatus(const std::string& deviceKey);
-    //
-    //    void addFirmwareDownloadStatus(const std::string& key, const std::string& channel, const std::string& uri,
-    //                                   FirmwareDownloadStruct::FirmwareDownloadStatus status,
-    //                                   const std::vector<std::string>& deviceKeys,
-    //                                   const std::string& downloadedFirmwarePath = "");
-    //    void setFirmwareDownloadCompletedStatus(const std::string& key, const std::string& firmwareFile);
-    //    bool firmwareDownloadStatusExists(const std::string& key);
-    //    bool firmwareDownloadStatusExistsForDevice(const std::string& deviceKey);
-    //    FirmwareDownloadStruct getFirmwareDownloadStatus(const std::string& key);
-    //    FirmwareDownloadStruct getFirmwareDownloadStatusForDevice(const std::string& deviceKey);
-    //    void removeDeviceFromFirmwareStatus(const std::string& deviceKey);
-    //    void removeFirmwareStatus(const std::string& key);
-    //    void clearUsedFirmwareFiles();
-    //
-    //    // TODO move to database
-    //    std::map<std::string, DeviceUpdateStruct> m_deviceUpdateStatuses;
 
     CommandBuffer m_commandBuffer;
 

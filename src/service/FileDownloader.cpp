@@ -182,17 +182,9 @@ void FileDownloader::requestPacket(unsigned index, std::uint_fast64_t size)
 {
     ++m_retryCount;
 
-    auto cancel = [=] {
-        if (m_currentOnFailCallback)
-        {
-            m_currentOnFailCallback(FileTransferError::RETRY_COUNT_EXCEEDED);
-        }
-        clear();
-    };
-
     m_packetProvider(FilePacketRequest{m_currentFileName, index, size});
 
-    m_timer.start(PACKET_REQUEST_TIMEOUT, cancel);
+    m_timer.start(PACKET_REQUEST_TIMEOUT, [=] { packetFailed(); });
 }
 
 void FileDownloader::packetFailed()

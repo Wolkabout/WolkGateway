@@ -274,18 +274,59 @@ void Wolk::handleConfigurationGetCommand()
     publishConfiguration();
 }
 
-void Wolk::publishEverything()
+void Wolk::platformDisconnected()
 {
     addToCommandBuffer([=] {
-        publishFirmwareStatus();
+        notifyPlatformDisonnected();
+        connectToPlatform();
+    });
+}
 
-        publishConfiguration();
+void Wolk::devicesDisconnected()
+{
+    addToCommandBuffer([=] {
+        notifyDevicesDisonnected();
+        connectToDevices();
+    });
+}
 
-        for (const std::string& actuatorReference : m_device.getActuatorReferences())
+void Wolk::gatewayUpdated()
+{
+    addToCommandBuffer([=] {
+        if (m_keepAliveService)
         {
-            publishActuatorStatus(actuatorReference);
+            m_keepAliveService->sendPingMessage();
+        }
+
+        publishEverything();
+
+        if (m_subdeviceRegistrationService && m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
+        {
+            m_subdeviceRegistrationService->registerPostponedDevices();
         }
     });
+}
+
+void Wolk::deviceRegistered(const std::string& deviceKey)
+{
+    addToCommandBuffer([=] {
+        m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
+        m_existingDevicesRepository->addDeviceKey(deviceKey);
+    });
+}
+
+void Wolk::publishEverything()
+{
+    publishFirmwareStatus();
+
+    publishConfiguration();
+
+    for (const std::string& actuatorReference : m_device.getActuatorReferences())
+    {
+        publishActuatorStatus(actuatorReference);
+    }
+
+    publishFileList();
 }
 
 void Wolk::publishFirmwareStatus()
@@ -297,19 +338,21 @@ void Wolk::publishFirmwareStatus()
     }
 }
 
-void Wolk::notifyPlatformConnected()
+void Wolk::publishFileList()
 {
-    m_platformPublisher->connected();
-
-    if (m_keepAliveService)
+    if (m_fileDownloadService)
     {
-        m_keepAliveService->connected();
+        m_fileDownloadService->sendFileList();
     }
+}
 
+void Wolk::updateGatewayAndDeleteDevices()
+{
     static bool shouldUpdate = true;
+
+    // update gateway upon first connect
     if (shouldUpdate)
     {
-        // update gateway upon first connect
         m_gatewayUpdateService->updateGateway(m_device);
         shouldUpdate = false;
 
@@ -318,12 +361,15 @@ void Wolk::notifyPlatformConnected()
             m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
         }
     }
+}
 
-    requestActuatorStatusesForDevices();
+void Wolk::notifyPlatformConnected()
+{
+    m_platformPublisher->connected();
 
-    if (m_fileDownloadService)
+    if (m_keepAliveService)
     {
-        m_fileDownloadService->sendFileList();
+        m_keepAliveService->connected();
     }
 }
 
@@ -357,6 +403,10 @@ void Wolk::connectToPlatform()
         if (m_platformConnectivityService->connect())
         {
             notifyPlatformConnected();
+
+            updateGatewayAndDeleteDevices();
+
+            requestActuatorStatusesForDevices();
 
             publishEverything();
 

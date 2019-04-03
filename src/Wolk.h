@@ -225,14 +225,24 @@ private:
     void flushSensorReadings();
     void flushConfiguration();
 
+    // callbacks
     void handleActuatorSetCommand(const std::string& reference, const std::string& value);
     void handleActuatorGetCommand(const std::string& reference);
 
     void handleConfigurationSetCommand(const ConfigurationSetCommand& command);
     void handleConfigurationGetCommand();
 
+    void platformDisconnected();
+    void devicesDisconnected();
+
+    void gatewayUpdated();
+    void deviceRegistered(const std::string& deviceKey);
+    //
+
     void publishEverything();
     void publishFirmwareStatus();
+    void publishFileList();
+    void updateGatewayAndDeleteDevices();
 
     void notifyPlatformConnected();
     void notifyPlatformDisonnected();

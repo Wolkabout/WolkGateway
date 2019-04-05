@@ -49,7 +49,7 @@ void GatewayInboundDeviceMessageHandler::messageReceived(const std::string& chan
     }
     else
     {
-        LOG(ERROR) << "GatewayInboundDeviceMessageHandler: Handler for device channel not found: " << channel;
+        LOG(DEBUG) << "GatewayInboundDeviceMessageHandler: Handler for device channel not found: " << channel;
     }
 }
 

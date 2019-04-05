@@ -35,6 +35,16 @@ const std::string JsonGatewayDFUProtocol::FIRMWARE_VERSION_TOPIC_ROOT = "d2p/fir
 const std::string JsonGatewayDFUProtocol::FIRMWARE_UPDATE_INSTALL_TOPIC_ROOT = "p2d/firmware_update_install/";
 const std::string JsonGatewayDFUProtocol::FIRMWARE_UPDATE_ABORT_TOPIC_ROOT = "p2d/firmware_update_abort/";
 
+/*** FIRMWARE UPDATE ABORT ***/
+void to_json(json& j, const FirmwareUpdateAbort& command)
+{
+    json commandJson;
+    commandJson["devices"] = command.getDeviceKeys();
+
+    j = commandJson;
+}
+/*** FIRMWARE UPDATE ABORT ***/
+
 /*** FIRMWARE UPDATE INSTALL ***/
 void to_json(json& j, const FirmwareUpdateInstall& command)
 {
@@ -119,10 +129,12 @@ std::unique_ptr<Message> JsonGatewayDFUProtocol::makeMessage(const std::string& 
 
     try
     {
+        const json jPayload(command);
+        const std::string payload = jPayload.dump();
         const std::string topic =
           FIRMWARE_UPDATE_ABORT_TOPIC_ROOT + DEVICE_PATH_PREFIX + command.getDeviceKeys().front();
 
-        return std::unique_ptr<Message>(new Message("", topic));
+        return std::unique_ptr<Message>(new Message(payload, topic));
     }
     catch (const std::exception& e)
     {

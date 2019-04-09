@@ -79,7 +79,7 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
 
     const std::string topic = message->getChannel();
 
-    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(topic);
+    const std::string deviceKey = m_gatewayProtocol.extractDeviceKeyFromChannel(topic);
 
     if (m_gatewayProtocol.isLastWillMessage(*message))
     {

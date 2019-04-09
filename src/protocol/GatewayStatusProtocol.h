@@ -31,6 +31,8 @@ class DeviceStatus;
 class GatewayStatusProtocol : public GatewayProtocol
 {
 public:
+    using GatewayProtocol::extractDeviceKeyFromChannel;
+
     virtual std::unique_ptr<Message> makeDeviceStatusRequestMessage(const std::string& deviceKey) const = 0;
 
     virtual std::unique_ptr<DeviceStatus> makeDeviceStatusResponse(const Message& message) const = 0;

@@ -229,9 +229,9 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    auto channel = std::string("p2d/subdevice_registration_response/g/") + GATEWAY_KEY;
-    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"(}, "result":"OK", "description":""})";
-    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(channel, payload);
+    auto channel = std::string("p2d/register_subdevice_response/g/") + GATEWAY_KEY;
+    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"("}, "result":"OK", "description":""})";
+    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(payload, channel);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then
@@ -249,7 +249,7 @@ TEST_F(
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("{\"result\":\"OK\", \"description\": null}",
+    auto message = std::make_shared<wolkabout::Message>(R"({"result":"OK", "description": null})",
                                                         "p2d/update_gateway_response/g/GATEWAY_KEY");
     gatewayUpdateService->platformMessageReceived(message);
 
@@ -275,9 +275,9 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    auto channel = std::string("p2d/subdevice_registration_response/g/") + GATEWAY_KEY;
-    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"(}, "result":"OK", "description":""})";
-    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(channel, payload);
+    auto channel = std::string("p2d/register_subdevice_response/g/") + GATEWAY_KEY;
+    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"("}, "result":"OK", "description":""})";
+    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(payload, channel);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then
@@ -306,7 +306,7 @@ TEST_F(
     ASSERT_EQ(1, platformOutboundMessageHandler->getMessages().size());
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("{\"result\":\"OK\", \"description\": null}",
+    auto message = std::make_shared<wolkabout::Message>(R"({"result":"OK", "description": null})",
                                                         "p2d/update_gateway_response/g/GATEWAY_KEY");
     gatewayUpdateService->platformMessageReceived(message);
 
@@ -384,9 +384,9 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    auto channel = std::string("p2d/subdevice_registration_response/g/") + GATEWAY_KEY;
-    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"(}, "result":"OK", "description":""})";
-    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(channel, payload);
+    auto channel = std::string("p2d/register_subdevice_response/g/") + GATEWAY_KEY;
+    auto payload = R"({"payload":{"deviceKey":")" + deviceKey + R"("}, "result":"OK", "description":""})";
+    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(payload, channel);
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 
     // Then
@@ -411,10 +411,10 @@ TEST_F(
     deviceRegistrationService->deviceMessageReceived(deviceRegistrationRequestMessage);
 
     // When
-    auto channel = std::string("p2d/subdevice_registration_response/g/") + GATEWAY_KEY;
+    auto channel = std::string("p2d/register_subdevice_response/g/") + GATEWAY_KEY;
     auto payload =
-      R"({"payload":{"deviceKey":")" + deviceKey + R"(}, "result":"ERROR_VALIDATION_ERROR", "description":""})";
-    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(channel, payload);
+      R"({"payload":{"deviceKey":")" + deviceKey + R"("}, "result":"ERROR_VALIDATION_ERROR", "description":""})";
+    auto deviceRegistrationResponseMessage = std::make_shared<wolkabout::Message>(payload, channel);
 
     deviceRegistrationService->platformMessageReceived(deviceRegistrationResponseMessage);
 

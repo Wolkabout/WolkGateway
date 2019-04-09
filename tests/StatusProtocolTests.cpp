@@ -50,19 +50,6 @@ TEST_F(JsonGatewayStatusProtocol,
 }
 
 TEST_F(JsonGatewayStatusProtocol,
-       Given_PongChannelForDevice_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToDeviceKey)
-{
-    // Given
-    const std::string pongChannel = "pong/DEVICE_KEY/";
-
-    // When
-    const std::string deviceKey = protocol->extractDeviceKeyFromChannel(pongChannel);
-
-    // Then
-    ASSERT_EQ("DEVICE_KEY", deviceKey);
-}
-
-TEST_F(JsonGatewayStatusProtocol,
        Given_LastWillChannelForDeviceNoKey_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToEmpty)
 {
     // Given
@@ -102,7 +89,8 @@ TEST_F(
 TEST_F(JsonGatewayStatusProtocol, Given_Channels_When_DeviceChannelsAreRequested_Then_DeviceChannelsMatchChannels)
 {
     // Given
-    const std::vector<std::string> channels{"d2p/status/d/#", "lastwill/#"};
+    const std::vector<std::string> channels{"d2p/subdevice_status_response/d/#", "d2p/subdevice_status_update/d/#",
+                                            "lastwill/#"};
 
     // When
     const auto deviceChannels = protocol->getInboundChannels();
@@ -121,7 +109,7 @@ TEST_F(JsonGatewayStatusProtocol,
        Given_StatusResponseMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsStatusResponse)
 {
     // Given
-    const std::string statusResponseChannel = "d2p/status/g/GATEWAY_KEY/d/DEVICE_KEY";
+    const std::string statusResponseChannel = "d2p/subdevice_status_response/d/DEVICE_KEY";
     const auto message = std::make_shared<wolkabout::Message>("", statusResponseChannel);
 
     // When
@@ -153,14 +141,14 @@ TEST_F(JsonGatewayStatusProtocol, Given_DeviceStatusRequest_When_MessageIsCreate
 
     // Then
     ASSERT_TRUE(message != nullptr);
-    ASSERT_EQ(message->getChannel(), "p2d/status/d/DEVICE_KEY");
+    ASSERT_EQ(message->getChannel(), "p2d/subdevice_status_request/d/DEVICE_KEY");
 }
 
 TEST_F(JsonGatewayStatusProtocol, Given_StatusResponseMessage_When_StatusResponseIsCreated_Then_StatusMatchesPayload)
 {
     // Given
     const std::string jsonPayload = "{\"state\":\"CONNECTED\"}";
-    const std::string channel = "d2p/subdevice_status_update/d/DEVICE_KEY";
+    const std::string channel = "d2p/subdevice_status_response/d/DEVICE_KEY";
     const auto message = std::make_shared<wolkabout::Message>(jsonPayload, channel);
 
     // When

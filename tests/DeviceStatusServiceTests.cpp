@@ -112,20 +112,20 @@ TEST_F(DeviceStatusService, Given_When_MessageFromPlatformWithInvalidDeviceTypeI
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
 }
 
-// Disabled as platform OK response status is not routed to device
-TEST_F(DeviceStatusService, DISABLED_Given_When_MessageFromPlatformIsReceived_Then_MessageIsSentToDevice)
+TEST_F(DeviceStatusService, Given_When_MessageFromPlatformIsReceived_Then_MessageIsSentToDevice)
 {
     // Given
     // Intentionally left empty
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("", "p2d/status/g/GATEWAY_KEY/d/DEVICE_KEY");
+    auto message = std::make_shared<wolkabout::Message>("", "p2d/subdevice_status_request/g/GATEWAY_KEY/d/DEVICE_KEY");
     deviceStatusService->platformMessageReceived(message);
 
     // Then
     ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
     ASSERT_EQ(deviceOutboundMessageHandler->getMessages().size(), 1);
-    ASSERT_EQ(deviceOutboundMessageHandler->getMessages().front()->getChannel(), "p2d/status/d/DEVICE_KEY");
+    ASSERT_EQ(deviceOutboundMessageHandler->getMessages().front()->getChannel(),
+              "p2d/subdevice_status_request/d/DEVICE_KEY");
 }
 
 TEST_F(DeviceStatusService, Given_When_MessageFromDeviceWithInvalidChannelDirectionIsReceived_Then_MessageIsIgnored)
@@ -264,7 +264,8 @@ TEST_F(DeviceStatusService, Given_When_StatusMessageFromDeviceIsReceived_Then_Me
     // Intentionally left empty
 
     // When
-    auto message = std::make_shared<wolkabout::Message>("{\"state\":\"CONNECTED\"}", "d2p/status/d/DEVICE_KEY");
+    auto message =
+      std::make_shared<wolkabout::Message>("{\"state\":\"CONNECTED\"}", "d2p/subdevice_status_update/d/DEVICE_KEY");
     deviceStatusService->deviceMessageReceived(message);
 
     // Then
@@ -277,8 +278,10 @@ TEST_F(DeviceStatusService, Given_When_StatusMessageFromDeviceIsReceived_Then_Me
 TEST_F(DeviceStatusService, GivenGatewayInRepository_When_ConnectedToDevices_Then_StatusRequestNotSent)
 {
     // Given
+    std::vector<std::string> keys = {GATEWAY_KEY};
+
     ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
-      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY}));
+      .WillByDefault(testing::ReturnNew<std::vector<std::string>>(keys));
 
     // When
     deviceStatusService->connected();
@@ -293,8 +296,10 @@ TEST_F(DeviceStatusService,
     // Given
     const std::string deviceKey1 = "KEY1";
 
+    std::vector<std::string> keys = {GATEWAY_KEY, deviceKey1};
+
     ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
-      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY, deviceKey1}));
+      .WillByDefault(testing::ReturnNew<std::vector<std::string>>(keys));
 
     // When
     deviceStatusService->connected();
@@ -311,8 +316,10 @@ TEST_F(DeviceStatusService,
     const std::string deviceKey2 = "KEY2";
     const std::string deviceKey3 = "KEY3";
 
+    std::vector<std::string> keys = {GATEWAY_KEY, deviceKey1, deviceKey2, deviceKey3};
+
     ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
-      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY, deviceKey1, deviceKey2, deviceKey3}));
+      .WillByDefault(testing::ReturnNew<std::vector<std::string>>(keys));
 
     // When
     deviceStatusService->connected();

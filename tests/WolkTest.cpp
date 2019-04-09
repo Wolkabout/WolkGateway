@@ -146,6 +146,9 @@ public:
         wolk->m_deviceRepository.reset(deviceRepository);
         fileRepository = new MockFileRepository();
         wolk->m_fileRepository.reset(fileRepository);
+        existingDevicesRepository = new MockExistingDevicesRepository();
+        wolk->m_existingDevicesRepository.reset(existingDevicesRepository);
+
         dataProtocol = std::make_shared<wolkabout::JsonProtocol>(true);
         gatewayDataProtocol = std::make_shared<wolkabout::JsonGatewayDataProtocol>();
         deviceRegistrationProtocol = std::make_shared<wolkabout::JsonRegistrationProtocol>();
@@ -154,23 +157,24 @@ public:
         gatewayFirmwareUpdateProtocol = std::make_shared<wolkabout::JsonGatewayDFUProtocol>();
         statusProtocol = std::make_shared<wolkabout::JsonStatusProtocol>(true);
         gatewayRegistrationProtocol = std::make_shared<wolkabout::JsonGatewaySubdeviceRegistrationProtocol>();
-        dataService = std::make_shared<MockDataService>(GATEWAY_KEY, *dataProtocol, *gatewayDataProtocol,
-                                                        wolk->m_deviceRepository.get(), *wolk->m_platformPublisher,
-                                                        *wolk->m_devicePublisher);
-        wolk->m_dataService = dataService;
+
+        dataService =
+          new MockDataService(GATEWAY_KEY, *dataProtocol, *gatewayDataProtocol, wolk->m_deviceRepository.get(),
+                              *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+        wolk->m_dataService.reset(dataService);
 
         gatewayUpdateService = new MockGatewayUpdateService(GATEWAY_KEY, *deviceRegistrationProtocol,
                                                             *wolk->m_deviceRepository, *wolk->m_platformPublisher);
         wolk->m_gatewayUpdateService.reset(gatewayUpdateService);
 
-        fileDownloadService = std::make_shared<MockFileDownloadService>(
-          GATEWAY_KEY, *fileDownloadProtocol, "", *wolk->m_platformPublisher, *wolk->m_fileRepository);
-        wolk->m_fileDownloadService = fileDownloadService;
+        fileDownloadService = new MockFileDownloadService(GATEWAY_KEY, *fileDownloadProtocol, "",
+                                                          *wolk->m_platformPublisher, *wolk->m_fileRepository);
+        wolk->m_fileDownloadService.reset(fileDownloadService);
 
-        firmwareUpdateService = std::make_shared<MockFirmwareUpdateService>(
-          GATEWAY_KEY, *firmwareUpdateProtocol, *gatewayFirmwareUpdateProtocol, *wolk->m_fileRepository,
-          *wolk->m_platformPublisher, *wolk->m_devicePublisher);
-        wolk->m_firmwareUpdateService = firmwareUpdateService;
+        firmwareUpdateService =
+          new MockFirmwareUpdateService(GATEWAY_KEY, *firmwareUpdateProtocol, *gatewayFirmwareUpdateProtocol,
+                                        *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+        wolk->m_firmwareUpdateService.reset(firmwareUpdateService);
 
         keepAliveService =
           new MockKeepAliveService(GATEWAY_KEY, *statusProtocol, *wolk->m_platformPublisher, std::chrono::seconds(30));
@@ -186,14 +190,15 @@ public:
 
     MockRepository* deviceRepository;
     MockFileRepository* fileRepository;
+    MockExistingDevicesRepository* existingDevicesRepository;
 
     MockConnectivityService* platformConnectivityService;
     MockConnectivityService* deviceConnectivityService;
 
     MockGatewayUpdateService* gatewayUpdateService;
-    std::shared_ptr<MockDataService> dataService;
-    std::shared_ptr<MockFileDownloadService> fileDownloadService;
-    std::shared_ptr<MockFirmwareUpdateService> firmwareUpdateService;
+    MockDataService* dataService;
+    MockFileDownloadService* fileDownloadService;
+    MockFirmwareUpdateService* firmwareUpdateService;
     MockKeepAliveService* keepAliveService;
     MockSubdeviceRegistrationService* subdeviceRegistrationService;
 
@@ -240,7 +245,7 @@ TEST_F(
 
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
-    ON_CALL(*deviceRepository, findAllDeviceKeysProxy()).WillByDefault(testing::Return(new std::vector<std::string>{}));
+    ON_CALL(*deviceRepository, findAllDeviceKeysProxy()).WillByDefault(testing::ReturnNew<std::vector<std::string>>());
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey)).WillByDefault(testing::Return(nullptr));
 
     // When
@@ -259,10 +264,12 @@ TEST_F(
 
     const std::string deviceKey = "KEY1";
 
+    std::vector<std::string> keys = {GATEWAY_KEY};
+
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
     ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
-      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY}));
+      .WillByDefault(testing::ReturnNew<std::vector<std::string>>(keys));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey)).WillByDefault(testing::Return(nullptr));
 
     // When
@@ -281,12 +288,14 @@ TEST_F(
 
     const std::string deviceKey = "KEY1";
 
+    std::vector<std::string> keys = {deviceKey};
+
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
     ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
-      .WillByDefault(testing::Return(new std::vector<std::string>{deviceKey}));
+      .WillByDefault(testing::ReturnNew<std::vector<std::string>>(keys));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey))
-      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
+      .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey,
         wolkabout::DeviceTemplate{{},
                                   {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
@@ -295,7 +304,7 @@ TEST_F(
                                   "",
                                   {},
                                   {},
-                                  {}})));
+                                  {}}));
 
     // When
     wolk->connectToPlatform();
@@ -317,12 +326,14 @@ TEST_F(
 
     const std::string deviceKey = "KEY1";
 
+    std::vector<std::string> keys = {GATEWAY_KEY, deviceKey};
+
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
     ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
-      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY, deviceKey}));
+      .WillByDefault(testing::ReturnNew<std::vector<std::string>>(keys));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey))
-      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
+      .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey,
         wolkabout::DeviceTemplate{{},
                                   {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
@@ -331,7 +342,7 @@ TEST_F(
                                   "",
                                   {},
                                   {},
-                                  {}})));
+                                  {}}));
 
     // When
     wolk->connectToPlatform();
@@ -355,12 +366,14 @@ TEST_F(
     const std::string deviceKey2 = "KEY2";
     const std::string deviceKey3 = "KEY3";
 
+    std::vector<std::string> keys = {GATEWAY_KEY, deviceKey1, deviceKey2, deviceKey3};
+
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
     ON_CALL(*deviceRepository, findAllDeviceKeysProxy())
-      .WillByDefault(testing::Return(new std::vector<std::string>{GATEWAY_KEY, deviceKey1, deviceKey2, deviceKey3}));
+      .WillByDefault(testing::ReturnNew<std::vector<std::string>>(keys));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey1))
-      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
+      .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey1,
         wolkabout::DeviceTemplate{{},
                                   {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
@@ -369,9 +382,9 @@ TEST_F(
                                   "",
                                   {},
                                   {},
-                                  {}})));
+                                  {}}));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey2))
-      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
+      .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey2,
         wolkabout::DeviceTemplate{{},
                                   {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
@@ -380,9 +393,9 @@ TEST_F(
                                   "",
                                   {},
                                   {},
-                                  {}})));
+                                  {}}));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey3))
-      .WillByDefault(testing::Return(new wolkabout::DetailedDevice(
+      .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey2,
         wolkabout::DeviceTemplate{{},
                                   {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
@@ -391,7 +404,7 @@ TEST_F(
                                   "",
                                   {},
                                   {},
-                                  {}})));
+                                  {}}));
 
     // When
     wolk->connectToPlatform();
@@ -606,6 +619,4 @@ TEST_F(Wolk, GivenPlatformInControl_When_GatewayIsUpdated_Then_PostponedDevicesA
 
     // Then
     EXPECT_CALL(*subdeviceRegistrationService, registerPostponedDevices()).Times(0);
-
-    wait();
 }

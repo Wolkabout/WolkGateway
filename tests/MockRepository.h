@@ -3,6 +3,7 @@
 
 #include "model/DetailedDevice.h"
 #include "repository/DeviceRepository.h"
+#include "repository/ExistingDevicesRepository.h"
 #include "repository/FileRepository.h"
 #include <gmock/gmock.h>
 
@@ -56,6 +57,19 @@ public:
 
 private:
     GTEST_DISALLOW_COPY_AND_ASSIGN_(MockFileRepository);
+};
+
+class MockExistingDevicesRepository : public wolkabout::ExistingDevicesRepository
+{
+public:
+    MockExistingDevicesRepository() {}
+    virtual ~MockExistingDevicesRepository() {}
+
+    void addDeviceKey(const std::string& deviceKey) override {}
+    MOCK_METHOD0(getDeviceKeys, std::vector<std::string>());
+
+private:
+    GTEST_DISALLOW_COPY_AND_ASSIGN_(MockExistingDevicesRepository);
 };
 
 #endif    // MOCKREPOSITORY_H

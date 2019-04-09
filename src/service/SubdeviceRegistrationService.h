@@ -57,9 +57,9 @@ public:
 
     void onDeviceRegistered(std::function<void(const std::string& deviceKey)> onDeviceRegistered);
 
-    void deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys);
+    virtual void deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys);
 
-    void registerPostponedDevices();
+    virtual void registerPostponedDevices();
 
 protected:
     void invokeOnDeviceRegisteredListener(const std::string& deviceKey) const;

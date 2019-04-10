@@ -31,7 +31,6 @@ const std::string GatewayConfiguration::PASSWORD = "password";
 const std::string GatewayConfiguration::PLATFORM_URI = "platformMqttUri";
 const std::string GatewayConfiguration::PLATFORM_TRUST_STORE = "platformTrustStore";
 const std::string GatewayConfiguration::LOCAL_URI = "localMqttUri";
-const std::string GatewayConfiguration::KEEP_ALIVE = "keepAlive";
 const std::string GatewayConfiguration::SUBDEVICE_MANAGEMENT = "subdeviceManagement";
 
 GatewayConfiguration::GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri,
@@ -79,16 +78,6 @@ const WolkOptional<std::string>& GatewayConfiguration::getPlatformTrustStore() c
     return m_platformTrustStore;
 }
 
-void GatewayConfiguration::setKeepAliveEnabled(bool value)
-{
-    m_keepAliveEnabled = value;
-}
-
-const WolkOptional<bool>& GatewayConfiguration::getKeepAliveEnabled() const
-{
-    return m_keepAliveEnabled;
-}
-
 wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string& gatewayConfigurationFile)
 {
     if (!FileSystemUtils::isFilePresent(gatewayConfigurationFile))
@@ -127,11 +116,6 @@ wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string
     }
 
     GatewayConfiguration configuration(key, password, platformMqttUri, localMqttUri, management);
-
-    if (j.find(KEEP_ALIVE) != j.end())
-    {
-        configuration.setKeepAliveEnabled(j.at(KEEP_ALIVE).get<bool>());
-    }
 
     if (j.find(PLATFORM_TRUST_STORE) != j.end())
     {

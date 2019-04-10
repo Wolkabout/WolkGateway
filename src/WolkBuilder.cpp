@@ -150,12 +150,6 @@ WolkBuilder& WolkBuilder::fileDownloadDirectory(const std::string& path)
     return *this;
 }
 
-WolkBuilder& WolkBuilder::withoutKeepAlive()
-{
-    m_keepAliveEnabled = false;
-    return *this;
-}
-
 std::unique_ptr<Wolk> WolkBuilder::build()
 {
     if (m_device.getKey().empty())

@@ -149,13 +149,6 @@ public:
     WolkBuilder& fileDownloadDirectory(const std::string& path);
 
     /**
-     * @brief withoutKeepAlive Disables ping mechanism used to notify WolkAbout IOT Platform
-     * that device is still connected
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& withoutKeepAlive();
-
-    /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
      *
@@ -196,7 +189,8 @@ private:
 
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
-    bool m_keepAliveEnabled;
+    // json protocol does not currently support ping messages
+    bool m_keepAliveEnabled = false;
 
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
     static const constexpr char* MESSAGE_BUS_HOST = "tcp://localhost:1883";

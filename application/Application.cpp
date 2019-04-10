@@ -97,11 +97,6 @@ int main(int argc, char** argv)
                      .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                      .platformHost(gatewayConfiguration.getPlatformMqttUri());
 
-    if (gatewayConfiguration.getKeepAliveEnabled() && !gatewayConfiguration.getKeepAliveEnabled().value())
-    {
-        builder.withoutKeepAlive();
-    }
-
     if (gatewayConfiguration.getPlatformTrustStore())
     {
         builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore().value());

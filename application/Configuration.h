@@ -37,9 +37,6 @@ public:
 
     SubdeviceManagement getSubdeviceManagement() const;
 
-    void setKeepAliveEnabled(bool value);
-    const WolkOptional<bool>& getKeepAliveEnabled() const;
-
     void setPlatformTrustStore(const std::string& value);
     const WolkOptional<std::string>& getPlatformTrustStore() const;
 
@@ -54,7 +51,6 @@ private:
 
     SubdeviceManagement m_subdeviceManagement;
 
-    WolkOptional<bool> m_keepAliveEnabled;
     WolkOptional<std::string> m_platformTrustStore;
 
     static const std::string KEY;
@@ -62,7 +58,6 @@ private:
     static const std::string PLATFORM_URI;
     static const std::string PLATFORM_TRUST_STORE;
     static const std::string LOCAL_URI;
-    static const std::string KEEP_ALIVE;
     static const std::string SUBDEVICE_MANAGEMENT;
 };
 }    // namespace wolkabout

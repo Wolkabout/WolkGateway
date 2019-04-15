@@ -196,8 +196,8 @@ void Wolk::addToCommandBuffer(std::function<void()> command)
 
 unsigned long long Wolk::currentRtc()
 {
-    auto duration = std::chrono::system_clock::now().time_since_epoch();
-    return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+    auto duration = std::chrono::high_resolution_clock::now().time_since_epoch();
+    return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
 }
 
 void Wolk::flushActuatorStatuses()

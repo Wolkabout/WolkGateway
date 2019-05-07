@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2019 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #ifndef WOLK_VERSION_H
 #define WOLK_VERSION_H
 
-#define WOLK_CONNECT_VERSION_MAJOR 3
+#define WOLK_CONNECT_VERSION_MAJOR 4
 #define WOLK_CONNECT_VERSION_MINOR 0
 #define WOLK_CONNECT_VERSION_PATCH 0
 

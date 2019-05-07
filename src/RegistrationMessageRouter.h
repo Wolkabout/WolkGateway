@@ -26,11 +26,12 @@ namespace wolkabout
 {
 class GatewaySubdeviceRegistrationProtocol;
 class Message;
+class RegistrationProtocol;
 
 class RegistrationMessageRouter : public PlatformMessageListener, public DeviceMessageListener
 {
 public:
-    RegistrationMessageRouter(GatewaySubdeviceRegistrationProtocol& protocol,
+    RegistrationMessageRouter(RegistrationProtocol& protocol, GatewaySubdeviceRegistrationProtocol& gatewayProtocol,
                               PlatformMessageListener* PlatformGatewayUpdateResponseMessageHandler,
                               DeviceMessageListener* DeviceSubdeviceRegistrationRequestMessageHandler,
                               PlatformMessageListener* PlatformSubdeviceRegistrationResponseMessageHandler,
@@ -39,10 +40,12 @@ public:
     void platformMessageReceived(std::shared_ptr<Message> message) override;
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const GatewayProtocol& getGatewayProtocol() const override;
+    const Protocol& getProtocol() const override;
 
 private:
-    GatewaySubdeviceRegistrationProtocol& m_protocol;
+    RegistrationProtocol& m_protocol;
+    GatewaySubdeviceRegistrationProtocol& m_gatewayProtocol;
 
     PlatformMessageListener* m_platformGatewayUpdateResponseMessageHandler;
     DeviceMessageListener* m_deviceSubdeviceRegistrationRequestMessageHandler;

@@ -17,16 +17,18 @@
 #include "StatusMessageRouter.h"
 #include "model/Message.h"
 #include "protocol/GatewayStatusProtocol.h"
+#include "protocol/StatusProtocol.h"
 #include "utilities/Logger.h"
 
 namespace wolkabout
 {
-StatusMessageRouter::StatusMessageRouter(GatewayStatusProtocol& protocol,
+StatusMessageRouter::StatusMessageRouter(StatusProtocol& protocol, GatewayStatusProtocol& gatewayProtocol,
                                          PlatformMessageListener* platformStatusMessageHandler,
                                          DeviceMessageListener* deviceStatusMessageHandler,
                                          DeviceMessageListener* lastWillMessageHandler,
                                          PlatformMessageListener* platformKeepAliveMessageHandler)
 : m_protocol{protocol}
+, m_gatewayProtocol{gatewayProtocol}
 , m_platformStatusMessageHandler{platformStatusMessageHandler}
 , m_deviceStatusMessageHandler{deviceStatusMessageHandler}
 , m_lastWillMessageHandler{lastWillMessageHandler}
@@ -60,15 +62,15 @@ void StatusMessageRouter::deviceMessageReceived(std::shared_ptr<Message> message
 {
     LOG(TRACE) << "Routing device status protocol message: " << message->getChannel();
 
-    if (m_protocol.isStatusResponseMessage(*message) && m_deviceStatusMessageHandler)
+    if (m_gatewayProtocol.isStatusResponseMessage(*message) && m_deviceStatusMessageHandler)
     {
         m_deviceStatusMessageHandler->deviceMessageReceived(message);
     }
-    else if (m_protocol.isStatusUpdateMessage(*message) && m_deviceStatusMessageHandler)
+    else if (m_gatewayProtocol.isStatusUpdateMessage(*message) && m_deviceStatusMessageHandler)
     {
         m_deviceStatusMessageHandler->deviceMessageReceived(message);
     }
-    else if (m_protocol.isLastWillMessage(*message) && m_lastWillMessageHandler)
+    else if (m_gatewayProtocol.isLastWillMessage(*message) && m_lastWillMessageHandler)
     {
         m_lastWillMessageHandler->deviceMessageReceived(message);
     }
@@ -78,8 +80,13 @@ void StatusMessageRouter::deviceMessageReceived(std::shared_ptr<Message> message
     }
 }
 
-const GatewayProtocol& StatusMessageRouter::getProtocol() const
+const Protocol& StatusMessageRouter::getProtocol() const
 {
     return m_protocol;
+}
+
+const GatewayProtocol& StatusMessageRouter::getGatewayProtocol() const
+{
+    return m_gatewayProtocol;
 }
 }    // namespace wolkabout

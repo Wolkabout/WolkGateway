@@ -3,6 +3,8 @@
 
 #include "model/DetailedDevice.h"
 #include "repository/DeviceRepository.h"
+#include "repository/ExistingDevicesRepository.h"
+#include "repository/FileRepository.h"
 #include <gmock/gmock.h>
 
 class MockRepository : public wolkabout::DeviceRepository
@@ -35,6 +37,39 @@ public:
 
 private:
     GTEST_DISALLOW_COPY_AND_ASSIGN_(MockRepository);
+};
+
+class MockFileRepository : public wolkabout::FileRepository
+{
+public:
+    MockFileRepository() {}
+    virtual ~MockFileRepository() {}
+
+    std::unique_ptr<wolkabout::FileInfo> getFileInfo(const std::string& fileName) override { return nullptr; };
+    std::unique_ptr<std::vector<std::string>> getAllFileNames() override { return nullptr; };
+
+    void store(const wolkabout::FileInfo& info) override{};
+
+    void remove(const std::string& fileName) override{};
+    void removeAll() override{};
+
+    bool containsInfoForFile(const std::string& fileName) override { return false; };
+
+private:
+    GTEST_DISALLOW_COPY_AND_ASSIGN_(MockFileRepository);
+};
+
+class MockExistingDevicesRepository : public wolkabout::ExistingDevicesRepository
+{
+public:
+    MockExistingDevicesRepository() {}
+    virtual ~MockExistingDevicesRepository() {}
+
+    void addDeviceKey(const std::string& deviceKey) override {}
+    MOCK_METHOD0(getDeviceKeys, std::vector<std::string>());
+
+private:
+    GTEST_DISALLOW_COPY_AND_ASSIGN_(MockExistingDevicesRepository);
 };
 
 #endif    // MOCKREPOSITORY_H

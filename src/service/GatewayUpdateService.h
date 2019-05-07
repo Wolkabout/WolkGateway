@@ -29,20 +29,20 @@ namespace wolkabout
 {
 class DetailedDevice;
 class DeviceRepository;
-class GatewaySubdeviceRegistrationProtocol;
 class GatewayUpdateResponse;
 class OutboundMessageHandler;
+class RegistrationProtocol;
 
 class GatewayUpdateService : public PlatformMessageListener
 {
 public:
-    GatewayUpdateService(std::string gatewayKey, GatewaySubdeviceRegistrationProtocol& protocol,
-                         DeviceRepository& deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler);
+    GatewayUpdateService(std::string gatewayKey, RegistrationProtocol& protocol, DeviceRepository& deviceRepository,
+                         OutboundMessageHandler& outboundPlatformMessageHandler);
     ~GatewayUpdateService();
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const Protocol& getProtocol() const override;
 
     void onGatewayUpdated(std::function<void()> callback);
 
@@ -52,7 +52,7 @@ private:
     void handleUpdateResponse(const GatewayUpdateResponse& response);
 
     const std::string m_gatewayKey;
-    GatewaySubdeviceRegistrationProtocol& m_protocol;
+    RegistrationProtocol& m_protocol;
 
     DeviceRepository& m_deviceRepository;
 

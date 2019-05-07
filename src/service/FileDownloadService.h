@@ -27,6 +27,9 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <model/FileDelete.h>
+#include <model/FileUploadAbort.h>
+#include <model/FileUploadInitiate.h>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -35,35 +38,62 @@
 namespace wolkabout
 {
 class BinaryData;
-class GatewayFileDownloadProtocol;
+class JsonDownloadProtocol;
+class FileDelete;
+class FileRepository;
+class FileUploadAbort;
+class FileUploadInitiate;
+class FileUploadStatus;
+class FileUrlDownloadAbort;
+class FileUrlDownloadInitiate;
+class FileUrlDownloadStatus;
 class OutboundMessageHandler;
+class UrlFileDownloader;
 
-class FileDownloadService : public WolkaboutFileDownloader, public PlatformMessageListener
+class FileDownloadService : public PlatformMessageListener
 {
 public:
-    FileDownloadService(std::string gatewayKey, GatewayFileDownloadProtocol& protocol, uint_fast64_t maxFileSize,
-                        std::uint_fast64_t maxPacketSize, OutboundMessageHandler& outboundMessageHandler);
+    FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol, std::string fileDownloadDirectory,
+                        OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository,
+                        std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr);
 
     ~FileDownloadService();
 
     FileDownloadService(const FileDownloadService&) = delete;
     FileDownloadService& operator=(const FileDownloadService&) = delete;
 
-    void download(const std::string& fileName, std::uint_fast64_t fileSize, const ByteArray& fileHash,
-                  const std::string& downloadDirectory, const std::string& subChannel,
-                  std::function<void(const std::string& filePath)> onSuccessCallback,
-                  std::function<void(WolkaboutFileDownloader::ErrorCode errorCode)> onFailCallback) override;
-
-    void abort(const std::string& subChannel) override;
-
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const Protocol& getProtocol() const override;
+
+    virtual void sendFileList();
 
 private:
-    void handleBinaryData(const std::string& deviceKey, const BinaryData& binaryData);
+    void handle(const BinaryData& binaryData);
+    void handle(const FileUploadInitiate& request);
+    void handle(const FileUploadAbort& request);
+    void handle(const FileDelete& request);
+    void handle(const FileUrlDownloadInitiate& request);
+    void handle(const FileUrlDownloadAbort& request);
 
-    void requestPacket(const FilePacketRequest& request, const std::string& subChannel);
+    void download(const std::string& fileName, std::uint64_t fileSize, const std::string& fileHash);
+    void urlDownload(const std::string& fileUrl);
+    void abortDownload(const std::string& fileName);
+    void abortUrlDownload(const std::string& fileUrl);
+    void deleteFile(const std::string& fileName);
+    void purgeFiles();
+
+    void sendStatus(const FileUploadStatus& response);
+    void sendStatus(const FileUrlDownloadStatus& response);
+    void sendFileListUpdate();
+    void sendFileListResponse();
+
+    void requestPacket(const FilePacketRequest& request);
+    void downloadCompleted(const std::string& fileName, const std::string& filePath, const std::string& fileHash);
+    void downloadFailed(const std::string& fileName, FileTransferError errorCode);
+
+    void urlDownloadCompleted(const std::string& fileUrl, const std::string& fileName, const std::string& filePath);
+    void urlDownloadFailed(const std::string& fileUrl, FileTransferError errorCode);
 
     void addToCommandBuffer(std::function<void()> command);
 
@@ -72,15 +102,18 @@ private:
     void notifyCleanup();
 
     const std::string m_gatewayKey;
+    const std::string m_fileDownloadDirectory;
 
-    GatewayFileDownloadProtocol& m_protocol;
-
-    const uint_fast64_t m_maxFileSize;
-    const uint_fast64_t m_maxPacketSize;
+    JsonDownloadProtocol& m_protocol;
 
     OutboundMessageHandler& m_outboundMessageHandler;
+    FileRepository& m_fileRepository;
 
-    std::map<std::string, std::tuple<std::unique_ptr<FileDownloader>, bool>> m_activeDownloads;
+    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
+
+    // temporary to disallow simultaneous downloads
+    std::string m_activeDownload;
+    std::map<std::string, std::tuple<std::string, std::unique_ptr<FileDownloader>, bool>> m_activeDownloads;
 
     std::atomic_bool m_run;
     std::condition_variable m_condition;
@@ -88,6 +121,8 @@ private:
     std::thread m_garbageCollector;
 
     CommandBuffer m_commandBuffer;
+
+    static const constexpr std::uint64_t MAX_PACKET_SIZE = 10 * 1024 * 1024;    // 10MB
 };
 }    // namespace wolkabout
 

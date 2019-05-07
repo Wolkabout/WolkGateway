@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GATEWAYSUBDEVICEREGISTRATIONPROTOCOL_H
-#define GATEWAYSUBDEVICEREGISTRATIONPROTOCOL_H
+#ifndef FILEREPOSITORY_H
+#define FILEREPOSITORY_H
 
-#include "protocol/GatewayProtocol.h"
+#include "FileInfo.h"
 
 #include <memory>
 #include <string>
@@ -25,20 +25,21 @@
 
 namespace wolkabout
 {
-class Message;
-class SubdeviceRegistrationRequest;
-class SubdeviceRegistrationResponse;
-
-class GatewaySubdeviceRegistrationProtocol : public GatewayProtocol
+class FileRepository
 {
 public:
-    virtual std::unique_ptr<Message> makeMessage(const SubdeviceRegistrationResponse& request) const = 0;
+    virtual ~FileRepository() = default;
 
-    virtual std::unique_ptr<SubdeviceRegistrationRequest> makeSubdeviceRegistrationRequest(
-      const Message& message) const = 0;
+    virtual std::unique_ptr<FileInfo> getFileInfo(const std::string& fileName) = 0;
+    virtual std::unique_ptr<std::vector<std::string>> getAllFileNames() = 0;
 
-    virtual bool isSubdeviceRegistrationRequest(const Message& message) const = 0;
+    virtual void store(const FileInfo& info) = 0;
+
+    virtual void remove(const std::string& fileName) = 0;
+    virtual void removeAll() = 0;
+
+    virtual bool containsInfoForFile(const std::string& fileName) = 0;
 };
 }    // namespace wolkabout
 
-#endif
+#endif    // FILEREPOSITORY_H

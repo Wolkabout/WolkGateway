@@ -32,15 +32,17 @@ namespace wolkabout
 {
 class DetailedDevice;
 class DeviceRepository;
-class SubdeviceRegistrationResponse;
 class GatewaySubdeviceRegistrationProtocol;
 class Message;
 class OutboundMessageHandler;
+class RegistrationProtocol;
+class SubdeviceRegistrationResponse;
 
 class SubdeviceRegistrationService : public DeviceMessageListener, public PlatformMessageListener
 {
 public:
-    SubdeviceRegistrationService(std::string gatewayKey, GatewaySubdeviceRegistrationProtocol& protocol,
+    SubdeviceRegistrationService(std::string gatewayKey, RegistrationProtocol& protocol,
+                                 GatewaySubdeviceRegistrationProtocol& gatewayProtocol,
                                  DeviceRepository& deviceRepository,
                                  OutboundMessageHandler& outboundPlatformMessageHandler,
                                  OutboundMessageHandler& outboundDeviceMessageHandler);
@@ -49,20 +51,21 @@ public:
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const GatewayProtocol& getGatewayProtocol() const override;
+
+    const Protocol& getProtocol() const override;
 
     void onDeviceRegistered(std::function<void(const std::string& deviceKey)> onDeviceRegistered);
 
-    void deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys);
+    virtual void deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys);
 
-    void registerPostponedDevices();
+    virtual void registerPostponedDevices();
 
 protected:
     void invokeOnDeviceRegisteredListener(const std::string& deviceKey) const;
 
 private:
     void handleSubdeviceRegistrationRequest(const std::string& deviceKey, const SubdeviceRegistrationRequest& request);
-    void handleDeviceReregistrationRequest();
 
     void handleSubdeviceRegistrationResponse(const std::string& deviceKey,
                                              const SubdeviceRegistrationResponse& response);
@@ -71,7 +74,8 @@ private:
                                                      const SubdeviceRegistrationRequest& request);
 
     const std::string m_gatewayKey;
-    GatewaySubdeviceRegistrationProtocol& m_protocol;
+    RegistrationProtocol& m_protocol;
+    GatewaySubdeviceRegistrationProtocol& m_gatewayProtocol;
 
     DeviceRepository& m_deviceRepository;
 

@@ -16,7 +16,7 @@
 
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "model/Message.h"
-#include "protocol/GatewayProtocol.h"
+#include "protocol/Protocol.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
 
@@ -31,8 +31,16 @@ GatewayInboundPlatformMessageHandler::GatewayInboundPlatformMessageHandler(const
 
 void GatewayInboundPlatformMessageHandler::messageReceived(const std::string& channel, const std::string& payload)
 {
-    LOG(DEBUG) << "GatewayInboundPlatformMessageHandler: Message received on channel: '" << channel << "' : '"
-               << payload << "'";
+    // don't log binary payload
+    if (!StringUtils::contains(channel, "binary"))
+    {
+        LOG(DEBUG) << "GatewayInboundPlatformMessageHandler: Message received on channel: '" << channel << "' : '"
+                   << payload << "'";
+    }
+    else
+    {
+        LOG(DEBUG) << "GatewayInboundPlatformMessageHandler: Message received on channel: '" << channel << "'";
+    }
 
     std::lock_guard<std::mutex> lg{m_lock};
 
@@ -53,7 +61,7 @@ void GatewayInboundPlatformMessageHandler::messageReceived(const std::string& ch
     }
     else
     {
-        LOG(ERROR) << "Handler for device channel not found: " << channel;
+        LOG(DEBUG) << "GatewayInboundPlatformMessageHandler: Handler for device channel not found: " << channel;
     }
 }
 
@@ -69,7 +77,7 @@ void GatewayInboundPlatformMessageHandler::addListener(std::weak_ptr<PlatformMes
 
     if (auto handler = listener.lock())
     {
-        for (const auto& channel : handler->getProtocol().getInboundPlatformChannelsForGatewayKey(m_gatewayKey))
+        for (const auto& channel : handler->getProtocol().getInboundChannelsForDevice(m_gatewayKey))
         {
             LOG(DEBUG) << "Adding listener for channel: " << channel;
             m_channelHandlers[channel] = listener;

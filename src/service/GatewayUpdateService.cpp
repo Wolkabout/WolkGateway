@@ -19,7 +19,7 @@
 #include "model/GatewayUpdateRequest.h"
 #include "model/GatewayUpdateResponse.h"
 #include "model/Message.h"
-#include "protocol/GatewaySubdeviceRegistrationProtocol.h"
+#include "protocol/RegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "utilities/Logger.h"
 
@@ -33,7 +33,7 @@ static const std::chrono::milliseconds RETRY_TIMEOUT{5000};
 
 namespace wolkabout
 {
-GatewayUpdateService::GatewayUpdateService(std::string gatewayKey, GatewaySubdeviceRegistrationProtocol& protocol,
+GatewayUpdateService::GatewayUpdateService(std::string gatewayKey, RegistrationProtocol& protocol,
                                            DeviceRepository& deviceRepository,
                                            OutboundMessageHandler& outboundPlatformMessageHandler)
 : m_gatewayKey{std::move(gatewayKey)}
@@ -50,13 +50,6 @@ GatewayUpdateService::~GatewayUpdateService() = default;
 void GatewayUpdateService::platformMessageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
-
-    if (!m_protocol.isMessageFromPlatform(*message))
-    {
-        LOG(WARN) << "GatewayUpdateService: Ignoring message on channel '" << message->getChannel()
-                  << "'. Message not from platform.";
-        return;
-    }
 
     m_platformRetryMessageHandler.messageReceived(message);
 
@@ -79,7 +72,7 @@ void GatewayUpdateService::platformMessageReceived(std::shared_ptr<Message> mess
     }
 }
 
-const GatewayProtocol& GatewayUpdateService::getProtocol() const
+const Protocol& GatewayUpdateService::getProtocol() const
 {
     return m_protocol;
 }
@@ -124,7 +117,7 @@ void GatewayUpdateService::updateGateway(const DetailedDevice& device)
         return;
     }
 
-    auto responseChannel = m_protocol.getResponseChannel(*updateRequest, m_gatewayKey, m_gatewayKey);
+    auto responseChannel = m_protocol.getResponseChannel(m_gatewayKey, *updateRequest);
     RetryMessageStruct retryMessage{
       updateRequest, responseChannel,
       [=](std::shared_ptr<Message>) { LOG(ERROR) << "Failed to update gateway, no response from platform"; },

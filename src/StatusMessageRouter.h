@@ -24,11 +24,13 @@ namespace wolkabout
 {
 class GatewayStatusProtocol;
 class Message;
+class StatusProtocol;
 
 class StatusMessageRouter : public PlatformMessageListener, public DeviceMessageListener
 {
 public:
-    StatusMessageRouter(GatewayStatusProtocol& protocol, PlatformMessageListener* platformStatusMessageHandler,
+    StatusMessageRouter(StatusProtocol& protocol, GatewayStatusProtocol& gatewayProtocol,
+                        PlatformMessageListener* platformStatusMessageHandler,
                         DeviceMessageListener* deviceStatusMessageHandler,
                         DeviceMessageListener* lastWillMessageHandler,
                         PlatformMessageListener* platformKeepAliveMessageHandler);
@@ -36,10 +38,12 @@ public:
     void platformMessageReceived(std::shared_ptr<Message> message) override;
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const Protocol& getProtocol() const override;
+    const GatewayProtocol& getGatewayProtocol() const override;
 
 private:
-    GatewayStatusProtocol& m_protocol;
+    StatusProtocol& m_protocol;
+    GatewayStatusProtocol& m_gatewayProtocol;
 
     PlatformMessageListener* m_platformStatusMessageHandler;
     DeviceMessageListener* m_deviceStatusMessageHandler;

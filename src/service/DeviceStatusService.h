@@ -35,14 +35,15 @@ class DeviceRepository;
 class ConnectionStatusListener;
 class GatewayStatusProtocol;
 class OutboundMessageHandler;
+class StatusProtocol;
 
 class DeviceStatusService : public DeviceMessageListener,
                             public PlatformMessageListener,
                             public ConnectionStatusListener
 {
 public:
-    DeviceStatusService(std::string gatewayKey, GatewayStatusProtocol& protocol, DeviceRepository* deviceRepository,
-                        OutboundMessageHandler& outboundPlatformMessageHandler,
+    DeviceStatusService(std::string gatewayKey, StatusProtocol& protocol, GatewayStatusProtocol& gatewayProtocol,
+                        DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
                         OutboundMessageHandler& outboundDeviceMessageHandler,
                         std::chrono::seconds statusRequestInterval);
 
@@ -50,7 +51,9 @@ public:
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const Protocol& getProtocol() const override;
+
+    const GatewayProtocol& getGatewayProtocol() const override;
 
     void sendLastKnownStatusForDevice(const std::string& deviceKey);
 
@@ -63,14 +66,16 @@ private:
 
     void sendStatusRequestForDevice(const std::string& deviceKey);
     void sendStatusRequestForAllDevices();
-    void sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus status);
+    void sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus::Status status);
+    void sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus::Status status);
 
     bool containsDeviceStatus(const std::string& deviceKey);
-    std::pair<std::time_t, DeviceStatus> getDeviceStatus(const std::string& deviceKey);
-    void logDeviceStatus(const std::string& deviceKey, DeviceStatus status);
+    std::pair<std::time_t, DeviceStatus::Status> getDeviceStatus(const std::string& deviceKey);
+    void logDeviceStatus(const std::string& deviceKey, DeviceStatus::Status status);
 
     const std::string m_gatewayKey;
-    GatewayStatusProtocol& m_protocol;
+    StatusProtocol& m_protocol;
+    GatewayStatusProtocol& m_gatewayProtocol;
 
     DeviceRepository* m_deviceRepository;
 
@@ -83,7 +88,7 @@ private:
     Timer m_responseTimer;
 
     std::mutex m_deviceStatusMutex;
-    std::map<std::string, std::pair<std::time_t, DeviceStatus>> m_deviceStatuses;
+    std::map<std::string, std::pair<std::time_t, DeviceStatus::Status>> m_deviceStatuses;
 };
 }    // namespace wolkabout
 

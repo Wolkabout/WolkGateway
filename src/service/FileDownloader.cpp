@@ -26,29 +26,17 @@ namespace wolkabout
 {
 const constexpr std::chrono::milliseconds FileDownloader::PACKET_REQUEST_TIMEOUT;
 
-FileDownloader::FileDownloader(std::uint_fast64_t maxFileSize, std::uint_fast64_t maxPacketSize)
-: m_maxFileSize{maxFileSize}, m_maxPacketSize{maxPacketSize}
-{
-}
+FileDownloader::FileDownloader(std::uint64_t maxPacketSize) : m_maxPacketSize{maxPacketSize} {}
 
-void FileDownloader::download(const std::string& fileName, std::uint_fast64_t fileSize, const ByteArray& fileHash,
+void FileDownloader::download(const std::string& fileName, std::uint64_t fileSize, const ByteArray& fileHash,
                               const std::string& downloadDirectory,
                               std::function<void(const FilePacketRequest&)> packetProvider,
                               std::function<void(const std::string& filePath)> onSuccessCallback,
-                              std::function<void(WolkaboutFileDownloader::ErrorCode errorCode)> onFailCallback)
+                              std::function<void(FileTransferError errorCode)> onFailCallback)
 {
     addToCommandBuffer([=] {
         m_timer.stop();
         clear();
-
-        if (fileSize > m_maxFileSize)
-        {
-            if (onFailCallback)
-            {
-                onFailCallback(WolkaboutFileDownloader::ErrorCode::UNSUPPORTED_FILE_SIZE);
-            }
-            return;
-        }
 
         if (fileSize <= m_maxPacketSize - (2 * ByteUtils::SHA_256_HASH_BYTE_LENGTH))
         {
@@ -93,8 +81,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                 {
                 case FileHandler::StatusCode::OK:
                 {
-                    const std::string filePath =
-                      FileSystemUtils::composePath(m_currentFileName, m_currentDownloadDirectory);
+                    const auto filePath = FileSystemUtils::composePath(m_currentFileName, m_currentDownloadDirectory);
                     const auto saveResult = m_fileHandler.saveFile(m_currentFileName, m_currentDownloadDirectory);
                     switch (saveResult)
                     {
@@ -102,7 +89,8 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                     {
                         if (m_currentOnSuccessCallback)
                         {
-                            m_currentOnSuccessCallback(filePath);
+                            const auto abosolutePath = FileSystemUtils::absolutePath(filePath);
+                            m_currentOnSuccessCallback(abosolutePath);
                         }
 
                         clear();
@@ -112,7 +100,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                     {
                         if (m_currentOnFailCallback)
                         {
-                            m_currentOnFailCallback(WolkaboutFileDownloader::ErrorCode::FILE_SYSTEM_ERROR);
+                            m_currentOnFailCallback(FileTransferError::FILE_SYSTEM_ERROR);
                         }
 
                         clear();
@@ -122,7 +110,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                     {
                         if (m_currentOnFailCallback)
                         {
-                            m_currentOnFailCallback(WolkaboutFileDownloader::ErrorCode::UNSPECIFIED_ERROR);
+                            m_currentOnFailCallback(FileTransferError::UNSPECIFIED_ERROR);
                         }
 
                         clear();
@@ -135,7 +123,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                 {
                     if (m_currentOnFailCallback)
                     {
-                        m_currentOnFailCallback(WolkaboutFileDownloader::ErrorCode::UNSPECIFIED_ERROR);
+                        m_currentOnFailCallback(FileTransferError::UNSPECIFIED_ERROR);
                     }
 
                     clear();
@@ -167,7 +155,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
         {
             if (m_currentOnFailCallback)
             {
-                m_currentOnFailCallback(WolkaboutFileDownloader::ErrorCode::UNSPECIFIED_ERROR);
+                m_currentOnFailCallback(FileTransferError::UNSPECIFIED_ERROR);
             }
 
             clear();
@@ -194,17 +182,9 @@ void FileDownloader::requestPacket(unsigned index, std::uint_fast64_t size)
 {
     ++m_retryCount;
 
-    auto cancel = [=] {
-        if (m_currentOnFailCallback)
-        {
-            m_currentOnFailCallback(WolkaboutFileDownloader::ErrorCode::RETRY_COUNT_EXCEEDED);
-        }
-        clear();
-    };
-
     m_packetProvider(FilePacketRequest{m_currentFileName, index, size});
 
-    m_timer.start(PACKET_REQUEST_TIMEOUT, cancel);
+    m_timer.start(PACKET_REQUEST_TIMEOUT, [=] { packetFailed(); });
 }
 
 void FileDownloader::packetFailed()
@@ -213,7 +193,7 @@ void FileDownloader::packetFailed()
     {
         if (m_currentOnFailCallback)
         {
-            m_currentOnFailCallback(WolkaboutFileDownloader::ErrorCode::RETRY_COUNT_EXCEEDED);
+            m_currentOnFailCallback(FileTransferError::RETRY_COUNT_EXCEEDED);
         }
         clear();
     }

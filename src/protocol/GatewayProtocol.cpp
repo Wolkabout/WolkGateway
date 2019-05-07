@@ -14,11 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef WOLK_VERSION_H
-#define WOLK_VERSION_H
+#include "protocol/GatewayProtocol.h"
+#include "utilities/StringUtils.h"
 
-#define WOLK_CONNECT_VERSION_MAJOR 4
-#define WOLK_CONNECT_VERSION_MINOR 0
-#define WOLK_CONNECT_VERSION_PATCH 0
+namespace wolkabout
+{
+std::string GatewayProtocol::extractDeviceKeyFromChannel(const std::string& topic) const
+{
+    std::string previousToken;
+    for (std::string token : StringUtils::tokenize(topic, "/"))
+    {
+        if (previousToken == "d")
+        {
+            return token;
+        }
 
-#endif
+        previousToken = token;
+    }
+
+    return "";
+}
+}    // namespace wolkabout

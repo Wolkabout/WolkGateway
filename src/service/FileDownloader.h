@@ -17,7 +17,7 @@
 #define FILEDOWNLOADER_H
 
 #include "FileHandler.h"
-#include "service/WolkaboutFileDownloader.h"
+#include "model/FileTransferStatus.h"
 #include "utilities/ByteUtils.h"
 #include "utilities/CommandBuffer.h"
 #include "utilities/Timer.h"
@@ -35,12 +35,12 @@ class FilePacketRequest;
 class FileDownloader
 {
 public:
-    FileDownloader(std::uint_fast64_t maxFileSize, std::uint_fast64_t maxPacketSize);
+    FileDownloader(std::uint64_t maxPacketSize);
 
-    void download(const std::string& fileName, std::uint_fast64_t fileSize, const ByteArray& fileHash,
+    void download(const std::string& fileName, std::uint64_t fileSize, const ByteArray& fileHash,
                   const std::string& downloadDirectory, std::function<void(const FilePacketRequest&)> packetProvider,
                   std::function<void(const std::string& filePath)> onSuccessCallback,
-                  std::function<void(WolkaboutFileDownloader::ErrorCode errorCode)> onFailCallback);
+                  std::function<void(FileTransferError errorCode)> onFailCallback);
 
     void handleData(const BinaryData& binaryData);
 
@@ -49,22 +49,21 @@ public:
 private:
     void addToCommandBuffer(std::function<void()> command);
 
-    void requestPacket(unsigned index, std::uint_fast64_t size);
+    void requestPacket(unsigned index, std::uint64_t size);
 
     void packetFailed();
 
     void clear();
 
-    const std::uint_fast64_t m_maxFileSize;
-    const std::uint_fast64_t m_maxPacketSize;
+    const std::uint64_t m_maxPacketSize;
 
     FileHandler m_fileHandler;
 
     Timer m_timer;
 
     std::string m_currentFileName;
-    std::uint_fast64_t m_currentFileSize;
-    std::uint_fast64_t m_currentPacketSize;
+    std::uint64_t m_currentFileSize;
+    std::uint64_t m_currentPacketSize;
     unsigned m_currentPacketCount;
     unsigned m_currentPacketIndex;
     ByteArray m_currentFileHash;
@@ -72,7 +71,7 @@ private:
 
     std::function<void(const FilePacketRequest&)> m_packetProvider;
     std::function<void(const std::string&)> m_currentOnSuccessCallback;
-    std::function<void(WolkaboutFileDownloader::ErrorCode)> m_currentOnFailCallback;
+    std::function<void(FileTransferError)> m_currentOnFailCallback;
 
     unsigned short m_retryCount;
 

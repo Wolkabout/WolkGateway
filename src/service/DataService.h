@@ -28,6 +28,7 @@
 
 namespace wolkabout
 {
+class DataProtocol;
 class DeviceRepository;
 class GatewayDataProtocol;
 class MessageListener;
@@ -35,15 +36,17 @@ class MessageListener;
 class DataService : public DeviceMessageListener, public PlatformMessageListener, public OutboundMessageHandler
 {
 public:
-    DataService(const std::string& gatewayKey, GatewayDataProtocol& protocol, DeviceRepository* deviceRepository,
-                OutboundMessageHandler& outboundPlatformMessageHandler,
+    DataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayDataProtocol& gatewayProtocol,
+                DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
                 OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice = nullptr);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    const GatewayProtocol& getProtocol() const override;
+    const Protocol& getProtocol() const override;
+
+    const GatewayProtocol& getGatewayProtocol() const override;
 
     void addMessage(std::shared_ptr<Message> message) override;
 
@@ -60,7 +63,8 @@ private:
     void routePlatformToGatewayMessage(std::shared_ptr<Message> message);
 
     const std::string m_gatewayKey;
-    GatewayDataProtocol& m_protocol;
+    DataProtocol& m_protocol;
+    GatewayDataProtocol& m_gatewayProtocol;
 
     DeviceRepository* m_deviceRepository;
 

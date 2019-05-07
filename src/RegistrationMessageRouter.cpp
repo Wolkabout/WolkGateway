@@ -17,16 +17,19 @@
 #include "RegistrationMessageRouter.h"
 #include "model/Message.h"
 #include "protocol/GatewaySubdeviceRegistrationProtocol.h"
+#include "protocol/RegistrationProtocol.h"
 #include "utilities/Logger.h"
 
 namespace wolkabout
 {
 RegistrationMessageRouter::RegistrationMessageRouter(
-  GatewaySubdeviceRegistrationProtocol& protocol, PlatformMessageListener* PlatformGatewayUpdateResponseMessageHandler,
+  RegistrationProtocol& protocol, GatewaySubdeviceRegistrationProtocol& gatewayProtocol,
+  PlatformMessageListener* PlatformGatewayUpdateResponseMessageHandler,
   DeviceMessageListener* DeviceSubdeviceRegistrationRequestMessageHandler,
   PlatformMessageListener* PlatformSubdeviceRegistrationResponseMessageHandler,
   PlatformMessageListener* PlatformSubdeviceDeletionResponseMessageHandler)
 : m_protocol{protocol}
+, m_gatewayProtocol{gatewayProtocol}
 , m_platformGatewayUpdateResponseMessageHandler{PlatformGatewayUpdateResponseMessageHandler}
 , m_deviceSubdeviceRegistrationRequestMessageHandler{DeviceSubdeviceRegistrationRequestMessageHandler}
 , m_platformSubdeviceRegistrationResponseMessageHandler{PlatformSubdeviceRegistrationResponseMessageHandler}
@@ -61,7 +64,8 @@ void RegistrationMessageRouter::deviceMessageReceived(std::shared_ptr<Message> m
 {
     LOG(TRACE) << "Routing device registration protocol message: " << message->getChannel();
 
-    if (m_protocol.isSubdeviceRegistrationRequest(*message) && m_deviceSubdeviceRegistrationRequestMessageHandler)
+    if (m_gatewayProtocol.isSubdeviceRegistrationRequest(*message) &&
+        m_deviceSubdeviceRegistrationRequestMessageHandler)
     {
         m_deviceSubdeviceRegistrationRequestMessageHandler->deviceMessageReceived(message);
     }
@@ -71,7 +75,12 @@ void RegistrationMessageRouter::deviceMessageReceived(std::shared_ptr<Message> m
     }
 }
 
-const GatewayProtocol& RegistrationMessageRouter::getProtocol() const
+const GatewayProtocol& RegistrationMessageRouter::getGatewayProtocol() const
+{
+    return m_gatewayProtocol;
+}
+
+const Protocol& RegistrationMessageRouter::getProtocol() const
 {
     return m_protocol;
 }

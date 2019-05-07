@@ -22,15 +22,15 @@
 
 namespace wolkabout
 {
-class Message;
 class GatewayProtocol;
+class Message;
 
 class DeviceMessageListener
 {
 public:
     virtual ~DeviceMessageListener() = default;
     virtual void deviceMessageReceived(std::shared_ptr<Message> message) = 0;
-    virtual const GatewayProtocol& getProtocol() const = 0;
+    virtual const GatewayProtocol& getGatewayProtocol() const = 0;
 };
 
 class InboundDeviceMessageHandler

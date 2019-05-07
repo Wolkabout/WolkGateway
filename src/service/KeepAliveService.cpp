@@ -18,11 +18,11 @@
 #include "OutboundMessageHandler.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/Message.h"
-#include "protocol/GatewayStatusProtocol.h"
+#include "protocol/StatusProtocol.h"
 
 namespace wolkabout
 {
-KeepAliveService::KeepAliveService(std::string gatewayKey, GatewayStatusProtocol& protocol,
+KeepAliveService::KeepAliveService(std::string gatewayKey, StatusProtocol& protocol,
                                    OutboundMessageHandler& outboundMessageHandler,
                                    std::chrono::seconds keepAliveInterval)
 : m_gatewayKey{std::move(gatewayKey)}
@@ -34,7 +34,7 @@ KeepAliveService::KeepAliveService(std::string gatewayKey, GatewayStatusProtocol
 
 void KeepAliveService::platformMessageReceived(std::shared_ptr<Message> message) {}
 
-const GatewayProtocol& KeepAliveService::getProtocol() const
+const Protocol& KeepAliveService::getProtocol() const
 {
     return m_protocol;
 }

@@ -2,7 +2,11 @@
 #include "model/ActuatorSetCommand.h"
 #include "model/ActuatorStatus.h"
 #include "model/Message.h"
+#define private public
+#define protected public
 #include "protocol/json/JsonGatewayDataProtocol.h"
+#undef protected
+#undef private
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -24,18 +28,6 @@ public:
     std::unique_ptr<wolkabout::GatewayDataProtocol> protocol;
 };
 }    // namespace
-
-TEST_F(JsonGatewayDataProtocol, Given_Name_When_ProtocolNameIsRequested_Then_NameIsEqualToProtocolName)
-{
-    // Given
-    const std::string name = "JsonProtocol";
-
-    // When
-    const std::string protocolName = protocol->getName();
-
-    // Then
-    ASSERT_EQ(name, protocolName);
-}
 
 TEST_F(JsonGatewayDataProtocol,
        Given_SensorReadingChannelForDevice_When_DeviceKeyIsExtracted_Then_ExtractedDeviceKeyIsEqualToDeviceKey)
@@ -277,30 +269,6 @@ TEST_F(JsonGatewayDataProtocol, Given_InvalidGatewayDeviceChannel_When_ChannelIs
     ASSERT_EQ("", routedChannel);
 }
 
-TEST_F(JsonGatewayDataProtocol, Given_GatewayChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToGWDeviceChannel)
-{
-    // Given
-    const std::string channel = "p2d/configuration_get/g/GATEWAY_KEY/r/REF";
-
-    // When
-    const std::string routedChannel = protocol->routePlatformToGatewayMessage(channel);
-
-    // Then
-    ASSERT_EQ("p2d/configuration_get/d/GATEWAY_KEY/r/REF", routedChannel);
-}
-
-TEST_F(JsonGatewayDataProtocol, Given_InvalidGatewayChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToEmpty)
-{
-    // Given
-    const std::string channel = "p2d/configuration_get/GATEWAY_KEY/r/REF";
-
-    // When
-    const std::string routedChannel = protocol->routePlatformToGatewayMessage(channel);
-
-    // Then
-    ASSERT_EQ("", routedChannel);
-}
-
 TEST_F(JsonGatewayDataProtocol,
        Given_DeviceChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToGatewayDeviceChannel)
 {
@@ -326,158 +294,6 @@ TEST_F(JsonGatewayDataProtocol, Given_InvalidDeviceChannel_When_ChannelIsRouted_
     ASSERT_EQ("", routedChannel);
 }
 
-TEST_F(JsonGatewayDataProtocol, Given_GWDeviceChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToGatewayChannel)
-{
-    // Given
-    const std::string channel = "d2p/configuration_get/d/GATEWAY_KEY/r/REF";
-
-    // When
-    const std::string routedChannel = protocol->routeGatewayToPlatformMessage(channel);
-
-    // Then
-    ASSERT_EQ("d2p/configuration_get/g/GATEWAY_KEY/r/REF", routedChannel);
-}
-
-TEST_F(JsonGatewayDataProtocol, Given_InvalidGWDeviceChannel_When_ChannelIsRouted_Then_RoutedChannelIsEqualToEmpty)
-{
-    // Given
-    const std::string channel = "d2p/configuration_get/GATEWAY_KEY/r/REF";
-
-    // When
-    const std::string routedChannel = protocol->routeGatewayToPlatformMessage(channel);
-
-    // Then
-    ASSERT_EQ("", routedChannel);
-}
-
-TEST_F(JsonGatewayDataProtocol,
-       Given_MessageFromPlatform_When_MessageDirectionIsChecked_Then_MessageDirectionEqualsFromPlatform)
-{
-    // Given
-    const std::string actuationRequestChannel = "p2d/actuation_set/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", actuationRequestChannel);
-
-    // When
-    const bool isMessageFromPlatform = protocol->isMessageFromPlatform(*message);
-
-    // Then
-    ASSERT_TRUE(isMessageFromPlatform);
-}
-
-TEST_F(JsonGatewayDataProtocol,
-       Given_MessageFromDevice_When_MessageDirectionIsChecked_Then_MessageDirectionDoesNotEqualFromPlatform)
-{
-    // Given
-    const std::string actuationStatusChannel = "d2p/actuation_status/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", actuationStatusChannel);
-
-    // When
-    const bool isMessageFromPlatform = protocol->isMessageFromPlatform(*message);
-
-    // Then
-    ASSERT_FALSE(isMessageFromPlatform);
-}
-
-TEST_F(JsonGatewayDataProtocol,
-       Given_MessageToPlatform_When_MessageDirectionIsChecked_Then_MessageDirectionEqualsToPlatform)
-{
-    // Given
-    const std::string actuationStatusChannel = "d2p/actuation_status/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", actuationStatusChannel);
-
-    // When
-    const bool isMessageToPlatform = protocol->isMessageToPlatform(*message);
-
-    // Then
-    ASSERT_TRUE(isMessageToPlatform);
-}
-
-TEST_F(JsonGatewayDataProtocol,
-       Given_MessageToDevice_When_MessageDirectionIsChecked_Then_MessageDirectionDoesNotEqualToPlatform)
-{
-    // Given
-    const std::string actuationRequestChannel = "p2d/actuation_set/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", actuationRequestChannel);
-
-    // When
-    const bool isMessageToPlatform = protocol->isMessageToPlatform(*message);
-
-    // Then
-    ASSERT_FALSE(isMessageToPlatform);
-}
-
-TEST_F(JsonGatewayDataProtocol,
-       Given_ActuationSetRequestMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsActuationSetRequest)
-{
-    // Given
-    const std::string actuationSetRequestChannel = "p2d/actuator_set/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", actuationSetRequestChannel);
-
-    // When
-    const bool isActuationSetRequest = protocol->isActuatorSetMessage(*message);
-
-    // Then
-    ASSERT_TRUE(isActuationSetRequest);
-}
-
-TEST_F(JsonGatewayDataProtocol,
-       Given_ActuationGetRequestMessage_When_MessageTypeIsChecked_Then_MessageTypeEqualsActuationGetRequest)
-{
-    // Given
-    const std::string actuationGetRequestChannel = "p2d/actuator_get/g/GATEWAY_KEY/d/DEVICE_KEY";
-    const auto message = std::make_shared<wolkabout::Message>("", actuationGetRequestChannel);
-
-    // When
-    const bool isActuationGetRequest = protocol->isActuatorGetMessage(*message);
-
-    // Then
-    ASSERT_TRUE(isActuationGetRequest);
-}
-
-TEST_F(JsonGatewayDataProtocol, Given_ActuatorStatus_When_MessageIsCreated_Then_MessageChannelMatchesReference)
-{
-    // Given
-    wolkabout::ActuatorStatus status{"VALUE", "REF", wolkabout::ActuatorStatus::State::READY};
-
-    // When
-    const auto message = protocol->makeMessage("GATEWAY_KEY", status);
-
-    // Then
-    ASSERT_TRUE(message != nullptr);
-    ASSERT_EQ(message->getChannel(), "d2p/actuator_status/g/GATEWAY_KEY/r/REF");
-}
-
-TEST_F(JsonGatewayDataProtocol,
-       Given_ActuatorSetMessage_When_ActuatorSetCommandIsCreated_Then_ValueMatchesPayloadAndReferenceMatchesChannel)
-{
-    // Given
-    const std::string jsonPayload = "{\"value\":\"TEST_VALUE\"}";
-    const std::string channel = "p2d/actuator_set/g/GATEWAY_KEY/r/REF";
-    const auto message = std::make_shared<wolkabout::Message>(jsonPayload, channel);
-
-    // When
-    const auto command = protocol->makeActuatorSetCommand(*message);
-
-    // Then
-    ASSERT_TRUE(command != nullptr);
-    ASSERT_EQ(command->getValue(), "TEST_VALUE");
-    ASSERT_EQ(command->getReference(), "REF");
-}
-
-TEST_F(JsonGatewayDataProtocol, Given_ActuatorGetMessage_When_ActuatorGetCommandIsCreated_Then_ReferenceMatchesChannel)
-{
-    // Given
-    const std::string channel = "p2d/actuator_set/g/GATEWAY_KEY/r/REF";
-    const auto message = std::make_shared<wolkabout::Message>("", channel);
-
-    // When
-    const auto command = protocol->makeActuatorGetCommand(*message);
-
-    // Then
-    ASSERT_TRUE(command != nullptr);
-    ASSERT_EQ(command->getReference(), "REF");
-}
-
 TEST_F(JsonGatewayDataProtocol, Given_Channels_When_DeviceChannelsAreRequested_Then_DeviceChannelsMatchChannels)
 {
     // Given
@@ -485,29 +301,12 @@ TEST_F(JsonGatewayDataProtocol, Given_Channels_When_DeviceChannelsAreRequested_T
                                             "d2p/actuator_status/d/+/r/#", "d2p/configuration_get/d/#"};
 
     // When
-    const auto deviceChannels = protocol->getInboundDeviceChannels();
+    const auto deviceChannels = protocol->getInboundChannels();
 
     // Then
     for (const auto& channel : channels)
     {
         auto it = std::find(deviceChannels.begin(), deviceChannels.end(), channel);
         ASSERT_TRUE(it != deviceChannels.end());
-    }
-}
-
-TEST_F(JsonGatewayDataProtocol, Given_Channels_When_PlatformChannelsAreRequested_Then_PlatformChannelsMatchChannels)
-{
-    // Given
-    const std::vector<std::string> channels{"p2d/actuator_set/g/#", "p2d/actuator_get/g/#", "p2d/configuration_set/g/#",
-                                            "p2d/configuration_get/g/#"};
-
-    // When
-    const auto platformChannels = protocol->getInboundPlatformChannels();
-
-    // Then
-    for (const auto& channel : channels)
-    {
-        auto it = std::find(platformChannels.begin(), platformChannels.end(), channel);
-        ASSERT_TRUE(it != platformChannels.end());
     }
 }

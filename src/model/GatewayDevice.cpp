@@ -67,6 +67,28 @@ WolkOptional<SubdeviceManagement> GatewayDevice::getSubdeviceManagement() const
         }
     }
 
-    return WolkOptional<SubdeviceManagement>();
+    return {};
+}
+
+WolkOptional<bool> GatewayDevice::getFirmwareUpdate() const
+{
+    auto it = m_deviceTemplate.getFirmwareUpdateParameters().find(FIRMWARE_UPDATE_PARAMETER);
+    if (it != m_deviceTemplate.getFirmwareUpdateParameters().end())
+    {
+        return it->second;
+    }
+
+    return {};
+}
+
+WolkOptional<bool> GatewayDevice::getUrlDownload() const
+{
+    auto it = m_deviceTemplate.getFirmwareUpdateParameters().find(FILE_URL_PARAMETER);
+    if (it != m_deviceTemplate.getFirmwareUpdateParameters().end())
+    {
+        return it->second;
+    }
+
+    return {};
 }
 }    // namespace wolkabout

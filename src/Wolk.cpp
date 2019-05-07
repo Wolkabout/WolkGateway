@@ -20,12 +20,16 @@
 #include "persistence/Persistence.h"
 #include "protocol/DataProtocol.h"
 #include "protocol/GatewayDataProtocol.h"
-#include "protocol/GatewayFileDownloadProtocol.h"
 #include "protocol/GatewayFirmwareUpdateProtocol.h"
 #include "protocol/GatewayStatusProtocol.h"
 #include "protocol/GatewaySubdeviceRegistrationProtocol.h"
+#include "protocol/RegistrationProtocol.h"
+#include "protocol/StatusProtocol.h"
+#include "protocol/json/JsonDFUProtocol.h"
+#include "protocol/json/JsonDownloadProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
+#include "repository/FileRepository.h"
 #include "service/DataService.h"
 #include "service/DeviceStatusService.h"
 #include "service/FileDownloadService.h"
@@ -54,7 +58,7 @@ const constexpr std::chrono::seconds Wolk::KEEP_ALIVE_INTERVAL;
 
 WolkBuilder Wolk::newBuilder(GatewayDevice device)
 {
-    return WolkBuilder(device);
+    return WolkBuilder(std::move(device));
 }
 
 void Wolk::connect()
@@ -192,8 +196,8 @@ void Wolk::addToCommandBuffer(std::function<void()> command)
 
 unsigned long long Wolk::currentRtc()
 {
-    auto duration = std::chrono::system_clock::now().time_since_epoch();
-    return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+    auto duration = std::chrono::high_resolution_clock::now().time_since_epoch();
+    return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
 }
 
 void Wolk::flushActuatorStatuses()
@@ -270,18 +274,59 @@ void Wolk::handleConfigurationGetCommand()
     publishConfiguration();
 }
 
-void Wolk::publishEverything()
+void Wolk::platformDisconnected()
 {
     addToCommandBuffer([=] {
-        publishFirmwareStatus();
+        notifyPlatformDisonnected();
+        connectToPlatform();
+    });
+}
 
-        publishConfiguration();
+void Wolk::devicesDisconnected()
+{
+    addToCommandBuffer([=] {
+        notifyDevicesDisonnected();
+        connectToDevices();
+    });
+}
 
-        for (const std::string& actuatorReference : m_device.getActuatorReferences())
+void Wolk::gatewayUpdated()
+{
+    addToCommandBuffer([=] {
+        if (m_keepAliveService)
         {
-            publishActuatorStatus(actuatorReference);
+            m_keepAliveService->sendPingMessage();
+        }
+
+        publishEverything();
+
+        if (m_subdeviceRegistrationService && m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
+        {
+            m_subdeviceRegistrationService->registerPostponedDevices();
         }
     });
+}
+
+void Wolk::deviceRegistered(const std::string& deviceKey)
+{
+    addToCommandBuffer([=] {
+        m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
+        m_existingDevicesRepository->addDeviceKey(deviceKey);
+    });
+}
+
+void Wolk::publishEverything()
+{
+    publishFirmwareStatus();
+
+    publishConfiguration();
+
+    for (const std::string& actuatorReference : m_device.getActuatorReferences())
+    {
+        publishActuatorStatus(actuatorReference);
+    }
+
+    publishFileList();
 }
 
 void Wolk::publishFirmwareStatus()
@@ -293,19 +338,21 @@ void Wolk::publishFirmwareStatus()
     }
 }
 
-void Wolk::notifyPlatformConnected()
+void Wolk::publishFileList()
 {
-    m_platformPublisher->connected();
-
-    if (m_keepAliveService)
+    if (m_fileDownloadService)
     {
-        m_keepAliveService->connected();
+        m_fileDownloadService->sendFileList();
     }
+}
 
+void Wolk::updateGatewayAndDeleteDevices()
+{
     static bool shouldUpdate = true;
+
+    // update gateway upon first connect
     if (shouldUpdate)
     {
-        // update gateway upon first connect
         m_gatewayUpdateService->updateGateway(m_device);
         shouldUpdate = false;
 
@@ -314,8 +361,16 @@ void Wolk::notifyPlatformConnected()
             m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
         }
     }
+}
 
-    requestActuatorStatusesForDevices();
+void Wolk::notifyPlatformConnected()
+{
+    m_platformPublisher->connected();
+
+    if (m_keepAliveService)
+    {
+        m_keepAliveService->connected();
+    }
 }
 
 void Wolk::notifyPlatformDisonnected()
@@ -348,6 +403,10 @@ void Wolk::connectToPlatform()
         if (m_platformConnectivityService->connect())
         {
             notifyPlatformConnected();
+
+            updateGatewayAndDeleteDevices();
+
+            requestActuatorStatusesForDevices();
 
             publishEverything();
 

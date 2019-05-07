@@ -33,6 +33,8 @@ public:
     GatewayDevice(std::string key, std::string password, DeviceTemplate deviceTemplate);
 
     WolkOptional<SubdeviceManagement> getSubdeviceManagement() const;
+    WolkOptional<bool> getFirmwareUpdate() const;
+    WolkOptional<bool> getUrlDownload() const;
 
 private:
     static const std::string FIRMWARE_UPDATE_TYPE;

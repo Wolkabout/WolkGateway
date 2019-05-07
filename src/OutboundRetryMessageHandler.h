@@ -45,7 +45,7 @@ struct RetryMessageStruct
 class OutboundRetryMessageHandler
 {
 public:
-    OutboundRetryMessageHandler(OutboundMessageHandler& messageHandler);
+    explicit OutboundRetryMessageHandler(OutboundMessageHandler& messageHandler);
     ~OutboundRetryMessageHandler();
 
     void addMessage(RetryMessageStruct msg);

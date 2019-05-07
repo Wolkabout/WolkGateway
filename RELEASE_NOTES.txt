@@ -5,6 +5,10 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.0.0**
+- [IMPROVEMENT] Separated file transfer from firmware update
+- [IMPROVEMENT] Updated JSON communication protocol to be in-line with WolkAbout IoT Platform version 19.03.2
+
 **Version 3.0.0**
 - [IMPROVEMENT] Added option to specify if gateway or platform manages registration and deletion of subdevices
 - [IMPROVEMENT] Updated JSON communication protocol to be in-line with WolkAbout IoT Platform version 19.03.1

@@ -30,13 +30,13 @@ Following tools are required in order to build WolkGateway
 * CMake - version 3.5 or later
 * Conan
 * Mosquitto MQTT broker
-* Python3
-* Python3 PIP
+* Python
+* Python PIP
 * Optional: Docker CE (For running WolkGateway inside Docker container)
 
 Former can be installed on Debian based system from terminal by invoking:
 
-`sudo apt-get install mosquitto cmake python3 python3-pip && sudo python3 -m pip install conan`
+`apt-get install mosquitto cmake python python-pip && python -m pip install conan`
 
 Building
 ------
@@ -56,7 +56,7 @@ Before proceeding with steps from this section complete steps listed in 'Buildin
 
 1. Change current directory to `out`
 2. Open `gatewayConfiguration.json` and fill name, key and password fields with data provided by WolkAbout IoT platform after gateway device creation and choose who will be responsible for registering and deleting devices - gateway or platform
-3. Make sure mosquitto is running by invoking `sudo systemctl start mosquitto`
+3. Make sure mosquitto is running by invoking `systemctl start mosquitto`
 4. Run gateway by invoking `./WolkGatewayApp gatewayConfiguration.json`
 
 **Note:** Running additional instances of WolkGateway on the same network requires having an additional mosquitto broker per gateway. Start a mosquitto daemon from the terminal with `mosquitto -p <port> -d`. The port entered here should also be entered into `gatewayConfiguration.json` for the matching gateway and into the configuration file of all of the gateway's modules. 

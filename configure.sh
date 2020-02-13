@@ -18,6 +18,5 @@ cp tools/git/pre-commit .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 
 pushd out
-conan install -s compiler.libcxx=libstdc++11 --build=missing ..
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
 popd

@@ -33,7 +33,6 @@
 
 # Build dir
 out
-dependencies
 
 # Qt Creator
 *.config

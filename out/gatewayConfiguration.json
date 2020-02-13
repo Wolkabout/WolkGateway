@@ -1,10 +1,10 @@
 {
-    "name": "",
+    "name": "Development Thread Gateway",
 
-    "key": "",
-    "password": "",
+    "key": "thread",
+    "password": "a78a79c3-f6f1-433a-8959-8ba05fd88386",
 
-    "platformMqttUri": "ssl://api-demo.wolkabout.com:8883",
+    "platformMqttUri": "ssl://192.168.0.99:8883",
     "localMqttUri": "tcp://localhost:1883",
 
     "platformTrustStore": "ca.crt",

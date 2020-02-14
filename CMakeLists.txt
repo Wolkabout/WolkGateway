@@ -15,19 +15,15 @@
 cmake_minimum_required(VERSION 3.5)
 project(WolkGateway C CXX)
 
-if(NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-endif(NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-
-if(NOT DEFINED CMAKE_PREFIX_PATH)
-    set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/build")
-endif(NOT DEFINED CMAKE_PREFIX_PATH)
-
 set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_INSTALL_RPATH ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic                                                    \
                                             -pedantic-errors -Wcast-align                                              \
                                             -Wcast-qual -Wconversion                                                   \
@@ -46,8 +42,9 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic             
 
 # library output
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-include_directories(SYSTEM "${CMAKE_PREFIX_PATH}/include")
-link_directories(${CMAKE_BINARY_DIR}/build/lib)
+set(CMAKE_LIBRARY_INCLUDE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
+
+link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 find_package(Threads REQUIRED)
 
@@ -72,7 +69,8 @@ file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h" "tests/*.hpp")
 file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
 
 add_executable(tests ${TESTS_SOURCE_FILES})
-target_link_libraries(tests ${PROJECT_NAME})
+target_link_libraries(tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
+target_include_directories(tests PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
 set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set_target_properties(tests ${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 

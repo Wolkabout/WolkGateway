@@ -17,10 +17,7 @@ project(WolkGateway C CXX)
 
 set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-set(CMAKE_INSTALL_RPATH ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic                                                    \
@@ -59,7 +56,7 @@ file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
 
 add_library(${PROJECT_NAME} SHARED ${LIB_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} WolkAboutCore z PocoUtil PocoCrypto PocoData PocoDataSQLite PocoFoundation Threads::Threads)
-set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 
 # Tests
 include_directories("tests")
@@ -71,7 +68,7 @@ add_executable(tests ${TESTS_SOURCE_FILES})
 target_link_libraries(tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
 target_include_directories(tests PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
 set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set_target_properties(tests ${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+set_target_properties(tests ${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 
 # WolkGateway executable
 file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
@@ -79,7 +76,7 @@ file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
 
 add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME}App WolkGateway)
-set_target_properties(${PROJECT_NAME}App ${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+set_target_properties(${PROJECT_NAME}App ${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 
 # CMake utilities
 add_subdirectory(cmake)

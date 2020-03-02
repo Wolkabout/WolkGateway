@@ -5,6 +5,11 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.1.0**
+- [IMPROVEMENT] Optimization of dependencies with new SDK version, and removal of `conan`
+- [IMPROVEMENT] GTest is now being used from the SDK
+- [BUGFIX] MQTT client does not keep a thread running on 100% CPU usage if connection is lost
+
 **Version 4.0.0**
 - [IMPROVEMENT] Separated file transfer from firmware update
 - [IMPROVEMENT] Updated JSON communication protocol to be in-line with WolkAbout IoT Platform version 19.03.2

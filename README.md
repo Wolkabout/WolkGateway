@@ -30,13 +30,13 @@ Following tools are required in order to build WolkGateway
 * CMake - version 3.5 or later
 * Conan
 * Mosquitto MQTT broker
-* Python
-* Python PIP
+* OpenSSL
+* Poco
 * Optional: Docker CE (For running WolkGateway inside Docker container)
 
 Former can be installed on Debian based system from terminal by invoking:
 
-`apt-get install mosquitto cmake python python-pip && python -m pip install conan`
+`apt-get install mosquitto cmake libssl-dev libpoco-dev`
 
 Building
 ------

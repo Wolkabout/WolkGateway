@@ -28,7 +28,6 @@ Prerequisite
 Following tools are required in order to build WolkGateway
 
 * CMake - version 3.5 or later
-* Conan
 * Mosquitto MQTT broker
 * OpenSSL
 * Poco

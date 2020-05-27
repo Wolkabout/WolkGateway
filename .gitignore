@@ -43,3 +43,7 @@ out
 
 # CLion
 .idea
+*.log
+*.deb
+*.zip
+release*/

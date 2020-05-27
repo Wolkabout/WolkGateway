@@ -17,7 +17,7 @@
 #ifndef DEVICEREPOSITORYIMPL_H
 #define DEVICEREPOSITORYIMPL_H
 
-#include "Poco/Data/Session.h"
+#include <Poco/Data/Session.h>
 #include "repository/DeviceRepository.h"
 
 #include <map>

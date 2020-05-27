@@ -1,9 +1,7 @@
 #!/bin/bash
 
 if [ "$1" = "purge" ] ; then
-	rm -rf /etc/wolkGateway
-	rm -rf /etc/systemd/system/wolk_gateway.service
-	systemctl daemon-reload
+	rm -rf /etc/wolkGateway	
 fi
 
 #DEBHELPER#

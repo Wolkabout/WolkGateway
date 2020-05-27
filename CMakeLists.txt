@@ -93,16 +93,8 @@ install(TARGETS ${PROJECT_NAME}App DESTINATION /usr/bin)
 # Place the config files and service unit file.
 install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
-install(FILES out/wolk_gateway.service DESTINATION /etc/systemd/system
-        PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install(CODE "EXECUTE_PROCESS(COMMAND bash -c \"sudo systemctl daemon-reload\")")
-
-install(CODE "MESSAGE(\"Installed WolkGateway.
-                        Systemctl .service file has been placed, and you can
-                        start the service by invoking 'sudo systemctl wolk_gateway start',
-                        or 'sudo systemctl wolk_gateway enable' to allow it to run on boot.
-                        Configuration files for the module are placed in /etc/wolkGateway.\")")
+install(CODE "MESSAGE(\"Installed WolkGateway. Configuration files for the module are placed in /etc/wolkGateway.\")")
 
 # CMake utilities
 add_subdirectory(cmake)

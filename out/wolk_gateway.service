@@ -1,0 +1,12 @@
+[Unit]
+ Description=Gateway for connecting non-IP enabled devices to WolkAbout IoT Platform
+ After=multi-user.target
+
+[Service]
+ Type=idle
+ WorkingDirectory=/usr/bin/
+ ExecStart=/usr/bin/WolkGatewayApp /etc/wolkGateway/gatewayConfiguration.json
+ Restart=always
+
+[Install]
+ WantedBy=multi-user.target

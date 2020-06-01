@@ -64,11 +64,15 @@ include_directories("tests")
 file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h" "tests/*.hpp")
 file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
 
-add_executable(tests ${TESTS_SOURCE_FILES})
-target_link_libraries(tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
-target_include_directories(tests PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
-set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set_target_properties(tests ${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES})
+target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
+target_include_directories(${PROJECT_NAME}Tests PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
+set_target_properties(${PROJECT_NAME}Tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+set_target_properties(${PROJECT_NAME}Tests PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+add_custom_target(tests ${PROJECT_NAME}Tests)
+add_test(gtest ${PROJECT_NAME}Tests)
 
 # WolkGateway executable
 file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
@@ -77,6 +81,20 @@ file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
 add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME}App WolkGateway)
 set_target_properties(${PROJECT_NAME}App ${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+
+# Install target
+install(DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} DESTINATION /usr
+        FILES_MATCHING
+        PATTERN "*so*")
+
+# Place the executable file in /usr/bin
+install(TARGETS ${PROJECT_NAME}App DESTINATION /usr/bin)
+
+# Place the config files and service unit file.
+install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
+        PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
+
+install(CODE "MESSAGE(\"Installed WolkGateway. Configuration files for the module are placed in /etc/wolkGateway.\")")
 
 # CMake utilities
 add_subdirectory(cmake)

@@ -1,0 +1,5 @@
+wolkgateway (4.2.0) stable; urgency=medium
+
+  * Polished DEB release, automated DEB creation for both amd64/armv7l
+
+ -- Wolkabout ELab <elab@wolkabout.com>  Wed, 27 May 2020 00:00:00 +0100

@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.2.0**
+- [IMPROVEMENT] - Automated .zip/.deb creation for release. This utilizes either local fs/Docker to create necessary things.
+
 **Version 4.1.0**
 - [IMPROVEMENT] Optimization of dependencies with new SDK version, and removal of `conan`
 - [IMPROVEMENT] GTest is now being used from the SDK

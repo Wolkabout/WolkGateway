@@ -45,11 +45,15 @@ Before proceeding with steps from this section complete steps listed in 'Prerequ
 1. Generate build system by invoking `./configure` from within WolkGateway base directory.
 Build system is generated to `out` directory
 2. Change current directory to `out`. Following steps are performed from within this directory
-3. Build WolkGateway by invoking `make all -j6`
-4. Run WolkGateway tests by invoking `tests`
+3. Build WolkGateway by invoking `make all -j$(nproc)`
+4. Run WolkGateway tests by invoking `make tests -j$(nproc)`, and if you want to run them again, just execute `./WolkGatewayTests`, since you don't have to compile them again.
 
 Running
 ------
+
+You can do `sudo make install`, which installs the program on your system, adding a `systemctl` unit file
+and placing the configuration in `/etc/wolkGateway`. After that, you can use `sudo service wolk_gateway status/start/stop`,
+and skip to the next paragraph (next section is about running it manually).
 
 Before proceeding with steps from this section complete steps listed in 'Building' section.
 

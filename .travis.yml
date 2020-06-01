@@ -1,0 +1,35 @@
+sudo: false
+
+jobs:
+  include:
+    - stage: compile
+      dist: xenial
+      language: cpp
+      addons:
+        apt:
+          packages:
+            - libpoco-dev
+            - libssl-dev
+            - cmake
+            - gcc
+            - g++
+      script:
+        - ./configure.sh
+        - pushd out
+        - make -j$(nproc)
+    - stage: test
+      dist: xenial
+      language: cpp
+      addons:
+        apt:
+          packages:
+            - libpoco-dev
+            - libssl-dev
+            - cmake
+            - gcc
+            - g++
+      script:
+        - ./configure.sh
+        - pushd out
+        - make -j$(nproc)
+        - make tests -j$(nproc)

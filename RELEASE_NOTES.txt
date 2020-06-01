@@ -7,7 +7,6 @@ WolkGateway bridges communication between WolkAbout IoT platform and multiple de
 
 **Version 4.2.0**
 - [IMPROVEMENT] - Automated .zip/.deb creation for release. This utilizes either local fs/Docker to create necessary things.
-                  Plan is to include these in .travis.yml for automatic master release creation.
 
 **Version 4.1.0**
 - [IMPROVEMENT] Optimization of dependencies with new SDK version, and removal of `conan`

@@ -46,7 +46,7 @@ Before proceeding with steps from this section complete steps listed in 'Prerequ
 Build system is generated to `out` directory
 2. Change current directory to `out`. Following steps are performed from within this directory
 3. Build WolkGateway by invoking `make all -j$(nproc)`
-4. Run WolkGateway tests by invoking `make tests -j$(nproc)` and `./WolkGatewayTests`.
+4. Run WolkGateway tests by invoking `make tests -j$(nproc)`, and if you want to run them again, just execute `./WolkGatewayTests`, since you don't have to compile them again.
 
 Running
 ------

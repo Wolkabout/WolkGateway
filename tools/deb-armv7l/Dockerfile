@@ -1,4 +1,4 @@
-FROM raspbian/stretch:latest
+FROM raspbian/buster:latest
 
 WORKDIR /build
 

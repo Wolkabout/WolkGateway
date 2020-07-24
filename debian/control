@@ -8,5 +8,5 @@ Standards-Version: 4.1.2
 Package: wolkgateway
 Architecture: any
 Section: main
-Depends: ${shlibs:Depends}, ${misc:Depends}, libssl1.0.0 | libssl1.1 | libssl-dev | libpoco-dev (>= 1.7)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl1.0.0 | libssl1.1 | libssl-dev, libpococrypto46 | libpococrypto50 | libpococrypto60 | libpococrypto62, libpocodata46 | libpocodata50 | libpocodata60 | libpocodata62, libpocodatasqlite46 | libpocodatasqlite50 | libpocodatasqlite60 | libpocodatasqlite62, libpocofoundation46 | libpocofoundation50 | libpocofoundation60 | libpocofoundation62, libpocoutil46 | libpocoutil50 | libpocoutil60 | libpocoutil62
 Description: WolkGateway main connectivity module for connecting modules to Wolkabout IoT Platform.

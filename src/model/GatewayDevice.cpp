@@ -21,7 +21,7 @@
 namespace wolkabout
 {
 const std::string GatewayDevice::FIRMWARE_UPDATE_TYPE = "DFU";
-const std::string GatewayDevice::SUBDEVICE_MANAGEMENT_PARAMETER = "subdeviceManagement";
+const std::string GatewayDevice::SUBDEVICE_MANAGEMENT_PARAMETER = "SUB_DEVICE_MANAGEMENT";
 const std::string GatewayDevice::GATEWAY_SUBDEVICE_MANAGEMENT = "GATEWAY";
 const std::string GatewayDevice::PLATFORM_SUBDEVICE_MANAGEMENT = "PLATFORM";
 const std::string GatewayDevice::FIRMWARE_UPDATE_PARAMETER = "supportsFirmwareUpdate";

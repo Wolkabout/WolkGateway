@@ -1,5 +1,5 @@
-wolkgateway (4.2.1) stable; urgency=medium
+wolkgateway (4.2.2) stable; urgency=medium
 
- * Fixed the message sent to update the gateway on initialization.
+ * Fixed the integrated service file to point to the certificate file properly.
   
- -- Wolkabout ELab <elab@wolkabout.com>  Mod, 7 Sep 2020 16:30:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Tue, 27 Oct 2020 14:00:00 +0100

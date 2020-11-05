@@ -63,8 +63,8 @@ WolkBuilder Wolk::newBuilder(GatewayDevice device)
 
 void Wolk::connect()
 {
-    connectToPlatform();
-    connectToDevices();
+    connectToPlatform(true);
+    connectToDevices(true);
 }
 
 void Wolk::disconnect()
@@ -278,7 +278,7 @@ void Wolk::platformDisconnected()
 {
     addToCommandBuffer([=] {
         notifyPlatformDisonnected();
-        connectToPlatform();
+        connectToPlatform(true);
     });
 }
 
@@ -286,7 +286,7 @@ void Wolk::devicesDisconnected()
 {
     addToCommandBuffer([=] {
         notifyDevicesDisonnected();
-        connectToDevices();
+        connectToDevices(true);
     });
 }
 
@@ -365,6 +365,8 @@ void Wolk::updateGatewayAndDeleteDevices()
 
 void Wolk::notifyPlatformConnected()
 {
+    LOG(INFO) << "Connection to platform established";
+
     m_platformPublisher->connected();
 
     if (m_keepAliveService)
@@ -375,6 +377,8 @@ void Wolk::notifyPlatformConnected()
 
 void Wolk::notifyPlatformDisonnected()
 {
+    LOG(INFO) << "Connection to platform lost";
+
     m_platformPublisher->disconnected();
 
     if (m_keepAliveService)
@@ -385,6 +389,8 @@ void Wolk::notifyPlatformDisonnected()
 
 void Wolk::notifyDevicesConnected()
 {
+    LOG(INFO) << "Connection to local bus established";
+
     m_devicePublisher->connected();
 
     m_deviceStatusService->connected();
@@ -392,14 +398,19 @@ void Wolk::notifyDevicesConnected()
 
 void Wolk::notifyDevicesDisonnected()
 {
+    LOG(INFO) << "Connection to local bus lost";
+
     m_devicePublisher->disconnected();
 
     m_deviceStatusService->disconnected();
 }
 
-void Wolk::connectToPlatform()
+void Wolk::connectToPlatform(bool firstTime)
 {
     addToCommandBuffer([=]() -> void {
+        if (firstTime)
+            LOG(INFO) << "Connecting to platform...";
+
         if (m_platformConnectivityService->connect())
         {
             notifyPlatformConnected();
@@ -414,23 +425,32 @@ void Wolk::connectToPlatform()
         }
         else
         {
+            if (firstTime)
+                LOG(INFO) << "Failed to connect to platform";
+
             std::this_thread::sleep_for(std::chrono::milliseconds(RECONNECT_DELAY_MSEC));
-            connectToPlatform();
+            connectToPlatform(false);
         }
     });
 }
 
-void Wolk::connectToDevices()
+void Wolk::connectToDevices(bool firstTime)
 {
     addToCommandBuffer([=]() -> void {
+        if (firstTime)
+            LOG(INFO) << "Connecting to local bus...";
+
         if (m_deviceConnectivityService->connect())
         {
             notifyDevicesConnected();
         }
         else
         {
+            if (firstTime)
+                LOG(INFO) << "Failed to connect to local bus";
+
             std::this_thread::sleep_for(std::chrono::milliseconds(RECONNECT_DELAY_MSEC));
-            connectToDevices();
+            connectToDevices(false);
         }
     });
 }

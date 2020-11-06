@@ -2,7 +2,7 @@ Source: wolkgateway
 Section: main
 Priority: optional
 Maintainer: Wolkabout ELab <elab@wolkabout.com>
-Build-Depends: debhelper (>= 9)
+Build-Depends: debhelper (>= 9), libpoco-dev
 Standards-Version: 4.1.2
 
 Package: wolkgateway

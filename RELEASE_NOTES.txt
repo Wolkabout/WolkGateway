@@ -9,7 +9,7 @@ WolkGateway bridges communication between WolkAbout IoT platform and multiple de
 - [BUGFIX] - Fixed the integrated service file to point to the certificate file properly.
 
 **Version 4.2.2**
-- [BUGFIX] - Fixed the integrated service file to point to the certificate file properly.
+- [BUGFIX] Use latest SDK with fixed topics for gateway data and file transfer.
 
 **Version 4.2.1**
 - [BUGFIX] Fixed the message sent to update the gateway on initialization.
@@ -32,4 +32,4 @@ WolkGateway bridges communication between WolkAbout IoT platform and multiple de
 
 **Version 2.1.1**
 - [BUGFIX] Removed erroneous compiler flags
-- [IMPROVEMENT] Trust store is optimal for mqtt connectivity service
+- [IMPROVEMENT] Trust store is optional for mqtt connectivity service

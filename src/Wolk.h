@@ -249,8 +249,8 @@ private:
     void notifyDevicesConnected();
     void notifyDevicesDisonnected();
 
-    void connectToPlatform();
-    void connectToDevices();
+    void connectToPlatform(bool firstTime = false);
+    void connectToDevices(bool firstTime = false);
 
     void requestActuatorStatusesForDevices();
     void requestActuatorStatusesForDevice(const std::string& deviceKey);

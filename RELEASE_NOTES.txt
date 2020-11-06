@@ -12,10 +12,10 @@ WolkGateway bridges communication between WolkAbout IoT platform and multiple de
 - [BUGFIX] - Fixed the integrated service file to point to the certificate file properly.
 
 **Version 4.2.1**
-- [BUGFIX] - Fixed the message sent to update the gateway on initialization.
+- [BUGFIX] Fixed the message sent to update the gateway on initialization.
 
 **Version 4.2.0**
-- [IMPROVEMENT] - Automated .zip/.deb creation for release. This utilizes either local fs/Docker to create necessary things.
+- [IMPROVEMENT] Automated .zip/.deb creation for release. This utilizes either local fs/Docker to create necessary things.
 
 **Version 4.1.0**
 - [IMPROVEMENT] Optimization of dependencies with new SDK version, and removal of `conan`

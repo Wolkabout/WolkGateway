@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.2.3**
+- [BUGFIX] - Fixed the integrated service file to point to the certificate file properly.
+
 **Version 4.2.2**
 - [BUGFIX] - Fixed the integrated service file to point to the certificate file properly.
 

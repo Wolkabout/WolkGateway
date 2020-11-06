@@ -8,5 +8,5 @@ Standards-Version: 4.1.2
 Package: wolkgateway
 Architecture: any
 Section: main
-Depends: ${shlibs:Depends}, ${misc:Depends}, libssl1.0.0 | libssl1.1
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl1.0.0 | libssl1.1, libpoco-dev
 Description: WolkGateway main connectivity module for connecting modules to Wolkabout IoT Platform.

@@ -153,37 +153,25 @@ void GatewayUpdateService::handleUpdateResponse(const GatewayUpdateResponse& res
     else
     {
         const auto updateFailureReason = [&]() -> std::string {
-            if (updateResult == GatewayUpdateResponse::Result::ERROR_KEY_CONFLICT)
-            {
-                return "Device with given key already registered";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_INVALID_DTO)
-            {
-                return "Rejected update DTO";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_NOT_A_GATEWAY)
-            {
-                return "Device is not a gateway";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_VALIDATION_ERROR)
-            {
-                return "Faulty update request";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_KEY_MISSING)
-            {
-                return "Key missing from update request";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_GATEWAY_NOT_FOUND)
+            if (updateResult == GatewayUpdateResponse::Result::GATEWAY_NOT_FOUND)
             {
                 return "Gateway has been deleted on platform";
             }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_SUBDEVICE_MANAGEMENT_CHANGE_NOT_ALLOWED)
+            else if (updateResult == GatewayUpdateResponse::Result::VALIDATION_ERROR)
+            {
+                return "Faulty update request";
+            }
+            else if (updateResult == GatewayUpdateResponse::Result::GATEWAY_UPDATE_FORBIDDEN)
+            {
+                return "Performing gateway update is not allowed more than once";
+            }
+            else if (updateResult == GatewayUpdateResponse::Result::SUBDEVICE_MANAGEMENT_FORBIDDEN)
             {
                 return "Changing subdevice management is not allowed";
             }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_GATEWAY_UPDATE_FORBIDDEN)
+            else if (updateResult == GatewayUpdateResponse::Result::MISSING_UNIT)
             {
-                return "Performing gateway update is not allowed more than once";
+                return "Missing unit in device DTO";
             }
             else if (updateResult == GatewayUpdateResponse::Result::ERROR_UNKNOWN)
             {

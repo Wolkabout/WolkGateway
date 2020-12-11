@@ -279,38 +279,37 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
     else
     {
         const auto registrationFailureReason = [&]() -> std::string {
-            if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_KEY_CONFLICT)
+            if (registrationResult == SubdeviceRegistrationResponse::Result::GATEWAY_NOT_FOUND)
             {
-                return "Device with given key already registered";
+                return "Gateway has been deleted on platform";
             }
-            else if (registrationResult ==
-                     SubdeviceRegistrationResponse::Result::ERROR_MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED)
-            {
-                return "Maximum number of devices registered";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_INVALID_DTO)
-            {
-                return "Rejected registration DTO";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_NOT_A_GATEWAY)
-            {
-                return "Device is not a gateway";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_VALIDATION_ERROR)
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::VALIDATION_ERROR)
             {
                 return "Faulty registration request";
             }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_KEY_MISSING)
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::INVALID_SUBDEVICE_DTO)
             {
-                return "Key missing from registration request";
+                return "Rejected registration DTO";
             }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_SUBDEVICE_MANAGEMENT_FORBIDDEN)
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::SUBDEVICE_MANAGEMENT_FORBIDDEN)
             {
                 return "Subdevice management is forbidden for this gateway";
             }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_GATEWAY_NOT_FOUND)
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED)
             {
-                return "Gateway has been deleted on platform";
+                return "Maximum number of devices registered";
+            }
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::NOT_A_GATEWAY)
+            {
+                return "Device is not a gateway";
+            }
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::KEY_CONFLICT)
+            {
+                return "Device with given key already registered";
+            }
+            else if (registrationResult == SubdeviceRegistrationResponse::Result::MISSING_UNIT)
+            {
+                return "Missing unit in device DTO";
             }
             else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_UNKNOWN)
             {

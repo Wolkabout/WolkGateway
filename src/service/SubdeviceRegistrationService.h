@@ -20,7 +20,6 @@
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "OutboundRetryMessageHandler.h"
-#include "model/SubdeviceRegistrationRequest.h"
 
 #include <map>
 #include <memory>
@@ -36,7 +35,10 @@ class GatewaySubdeviceRegistrationProtocol;
 class Message;
 class OutboundMessageHandler;
 class RegistrationProtocol;
+class SubdeviceRegistrationRequest;
 class SubdeviceRegistrationResponse;
+class SubdeviceUpdateRequest;
+class SubdeviceUpdateResponse;
 
 class SubdeviceRegistrationService : public DeviceMessageListener, public PlatformMessageListener
 {
@@ -46,6 +48,8 @@ public:
                                  DeviceRepository& deviceRepository,
                                  OutboundMessageHandler& outboundPlatformMessageHandler,
                                  OutboundMessageHandler& outboundDeviceMessageHandler);
+
+    ~SubdeviceRegistrationService();
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
@@ -61,6 +65,8 @@ public:
 
     virtual void registerPostponedDevices();
 
+    virtual void updatePostponedDevices();
+
 protected:
     void invokeOnDeviceRegisteredListener(const std::string& deviceKey) const;
 
@@ -70,8 +76,12 @@ private:
     void handleSubdeviceRegistrationResponse(const std::string& deviceKey,
                                              const SubdeviceRegistrationResponse& response);
 
+    void handleSubdeviceUpdateRequest(const std::string& deviceKey, const SubdeviceUpdateRequest& request);
+    void handleSubdeviceUpdateResponse(const std::string& deviceKey, const SubdeviceUpdateResponse& response);
+
     void addToPostponedSubdeviceRegistrationRequests(const std::string& deviceKey,
                                                      const SubdeviceRegistrationRequest& request);
+    void addToPostponedSubdeviceUpdateRequests(const std::string& deviceKey, const SubdeviceUpdateRequest& request);
 
     const std::string m_gatewayKey;
     RegistrationProtocol& m_protocol;
@@ -91,6 +101,9 @@ private:
 
     std::mutex m_devicesWithPostponedRegistrationMutex;
     std::map<std::string, std::unique_ptr<SubdeviceRegistrationRequest>> m_devicesWithPostponedRegistration;
+
+    std::mutex m_devicesWithPostponedUpdateMutex;
+    std::map<std::string, std::unique_ptr<SubdeviceUpdateRequest>> m_devicesWithPostponedUpdate;
 };
 }    // namespace wolkabout
 

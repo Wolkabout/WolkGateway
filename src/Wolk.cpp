@@ -303,6 +303,7 @@ void Wolk::gatewayUpdated()
         if (m_subdeviceRegistrationService && m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
         {
             m_subdeviceRegistrationService->registerPostponedDevices();
+            m_subdeviceRegistrationService->updatePostponedDevices();
         }
     });
 }

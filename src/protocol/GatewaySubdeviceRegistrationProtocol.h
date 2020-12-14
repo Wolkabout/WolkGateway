@@ -28,16 +28,21 @@ namespace wolkabout
 class Message;
 class SubdeviceRegistrationRequest;
 class SubdeviceRegistrationResponse;
+class SubdeviceUpdateRequest;
+class SubdeviceUpdateResponse;
 
 class GatewaySubdeviceRegistrationProtocol : public GatewayProtocol
 {
 public:
     virtual std::unique_ptr<Message> makeMessage(const SubdeviceRegistrationResponse& request) const = 0;
+    virtual std::unique_ptr<Message> makeMessage(const SubdeviceUpdateResponse& request) const = 0;
 
     virtual std::unique_ptr<SubdeviceRegistrationRequest> makeSubdeviceRegistrationRequest(
       const Message& message) const = 0;
+    virtual std::unique_ptr<SubdeviceUpdateRequest> makeSubdeviceUpdateRequest(const Message& message) const = 0;
 
     virtual bool isSubdeviceRegistrationRequest(const Message& message) const = 0;
+    virtual bool isSubdeviceUpdateRequest(const Message& message) const = 0;
 };
 }    // namespace wolkabout
 

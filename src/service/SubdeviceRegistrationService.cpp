@@ -21,6 +21,8 @@
 #include "model/SubdeviceDeletionRequest.h"
 #include "model/SubdeviceRegistrationRequest.h"
 #include "model/SubdeviceRegistrationResponse.h"
+#include "model/SubdeviceUpdateRequest.h"
+#include "model/SubdeviceUpdateResponse.h"
 #include "protocol/GatewaySubdeviceRegistrationProtocol.h"
 #include "protocol/RegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
@@ -58,6 +60,8 @@ SubdeviceRegistrationService::SubdeviceRegistrationService(std::string gatewayKe
 {
 }
 
+SubdeviceRegistrationService::~SubdeviceRegistrationService() = default;
+
 void SubdeviceRegistrationService::platformMessageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
@@ -76,6 +80,17 @@ void SubdeviceRegistrationService::platformMessageReceived(std::shared_ptr<Messa
         }
         handleSubdeviceRegistrationResponse(response.get()->getSubdeviceKey(), *response);
     }
+    else if (m_protocol.isSubdeviceUpdateResponse(*message))
+    {
+        const auto response = m_protocol.makeSubdeviceUpdateResponse(*message);
+        if (!response)
+        {
+            LOG(ERROR) << "SubdeviceRegistrationService: Device update response could not be deserialized. Channel: '"
+                       << message->getChannel() << "' Payload: '" << message->getContent() << "'";
+            return;
+        }
+        handleSubdeviceUpdateResponse(response.get()->getSubdeviceKey(), *response);
+    }
     else if (m_protocol.isSubdeviceDeletionResponse(*message))
     {
         LOG(INFO) << "SubdeviceRegistrationService: Received subdevice deletion response (" << message->getChannel()
@@ -92,30 +107,51 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
 {
     LOG(TRACE) << METHOD_INFO;
 
-    if (!m_gatewayProtocol.isSubdeviceRegistrationRequest(*message))
+    if (m_gatewayProtocol.isSubdeviceRegistrationRequest(*message))
+    {
+        auto request = m_gatewayProtocol.makeSubdeviceRegistrationRequest(*message);
+        if (!request)
+        {
+            LOG(ERROR)
+              << "SubdeviceRegistrationService: Subdevice registration request could not be deserialized. Channel: '"
+              << message->getChannel() << "' Payload: '" << message->getContent() << "'";
+            return;
+        }
+
+        auto deviceKey = request->getSubdeviceKey();
+        if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
+        {
+            addToPostponedSubdeviceRegistrationRequests(deviceKey, *request);
+            return;
+        }
+
+        handleSubdeviceRegistrationRequest(deviceKey, *request);
+    }
+    else if (m_gatewayProtocol.isSubdeviceUpdateRequest(*message))
+    {
+        auto request = m_gatewayProtocol.makeSubdeviceUpdateRequest(*message);
+        if (!request)
+        {
+            LOG(ERROR) << "SubdeviceRegistrationService: Subdevice update request could not be deserialized. Channel: '"
+                       << message->getChannel() << "' Payload: '" << message->getContent() << "'";
+            return;
+        }
+
+        auto deviceKey = request->getSubdeviceKey();
+        if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
+        {
+            addToPostponedSubdeviceUpdateRequests(deviceKey, *request);
+            return;
+        }
+
+        handleSubdeviceUpdateRequest(deviceKey, *request);
+    }
+    else
     {
         LOG(WARN) << "SubdeviceRegistrationService: unhandled message on channel '" << message->getChannel()
                   << "'. Unsupported message type";
         return;
     }
-
-    auto request = m_gatewayProtocol.makeSubdeviceRegistrationRequest(*message);
-    if (!request)
-    {
-        LOG(ERROR)
-          << "SubdeviceRegistrationService: Subdevice registration request could not be deserialized. Channel: '"
-          << message->getChannel() << "' Payload: '" << message->getContent() << "'";
-        return;
-    }
-
-    auto deviceKey = request->getSubdeviceKey();
-    if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
-    {
-        addToPostponedSubdeviceRegistrationRequests(deviceKey, *request);
-        return;
-    }
-
-    handleSubdeviceRegistrationRequest(deviceKey, *request);
 }
 
 const GatewayProtocol& SubdeviceRegistrationService::getGatewayProtocol() const
@@ -194,6 +230,23 @@ void SubdeviceRegistrationService::registerPostponedDevices()
         }
 
         m_devicesWithPostponedRegistration.clear();
+    }
+}
+
+void SubdeviceRegistrationService::updatePostponedDevices()
+{
+    std::lock_guard<decltype(m_devicesWithPostponedUpdateMutex)> devicesWithPostponedRegistrationLock(
+      m_devicesWithPostponedUpdateMutex);
+    if (!m_devicesWithPostponedUpdate.empty())
+    {
+        LOG(INFO) << "SubdeviceRegistrationService: Processing postponed device update requests";
+
+        for (const auto& deviceWithPostponedUpdate : m_devicesWithPostponedUpdate)
+        {
+            handleSubdeviceUpdateRequest(deviceWithPostponedUpdate.first, *deviceWithPostponedUpdate.second);
+        }
+
+        m_devicesWithPostponedUpdate.clear();
     }
 }
 
@@ -337,6 +390,16 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
     m_outboundDeviceMessageHandler.addMessage(registrationResponseMessage);
 }
 
+void SubdeviceRegistrationService::handleSubdeviceUpdateRequest(const std::string& deviceKey,
+                                                                const SubdeviceUpdateRequest& request)
+{
+}
+
+void SubdeviceRegistrationService::handleSubdeviceUpdateResponse(const std::string& deviceKey,
+                                                                 const SubdeviceUpdateResponse& response)
+{
+}
+
 void SubdeviceRegistrationService::addToPostponedSubdeviceRegistrationRequests(
   const std::string& deviceKey, const wolkabout::SubdeviceRegistrationRequest& request)
 {
@@ -349,5 +412,18 @@ void SubdeviceRegistrationService::addToPostponedSubdeviceRegistrationRequests(
     auto postponedDeviceRegistration =
       std::unique_ptr<SubdeviceRegistrationRequest>(new SubdeviceRegistrationRequest(request));
     m_devicesWithPostponedRegistration[deviceKey] = std::move(postponedDeviceRegistration);
+}
+
+void SubdeviceRegistrationService::addToPostponedSubdeviceUpdateRequests(const std::string& deviceKey,
+                                                                         const SubdeviceUpdateRequest& request)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    LOG(INFO) << "SubdeviceRegistrationService: Postponing update of device with key '" << deviceKey
+              << "'. Waiting for gateway to be updated";
+
+    std::lock_guard<decltype(m_devicesWithPostponedUpdateMutex)> l(m_devicesWithPostponedUpdateMutex);
+    auto postponedDeviceUpdate = std::unique_ptr<SubdeviceUpdateRequest>(new SubdeviceUpdateRequest(request));
+    m_devicesWithPostponedUpdate[deviceKey] = std::move(postponedDeviceUpdate);
 }
 }    // namespace wolkabout

@@ -317,7 +317,7 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
     }
 
     const auto registrationResult = response.getResult();
-    if (registrationResult == SubdeviceRegistrationResponse::Result::OK)
+    if (registrationResult.getCode() == PlatformResult::Code::OK)
     {
         LOG(INFO) << "SubdeviceRegistrationService: Device with key '" << deviceKey
                   << "' successfully registered on platform";
@@ -331,50 +331,9 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
     }
     else
     {
-        const auto registrationFailureReason = [&]() -> std::string {
-            if (registrationResult == SubdeviceRegistrationResponse::Result::GATEWAY_NOT_FOUND)
-            {
-                return "Gateway has been deleted on platform";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::VALIDATION_ERROR)
-            {
-                return "Faulty registration request";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::INVALID_SUBDEVICE_DTO)
-            {
-                return "Rejected registration DTO";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::SUBDEVICE_MANAGEMENT_FORBIDDEN)
-            {
-                return "Subdevice management is forbidden for this gateway";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::MAXIMUM_NUMBER_OF_DEVICES_EXCEEDED)
-            {
-                return "Maximum number of devices registered";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::NOT_A_GATEWAY)
-            {
-                return "Device is not a gateway";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::KEY_CONFLICT)
-            {
-                return "Device with given key already registered";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::MISSING_UNIT)
-            {
-                return "Missing unit in device DTO";
-            }
-            else if (registrationResult == SubdeviceRegistrationResponse::Result::ERROR_UNKNOWN)
-            {
-                return "Unknown subdevice registration error";
-            }
-
-            assert(false && "Unknown subdevice registration error");
-            return "Unknown";
-        }();
-
         LOG(ERROR) << "SubdeviceRegistrationService: Unable to register device with key '" << deviceKey
-                   << "'. Reason: '" << registrationFailureReason << "' Description: " << response.getDescription();
+                   << "'. Reason: '" << response.getResult().getMessage()
+                   << "' Description: " << response.getResult().getDescription();
     }
 
     m_devicesAwaitingRegistrationResponse.erase(deviceKey);

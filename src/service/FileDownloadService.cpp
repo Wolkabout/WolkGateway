@@ -124,7 +124,7 @@ void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> messa
     auto listConfirmResult = m_protocol.makeFileListConfirm(*message);
     if (listConfirmResult)
     {
-        LOG(DEBUG) << "Received file list confirm: " << to_string(*listConfirmResult);
+        LOG(DEBUG) << "Received file list confirm: " << listConfirmResult->getMessage();
         return;
     }
 

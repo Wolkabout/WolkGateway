@@ -170,11 +170,24 @@ void SubdeviceRegistrationService::onDeviceRegistered(
     m_onDeviceRegistered = onDeviceRegistered;
 }
 
+void SubdeviceRegistrationService::onDeviceUpdated(std::function<void(const std::string&)> onDeviceUpdated)
+{
+    m_onDeviceUpdated = onDeviceUpdated;
+}
+
 void SubdeviceRegistrationService::invokeOnDeviceRegisteredListener(const std::string& deviceKey) const
 {
     if (m_onDeviceRegistered)
     {
         m_onDeviceRegistered(deviceKey);
+    }
+}
+
+void SubdeviceRegistrationService::invokeOnDeviceUpdatedListener(const std::string& deviceKey) const
+{
+    if (m_onDeviceUpdated)
+    {
+        m_onDeviceUpdated(deviceKey);
     }
 }
 
@@ -352,11 +365,118 @@ void SubdeviceRegistrationService::handleSubdeviceRegistrationResponse(const std
 void SubdeviceRegistrationService::handleSubdeviceUpdateRequest(const std::string& deviceKey,
                                                                 const SubdeviceUpdateRequest& request)
 {
+    LOG(TRACE) << METHOD_INFO;
+
+    if (deviceKey == m_gatewayKey)
+    {
+        LOG(ERROR) << "SubdeviceRegistrationService: Skipping update of gateway";
+        return;
+    }
+
+    LOG(INFO) << "SubdeviceRegistrationService: Handling update request for device with key '" << deviceKey << "'";
+
+    auto savedDevice = m_deviceRepository.findByDeviceKey(deviceKey);
+
+    if (!savedDevice)
+    {
+        LOG(WARN) << "SubdeviceRegistrationService: Ignoring device update request for device with key '" << deviceKey
+                  << "'. Device is not registered";
+        return;
+    }
+
+    if (containsSubset(savedDevice->getTemplate().getAlarms(), request.getAlarms()) &&
+        containsSubset(savedDevice->getTemplate().getSensors(), request.getSensors()) &&
+        containsSubset(savedDevice->getTemplate().getActuators(), request.getActuators()) &&
+        containsSubset(savedDevice->getTemplate().getConfigurations(), request.getConfigurations()))
+    {
+        LOG(WARN) << "SubdeviceRegistrationService: Ignoring device update request for device with key '" << deviceKey
+                  << "'. Already updated device with given assets";
+        return;
+    }
+
+    std::lock_guard<decltype(m_devicesAwaitingUpdateResponseMutex)> l{m_devicesAwaitingUpdateResponseMutex};
+    auto device = std::unique_ptr<DeviceTemplate>(new DeviceTemplate(request.getConfigurations(), request.getSensors(),
+                                                                     request.getAlarms(), request.getActuators()));
+    m_devicesAwaitingUpdateResponse[deviceKey] = std::move(device);
+
+    std::shared_ptr<Message> updateRequest = m_protocol.makeMessage(m_gatewayKey, request);
+    if (!updateRequest)
+    {
+        LOG(WARN) << "SubdeviceRegistrationService: Unable to create update request message";
+        return;
+    }
+
+    auto responseChannel = m_protocol.getResponseChannel(m_gatewayKey, *updateRequest);
+    RetryMessageStruct retryMessage{updateRequest, responseChannel,
+                                    [=](std::shared_ptr<Message>) {
+                                        LOG(ERROR) << "Failed to update device with key: " << deviceKey
+                                                   << ", no response from platform";
+                                    },
+                                    RETRY_COUNT, RETRY_TIMEOUT};
+    m_platformRetryMessageHandler.addMessage(retryMessage);
 }
 
 void SubdeviceRegistrationService::handleSubdeviceUpdateResponse(const std::string& deviceKey,
                                                                  const SubdeviceUpdateResponse& response)
 {
+    LOG(TRACE) << METHOD_INFO;
+
+    if (deviceKey == m_gatewayKey)
+    {
+        LOG(ERROR) << "SubdeviceRegistrationService: Ignoring update response for gateway";
+        return;
+    }
+
+    std::lock_guard<decltype(m_devicesAwaitingUpdateResponseMutex)> l(m_devicesAwaitingUpdateResponseMutex);
+    if (m_devicesAwaitingUpdateResponse.find(deviceKey) == m_devicesAwaitingUpdateResponse.end())
+    {
+        LOG(ERROR) << "SubdeviceRegistrationService: Ignoring unexpected device update response for device with key '"
+                   << deviceKey << "'";
+        return;
+    }
+
+    const auto registrationResult = response.getResult();
+    if (registrationResult.getCode() == PlatformResult::Code::OK)
+    {
+        LOG(INFO) << "SubdeviceRegistrationService: Device with key '" << deviceKey
+                  << "' successfully updated on platform";
+
+        const auto& deviceTemplate = *m_devicesAwaitingUpdateResponse.at(deviceKey);
+        LOG(DEBUG) << "SubdeviceRegistrationService: Saving device with key '" << deviceKey << "' to device repository";
+
+        auto savedDevice = m_deviceRepository.findByDeviceKey(deviceKey);
+
+        if (!savedDevice)
+        {
+            LOG(WARN) << "SubdeviceRegistrationService: Updated device not found in database";
+
+            savedDevice.reset(new DetailedDevice{"", deviceKey, DeviceTemplate{}});
+        }
+
+        auto deviceToUpdate = *savedDevice;
+
+        addAssetsToDevice(deviceToUpdate, deviceTemplate);
+
+        m_deviceRepository.save(deviceToUpdate);
+        invokeOnDeviceUpdatedListener(deviceKey);
+    }
+    else
+    {
+        LOG(ERROR) << "SubdeviceRegistrationService: Unable to update device with key '" << deviceKey << "'. Reason: '"
+                   << response.getResult().getMessage() << "' Description: " << response.getResult().getDescription();
+    }
+
+    m_devicesAwaitingUpdateResponse.erase(deviceKey);
+
+    // send response to device
+    std::shared_ptr<Message> updateResponseMessage = m_gatewayProtocol.makeMessage(response);
+    if (!updateResponseMessage)
+    {
+        LOG(WARN) << "SubdeviceRegistrationService: Unable to create update response message";
+        return;
+    }
+
+    m_outboundDeviceMessageHandler.addMessage(updateResponseMessage);
 }
 
 void SubdeviceRegistrationService::addToPostponedSubdeviceRegistrationRequests(
@@ -385,4 +505,81 @@ void SubdeviceRegistrationService::addToPostponedSubdeviceUpdateRequests(const s
     auto postponedDeviceUpdate = std::unique_ptr<SubdeviceUpdateRequest>(new SubdeviceUpdateRequest(request));
     m_devicesWithPostponedUpdate[deviceKey] = std::move(postponedDeviceUpdate);
 }
+
+void SubdeviceRegistrationService::addAssetsToDevice(DetailedDevice& device, const DeviceTemplate& assets)
+{
+    auto existingTemplate = device.getTemplate();
+
+    for (const auto& alarm : assets.getAlarms())
+    {
+        if (!containsSubset(device.getTemplate().getAlarms(), {alarm}))
+        {
+            existingTemplate.addAlarm(alarm);
+        }
+    }
+
+    for (const auto& sensor : assets.getSensors())
+    {
+        if (!containsSubset(device.getTemplate().getSensors(), {sensor}))
+        {
+            existingTemplate.addSensor(sensor);
+        }
+    }
+
+    for (const auto& actuator : assets.getActuators())
+    {
+        if (!containsSubset(device.getTemplate().getActuators(), {actuator}))
+        {
+            existingTemplate.addActuator(actuator);
+        }
+    }
+
+    for (const auto& configuration : assets.getConfigurations())
+    {
+        if (!containsSubset(device.getTemplate().getConfigurations(), {configuration}))
+        {
+            existingTemplate.addConfiguration(configuration);
+        }
+    }
+
+    device = DetailedDevice{device.getName(), device.getKey(), device.getPassword(), existingTemplate};
+}
+
+template bool SubdeviceRegistrationService::containsSubset<AlarmTemplate>(const std::vector<AlarmTemplate>& assets,
+                                                                          const std::vector<AlarmTemplate>& subset);
+
+template bool SubdeviceRegistrationService::containsSubset<SensorTemplate>(const std::vector<SensorTemplate>& assets,
+                                                                           const std::vector<SensorTemplate>& subset);
+
+template bool SubdeviceRegistrationService::containsSubset<ActuatorTemplate>(
+  const std::vector<ActuatorTemplate>& assets, const std::vector<ActuatorTemplate>& subset);
+
+template bool SubdeviceRegistrationService::containsSubset<ConfigurationTemplate>(
+  const std::vector<ConfigurationTemplate>& assets, const std::vector<ConfigurationTemplate>& subset);
+
+template <typename T>
+bool SubdeviceRegistrationService::containsSubset(const std::vector<T>& assets, const std::vector<T>& subset)
+{
+    for (const auto& item : subset)
+    {
+        bool found = false;
+
+        for (const auto& asset : assets)
+        {
+            if (asset == item)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 }    // namespace wolkabout

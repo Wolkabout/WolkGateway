@@ -316,6 +316,11 @@ void Wolk::deviceRegistered(const std::string& deviceKey)
     });
 }
 
+void Wolk::deviceUpdated(const std::string& deviceKey)
+{
+    addToCommandBuffer([=] { m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey); });
+}
+
 void Wolk::publishEverything()
 {
     publishFirmwareStatus();

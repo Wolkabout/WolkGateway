@@ -237,6 +237,7 @@ private:
 
     void gatewayUpdated();
     void deviceRegistered(const std::string& deviceKey);
+    void deviceUpdated(const std::string& deviceKey);
     //
 
     void publishEverything();

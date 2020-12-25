@@ -278,10 +278,14 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
         wolk->m_subdeviceRegistrationService->onDeviceRegistered(
           [&](const std::string& deviceKey) { wolk->deviceRegistered(deviceKey); });
+
+        wolk->m_subdeviceRegistrationService->onDeviceUpdated(
+          [&](const std::string& deviceKey) { wolk->deviceUpdated(deviceKey); });
     }
 
     wolk->m_registrationMessageRouter = std::make_shared<RegistrationMessageRouter>(
       *wolk->m_registrationProtocol, *wolk->m_gatewayRegistrationProtocol, wolk->m_gatewayUpdateService.get(),
+      wolk->m_subdeviceRegistrationService.get(), wolk->m_subdeviceRegistrationService.get(),
       wolk->m_subdeviceRegistrationService.get(), wolk->m_subdeviceRegistrationService.get(),
       wolk->m_subdeviceRegistrationService.get());
 

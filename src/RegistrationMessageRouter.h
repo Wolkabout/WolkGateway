@@ -34,8 +34,10 @@ public:
     RegistrationMessageRouter(RegistrationProtocol& protocol, GatewaySubdeviceRegistrationProtocol& gatewayProtocol,
                               PlatformMessageListener* PlatformGatewayUpdateResponseMessageHandler,
                               DeviceMessageListener* DeviceSubdeviceRegistrationRequestMessageHandler,
+                              DeviceMessageListener* DeviceSubdeviceUpdateRequestMessageHandler,
                               PlatformMessageListener* PlatformSubdeviceRegistrationResponseMessageHandler,
-                              PlatformMessageListener* PlatformSubdeviceDeletionResponseMessageHandler);
+                              PlatformMessageListener* PlatformSubdeviceDeletionResponseMessageHandler,
+                              PlatformMessageListener* PlatformSubdeviceUpdateResponseMessageHandler);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
@@ -49,8 +51,10 @@ private:
 
     PlatformMessageListener* m_platformGatewayUpdateResponseMessageHandler;
     DeviceMessageListener* m_deviceSubdeviceRegistrationRequestMessageHandler;
+    DeviceMessageListener* m_deviceSubdeviceUpdateRequestMessageHandler;
     PlatformMessageListener* m_platformSubdeviceRegistrationResponseMessageHandler;
     PlatformMessageListener* m_platformSubdeviceDeletionResponseMessageHandler;
+    PlatformMessageListener* m_platformSubdeviceUpdateResponseMessageHandler;
 };
 }    // namespace wolkabout
 

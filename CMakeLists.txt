@@ -38,17 +38,19 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic             
 
 # library output
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_INCLUDE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
-
+set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build)
+set(CMAKE_LIBRARY_INCLUDE_DIRECTORY ${CMAKE_PREFIX_PATH}/include)
 link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+link_directories(${CMAKE_PREFIX_PATH}/lib)
 
 find_package(Threads REQUIRED)
 
 # WolkAbout c++ SDK
+option(POCO_BUILD_DATA "" ON)
+option(POCO_BUILD_NET "" ON)
 add_subdirectory(WolkSDK-Cpp)
 
 # WolkGateway library
-include_directories("src")
 include_directories("WolkSDK-Cpp/core")
 
 file(GLOB_RECURSE LIB_HEADER_FILES "src/*.h" "src/*.hpp")
@@ -56,23 +58,26 @@ file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
 
 add_library(${PROJECT_NAME} SHARED ${LIB_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} WolkAboutCore z PocoUtil PocoCrypto PocoData PocoDataSQLite PocoFoundation Threads::Threads)
-set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+target_include_directories(${PROJECT_NAME} PUBLIC "src")
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+add_dependencies(${PROJECT_NAME} libpoco)
+
 
 # Tests
-include_directories("tests")
-
 file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h" "tests/*.hpp")
 file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
 
 add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
-target_include_directories(${PROJECT_NAME}Tests PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
-set_target_properties(${PROJECT_NAME}Tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+target_include_directories(${PROJECT_NAME}Tests PUBLIC "tests")
+target_include_directories(${PROJECT_NAME}Tests SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
 set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
-set_target_properties(${PROJECT_NAME}Tests PROPERTIES EXCLUDE_FROM_ALL TRUE)
+add_dependencies(${PROJECT_NAME}Tests libgtest)
 
-add_custom_target(tests ${PROJECT_NAME}Tests)
+add_custom_target(tests ALL ${PROJECT_NAME}Tests)
 add_test(gtest ${PROJECT_NAME}Tests)
+
 
 # WolkGateway executable
 file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
@@ -80,7 +85,7 @@ file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
 
 add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME}App WolkGateway)
-set_target_properties(${PROJECT_NAME}App ${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 
 # Install target
 install(DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} DESTINATION /usr

@@ -15,8 +15,8 @@
 #  limitations under the License.
 #
 
-if [ "$EUID" -ne 0 ]
-  then echo "Please run as sudo."
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as sudo."
   exit
 fi
 
@@ -26,8 +26,7 @@ docker container stop debuilder
 docker container rm debuilder
 
 branch=$(git rev-parse --abbrev-ref HEAD)
-if [ $? -eq 1 ]
-then
+if [ $? -eq 1 ]; then
   branch=master
 fi
 

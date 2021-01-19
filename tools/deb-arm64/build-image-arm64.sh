@@ -25,5 +25,5 @@ docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
 cp ../make_deb.sh .
 
-docker build -t wolkabout:wg-armv7l .
+docker build -t wolkabout:wg-arm64 .
 rm make_deb.sh

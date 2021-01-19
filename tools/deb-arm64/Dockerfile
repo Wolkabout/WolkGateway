@@ -1,11 +1,12 @@
-FROM arm64v8/debian:buster
+FROM arm64v8/ubuntu:20.04
 
 WORKDIR /build
 
-RUN apt-get update \
-    && apt-get install -y git gcc g++ cmake \
-    && apt-get install -y automake autotools-dev autoconf m4 zlib1g-dev cmake libtool libssl-dev libpoco-dev \
-    && apt-get install -y devscripts debhelper
+ENV TZ=Europe/Belgrade
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt update
+RUN apt install -y git gcc g++ cmake automake autotools-dev autoconf m4 zlib1g-dev cmake libtool libssl-dev libpoco-dev devscripts debhelper
 
 COPY make_deb.sh /build
 

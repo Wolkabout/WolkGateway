@@ -26,14 +26,18 @@ RegistrationMessageRouter::RegistrationMessageRouter(
   RegistrationProtocol& protocol, GatewaySubdeviceRegistrationProtocol& gatewayProtocol,
   PlatformMessageListener* PlatformGatewayUpdateResponseMessageHandler,
   DeviceMessageListener* DeviceSubdeviceRegistrationRequestMessageHandler,
+  DeviceMessageListener* DeviceSubdeviceUpdateRequestMessageHandler,
   PlatformMessageListener* PlatformSubdeviceRegistrationResponseMessageHandler,
-  PlatformMessageListener* PlatformSubdeviceDeletionResponseMessageHandler)
+  PlatformMessageListener* PlatformSubdeviceDeletionResponseMessageHandler,
+  PlatformMessageListener* PlatformSubdeviceUpdateResponseMessageHandler)
 : m_protocol{protocol}
 , m_gatewayProtocol{gatewayProtocol}
 , m_platformGatewayUpdateResponseMessageHandler{PlatformGatewayUpdateResponseMessageHandler}
 , m_deviceSubdeviceRegistrationRequestMessageHandler{DeviceSubdeviceRegistrationRequestMessageHandler}
+, m_deviceSubdeviceUpdateRequestMessageHandler{DeviceSubdeviceUpdateRequestMessageHandler}
 , m_platformSubdeviceRegistrationResponseMessageHandler{PlatformSubdeviceRegistrationResponseMessageHandler}
 , m_platformSubdeviceDeletionResponseMessageHandler{PlatformSubdeviceDeletionResponseMessageHandler}
+, m_platformSubdeviceUpdateResponseMessageHandler{PlatformSubdeviceUpdateResponseMessageHandler}
 {
 }
 
@@ -54,6 +58,10 @@ void RegistrationMessageRouter::platformMessageReceived(std::shared_ptr<Message>
     {
         m_platformSubdeviceRegistrationResponseMessageHandler->platformMessageReceived(message);
     }
+    else if (m_protocol.isSubdeviceUpdateResponse(*message) && m_platformSubdeviceUpdateResponseMessageHandler)
+    {
+        m_platformSubdeviceUpdateResponseMessageHandler->platformMessageReceived(message);
+    }
     else
     {
         LOG(WARN) << "Failed to route platform registration protocol message: " << message->getChannel();
@@ -68,6 +76,10 @@ void RegistrationMessageRouter::deviceMessageReceived(std::shared_ptr<Message> m
         m_deviceSubdeviceRegistrationRequestMessageHandler)
     {
         m_deviceSubdeviceRegistrationRequestMessageHandler->deviceMessageReceived(message);
+    }
+    else if (m_gatewayProtocol.isSubdeviceUpdateRequest(*message) && m_deviceSubdeviceUpdateRequestMessageHandler)
+    {
+        m_deviceSubdeviceUpdateRequestMessageHandler->deviceMessageReceived(message);
     }
     else
     {

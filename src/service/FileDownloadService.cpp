@@ -121,17 +121,10 @@ void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> messa
         return;
     }
 
-    if (m_protocol.isFileListRequest(*message))
-    {
-        addToCommandBuffer([=] { sendFileListResponse(); });
-
-        return;
-    }
-
     auto listConfirmResult = m_protocol.makeFileListConfirm(*message);
     if (listConfirmResult)
     {
-        LOG(DEBUG) << "Received file list confirm: " << to_string(*listConfirmResult);
+        LOG(DEBUG) << "Received file list confirm: " << listConfirmResult->getMessage();
         return;
     }
 
@@ -472,28 +465,6 @@ void FileDownloadService::sendFileListUpdate()
     if (!message)
     {
         LOG(ERROR) << "Failed to create file list update";
-        return;
-    }
-
-    m_outboundMessageHandler.addMessage(message);
-}
-
-void FileDownloadService::sendFileListResponse()
-{
-    LOG(DEBUG) << "FileDownloadService::sendFileListResponse";
-
-    auto fileNames = m_fileRepository.getAllFileNames();
-    if (!fileNames)
-    {
-        LOG(ERROR) << "Failed to fetch file names";
-        return;
-    }
-
-    std::shared_ptr<Message> message = m_protocol.makeFileListResponseMessage(m_gatewayKey, FileList{*fileNames});
-
-    if (!message)
-    {
-        LOG(ERROR) << "Failed to create file list response";
         return;
     }
 

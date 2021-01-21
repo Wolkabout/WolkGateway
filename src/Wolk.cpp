@@ -303,6 +303,7 @@ void Wolk::gatewayUpdated()
         if (m_subdeviceRegistrationService && m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
         {
             m_subdeviceRegistrationService->registerPostponedDevices();
+            m_subdeviceRegistrationService->updatePostponedDevices();
         }
     });
 }
@@ -313,6 +314,11 @@ void Wolk::deviceRegistered(const std::string& deviceKey)
         m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
         m_existingDevicesRepository->addDeviceKey(deviceKey);
     });
+}
+
+void Wolk::deviceUpdated(const std::string& deviceKey)
+{
+    addToCommandBuffer([=] { m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey); });
 }
 
 void Wolk::publishEverything()

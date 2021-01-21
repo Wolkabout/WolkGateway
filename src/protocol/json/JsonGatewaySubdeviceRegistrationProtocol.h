@@ -36,15 +36,20 @@ public:
     std::vector<std::string> getInboundChannelsForDevice(const std::string& deviceKey) const override;
 
     std::unique_ptr<Message> makeMessage(const SubdeviceRegistrationResponse& request) const override;
+    std::unique_ptr<Message> makeMessage(const SubdeviceUpdateResponse& request) const override;
 
     std::unique_ptr<SubdeviceRegistrationRequest> makeSubdeviceRegistrationRequest(
       const Message& message) const override;
+    std::unique_ptr<SubdeviceUpdateRequest> makeSubdeviceUpdateRequest(const Message& message) const override;
 
     bool isSubdeviceRegistrationRequest(const Message& message) const override;
+    bool isSubdeviceUpdateRequest(const Message& message) const override;
 
 private:
     static const std::string SUBDEVICE_REGISTRATION_REQUEST_TOPIC_ROOT;
     static const std::string SUBDEVICE_REGISTRATION_RESPONSE_TOPIC_ROOT;
+    static const std::string SUBDEVICE_UPDATE_REQUEST_TOPIC_ROOT;
+    static const std::string SUBDEVICE_UPDATE_RESPONSE_TOPIC_ROOT;
 };
 }    // namespace wolkabout
 

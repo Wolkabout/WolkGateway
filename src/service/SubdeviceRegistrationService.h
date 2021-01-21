@@ -20,7 +20,6 @@
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "OutboundRetryMessageHandler.h"
-#include "model/SubdeviceRegistrationRequest.h"
 
 #include <map>
 #include <memory>
@@ -32,11 +31,15 @@ namespace wolkabout
 {
 class DetailedDevice;
 class DeviceRepository;
+class DeviceTemplate;
 class GatewaySubdeviceRegistrationProtocol;
 class Message;
 class OutboundMessageHandler;
 class RegistrationProtocol;
+class SubdeviceRegistrationRequest;
 class SubdeviceRegistrationResponse;
+class SubdeviceUpdateRequest;
+class SubdeviceUpdateResponse;
 
 class SubdeviceRegistrationService : public DeviceMessageListener, public PlatformMessageListener
 {
@@ -47,6 +50,8 @@ public:
                                  OutboundMessageHandler& outboundPlatformMessageHandler,
                                  OutboundMessageHandler& outboundDeviceMessageHandler);
 
+    ~SubdeviceRegistrationService();
+
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
@@ -56,13 +61,17 @@ public:
     const Protocol& getProtocol() const override;
 
     void onDeviceRegistered(std::function<void(const std::string& deviceKey)> onDeviceRegistered);
+    void onDeviceUpdated(std::function<void(const std::string& deviceKey)> onDeviceUpdated);
 
     virtual void deleteDevicesOtherThan(const std::vector<std::string>& devicesKeys);
 
     virtual void registerPostponedDevices();
 
+    virtual void updatePostponedDevices();
+
 protected:
     void invokeOnDeviceRegisteredListener(const std::string& deviceKey) const;
+    void invokeOnDeviceUpdatedListener(const std::string& deviceKey) const;
 
 private:
     void handleSubdeviceRegistrationRequest(const std::string& deviceKey, const SubdeviceRegistrationRequest& request);
@@ -70,8 +79,15 @@ private:
     void handleSubdeviceRegistrationResponse(const std::string& deviceKey,
                                              const SubdeviceRegistrationResponse& response);
 
+    void handleSubdeviceUpdateRequest(const std::string& deviceKey, const SubdeviceUpdateRequest& request);
+    void handleSubdeviceUpdateResponse(const std::string& deviceKey, const SubdeviceUpdateResponse& response);
+
     void addToPostponedSubdeviceRegistrationRequests(const std::string& deviceKey,
                                                      const SubdeviceRegistrationRequest& request);
+    void addToPostponedSubdeviceUpdateRequests(const std::string& deviceKey, const SubdeviceUpdateRequest& request);
+
+    template <typename T> bool containsSubset(const std::vector<T>& assets, const std::vector<T>& subset);
+    void addAssetsToDevice(DetailedDevice& device, const DeviceTemplate& assets);
 
     const std::string m_gatewayKey;
     RegistrationProtocol& m_protocol;
@@ -85,12 +101,19 @@ private:
     OutboundRetryMessageHandler m_platformRetryMessageHandler;
 
     std::function<void(const std::string& deviceKey)> m_onDeviceRegistered;
+    std::function<void(const std::string& deviceKey)> m_onDeviceUpdated;
 
     std::recursive_mutex m_devicesAwaitingRegistrationResponseMutex;
     std::map<std::string, std::unique_ptr<DetailedDevice>> m_devicesAwaitingRegistrationResponse;
 
+    std::recursive_mutex m_devicesAwaitingUpdateResponseMutex;
+    std::map<std::string, std::unique_ptr<DeviceTemplate>> m_devicesAwaitingUpdateResponse;
+
     std::mutex m_devicesWithPostponedRegistrationMutex;
     std::map<std::string, std::unique_ptr<SubdeviceRegistrationRequest>> m_devicesWithPostponedRegistration;
+
+    std::mutex m_devicesWithPostponedUpdateMutex;
+    std::map<std::string, std::unique_ptr<SubdeviceUpdateRequest>> m_devicesWithPostponedUpdate;
 };
 }    // namespace wolkabout
 

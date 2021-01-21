@@ -158,14 +158,8 @@ TEST_F(DataService, Given_When_MessageFromDeviceWithIncorrectDeviceTypeIsReceive
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
       .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", "GATEWAY_KEY",
-        wolkabout::DeviceTemplate{{},
-                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
-                                  {},
-                                  {},
-                                  "",
-                                  {},
-                                  {},
-                                  {}}));
+        wolkabout::DeviceTemplate{
+          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
 
     // When
     auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/k/GATEWAY_KEY/r/REF");
@@ -182,14 +176,8 @@ TEST_F(DataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToP
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
       .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", "DEVICE_KEY",
-        wolkabout::DeviceTemplate{{},
-                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
-                                  {},
-                                  {},
-                                  "",
-                                  {},
-                                  {},
-                                  {}}));
+        wolkabout::DeviceTemplate{
+          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
 
     // When
     auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/DEVICE_KEY/r/REF");
@@ -211,14 +199,8 @@ TEST_F(DataService,
     ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
       .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", "DEVICE_KEY",
-        wolkabout::DeviceTemplate{{},
-                                  {wolkabout::SensorTemplate{"", "ref", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
-                                  {},
-                                  {},
-                                  "",
-                                  {},
-                                  {},
-                                  {}}));
+        wolkabout::DeviceTemplate{
+          {}, {wolkabout::SensorTemplate{"", "ref", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
 
     // When
     dataService->deviceMessageReceived(message);

@@ -248,11 +248,11 @@ TEST_F(
     ON_CALL(*deviceRepository, findAllDeviceKeysProxy()).WillByDefault(testing::ReturnNew<std::vector<std::string>>());
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey)).WillByDefault(testing::Return(nullptr));
 
-    // When
-    wolk->connectToPlatform();
-
     // Then
     EXPECT_CALL(*dataService, requestActuatorStatusesForDevice(testing::_)).Times(0);
+
+    // When
+    wolk->connectToPlatform();
 }
 
 TEST_F(
@@ -272,11 +272,11 @@ TEST_F(
       .WillByDefault(testing::ReturnNew<std::vector<std::string>>(keys));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey)).WillByDefault(testing::Return(nullptr));
 
-    // When
-    wolk->connectToPlatform();
-
     // Then
     EXPECT_CALL(*dataService, requestActuatorStatusesForDevice(testing::_)).Times(0);
+
+    // When
+    wolk->connectToPlatform();
 }
 
 TEST_F(
@@ -297,22 +297,16 @@ TEST_F(
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey))
       .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey,
-        wolkabout::DeviceTemplate{{},
-                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
-                                  {},
-                                  {},
-                                  "",
-                                  {},
-                                  {},
-                                  {}}));
-
-    // When
-    wolk->connectToPlatform();
+        wolkabout::DeviceTemplate{
+          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
 
     // Then
     EXPECT_CALL(*dataService, requestActuatorStatusesForDevice(deviceKey))
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->connectToPlatform();
 
     wait();
 }
@@ -335,22 +329,16 @@ TEST_F(
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey))
       .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey,
-        wolkabout::DeviceTemplate{{},
-                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
-                                  {},
-                                  {},
-                                  "",
-                                  {},
-                                  {},
-                                  {}}));
-
-    // When
-    wolk->connectToPlatform();
+        wolkabout::DeviceTemplate{
+          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
 
     // Then
     EXPECT_CALL(*dataService, requestActuatorStatusesForDevice(deviceKey))
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->connectToPlatform();
 
     wait();
 }
@@ -375,44 +363,26 @@ TEST_F(
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey1))
       .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey1,
-        wolkabout::DeviceTemplate{{},
-                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
-                                  {},
-                                  {},
-                                  "",
-                                  {},
-                                  {},
-                                  {}}));
+        wolkabout::DeviceTemplate{
+          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey2))
       .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey2,
-        wolkabout::DeviceTemplate{{},
-                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
-                                  {},
-                                  {},
-                                  "",
-                                  {},
-                                  {},
-                                  {}}));
+        wolkabout::DeviceTemplate{
+          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
     ON_CALL(*deviceRepository, findByDeviceKeyProxy(deviceKey3))
       .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
         "", deviceKey2,
-        wolkabout::DeviceTemplate{{},
-                                  {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, "", {0}, {100}}},
-                                  {},
-                                  {},
-                                  "",
-                                  {},
-                                  {},
-                                  {}}));
-
-    // When
-    wolk->connectToPlatform();
+        wolkabout::DeviceTemplate{
+          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
 
     // Then
     EXPECT_CALL(*dataService, requestActuatorStatusesForDevice(testing::_))
       .Times(3)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->connectToPlatform();
 
     wait();
 }
@@ -424,13 +394,13 @@ TEST_F(Wolk, GivenGatewayInControl_When_ConnectingToPlatformIsSuccessful_Then_Fi
 
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
-    // When
-    wolk->connectToPlatform();
-
     // Then
     EXPECT_CALL(*fileDownloadService, sendFileList())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->connectToPlatform();
 
     wait();
 }
@@ -442,13 +412,13 @@ TEST_F(Wolk, GivenPlatformInControl_When_ConnectingToPlatformIsSuccessful_Then_F
 
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
-    // When
-    wolk->connectToPlatform();
-
     // Then
     EXPECT_CALL(*fileDownloadService, sendFileList())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->connectToPlatform();
 
     wait();
 }
@@ -460,15 +430,15 @@ TEST_F(Wolk, GivenGatewayInControl_When_ConnectingToPlatformIsSuccessful_Then_Fi
 
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
-    // When
-    wolk->connectToPlatform();
-
     // Then
     EXPECT_CALL(*firmwareUpdateService, reportFirmwareUpdateResult()).Times(1);
 
     EXPECT_CALL(*firmwareUpdateService, publishFirmwareVersion())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->connectToPlatform();
 
     wait();
 }
@@ -480,15 +450,15 @@ TEST_F(Wolk, GivenPlatformInControl_When_ConnectingToPlatformIsSuccessful_Then_F
 
     ON_CALL(*platformConnectivityService, connect()).WillByDefault(testing::Return(true));
 
-    // When
-    wolk->connectToPlatform();
-
     // Then
     EXPECT_CALL(*firmwareUpdateService, reportFirmwareUpdateResult()).Times(1);
 
     EXPECT_CALL(*firmwareUpdateService, publishFirmwareVersion())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->connectToPlatform();
 
     wait();
 }
@@ -498,13 +468,13 @@ TEST_F(Wolk, GivenGatewayInControl_When_GatewayIsUpdated_Then_FileListIsSent)
     // Given
     SetUp(wolkabout::SubdeviceManagement::GATEWAY);
 
-    // When
-    wolk->gatewayUpdated();
-
     // Then
     EXPECT_CALL(*fileDownloadService, sendFileList())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->gatewayUpdated();
 
     wait();
 }
@@ -514,13 +484,13 @@ TEST_F(Wolk, GivenPlatformInControl_When_GatewayIsUpdated_Then_FileListIsSent)
     // Given
     SetUp(wolkabout::SubdeviceManagement::PLATFORM);
 
-    // When
-    wolk->gatewayUpdated();
-
     // Then
     EXPECT_CALL(*fileDownloadService, sendFileList())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->gatewayUpdated();
 
     wait();
 }
@@ -530,15 +500,15 @@ TEST_F(Wolk, GivenGatewayInControl_When_GatewayIsUpdated_Then_FirmwareStatusIsSe
     // Given
     SetUp(wolkabout::SubdeviceManagement::GATEWAY);
 
-    // When
-    wolk->gatewayUpdated();
-
     // Then
     EXPECT_CALL(*firmwareUpdateService, reportFirmwareUpdateResult()).Times(1);
 
     EXPECT_CALL(*firmwareUpdateService, publishFirmwareVersion())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->gatewayUpdated();
 
     wait();
 }
@@ -548,15 +518,15 @@ TEST_F(Wolk, GivenPlatformInControl_When_GatewayIsUpdated_Then_FirmwareStatusIsS
     // Given
     SetUp(wolkabout::SubdeviceManagement::PLATFORM);
 
-    // When
-    wolk->gatewayUpdated();
-
     // Then
     EXPECT_CALL(*firmwareUpdateService, reportFirmwareUpdateResult()).Times(1);
 
     EXPECT_CALL(*firmwareUpdateService, publishFirmwareVersion())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->gatewayUpdated();
 
     wait();
 }
@@ -566,13 +536,13 @@ TEST_F(Wolk, GivenGatewayInControl_When_GatewayIsUpdated_Then_PingIsSent)
     // Given
     SetUp(wolkabout::SubdeviceManagement::GATEWAY);
 
-    // When
-    wolk->gatewayUpdated();
-
     // Then
     EXPECT_CALL(*keepAliveService, sendPingMessage())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->gatewayUpdated();
 
     wait();
 }
@@ -582,13 +552,13 @@ TEST_F(Wolk, GivenPlatformInControl_When_GatewayIsUpdated_Then_PingIsSent)
     // Given
     SetUp(wolkabout::SubdeviceManagement::PLATFORM);
 
-    // When
-    wolk->gatewayUpdated();
-
     // Then
     EXPECT_CALL(*keepAliveService, sendPingMessage())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->gatewayUpdated();
 
     wait();
 }
@@ -598,13 +568,13 @@ TEST_F(Wolk, GivenGatewayInControl_When_GatewayIsUpdated_Then_PostponedDevicesAr
     // Given
     SetUp(wolkabout::SubdeviceManagement::GATEWAY);
 
-    // When
-    wolk->gatewayUpdated();
-
     // Then
     EXPECT_CALL(*subdeviceRegistrationService, registerPostponedDevices())
       .Times(1)
       .WillOnce(testing::InvokeWithoutArgs(this, &Wolk::finished));
+
+    // When
+    wolk->gatewayUpdated();
 
     wait();
 }
@@ -614,9 +584,9 @@ TEST_F(Wolk, GivenPlatformInControl_When_GatewayIsUpdated_Then_PostponedDevicesA
     // Given
     SetUp(wolkabout::SubdeviceManagement::PLATFORM);
 
-    // When
-    wolk->gatewayUpdated();
-
     // Then
     EXPECT_CALL(*subdeviceRegistrationService, registerPostponedDevices()).Times(0);
+
+    // When
+    wolk->gatewayUpdated();
 }

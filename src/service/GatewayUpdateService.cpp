@@ -138,7 +138,7 @@ void GatewayUpdateService::handleUpdateResponse(const GatewayUpdateResponse& res
     }
 
     const auto updateResult = response.getResult();
-    if (updateResult == GatewayUpdateResponse::Result::OK)
+    if (updateResult.getCode() == PlatformResult::Code::OK)
     {
         LOG(INFO) << "GatewayUpdateService: Gateway successfully update on platform";
 
@@ -152,50 +152,8 @@ void GatewayUpdateService::handleUpdateResponse(const GatewayUpdateResponse& res
     }
     else
     {
-        const auto updateFailureReason = [&]() -> std::string {
-            if (updateResult == GatewayUpdateResponse::Result::ERROR_KEY_CONFLICT)
-            {
-                return "Device with given key already registered";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_INVALID_DTO)
-            {
-                return "Rejected update DTO";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_NOT_A_GATEWAY)
-            {
-                return "Device is not a gateway";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_VALIDATION_ERROR)
-            {
-                return "Faulty update request";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_KEY_MISSING)
-            {
-                return "Key missing from update request";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_GATEWAY_NOT_FOUND)
-            {
-                return "Gateway has been deleted on platform";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_SUBDEVICE_MANAGEMENT_CHANGE_NOT_ALLOWED)
-            {
-                return "Changing subdevice management is not allowed";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_GATEWAY_UPDATE_FORBIDDEN)
-            {
-                return "Performing gateway update is not allowed more than once";
-            }
-            else if (updateResult == GatewayUpdateResponse::Result::ERROR_UNKNOWN)
-            {
-                return "Unknown gateway update error";
-            }
-
-            assert(false && "Unknown gateway update error");
-            return "Unknown";
-        }();
-
-        LOG(ERROR) << "GatewayUpdateService: Unable to perform update gateway. Reason: '" << updateFailureReason
-                   << "' Description: " << response.getDescription();
+        LOG(ERROR) << "GatewayUpdateService: Unable to perform update gateway. Reason: '"
+                   << response.getResult().getMessage() << "' Description: " << response.getResult().getDescription();
     }
 
     m_pendingUpdateRequest = nullptr;

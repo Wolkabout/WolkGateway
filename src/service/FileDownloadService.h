@@ -86,7 +86,6 @@ private:
     void sendStatus(const FileUploadStatus& response);
     void sendStatus(const FileUrlDownloadStatus& response);
     void sendFileListUpdate();
-    void sendFileListResponse();
 
     void requestPacket(const FilePacketRequest& request);
     void downloadCompleted(const std::string& fileName, const std::string& filePath, const std::string& fileHash);

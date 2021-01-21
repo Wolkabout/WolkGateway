@@ -72,19 +72,19 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
     // Actuator template
     statement << "CREATE TABLE IF NOT EXISTS actuator_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
                  "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, "
-                 "minimum REAL, maximum REAL, device_template_id INTEGER, "
+                 "device_template_id INTEGER, "
                  "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
     // Sensor template
     statement << "CREATE TABLE IF NOT EXISTS sensor_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
                  "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, "
-                 "minimum REAL, maximum REAL, device_template_id INTEGER, "
+                 "device_template_id INTEGER, "
                  "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
     // Configuration template
     statement << "CREATE TABLE IF NOT EXISTS configuration_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
                  "reference TEXT, name TEXT, description TEXT, "
-                 "data_type TEXT, minimum REAL, maximum REAL, "
+                 "data_type TEXT, "
                  "default_value TEXT, device_template_id INTEGER, "
                  "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
 
@@ -177,29 +177,23 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
         // Actuator templates
         for (const wolkabout::ActuatorTemplate& actuatorTemplate : device.getTemplate().getActuators())
         {
-            Poco::Nullable<double> minimum = fromOptional(actuatorTemplate.getMinimum());
-            Poco::Nullable<double> maximum = fromOptional(actuatorTemplate.getMaximum());
-
             statement << "INSERT INTO actuator_template(reference, name, description, unit_symbol, reading_type, "
-                         "minimum, maximum, device_template_id) "
+                         "device_template_id) "
                          "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
               useRef(actuatorTemplate.getReference()), useRef(actuatorTemplate.getName()),
               useRef(actuatorTemplate.getDescription()), useRef(actuatorTemplate.getUnitSymbol()),
-              useRef(actuatorTemplate.getReadingTypeName()), bind(minimum), bind(maximum), useRef(deviceTemplateId);
+              useRef(actuatorTemplate.getReadingTypeName()), useRef(deviceTemplateId);
         }
 
         // Sensor templates
         for (const wolkabout::SensorTemplate& sensorTemplate : device.getTemplate().getSensors())
         {
-            Poco::Nullable<double> minimum = fromOptional(sensorTemplate.getMinimum());
-            Poco::Nullable<double> maximum = fromOptional(sensorTemplate.getMaximum());
-
             statement << "INSERT INTO sensor_template(reference, name, description, unit_symbol, reading_type, "
-                         "minimum, maximum, device_template_id) "
+                         "device_template_id) "
                          "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
               useRef(sensorTemplate.getReference()), useRef(sensorTemplate.getName()),
               useRef(sensorTemplate.getDescription()), useRef(sensorTemplate.getUnitSymbol()),
-              useRef(sensorTemplate.getReadingTypeName()), bind(minimum), bind(maximum), useRef(deviceTemplateId);
+              useRef(sensorTemplate.getReadingTypeName()), useRef(deviceTemplateId);
         }
 
         // Configuration templates
@@ -222,14 +216,11 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
                 return "";
             }();
 
-            Poco::Nullable<double> minimum = fromOptional(configurationTemplate.getMinimum());
-            Poco::Nullable<double> maximum = fromOptional(configurationTemplate.getMaximum());
-
-            statement << "INSERT INTO configuration_template(reference, name, description, data_type, minimum, "
-                         "maximum, default_value, device_template_id)"
+            statement << "INSERT INTO configuration_template(reference, name, description, data_type, "
+                         "default_value, device_template_id)"
                          "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
               useRef(configurationTemplate.getReference()), useRef(configurationTemplate.getName()),
-              useRef(configurationTemplate.getDescription()), bind(dataType), bind(minimum), bind(maximum),
+              useRef(configurationTemplate.getDescription()), bind(dataType),
               useRef(configurationTemplate.getDefaultValue()), useRef(deviceTemplateId);
 
             for (const std::string& label : configurationTemplate.getLabels())
@@ -386,15 +377,11 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         std::string actuatorDescription;
         std::string actuatorUnitSymbol;
         std::string actuatorReadingType;
-        Poco::Nullable<double> actuatorMinimum;
-        Poco::Nullable<double> actuatorMaximum;
         statement.reset(*m_session);
-        statement << "SELECT reference, name, description, unit_symbol, reading_type, "
-                     "minimum, maximum "
+        statement << "SELECT reference, name, description, unit_symbol, reading_type "
                      "FROM actuator_template WHERE device_template_id=?;",
           useRef(deviceTemplateId), into(actuatorReference), into(actuatorName), into(actuatorDescription),
-          into(actuatorUnitSymbol), into(actuatorReadingType), into(actuatorMinimum), into(actuatorMaximum),
-          range(0, 1);
+          into(actuatorUnitSymbol), into(actuatorReadingType), range(0, 1);
 
         while (!statement.done())
         {
@@ -404,8 +391,7 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
             }
 
             deviceTemplate->addActuator(ActuatorTemplate(actuatorName, actuatorReference, actuatorReadingType,
-                                                         actuatorUnitSymbol, actuatorDescription,
-                                                         toOptional(actuatorMinimum), toOptional(actuatorMaximum)));
+                                                         actuatorUnitSymbol, actuatorDescription));
         }
 
         // Sensor templates
@@ -414,14 +400,11 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         std::string sensorDescription;
         std::string sensorUnitSymbol;
         std::string sensorReadingType;
-        Poco::Nullable<double> sensorMinimum;
-        Poco::Nullable<double> sensorMaximum;
         statement.reset(*m_session);
-        statement << "SELECT reference, name, description, unit_symbol, reading_type, "
-                     "minimum, maximum "
+        statement << "SELECT reference, name, description, unit_symbol, reading_type "
                      "FROM sensor_template WHERE device_template_id=?;",
           useRef(deviceTemplateId), into(sensorReference), into(sensorName), into(sensorDescription),
-          into(sensorUnitSymbol), into(sensorReadingType), into(sensorMinimum), into(sensorMaximum), range(0, 1);
+          into(sensorUnitSymbol), into(sensorReadingType), range(0, 1);
 
         while (!statement.done())
         {
@@ -430,9 +413,8 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
                 break;
             }
 
-            deviceTemplate->addSensor(SensorTemplate(sensorName, sensorReference, sensorReadingType, sensorUnitSymbol,
-                                                     sensorDescription, toOptional(sensorMinimum),
-                                                     toOptional(sensorMaximum)));
+            deviceTemplate->addSensor(
+              SensorTemplate(sensorName, sensorReference, sensorReadingType, sensorUnitSymbol, sensorDescription));
         }
 
         // Configuration templates
@@ -441,15 +423,13 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
         std::string configurationName;
         std::string configurationDescription;
         std::string configurationDataTypeStr;
-        Poco::Nullable<double> configurationMinimum;
-        Poco::Nullable<double> configurationMaximum;
         std::string configurationDefaultValue;
         statement.reset(*m_session);
-        statement << "SELECT id, reference, name, description, data_type, minimum, maximum, default_value"
+        statement << "SELECT id, reference, name, description, data_type, default_value"
                      " FROM configuration_template WHERE device_template_id=?;",
           useRef(deviceTemplateId), into(configurationTemplateId), into(configurationReference),
           into(configurationName), into(configurationDescription), into(configurationDataTypeStr),
-          into(configurationMinimum), into(configurationMaximum), into(configurationDefaultValue), range(0, 1);
+          into(configurationDefaultValue), range(0, 1);
 
         while (!statement.done())
         {
@@ -480,9 +460,9 @@ std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const st
             selectLabelsStatement << "SELECT label FROM configuration_label WHERE configuration_template_id=?;",
               bind(configurationTemplateId), into(labels), now;
 
-            deviceTemplate->addConfiguration(ConfigurationTemplate(
-              configurationName, configurationReference, configurationDataType, configurationDescription,
-              configurationDefaultValue, labels, toOptional(configurationMinimum), toOptional(configurationMaximum)));
+            deviceTemplate->addConfiguration(ConfigurationTemplate(configurationName, configurationReference,
+                                                                   configurationDataType, configurationDescription,
+                                                                   configurationDefaultValue, labels));
         }
 
         // Type parameters
@@ -615,8 +595,6 @@ std::string SQLiteDeviceRepository::calculateSha256(const ActuatorTemplate& actu
     digestEngine.update(actuatorTemplate.getDescription());
     digestEngine.update(actuatorTemplate.getUnitSymbol());
     digestEngine.update(actuatorTemplate.getReadingTypeName());
-    digestEngine.update(std::to_string(actuatorTemplate.getMinimum().value()));
-    digestEngine.update(std::to_string(actuatorTemplate.getMaximum().value()));
 
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
@@ -629,8 +607,6 @@ std::string SQLiteDeviceRepository::calculateSha256(const SensorTemplate& sensor
     digestEngine.update(sensorTemplate.getDescription());
     digestEngine.update(sensorTemplate.getUnitSymbol());
     digestEngine.update(sensorTemplate.getReadingTypeName());
-    digestEngine.update(std::to_string(sensorTemplate.getMinimum().value()));
-    digestEngine.update(std::to_string(sensorTemplate.getMaximum().value()));
 
     return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
 }
@@ -641,8 +617,6 @@ std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationTemplate&
     digestEngine.update(configurationTemplate.getName());
     digestEngine.update(configurationTemplate.getReference());
     digestEngine.update(configurationTemplate.getDescription());
-    digestEngine.update(std::to_string(configurationTemplate.getMinimum().value()));
-    digestEngine.update(std::to_string(configurationTemplate.getMaximum().value()));
     digestEngine.update(configurationTemplate.getDefaultValue());
 
     digestEngine.update([&]() -> std::string {

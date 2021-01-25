@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.2.5**
+- [BUGFIX] Disable building submodule mysql lib
+
 **Version 4.2.4**
 - [IMPROVEMENT] Protocol improvements in SDK.
 - [BUGFIX] Synchronization in tests

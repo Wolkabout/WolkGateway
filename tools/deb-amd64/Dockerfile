@@ -4,7 +4,7 @@ WORKDIR /build
 
 RUN apt-get update \
     && apt-get install -y git gcc g++ cmake \
-    && apt-get install -y mosquitto cmake libssl-dev libpoco-dev \
+    && apt-get install -y mosquitto cmake libssl-dev \
     && apt-get install -y devscripts debhelper
 
 COPY make_deb.sh /build

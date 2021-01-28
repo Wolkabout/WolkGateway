@@ -2,11 +2,11 @@ Source: wolkgateway
 Section: main
 Priority: optional
 Maintainer: Wolkabout ELab <elab@wolkabout.com>
-Build-Depends: debhelper (>= 9), libpoco-dev
+Build-Depends: debhelper (>= 9)
 Standards-Version: 4.1.2
 
 Package: wolkgateway
 Architecture: any
 Section: main
-Depends: ${shlibs:Depends}, ${misc:Depends}, libssl1.0.0 | libssl1.1, libpoco-dev
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl1.0.0 | libssl1.1
 Description: WolkGateway main connectivity module for connecting modules to Wolkabout IoT Platform.

@@ -8,7 +8,6 @@ jobs:
       addons:
         apt:
           packages:
-            - libpoco-dev
             - libssl-dev
             - cmake
             - gcc
@@ -23,7 +22,6 @@ jobs:
       addons:
         apt:
           packages:
-            - libpoco-dev
             - libssl-dev
             - cmake
             - gcc

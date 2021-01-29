@@ -3,7 +3,7 @@ FROM ubuntu:bionic-20200403
 WORKDIR /build
 
 RUN apt-get update \
-    && apt-get install -y git gcc g++ cmake \
+    && apt-get install -y git gcc g++ cmake zlib1g-dev \
     && apt-get install -y mosquitto cmake libssl-dev \
     && apt-get install -y devscripts debhelper
 

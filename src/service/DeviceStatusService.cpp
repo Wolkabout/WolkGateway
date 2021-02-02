@@ -15,6 +15,7 @@
  */
 
 #include "service/DeviceStatusService.h"
+
 #include "ConnectionStatusListener.h"
 #include "OutboundMessageHandler.h"
 #include "model/DeviceStatus.h"

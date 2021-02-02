@@ -15,6 +15,7 @@
  */
 
 #include "service/GatewayDataService.h"
+
 #include "OutboundMessageHandler.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/ActuatorGetCommand.h"

@@ -15,6 +15,7 @@
  */
 
 #include "WolkBuilder.h"
+
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "RegistrationMessageRouter.h"

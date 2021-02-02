@@ -15,6 +15,7 @@
  */
 
 #include "service/DataService.h"
+
 #include "InboundMessageHandler.h"
 #include "OutboundMessageHandler.h"
 #include "model/ActuatorGetCommand.h"

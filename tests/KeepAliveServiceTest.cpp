@@ -19,6 +19,7 @@
 #include "service/KeepAliveService.h"
 
 #include <gtest/gtest.h>
+
 #include <memory>
 
 namespace

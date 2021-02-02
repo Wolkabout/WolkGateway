@@ -15,6 +15,7 @@
  */
 
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
+
 #include "model/Message.h"
 #include "model/SubdeviceRegistrationRequest.h"
 #include "model/SubdeviceRegistrationResponse.h"

@@ -15,6 +15,7 @@
  */
 
 #include "FileHandler.h"
+
 #include "model/BinaryData.h"
 #include "utilities/FileSystemUtils.h"
 

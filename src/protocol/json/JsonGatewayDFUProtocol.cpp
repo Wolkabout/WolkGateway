@@ -15,6 +15,7 @@
  */
 
 #include "protocol/json/JsonGatewayDFUProtocol.h"
+
 #include "model/FirmwareUpdateAbort.h"
 #include "model/FirmwareUpdateInstall.h"
 #include "model/FirmwareUpdateStatus.h"

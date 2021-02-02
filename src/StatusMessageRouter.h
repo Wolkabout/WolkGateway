@@ -18,6 +18,7 @@
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
+
 #include <memory>
 
 namespace wolkabout

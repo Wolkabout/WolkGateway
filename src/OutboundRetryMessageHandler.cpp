@@ -15,6 +15,7 @@
  */
 
 #include "OutboundRetryMessageHandler.h"
+
 #include "OutboundMessageHandler.h"
 #include "model/Message.h"
 #include "utilities/Logger.h"

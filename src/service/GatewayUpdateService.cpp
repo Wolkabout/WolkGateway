@@ -15,6 +15,7 @@
  */
 
 #include "GatewayUpdateService.h"
+
 #include "OutboundMessageHandler.h"
 #include "model/GatewayUpdateRequest.h"
 #include "model/GatewayUpdateResponse.h"

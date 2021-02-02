@@ -9,6 +9,7 @@
 #include "service/DeviceStatusService.h"
 
 #include <gtest/gtest.h>
+
 #include <cstdio>
 #include <memory>
 #include <vector>

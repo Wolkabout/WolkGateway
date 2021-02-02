@@ -7,6 +7,7 @@
 #include "service/DataService.h"
 
 #include <gtest/gtest.h>
+
 #include <cstdio>
 #include <memory>
 #include <vector>

@@ -20,6 +20,7 @@
 #include "ConnectionStatusListener.h"
 #include "OutboundMessageHandler.h"
 #include "persistence/GatewayPersistence.h"
+
 #include <atomic>
 #include <condition_variable>
 #include <memory>

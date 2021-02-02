@@ -14,6 +14,7 @@
 #include "service/SubdeviceRegistrationService.h"
 
 #include <gtest/gtest.h>
+
 #include <cstdio>
 #include <map>
 #include <memory>

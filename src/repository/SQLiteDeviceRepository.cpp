@@ -15,13 +15,13 @@
  */
 
 #include "repository/SQLiteDeviceRepository.h"
+
 #include "model/ActuatorTemplate.h"
 #include "model/AlarmTemplate.h"
 #include "model/ConfigurationTemplate.h"
 #include "model/DataType.h"
 #include "model/DetailedDevice.h"
 #include "model/DeviceTemplate.h"
-
 #include "utilities/Logger.h"
 
 #include <Poco/Crypto/DigestEngine.h>
@@ -31,7 +31,6 @@
 #include <Poco/Data/Statement.h>
 #include <Poco/String.h>
 #include <Poco/Types.h>
-
 #include <memory>
 #include <mutex>
 #include <regex>

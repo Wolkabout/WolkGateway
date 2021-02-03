@@ -15,6 +15,7 @@
  */
 
 #include "PublishingService.h"
+
 #include "connectivity/ConnectivityService.h"
 #include "model/Message.h"
 #include "utilities/Logger.h"

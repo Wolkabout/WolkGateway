@@ -15,6 +15,7 @@
  */
 
 #include "Configuration.h"
+
 #include "utilities/FileSystemUtils.h"
 #include "utilities/json.hpp"
 

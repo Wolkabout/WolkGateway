@@ -18,6 +18,7 @@
 #define WOLKABOUTFILEDOWNLOADER_H
 
 #include "utilities/ByteUtils.h"
+
 #include <cstdint>
 #include <functional>
 #include <string>

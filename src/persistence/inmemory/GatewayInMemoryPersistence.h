@@ -18,6 +18,7 @@
 #define GATEWAYINMEMORYPERSISTENCE_H
 
 #include "persistence/GatewayPersistence.h"
+
 #include <mutex>
 #include <queue>
 

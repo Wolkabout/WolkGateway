@@ -15,6 +15,7 @@
  */
 
 #include "protocol/json/JsonGatewayStatusProtocol.h"
+
 #include "model/DeviceStatus.h"
 #include "model/Message.h"
 #include "protocol/json/Json.h"

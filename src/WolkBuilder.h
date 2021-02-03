@@ -182,15 +182,14 @@ private:
     std::function<std::vector<ConfigurationItem>()> m_configurationProviderLambda;
     std::shared_ptr<ConfigurationProvider> m_configurationProvider;
 
-    std::string m_fileDownloadDirectory = ".";
+    std::string m_fileDownloadDirectory = "files";
 
     std::string m_firmwareVersion;
     std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
 
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
-    // json protocol does not currently support ping messages
-    bool m_keepAliveEnabled = false;
+    bool m_keepAliveEnabled = true;
 
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
     static const constexpr char* MESSAGE_BUS_HOST = "tcp://localhost:1883";

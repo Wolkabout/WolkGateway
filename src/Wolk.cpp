@@ -15,6 +15,7 @@
  */
 
 #include "Wolk.h"
+
 #include "connectivity/ConnectivityService.h"
 #include "model/ConfigurationSetCommand.h"
 #include "persistence/Persistence.h"

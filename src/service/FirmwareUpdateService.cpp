@@ -15,6 +15,7 @@
  */
 
 #include "service/FirmwareUpdateService.h"
+
 #include "OutboundMessageHandler.h"
 #include "model/FirmwareUpdateAbort.h"
 #include "model/FirmwareUpdateInstall.h"

@@ -5,6 +5,7 @@
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/FileRepository.h"
+
 #include <gmock/gmock.h>
 
 class MockRepository : public wolkabout::DeviceRepository

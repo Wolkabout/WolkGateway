@@ -15,10 +15,12 @@
  */
 
 #include "GatewayInboundDeviceMessageHandler.h"
+
 #include "model/Message.h"
 #include "protocol/GatewayProtocol.h"
 #include "utilities/Logger.h"
 #include "utilities/StringUtils.h"
+
 #include <algorithm>
 
 namespace wolkabout

@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.2.7**
+- [BUGFIX] - Create FM directory on initialisation.
+
 **Version 4.2.6**
 - [IMPROVEMENT] Removed poco dependencies
 

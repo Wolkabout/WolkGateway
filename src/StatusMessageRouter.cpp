@@ -15,6 +15,7 @@
  */
 
 #include "StatusMessageRouter.h"
+
 #include "model/Message.h"
 #include "protocol/GatewayStatusProtocol.h"
 #include "protocol/StatusProtocol.h"

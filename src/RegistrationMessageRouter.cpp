@@ -15,6 +15,7 @@
  */
 
 #include "RegistrationMessageRouter.h"
+
 #include "model/Message.h"
 #include "protocol/GatewaySubdeviceRegistrationProtocol.h"
 #include "protocol/RegistrationProtocol.h"

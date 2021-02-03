@@ -15,6 +15,7 @@
  */
 
 #include "service/SubdeviceRegistrationService.h"
+
 #include "OutboundMessageHandler.h"
 #include "model/DetailedDevice.h"
 #include "model/Message.h"

@@ -15,6 +15,7 @@
  */
 
 #include "protocol/GatewayProtocol.h"
+
 #include "utilities/StringUtils.h"
 
 namespace wolkabout

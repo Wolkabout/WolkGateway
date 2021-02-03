@@ -15,6 +15,7 @@
  */
 
 #include "service/KeepAliveService.h"
+
 #include "OutboundMessageHandler.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/Message.h"

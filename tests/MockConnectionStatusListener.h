@@ -2,6 +2,7 @@
 #define MOCKCONNECTIONSTATUSLISTENER_H
 
 #include "ConnectionStatusListener.h"
+
 #include <gmock/gmock.h>
 
 class MockConnectionStatusListener : public wolkabout::ConnectionStatusListener

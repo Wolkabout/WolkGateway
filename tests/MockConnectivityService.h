@@ -17,7 +17,9 @@
 #define MOCKCONNECTIVITYSERVICE_H
 
 #include "connectivity/ConnectivityService.h"
+
 #include <gmock/gmock.h>
+
 #include <memory>
 
 class MockConnectivityService : public wolkabout::ConnectivityService

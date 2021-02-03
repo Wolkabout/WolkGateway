@@ -15,6 +15,7 @@
  */
 
 #include "repository/JsonFileExistingDevicesRepository.h"
+
 #include "utilities/FileSystemUtils.h"
 #include "utilities/json.hpp"
 

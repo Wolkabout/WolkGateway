@@ -18,8 +18,8 @@
 #define DEVICEREPOSITORYIMPL_H
 
 #include "repository/DeviceRepository.h"
-#include <Poco/Data/Session.h>
 
+#include <Poco/Data/Session.h>
 #include <map>
 #include <memory>
 #include <mutex>

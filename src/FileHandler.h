@@ -18,6 +18,7 @@
 #define FILEHANDLER_H
 
 #include "utilities/ByteUtils.h"
+
 #include <string>
 
 namespace wolkabout

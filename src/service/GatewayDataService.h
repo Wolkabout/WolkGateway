@@ -20,6 +20,7 @@
 #include "InboundMessageHandler.h"
 #include "model/ActuatorStatus.h"
 #include "model/ConfigurationItem.h"
+
 #include <functional>
 #include <map>
 #include <memory>

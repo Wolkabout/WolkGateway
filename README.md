@@ -12,7 +12,7 @@ WolkGateway bridges communication between WolkAbout IoT platform and multiple de
 
 WolkGateway supports bridging of devices using following protocol(s):
 
-* Json protocol
+* WolkAbout protocol
 
 Installing from source
 ----------------------

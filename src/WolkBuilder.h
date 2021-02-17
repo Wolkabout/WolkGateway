@@ -22,6 +22,7 @@
 #include "ConfigurationHandler.h"
 #include "ConfigurationProvider.h"
 #include "FirmwareInstaller.h"
+#include "api/DataProvider.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/GatewayDevice.h"
 #include "service/UrlFileDownloader.h"
@@ -34,6 +35,9 @@
 namespace wolkabout
 {
 class Wolk;
+class WolkDefault;
+
+class OutboundMessageHandler;
 
 class WolkBuilder final
 {
@@ -149,6 +153,14 @@ public:
     WolkBuilder& fileDownloadDirectory(const std::string& path);
 
     /**
+     * @brief withExternalDataProvider Use external data provider instead of expecting data on local mqtt
+     * with WolkAbout protocol
+     * @param provider Implementation of DataProvider
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& withExternalDataProvider(DataProvider* provider);
+
+    /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
      *
@@ -165,6 +177,11 @@ public:
     operator std::unique_ptr<Wolk>();
 
 private:
+    void setupWithInternalData(WolkDefault* wolk);
+    void setupWithExternalData(Wolk* wolk);
+
+    void setupGatewayDataService(Wolk* wolk, OutboundMessageHandler& outboundMessageHandler);
+
     std::string m_platformHost;
     std::string m_platformTrustStore = TRUST_STORE;
     std::string m_gatewayHost;
@@ -188,6 +205,8 @@ private:
     std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
 
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
+
+    DataProvider* m_externalDataProvider = nullptr;
 
     bool m_keepAliveEnabled = true;
 

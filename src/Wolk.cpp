@@ -31,15 +31,14 @@
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/FileRepository.h"
-#include "service/DataService.h"
-#include "service/DeviceStatusService.h"
 #include "service/FileDownloadService.h"
 #include "service/FirmwareUpdateService.h"
-#include "service/GatewayDataService.h"
 #include "service/GatewayUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 #include "service/SubdeviceRegistrationService.h"
+#include "service/data/DataService.h"
+#include "service/data/GatewayDataService.h"
 #include "utilities/Logger.h"
 
 #include <memory>
@@ -60,18 +59,6 @@ const constexpr std::chrono::seconds Wolk::KEEP_ALIVE_INTERVAL;
 WolkBuilder Wolk::newBuilder(GatewayDevice device)
 {
     return WolkBuilder(std::move(device));
-}
-
-void Wolk::connect()
-{
-    connectToPlatform(true);
-    connectToDevices(true);
-}
-
-void Wolk::disconnect()
-{
-    addToCommandBuffer([=]() -> void { m_platformConnectivityService->disconnect(); });
-    addToCommandBuffer([=]() -> void { m_deviceConnectivityService->disconnect(); });
 }
 
 void Wolk::addSensorReading(const std::string& reference, const std::string& value, unsigned long long rtc)
@@ -283,14 +270,6 @@ void Wolk::platformDisconnected()
     });
 }
 
-void Wolk::devicesDisconnected()
-{
-    addToCommandBuffer([=] {
-        notifyDevicesDisonnected();
-        connectToDevices(true);
-    });
-}
-
 void Wolk::gatewayUpdated()
 {
     addToCommandBuffer([=] {
@@ -307,19 +286,6 @@ void Wolk::gatewayUpdated()
             m_subdeviceRegistrationService->updatePostponedDevices();
         }
     });
-}
-
-void Wolk::deviceRegistered(const std::string& deviceKey)
-{
-    addToCommandBuffer([=] {
-        m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey);
-        m_existingDevicesRepository->addDeviceKey(deviceKey);
-    });
-}
-
-void Wolk::deviceUpdated(const std::string& deviceKey)
-{
-    addToCommandBuffer([=] { m_deviceStatusService->sendLastKnownStatusForDevice(deviceKey); });
 }
 
 void Wolk::publishEverything()
@@ -394,24 +360,6 @@ void Wolk::notifyPlatformDisonnected()
     }
 }
 
-void Wolk::notifyDevicesConnected()
-{
-    LOG(INFO) << "Connection to local bus established";
-
-    m_devicePublisher->connected();
-
-    m_deviceStatusService->connected();
-}
-
-void Wolk::notifyDevicesDisonnected()
-{
-    LOG(INFO) << "Connection to local bus lost";
-
-    m_devicePublisher->disconnected();
-
-    m_deviceStatusService->disconnected();
-}
-
 void Wolk::connectToPlatform(bool firstTime)
 {
     addToCommandBuffer([=]() -> void {
@@ -437,27 +385,6 @@ void Wolk::connectToPlatform(bool firstTime)
 
             std::this_thread::sleep_for(std::chrono::milliseconds(RECONNECT_DELAY_MSEC));
             connectToPlatform(false);
-        }
-    });
-}
-
-void Wolk::connectToDevices(bool firstTime)
-{
-    addToCommandBuffer([=]() -> void {
-        if (firstTime)
-            LOG(INFO) << "Connecting to local bus...";
-
-        if (m_deviceConnectivityService->connect())
-        {
-            notifyDevicesConnected();
-        }
-        else
-        {
-            if (firstTime)
-                LOG(INFO) << "Failed to connect to local bus";
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(RECONNECT_DELAY_MSEC));
-            connectToDevices(false);
         }
     });
 }

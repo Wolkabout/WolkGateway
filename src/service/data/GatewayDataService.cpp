@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "service/GatewayDataService.h"
+#include "GatewayDataService.h"
 
 #include "OutboundMessageHandler.h"
 #include "connectivity/ConnectivityService.h"

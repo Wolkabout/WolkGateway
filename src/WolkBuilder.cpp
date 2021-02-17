@@ -21,6 +21,7 @@
 #include "RegistrationMessageRouter.h"
 #include "StatusMessageRouter.h"
 #include "Wolk.h"
+#include "WolkDefault.h"
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "connectivity/mqtt/PahoMqttClient.h"
@@ -41,15 +42,16 @@
 #include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "repository/SQLiteFileRepository.h"
-#include "service/DataService.h"
 #include "service/DeviceStatusService.h"
 #include "service/FileDownloadService.h"
 #include "service/FirmwareUpdateService.h"
-#include "service/GatewayDataService.h"
 #include "service/GatewayUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 #include "service/SubdeviceRegistrationService.h"
+#include "service/data/ExternalDataService.h"
+#include "service/data/GatewayDataService.h"
+#include "service/data/InternalDataService.h"
 
 #include <stdexcept>
 
@@ -151,6 +153,12 @@ WolkBuilder& WolkBuilder::fileDownloadDirectory(const std::string& path)
     return *this;
 }
 
+WolkBuilder& WolkBuilder::withExternalDataProvider(DataProvider* provider)
+{
+    m_externalDataProvider = provider;
+    return *this;
+}
+
 std::unique_ptr<Wolk> WolkBuilder::build()
 {
     if (m_device.getKey().empty())
@@ -197,7 +205,16 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         throw std::logic_error("Url downloader must be provided when url download is enabled");
     }
 
-    auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
+    auto wolk = [&] {
+        if (m_externalDataProvider)
+        {
+            return std::unique_ptr<Wolk>(nullptr);
+        }
+        else
+        {
+            return std::unique_ptr<Wolk>(new WolkDefault(m_device));
+        }
+    }();
 
     // Setup protocols
     wolk->m_dataProtocol.reset(new wolkabout::JsonProtocol(true));
@@ -217,8 +234,8 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     // Setup device repository
     wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
 
-    // Setup existing devices repository
-    wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
+    //    // Setup existing devices repository
+    //    wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
 
     // Setup file repository
     wolk->m_fileRepository.reset(new SQLiteFileRepository(DATABASE));
@@ -230,26 +247,27 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_platformConnectivityService->setUncontrolledDisonnectMessage(
       wolk->m_statusProtocol->makeLastWillMessage(m_device.getKey()));
 
-    const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
-    wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
-      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_gatewayHost, localMqttClientId));
+    //    const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
+    //    wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
+    //      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_gatewayHost,
+    //      localMqttClientId));
 
     wolk->m_platformPublisher.reset(new PublishingService(
       *wolk->m_platformConnectivityService, std::unique_ptr<GatewayPersistence>(new GatewayInMemoryPersistence())));
-    wolk->m_devicePublisher.reset(new PublishingService(
-      *wolk->m_deviceConnectivityService, std::unique_ptr<GatewayPersistence>(new GatewayInMemoryPersistence())));
+    //    wolk->m_devicePublisher.reset(new PublishingService(
+    //      *wolk->m_deviceConnectivityService, std::unique_ptr<GatewayPersistence>(new GatewayInMemoryPersistence())));
 
     wolk->m_inboundPlatformMessageHandler.reset(new GatewayInboundPlatformMessageHandler(m_device.getKey()));
-    wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
+    //    wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
 
     wolk->m_platformConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundPlatformMessageHandler>>(
       *wolk->m_inboundPlatformMessageHandler, [&] { wolk->platformDisconnected(); });
 
-    wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
-      *wolk->m_inboundDeviceMessageHandler, [&] { wolk->devicesDisconnected(); });
+    //    wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
+    //      *wolk->m_inboundDeviceMessageHandler, [&] { wolk->devicesDisconnected(); });
 
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
-    wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
+    //    wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
 
     // Setup actuation and configuration handlers
     wolk->m_actuationHandlerLambda = m_actuationHandlerLambda;
@@ -270,6 +288,145 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     wolk->m_gatewayUpdateService->onGatewayUpdated([&] { wolk->gatewayUpdated(); });
 
+    //    if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
+    //    {
+    //        // Setup registration service
+    //        wolk->m_subdeviceRegistrationService.reset(new SubdeviceRegistrationService(
+    //          m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_gatewayRegistrationProtocol,
+    //          *wolk->m_deviceRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher));
+
+    //        wolk->m_subdeviceRegistrationService->onDeviceRegistered(
+    //          [&](const std::string& deviceKey) { wolk->deviceRegistered(deviceKey); });
+
+    //        wolk->m_subdeviceRegistrationService->onDeviceUpdated(
+    //          [&](const std::string& deviceKey) { wolk->deviceUpdated(deviceKey); });
+    //    }
+
+    //    wolk->m_registrationMessageRouter = std::make_shared<RegistrationMessageRouter>(
+    //      *wolk->m_registrationProtocol, *wolk->m_gatewayRegistrationProtocol, wolk->m_gatewayUpdateService.get(),
+    //      wolk->m_subdeviceRegistrationService.get(), wolk->m_subdeviceRegistrationService.get(),
+    //      wolk->m_subdeviceRegistrationService.get(), wolk->m_subdeviceRegistrationService.get(),
+    //      wolk->m_subdeviceRegistrationService.get());
+
+    //    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_registrationMessageRouter);
+    //    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_registrationMessageRouter);
+
+    //    // Setup keep alive service
+    //    if (m_keepAliveEnabled)
+    //    {
+    //        wolk->m_keepAliveService.reset(new KeepAliveService(m_device.getKey(), *wolk->m_statusProtocol,
+    //                                                            *wolk->m_platformPublisher,
+    //                                                            Wolk::KEEP_ALIVE_INTERVAL));
+    //    }
+
+    //    wolk->m_statusMessageRouter = std::make_shared<StatusMessageRouter>(
+    //      *wolk->m_statusProtocol, *wolk->m_gatewayStatusProtocol, wolk->m_deviceStatusService.get(),
+    //      wolk->m_deviceStatusService.get(), wolk->m_deviceStatusService.get(), wolk->m_keepAliveService.get());
+
+    //    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_statusMessageRouter);
+    //    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
+
+    //    if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
+    //    {
+    //        wolk->m_dataService = std::make_shared<DataService>(
+    //          m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol, wolk->m_deviceRepository.get(),
+    //          *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+    //    }
+    //    else
+    //    {
+    //        wolk->m_dataService =
+    //          std::make_shared<DataService>(m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol,
+    //          nullptr,
+    //                                        *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+    //    }
+
+    //    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_dataService);
+    //    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_dataService);
+
+    if (m_externalDataProvider)
+    {
+        setupWithExternalData(wolk.get());
+    }
+    else
+    {
+        setupWithInternalData(dynamic_cast<WolkDefault*>(wolk.get()));
+    }
+
+    //    // Setup keep alive service
+    //    if (m_keepAliveEnabled)
+    //    {
+    //        wolk->m_keepAliveService.reset(new KeepAliveService(m_device.getKey(), *wolk->m_statusProtocol,
+    //                                                            *wolk->m_platformPublisher,
+    //                                                            Wolk::KEEP_ALIVE_INTERVAL));
+    //    }
+
+    //    //     route device statuses if setup
+    //    wolk->m_statusMessageRouter = std::make_shared<StatusMessageRouter>(
+    //      *wolk->m_statusProtocol, *wolk->m_gatewayStatusProtocol, wolk->m_deviceStatusService.get(),
+    //      wolk->m_deviceStatusService.get(), wolk->m_deviceStatusService.get(), wolk->m_keepAliveService.get());
+
+    //    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_statusMessageRouter);
+    //    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
+    //    //
+
+    //    // setup gateway data service if gateway template is not empty
+    //    const auto gwTemplate = m_device.getTemplate();
+    //    if (!gwTemplate.getSensors().empty() || !gwTemplate.getActuators().empty() || !gwTemplate.getAlarms().empty()
+    //    ||
+    //        !gwTemplate.getConfigurations().empty())
+    //    {
+    //        wolk->m_gatewayPersistence.reset(new InMemoryPersistence());
+    //        wolk->m_gatewayDataService.reset(new GatewayDataService(
+    //          m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayPersistence, *wolk->m_dataService,
+    //          [&](const std::string& reference, const std::string& value) {
+    //              wolk->handleActuatorSetCommand(reference, value);
+    //          },
+    //          [&](const std::string& reference) { wolk->handleActuatorGetCommand(reference); },
+    //          [&](const ConfigurationSetCommand& command) { wolk->handleConfigurationSetCommand(command); },
+    //          [&] { wolk->handleConfigurationGetCommand(); }));
+
+    //        wolk->m_dataService->setGatewayMessageListener(wolk->m_gatewayDataService.get());
+    //    }
+
+    // setup file download service
+    wolk->m_fileDownloadService =
+      std::make_shared<FileDownloadService>(m_device.getKey(), *wolk->m_fileDownloadProtocol, m_fileDownloadDirectory,
+                                            *wolk->m_platformPublisher, *wolk->m_fileRepository, m_urlFileDownloader);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
+
+    //    // setup firmware update service
+    //    wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
+    //      m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_gatewayFirmwareUpdateProtocol,
+    //      *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher, m_firmwareInstaller,
+    //      m_firmwareVersion);
+    //    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_firmwareUpdateService);
+    //    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
+
+    return wolk;
+}
+
+void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
+{
+    // Setup existing devices repository
+    wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
+
+    // connectivity
+    const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
+    wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_gatewayHost, localMqttClientId));
+
+    wolk->m_devicePublisher.reset(new PublishingService(
+      *wolk->m_deviceConnectivityService, std::unique_ptr<GatewayPersistence>(new GatewayInMemoryPersistence())));
+
+    wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
+
+    wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
+      *wolk->m_inboundDeviceMessageHandler, [&] { wolk->devicesDisconnected(); });
+
+    wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
+    //
+
+    // subdevice management
     if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
         // Setup registration service
@@ -292,8 +449,9 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_registrationMessageRouter);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_registrationMessageRouter);
+    //
 
-    // Setup device status and keep alive service
+    // Setup device status service
     if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
         wolk->m_deviceStatusService.reset(new DeviceStatusService(
@@ -307,58 +465,44 @@ std::unique_ptr<Wolk> WolkBuilder::build()
                                   *wolk->m_platformPublisher, *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL));
     }
 
-    if (m_keepAliveEnabled)
-    {
-        wolk->m_keepAliveService.reset(new KeepAliveService(m_device.getKey(), *wolk->m_statusProtocol,
-                                                            *wolk->m_platformPublisher, Wolk::KEEP_ALIVE_INTERVAL));
-    }
-
-    wolk->m_statusMessageRouter = std::make_shared<StatusMessageRouter>(
-      *wolk->m_statusProtocol, *wolk->m_gatewayStatusProtocol, wolk->m_deviceStatusService.get(),
-      wolk->m_deviceStatusService.get(), wolk->m_deviceStatusService.get(), wolk->m_keepAliveService.get());
-
-    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_statusMessageRouter);
-    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
-
+    // device data service
     if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
-        wolk->m_dataService = std::make_shared<DataService>(
+        wolk->m_dataService = std::make_shared<InternalDataService>(
           m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol, wolk->m_deviceRepository.get(),
           *wolk->m_platformPublisher, *wolk->m_devicePublisher);
     }
     else
     {
         wolk->m_dataService =
-          std::make_shared<DataService>(m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol, nullptr,
-                                        *wolk->m_platformPublisher, *wolk->m_devicePublisher);
+          std::make_shared<InternalDataService>(m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol,
+                                                nullptr, *wolk->m_platformPublisher, *wolk->m_devicePublisher);
     }
 
-    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_dataService);
+    wolk->m_inboundDeviceMessageHandler->addListener(
+      std::dynamic_pointer_cast<InternalDataService>(wolk->m_dataService));
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_dataService);
 
-    // setup gateway data service if gateway template is not empty
-    const auto gwTemplate = m_device.getTemplate();
-    if (!gwTemplate.getSensors().empty() || !gwTemplate.getActuators().empty() || !gwTemplate.getAlarms().empty() ||
-        !gwTemplate.getConfigurations().empty())
-    {
-        wolk->m_gatewayPersistence.reset(new InMemoryPersistence());
-        wolk->m_gatewayDataService.reset(new GatewayDataService(
-          m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayPersistence, *wolk->m_dataService,
-          [&](const std::string& reference, const std::string& value) {
-              wolk->handleActuatorSetCommand(reference, value);
-          },
-          [&](const std::string& reference) { wolk->handleActuatorGetCommand(reference); },
-          [&](const ConfigurationSetCommand& command) { wolk->handleConfigurationSetCommand(command); },
-          [&] { wolk->handleConfigurationGetCommand(); }));
+    // gateway data service
+    setupGatewayDataService(wolk, *wolk->m_dataService);
 
-        wolk->m_dataService->setGatewayMessageListener(wolk->m_gatewayDataService.get());
+    wolk->m_dataService->setGatewayMessageListener(wolk->m_gatewayDataService.get());
+    //
+
+    // Setup keep alive service
+    if (m_keepAliveEnabled)
+    {
+        wolk->m_keepAliveService.reset(new KeepAliveService(m_device.getKey(), *wolk->m_statusProtocol,
+                                                            *wolk->m_platformPublisher, Wolk::KEEP_ALIVE_INTERVAL));
     }
 
-    // setup file download service
-    wolk->m_fileDownloadService =
-      std::make_shared<FileDownloadService>(m_device.getKey(), *wolk->m_fileDownloadProtocol, m_fileDownloadDirectory,
-                                            *wolk->m_platformPublisher, *wolk->m_fileRepository, m_urlFileDownloader);
-    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
+    //     route device statuses if setup
+    wolk->m_statusMessageRouter = std::make_shared<StatusMessageRouter>(
+      *wolk->m_statusProtocol, *wolk->m_gatewayStatusProtocol, wolk->m_deviceStatusService.get(),
+      wolk->m_deviceStatusService.get(), wolk->m_deviceStatusService.get(), wolk->m_keepAliveService.get());
+
+    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_statusMessageRouter);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
 
     // setup firmware update service
     wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
@@ -367,8 +511,57 @@ std::unique_ptr<Wolk> WolkBuilder::build()
       m_firmwareVersion);
     wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_firmwareUpdateService);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
+    //
+}
 
-    return wolk;
+void WolkBuilder::setupWithExternalData(Wolk* wolk)
+{
+    // TODO data service to route gateway data instead of data service
+    wolk->m_dataService = std::shared_ptr<DataService>(
+      new ExternalDataService(wolk->m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_platformPublisher));
+
+    setupGatewayDataService(wolk, *wolk->m_dataService);
+
+    // Setup keep alive service
+    if (m_keepAliveEnabled)
+    {
+        wolk->m_keepAliveService.reset(new KeepAliveService(m_device.getKey(), *wolk->m_statusProtocol,
+                                                            *wolk->m_platformPublisher, Wolk::KEEP_ALIVE_INTERVAL));
+    }
+
+    //     route device statuses if setup
+    wolk->m_statusMessageRouter =
+      std::make_shared<StatusMessageRouter>(*wolk->m_statusProtocol, *wolk->m_gatewayStatusProtocol, nullptr, nullptr,
+                                            nullptr, wolk->m_keepAliveService.get());
+
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_statusMessageRouter);
+
+    //    // setup firmware update service
+    //    wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
+    //      m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_gatewayFirmwareUpdateProtocol,
+    //      *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher, m_firmwareInstaller,
+    //      m_firmwareVersion);
+    //    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_firmwareUpdateService);
+    //    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
+}
+
+void WolkBuilder::setupGatewayDataService(Wolk* wolk, OutboundMessageHandler& outboundMessageHandler)
+{
+    // setup gateway data service if gateway template is not empty
+    const auto gwTemplate = m_device.getTemplate();
+    if (!gwTemplate.getSensors().empty() || !gwTemplate.getActuators().empty() || !gwTemplate.getAlarms().empty() ||
+        !gwTemplate.getConfigurations().empty())
+    {
+        wolk->m_gatewayPersistence.reset(new InMemoryPersistence());
+        wolk->m_gatewayDataService.reset(new GatewayDataService(
+          m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayPersistence, outboundMessageHandler,
+          [&](const std::string& reference, const std::string& value) {
+              wolk->handleActuatorSetCommand(reference, value);
+          },
+          [&](const std::string& reference) { wolk->handleActuatorGetCommand(reference); },
+          [&](const ConfigurationSetCommand& command) { wolk->handleConfigurationSetCommand(command); },
+          [&] { wolk->handleConfigurationGetCommand(); }));
+    }
 }
 
 wolkabout::WolkBuilder::operator std::unique_ptr<Wolk>()

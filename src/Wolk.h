@@ -40,7 +40,6 @@ class ConfigurationSetCommand;
 class ConnectivityService;
 class DataProtocol;
 class DataService;
-class DeviceStatusService;
 class DeviceRepository;
 class ExistingDevicesRepository;
 class FileDownloadService;
@@ -82,12 +81,12 @@ public:
     /**
      * @brief connect Establishes connection with WolkAbout IoT platform
      */
-    void connect();
+    virtual void connect() = 0;
 
     /**
      * @brief disconnect Disconnects from WolkAbout IoT platform
      */
-    void disconnect();
+    virtual void disconnect() = 0;
 
     /**
      * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
@@ -211,7 +210,7 @@ public:
      */
     void publish();
 
-private:
+protected:
     static const constexpr std::chrono::seconds KEEP_ALIVE_INTERVAL{600};
 
     explicit Wolk(GatewayDevice device);
@@ -233,11 +232,8 @@ private:
     void handleConfigurationGetCommand();
 
     void platformDisconnected();
-    void devicesDisconnected();
 
     void gatewayUpdated();
-    void deviceRegistered(const std::string& deviceKey);
-    void deviceUpdated(const std::string& deviceKey);
     //
 
     void publishEverything();
@@ -247,11 +243,8 @@ private:
 
     void notifyPlatformConnected();
     void notifyPlatformDisonnected();
-    void notifyDevicesConnected();
-    void notifyDevicesDisonnected();
 
     void connectToPlatform(bool firstTime = false);
-    void connectToDevices(bool firstTime = false);
 
     void requestActuatorStatusesForDevices();
     void requestActuatorStatusesForDevice(const std::string& deviceKey);
@@ -265,13 +258,8 @@ private:
     std::unique_ptr<Persistence> m_gatewayPersistence;
 
     std::unique_ptr<ConnectivityService> m_platformConnectivityService;
-    std::unique_ptr<ConnectivityService> m_deviceConnectivityService;
-
     std::unique_ptr<InboundPlatformMessageHandler> m_inboundPlatformMessageHandler;
-    std::unique_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
-
     std::unique_ptr<PublishingService> m_platformPublisher;
-    std::unique_ptr<PublishingService> m_devicePublisher;
 
     std::unique_ptr<DataProtocol> m_dataProtocol;
     std::unique_ptr<GatewayDataProtocol> m_gatewayDataProtocol;
@@ -287,7 +275,6 @@ private:
     std::unique_ptr<StatusProtocol> m_statusProtocol;
     std::unique_ptr<GatewayStatusProtocol> m_gatewayStatusProtocol;
     std::unique_ptr<KeepAliveService> m_keepAliveService;
-    std::unique_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
 
     std::unique_ptr<JsonDFUProtocol> m_firmwareUpdateProtocol;

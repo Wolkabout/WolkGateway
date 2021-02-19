@@ -17,6 +17,7 @@
 #define private public
 #define protected public
 #include "Wolk.h"
+#include "WolkDefault.h"
 #undef protected
 #undef private
 
@@ -32,13 +33,14 @@
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
 #include "protocol/json/JsonProtocol.h"
 #include "protocol/json/JsonRegistrationProtocol.h"
-#include "service/DataService.h"
 #include "service/FileDownloadService.h"
 #include "service/FirmwareUpdateService.h"
 #include "service/GatewayUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
 #include "service/SubdeviceRegistrationService.h"
+#include "service/data/DataService.h"
+#include "service/data/InternalDataService.h"
 
 #include <memory>
 #include <protocol/json/JsonStatusProtocol.h>
@@ -54,15 +56,17 @@ public:
     void disconnected() override {}
 };
 
-class MockDataService : public wolkabout::DataService
+class MockDataService : public wolkabout::InternalDataService
 {
 public:
-    using wolkabout::DataService::DataService;
+    using wolkabout::InternalDataService::InternalDataService;
 
     MOCK_METHOD1(requestActuatorStatusesForDevice, void(const std::string&));
     MOCK_METHOD0(requestActuatorStatusesForAllDevices, void());
 
 private:
+    MOCK_METHOD1(handleMessageForDevice, void(std::shared_ptr<wolkabout::Message>));
+
     GTEST_DISALLOW_COPY_AND_ASSIGN_(MockDataService);
 };
 
@@ -133,8 +137,8 @@ public:
         platformConnectivityService = new MockConnectivityService();
         deviceConnectivityService = new MockConnectivityService();
 
-        wolk = std::unique_ptr<wolkabout::Wolk>(
-          new wolkabout::Wolk(wolkabout::GatewayDevice{GATEWAY_KEY, "password", control, true, true}));
+        wolk = std::unique_ptr<wolkabout::WolkDefault>(
+          new wolkabout::WolkDefault(wolkabout::GatewayDevice{GATEWAY_KEY, "password", control, true, true}));
         wolk->m_platformConnectivityService.reset(platformConnectivityService);
         wolk->m_deviceConnectivityService.reset(deviceConnectivityService);
         wolk->m_platformPublisher.reset(new Publisher(*platformConnectivityService, nullptr));
@@ -211,7 +215,7 @@ public:
     std::shared_ptr<wolkabout::StatusProtocol> statusProtocol;
     std::shared_ptr<wolkabout::GatewaySubdeviceRegistrationProtocol> gatewayRegistrationProtocol;
 
-    std::unique_ptr<wolkabout::Wolk> wolk;
+    std::unique_ptr<wolkabout::WolkDefault> wolk;
 
     std::mutex mutex;
     std::condition_variable cv;

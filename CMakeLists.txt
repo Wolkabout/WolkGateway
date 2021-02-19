@@ -72,15 +72,15 @@ add_dependencies(${PROJECT_NAME} libpoco)
 file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h" "tests/*.hpp")
 file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
 
-#add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES})
-#target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
-#target_include_directories(${PROJECT_NAME}Tests PUBLIC "tests")
-#target_include_directories(${PROJECT_NAME}Tests SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
-#set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
-#add_dependencies(${PROJECT_NAME}Tests libgtest)
+add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES})
+target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
+target_include_directories(${PROJECT_NAME}Tests PUBLIC "tests")
+target_include_directories(${PROJECT_NAME}Tests SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
+set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+add_dependencies(${PROJECT_NAME}Tests libgtest)
 
-#add_custom_target(tests ALL ${PROJECT_NAME}Tests)
-#add_test(gtest ${PROJECT_NAME}Tests)
+add_custom_target(tests ALL ${PROJECT_NAME}Tests)
+add_test(gtest ${PROJECT_NAME}Tests)
 
 
 # WolkGateway executable

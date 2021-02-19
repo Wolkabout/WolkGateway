@@ -12,6 +12,8 @@ const unsigned RECONNECT_DELAY_MSEC = 2000;
 
 namespace wolkabout
 {
+WolkDefault::~WolkDefault() = default;
+
 void WolkDefault::connect()
 {
     connectToPlatform(true);

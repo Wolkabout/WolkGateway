@@ -18,6 +18,7 @@ public:
     virtual ~DataHandler() = default;
 
     virtual void addSensorReading(const std::string& deviceKey, const SensorReading& reading) = 0;
+    virtual void addSensorReadings(const std::string& deviceKey, const std::vector<SensorReading>& readings) = 0;
 
     virtual void addAlarm(const std::string& deviceKey, const Alarm& alarm) = 0;
 

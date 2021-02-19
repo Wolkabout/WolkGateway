@@ -5,7 +5,7 @@
 
 namespace wolkabout
 {
-class DeviceStatusService;
+class InternalDeviceStatusService;
 
 class WolkDefault : public Wolk
 {
@@ -34,7 +34,7 @@ private:
     std::unique_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
     std::unique_ptr<PublishingService> m_devicePublisher;
 
-    std::unique_ptr<DeviceStatusService> m_deviceStatusService;
+    std::unique_ptr<InternalDeviceStatusService> m_deviceStatusService;
 };
 }    // namespace wolkabout
 

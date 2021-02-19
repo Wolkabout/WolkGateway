@@ -1,8 +1,8 @@
 #include "WolkDefault.h"
 
 #include "repository/ExistingDevicesRepository.h"
-#include "service/DeviceStatusService.h"
 #include "service/PublishingService.h"
+#include "service/status/InternalDeviceStatusService.h"
 #include "utilities/Logger.h"
 
 namespace

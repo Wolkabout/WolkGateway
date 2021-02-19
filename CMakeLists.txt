@@ -75,7 +75,7 @@ target_include_directories(${PROJECT_NAME}Tests SYSTEM PRIVATE ${CMAKE_LIBRARY_I
 set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 add_dependencies(${PROJECT_NAME}Tests libgtest)
 
-add_custom_target(tests ALL ${PROJECT_NAME}Tests)
+add_custom_target(tests ${PROJECT_NAME}Tests)
 add_test(gtest ${PROJECT_NAME}Tests)
 
 

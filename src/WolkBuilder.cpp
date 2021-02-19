@@ -22,6 +22,7 @@
 #include "StatusMessageRouter.h"
 #include "Wolk.h"
 #include "WolkDefault.h"
+#include "WolkExternal.h"
 #include "connectivity/ConnectivityService.h"
 #include "connectivity/mqtt/MqttConnectivityService.h"
 #include "connectivity/mqtt/PahoMqttClient.h"
@@ -42,7 +43,6 @@
 #include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "repository/SQLiteFileRepository.h"
-#include "service/DeviceStatusService.h"
 #include "service/FileDownloadService.h"
 #include "service/FirmwareUpdateService.h"
 #include "service/GatewayUpdateService.h"
@@ -52,6 +52,9 @@
 #include "service/data/ExternalDataService.h"
 #include "service/data/GatewayDataService.h"
 #include "service/data/InternalDataService.h"
+#include "service/status/DeviceStatusService.h"
+#include "service/status/ExternalDeviceStatusService.h"
+#include "service/status/InternalDeviceStatusService.h"
 
 #include <stdexcept>
 
@@ -208,7 +211,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     auto wolk = [&] {
         if (m_externalDataProvider)
         {
-            return std::unique_ptr<Wolk>(nullptr);
+            return std::unique_ptr<Wolk>(new WolkExternal(m_device));
         }
         else
         {
@@ -345,7 +348,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     if (m_externalDataProvider)
     {
-        setupWithExternalData(wolk.get());
+        setupWithExternalData(dynamic_cast<WolkExternal*>(wolk.get()));
     }
     else
     {
@@ -454,15 +457,15 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
     // Setup device status service
     if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
-        wolk->m_deviceStatusService.reset(new DeviceStatusService(
+        wolk->m_deviceStatusService.reset(new InternalDeviceStatusService(
           m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_gatewayStatusProtocol, wolk->m_deviceRepository.get(),
           *wolk->m_platformPublisher, *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL));
     }
     else
     {
-        wolk->m_deviceStatusService.reset(
-          new DeviceStatusService(m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_gatewayStatusProtocol, nullptr,
-                                  *wolk->m_platformPublisher, *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL));
+        wolk->m_deviceStatusService.reset(new InternalDeviceStatusService(
+          m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_gatewayStatusProtocol, nullptr,
+          *wolk->m_platformPublisher, *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL));
     }
 
     // device data service
@@ -514,11 +517,21 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
     //
 }
 
-void WolkBuilder::setupWithExternalData(Wolk* wolk)
+void WolkBuilder::setupWithExternalData(WolkExternal* wolk)
 {
     // TODO data service to route gateway data instead of data service
-    wolk->m_dataService = std::shared_ptr<DataService>(
+    wolk->m_dataService = std::shared_ptr<ExternalDataService>(
       new ExternalDataService(wolk->m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_platformPublisher));
+
+    // Setup device status service
+    // TODO
+    wolk->m_deviceStatusService.reset(
+      new ExternalDeviceStatusService(m_device.getKey(), *wolk->m_statusProtocol, *wolk->m_platformPublisher));
+
+    wolk->m_dataApi.reset(
+      new DataHandlerApiFacade(dynamic_cast<ExternalDataService&>(*wolk->m_dataService), *wolk->m_deviceStatusService));
+
+    m_externalDataProvider->setDataHandler(wolk->m_dataApi.get());
 
     setupGatewayDataService(wolk, *wolk->m_dataService);
 

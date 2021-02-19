@@ -36,6 +36,7 @@ namespace wolkabout
 {
 class Wolk;
 class WolkDefault;
+class WolkExternal;
 
 class OutboundMessageHandler;
 
@@ -178,7 +179,7 @@ public:
 
 private:
     void setupWithInternalData(WolkDefault* wolk);
-    void setupWithExternalData(Wolk* wolk);
+    void setupWithExternalData(WolkExternal* wolk);
 
     void setupGatewayDataService(Wolk* wolk, OutboundMessageHandler& outboundMessageHandler);
 

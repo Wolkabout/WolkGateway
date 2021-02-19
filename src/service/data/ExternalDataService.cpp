@@ -51,11 +51,6 @@ void ExternalDataService::addConfiguration(const std::string& deviceKey,
     addMessage(message);
 }
 
-void ExternalDataService::addDeviceStatus(const DeviceStatus& status)
-{
-    // TODO
-}
-
 void ExternalDataService::requestActuatorStatusesForDevice(const std::string& /*deviceKey*/)
 {
     LOG(WARN) << "Not requesting actuator status for device";

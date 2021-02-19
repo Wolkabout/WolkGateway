@@ -12,6 +12,8 @@ class WolkDefault : public Wolk
     friend class WolkBuilder;
 
 public:
+    ~WolkDefault();
+
     void connect() override;
     void disconnect() override;
 

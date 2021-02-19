@@ -12,6 +12,7 @@ public:
     using DataService::DataService;
 
     void addSensorReading(const std::string& deviceKey, const SensorReading& reading) override;
+    void addSensorReadings(const std::string& deviceKey, const std::vector<SensorReading>& readings) override;
     void addAlarm(const std::string& deviceKey, const Alarm& alarm) override;
     void addActuatorStatus(const std::string& deviceKey, const ActuatorStatus& status) override;
     void addConfiguration(const std::string& deviceKey, const std::vector<ConfigurationItem>& configurations) override;

@@ -4,12 +4,26 @@
 #include "protocol/DataProtocol.h"
 #include "utilities/Logger.h"
 
+#include <algorithm>
+
 namespace wolkabout
 {
 void ExternalDataService::addSensorReading(const std::string& deviceKey, const SensorReading& reading)
 {
     const std::shared_ptr<Message> message =
       m_protocol.makeMessage(deviceKey, {std::make_shared<SensorReading>(reading)});
+
+    addMessage(message);
+}
+
+void ExternalDataService::addSensorReadings(const std::string& deviceKey, const std::vector<SensorReading>& readings)
+{
+    std::vector<std::shared_ptr<SensorReading>> parsableReadings;
+
+    std::transform(readings.begin(), readings.end(), std::back_inserter(parsableReadings),
+                   [](const SensorReading& reading) { return std::make_shared<SensorReading>(reading); });
+
+    const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, parsableReadings);
 
     addMessage(message);
 }

@@ -5,6 +5,7 @@
 #include "protocol/json/JsonProtocol.h"
 #include "repository/SQLiteDeviceRepository.h"
 #include "service/data/DataService.h"
+#include "service/data/ExternalDataService.h"
 #include "service/data/InternalDataService.h"
 
 #include <gtest/gtest.h>
@@ -37,7 +38,7 @@ private:
     std::vector<std::shared_ptr<wolkabout::Message>> m_messages;
 };
 
-class DataService : public ::testing::Test
+class ExternalDataService : public ::testing::Test
 {
 public:
     void SetUp() override
@@ -50,9 +51,8 @@ public:
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
-        dataService = std::unique_ptr<wolkabout::InternalDataService>(
-          new wolkabout::InternalDataService(GATEWAY_KEY, *protocol, *gateawayProtocol, deviceRepository.get(),
-                                             *platformOutboundMessageHandler, *deviceOutboundMessageHandler, nullptr));
+        dataService = std::unique_ptr<wolkabout::ExternalDataService>(
+          new wolkabout::ExternalDataService(GATEWAY_KEY, *protocol, *platformOutboundMessageHandler, nullptr));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
@@ -62,14 +62,14 @@ public:
     std::unique_ptr<MockRepository> deviceRepository;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;
-    std::unique_ptr<wolkabout::InternalDataService> dataService;
+    std::unique_ptr<wolkabout::ExternalDataService> dataService;
 
     static constexpr const char* DEVICE_REPOSITORY_PATH = "testsDeviceRepository.db";
     static constexpr const char* GATEWAY_KEY = "GATEWAY_KEY";
 };
 }    // namespace
 
-TEST_F(DataService, Given_When_MessageFromPlatformWithInvalidChannelDirectionIsReceived_Then_MessageIsIgnored)
+TEST_F(ExternalDataService, Given_When_MessageFromPlatformWithInvalidChannelDirectionIsReceived_Then_MessageIsIgnored)
 {
     // Given
     // Intentionally left empty
@@ -83,7 +83,7 @@ TEST_F(DataService, Given_When_MessageFromPlatformWithInvalidChannelDirectionIsR
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
 }
 
-TEST_F(DataService, Given_When_MessageFromPlatformWithMissingDeviceTypeIsReceived_Then_MessageIsIgnored)
+TEST_F(ExternalDataService, Given_When_MessageFromPlatformWithMissingDeviceTypeIsReceived_Then_MessageIsIgnored)
 {
     // Given
     // Intentionally left empty
@@ -97,7 +97,7 @@ TEST_F(DataService, Given_When_MessageFromPlatformWithMissingDeviceTypeIsReceive
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
 }
 
-TEST_F(DataService, Given_When_MessageFromPlatformForDeviceIsReceived_Then_MessageIsSentToDeviceModule)
+TEST_F(ExternalDataService, Given_When_MessageFromPlatformForDeviceIsReceived_Then_MessageIsSentToDeviceModule)
 {
     // Given
     // Intentionally left empty
@@ -112,7 +112,8 @@ TEST_F(DataService, Given_When_MessageFromPlatformForDeviceIsReceived_Then_Messa
     ASSERT_EQ(deviceOutboundMessageHandler->getMessages().front()->getChannel(), "p2d/actuator_set/d/DEVICE_KEY/r/REF");
 }
 
-TEST_F(DataService, Given_When_MessageFromPlatformForDaviceWithInvalidDeviceTypeIsReceived_Then_MessageSentIsIgnored)
+TEST_F(ExternalDataService,
+       Given_When_MessageFromPlatformForDaviceWithInvalidDeviceTypeIsReceived_Then_MessageSentIsIgnored)
 {
     // Given
     // Intentionally left empty
@@ -126,88 +127,28 @@ TEST_F(DataService, Given_When_MessageFromPlatformForDaviceWithInvalidDeviceType
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
 }
 
-TEST_F(DataService, Given_When_MessageFromDeviceWithInvalidChannelDirectionIsReceived_Then_MessageIsIgnored)
+TEST_F(ExternalDataService, Given_When_EmptyReadingsAreReceived_Then_MessageIsIgnored)
 {
     // Given
     // Intentionally left empty
 
     // When
     auto message = std::make_shared<wolkabout::Message>("", "p2d/sensor_reading/g/GATEWAY_KEY/r/REF");
-    dataService->deviceMessageReceived(message);
+    dataService->addSensorReadings("DEVICE_KEY", {});
 
     // Then
     ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
 }
 
-TEST_F(DataService, Given_When_MessageFromDeviceWithMissingDeviceTypeIsReceived_Then_MessageIsIgnored)
+TEST_F(ExternalDataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToPlatform)
 {
-    // Given
-    // Intentionally left empty
-
     // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/GATEWAY_KEY/r/REF");
-    dataService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-}
-
-TEST_F(DataService, Given_When_MessageFromDeviceWithIncorrectDeviceTypeIsReceived_Then_MessageIsIgnored)
-{
-    // Given
-    ON_CALL(*deviceRepository, findByDeviceKeyProxy("GATEWAY_KEY"))
-      .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
-        "", "GATEWAY_KEY",
-        wolkabout::DeviceTemplate{
-          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
-
-    // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/k/GATEWAY_KEY/r/REF");
-    dataService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-}
-
-TEST_F(DataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToPlatform)
-{
-    // Given
-    ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
-      .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
-        "", "DEVICE_KEY",
-        wolkabout::DeviceTemplate{
-          {}, {wolkabout::SensorTemplate{"", "REF", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
-
-    // When
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/DEVICE_KEY/r/REF");
-    dataService->deviceMessageReceived(message);
+    dataService->addSensorReading("DEVICE_KEY", {"REF", "5"});
 
     // Then
     ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().size(), 1);
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().front()->getChannel(),
               "d2p/sensor_reading/g/GATEWAY_KEY/d/DEVICE_KEY/r/REF");
-}
-
-TEST_F(DataService,
-       Given_MessageThatIsNotInLineWithDeviceTemplate_When_MessageIsReceived_Then_MessageIsNotSentToPlatform)
-{
-    // Given
-    auto message = std::make_shared<wolkabout::Message>("", "d2p/sensor_reading/d/DEVICE_KEY/r/REF");
-
-    ON_CALL(*deviceRepository, findByDeviceKeyProxy("DEVICE_KEY"))
-      .WillByDefault(testing::ReturnNew<wolkabout::DetailedDevice>(
-        "", "DEVICE_KEY",
-        wolkabout::DeviceTemplate{
-          {}, {wolkabout::SensorTemplate{"", "ref", wolkabout::DataType::NUMERIC, ""}}, {}, {}, "", {}, {}, {}}));
-
-    // When
-    dataService->deviceMessageReceived(message);
-
-    // Then
-    ASSERT_TRUE(deviceOutboundMessageHandler->getMessages().empty());
-    ASSERT_TRUE(platformOutboundMessageHandler->getMessages().empty());
 }

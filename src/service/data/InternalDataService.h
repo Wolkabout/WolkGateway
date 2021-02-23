@@ -7,7 +7,6 @@
 namespace wolkabout
 {
 class DeviceRepository;
-class GatewayDataProtocol;
 
 class InternalDataService : public DataService, public DeviceMessageListener
 {
@@ -26,10 +25,7 @@ public:
 private:
     void handleMessageForDevice(std::shared_ptr<Message> message) override;
 
-    void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
     void routePlatformToDeviceMessage(std::shared_ptr<Message> message);
-
-    GatewayDataProtocol& m_gatewayProtocol;
 
     DeviceRepository* m_deviceRepository;
 

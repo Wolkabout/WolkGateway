@@ -13,11 +13,16 @@ void ExternalDataService::addSensorReading(const std::string& deviceKey, const S
     const std::shared_ptr<Message> message =
       m_protocol.makeMessage(deviceKey, {std::make_shared<SensorReading>(reading)});
 
-    addMessage(message);
+    routeDeviceToPlatformMessage(message);
 }
 
 void ExternalDataService::addSensorReadings(const std::string& deviceKey, const std::vector<SensorReading>& readings)
 {
+    if (readings.empty())
+    {
+        return;
+    }
+
     std::vector<std::shared_ptr<SensorReading>> parsableReadings;
 
     std::transform(readings.begin(), readings.end(), std::back_inserter(parsableReadings),
@@ -25,14 +30,14 @@ void ExternalDataService::addSensorReadings(const std::string& deviceKey, const 
 
     const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, parsableReadings);
 
-    addMessage(message);
+    routeDeviceToPlatformMessage(message);
 }
 
 void ExternalDataService::addAlarm(const std::string& deviceKey, const Alarm& alarm)
 {
     const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, {std::make_shared<Alarm>(alarm)});
 
-    addMessage(message);
+    routeDeviceToPlatformMessage(message);
 }
 
 void ExternalDataService::addActuatorStatus(const std::string& deviceKey, const ActuatorStatus& status)
@@ -40,7 +45,7 @@ void ExternalDataService::addActuatorStatus(const std::string& deviceKey, const 
     const std::shared_ptr<Message> message =
       m_protocol.makeMessage(deviceKey, {std::make_shared<ActuatorStatus>(status)});
 
-    addMessage(message);
+    routeDeviceToPlatformMessage(message);
 }
 
 void ExternalDataService::addConfiguration(const std::string& deviceKey,
@@ -48,7 +53,7 @@ void ExternalDataService::addConfiguration(const std::string& deviceKey,
 {
     const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, configurations);
 
-    addMessage(message);
+    routeDeviceToPlatformMessage(message);
 }
 
 void ExternalDataService::requestActuatorStatusesForDevice(const std::string& /*deviceKey*/)

@@ -20,6 +20,7 @@
 #include "OutboundMessageHandler.h"
 #include "model/Message.h"
 #include "protocol/DataProtocol.h"
+#include "protocol/GatewayDataProtocol.h"
 #include "utilities/Logger.h"
 
 #include <algorithm>
@@ -27,10 +28,11 @@
 
 namespace wolkabout
 {
-DataService::DataService(const std::string& gatewayKey, DataProtocol& protocol,
+DataService::DataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayDataProtocol& gatewayProtocol,
                          OutboundMessageHandler& outboundPlatformMessageHandler, MessageListener* gatewayDevice)
 : m_gatewayKey{gatewayKey}
 , m_protocol{protocol}
+, m_gatewayProtocol{gatewayProtocol}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_gatewayDevice{gatewayDevice}
 {
@@ -77,6 +79,22 @@ void DataService::setGatewayMessageListener(MessageListener* gatewayDevice)
 {
     std::lock_guard<decltype(m_messageListenerMutex)> guard{m_messageListenerMutex};
     m_gatewayDevice = gatewayDevice;
+}
+
+void DataService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    const std::string channel = m_gatewayProtocol.routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
+    if (channel.empty())
+    {
+        LOG(WARN) << "Failed to route device message: " << message->getChannel();
+        return;
+    }
+
+    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
+
+    addMessage(routedMessage);
 }
 
 void DataService::handleMessageForGateway(std::shared_ptr<Message> message)

@@ -15,8 +15,7 @@ InternalDataService::InternalDataService(const std::string& gatewayKey, DataProt
                                          OutboundMessageHandler& outboundPlatformMessageHandler,
                                          OutboundMessageHandler& outboundDeviceMessageHandler,
                                          MessageListener* gatewayDevice)
-: DataService(gatewayKey, protocol, outboundPlatformMessageHandler, gatewayDevice)
-, m_gatewayProtocol{gatewayProtocol}
+: DataService(gatewayKey, protocol, gatewayProtocol, outboundPlatformMessageHandler, gatewayDevice)
 , m_deviceRepository{deviceRepository}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
 {
@@ -143,22 +142,6 @@ void InternalDataService::routePlatformToDeviceMessage(std::shared_ptr<Message> 
 
     const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
 
-    m_outboundDeviceMessageHandler.addMessage(message);
-}
-
-void InternalDataService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string channel = m_gatewayProtocol.routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
-    if (channel.empty())
-    {
-        LOG(WARN) << "Failed to route device message: " << message->getChannel();
-        return;
-    }
-
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
-
-    addMessage(routedMessage);
+    m_outboundDeviceMessageHandler.addMessage(routedMessage);
 }
 }    // namespace wolkabout

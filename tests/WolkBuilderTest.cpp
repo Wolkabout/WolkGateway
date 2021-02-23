@@ -58,7 +58,7 @@ TEST_F(WolkBuilder, GivenPlatformManagesSubdevices_When_ConstructingWolkInstance
     ASSERT_EQ(nullptr, wolk->m_subdeviceRegistrationService);
 }
 
-TEST_F(WolkBuilder, GivenExternalDataProvider_When_ConstructingWolkInstance_Then_RegistrationServiceIsSetup)
+TEST_F(WolkBuilder, GivenExternalDataProvider_When_ConstructingWolkInstance_Then_RegistrationServiceIsNotSetup)
 {
     // Given
     wolkabout::GatewayDevice device(GATEWAY_KEY, GATEWAY_PASSWORD, wolkabout::SubdeviceManagement::PLATFORM);
@@ -71,5 +71,5 @@ TEST_F(WolkBuilder, GivenExternalDataProvider_When_ConstructingWolkInstance_Then
     wolk = builder.build();
 
     // Then
-    ASSERT_NE(nullptr, wolk->m_subdeviceRegistrationService);
+    ASSERT_EQ(nullptr, wolk->m_subdeviceRegistrationService);
 }

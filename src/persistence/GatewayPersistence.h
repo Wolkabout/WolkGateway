@@ -48,12 +48,9 @@ public:
     virtual bool push(std::shared_ptr<Message> message) = 0;
 
     /**
-     * @brief Retrieves, first wolkabout::Message of this storage and removes it from storage.
-     *
-     * @return Message {@code std::shared_ptr<Message>} or returns nullptr {@code std::shared_ptr<Message>} if this
-     * storage is empty.
+     * @brief Removes first wolkabout::Message from storage.
      */
-    virtual std::shared_ptr<Message> pop() = 0;
+    virtual void pop() = 0;
 
     /**
      * @brief Retrieves, first wolkabout::Message of this storage without removing it from storage.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef GATEWAYINMEMORYPERSISTENCE_H
-#define GATEWAYINMEMORYPERSISTENCE_H
+#ifndef MESSAGEPERSISTER_H
+#define MESSAGEPERSISTER_H
 
-#include "persistence/GatewayPersistence.h"
+#include "model/Message.h"
 
-#include <mutex>
-#include <queue>
+#include <memory>
 
 namespace wolkabout
 {
-class GatewayInMemoryPersistence : public GatewayPersistence
+class MessagePersister
 {
 public:
-    bool push(std::shared_ptr<Message> message) override;
-    void pop() override;
-    std::shared_ptr<Message> front() override;
-    bool empty() const override;
+    virtual ~MessagePersister() = default;
 
-private:
-    mutable std::mutex m_lock;
-    std::queue<std::shared_ptr<Message>> m_queue;
+    virtual std::string save(const Message& message) const;
+    virtual std::unique_ptr<Message> load(const std::string& text) const;
 };
 }    // namespace wolkabout
 
-#endif
+#endif    // MESSAGEPERSISTER_H

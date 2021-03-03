@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,49 @@
  * limitations under the License.
  */
 
-#ifndef GATEWAYINMEMORYPERSISTENCE_H
-#define GATEWAYINMEMORYPERSISTENCE_H
+#ifndef GATEWAYFILESYSTEMPERSISTENCE_H
+#define GATEWAYFILESYSTEMPERSISTENCE_H
 
 #include "persistence/GatewayPersistence.h"
 
+#include <list>
 #include <mutex>
 #include <queue>
 
 namespace wolkabout
 {
-class GatewayInMemoryPersistence : public GatewayPersistence
+class MessagePersister;
+
+class GatewayFilesystemPersistence : public GatewayPersistence
 {
 public:
+    GatewayFilesystemPersistence(const std::string& persistPath);
+
+    ~GatewayFilesystemPersistence();
+
     bool push(std::shared_ptr<Message> message) override;
     void pop() override;
     std::shared_ptr<Message> front() override;
     bool empty() const override;
 
 private:
-    mutable std::mutex m_lock;
+    void initialize();
+
+    void saveReading(const std::string& fileName);
+    void deleteFirstReading();
+
+    std::string firstReading();
+    std::string readingPath(const std::string& readingFileName) const;
+    bool matchFileNumber(const std::string& fileName, unsigned long& number) const;
+
+    std::unique_ptr<MessagePersister> m_persister;
+
+    mutable std::mutex m_mutex;
     std::queue<std::shared_ptr<Message>> m_queue;
+
+    const std::string m_persistPath;
+    std::list<std::string> m_readingFiles;
+    unsigned long m_messageNum;
 };
 }    // namespace wolkabout
 

@@ -56,6 +56,7 @@
 #include "service/status/ExternalDeviceStatusService.h"
 #include "service/status/InternalDeviceStatusService.h"
 
+#include <memory>
 #include <stdexcept>
 
 namespace wolkabout
@@ -419,8 +420,8 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
 void WolkBuilder::setupWithExternalData(WolkExternal* wolk)
 {
     // Setup data service
-    wolk->m_dataService = std::shared_ptr<ExternalDataService>(new ExternalDataService(
-      wolk->m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol, *wolk->m_platformPublisher));
+    wolk->m_dataService = std::make_shared<ExternalDataService>(
+      wolk->m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol, *wolk->m_platformPublisher);
 
     // Setup device status service
     wolk->m_deviceStatusService.reset(

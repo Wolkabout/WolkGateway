@@ -473,15 +473,16 @@ void WolkBuilder::setupGatewayDataService(Wolk* wolk, OutboundMessageHandler& ou
     if (!gwTemplate.getSensors().empty() || !gwTemplate.getActuators().empty() || !gwTemplate.getAlarms().empty() ||
         !gwTemplate.getConfigurations().empty())
     {
+        auto wolkRaw = wolk;
         wolk->m_gatewayPersistence.reset(new InMemoryPersistence());
         wolk->m_gatewayDataService.reset(new GatewayDataService(
           m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayPersistence, outboundMessageHandler,
-          [&](const std::string& reference, const std::string& value) {
-              wolk->handleActuatorSetCommand(reference, value);
+          [wolkRaw](const std::string& reference, const std::string& value) {
+              wolkRaw->handleActuatorSetCommand(reference, value);
           },
-          [&](const std::string& reference) { wolk->handleActuatorGetCommand(reference); },
-          [&](const ConfigurationSetCommand& command) { wolk->handleConfigurationSetCommand(command); },
-          [&] { wolk->handleConfigurationGetCommand(); }));
+          [wolkRaw](const std::string& reference) { wolkRaw->handleActuatorGetCommand(reference); },
+          [wolkRaw](const ConfigurationSetCommand& command) { wolkRaw->handleConfigurationSetCommand(command); },
+          [wolkRaw] { wolkRaw->handleConfigurationGetCommand(); }));
     }
 }
 

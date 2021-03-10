@@ -433,6 +433,8 @@ void WolkBuilder::setupWithExternalData(WolkExternal* wolk)
     m_externalDataProvider->setDataHandler(wolk->m_dataApi.get());
 
     setupGatewayDataService(wolk, *wolk->m_dataService);
+    wolk->m_dataService->setGatewayMessageListener(wolk->m_gatewayDataService.get());
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_dataService);
 
     // Setup keep alive service
     if (m_keepAliveEnabled)

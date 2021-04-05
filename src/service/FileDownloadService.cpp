@@ -64,13 +64,23 @@ FileDownloadService::FileDownloadService(std::string gatewayKey, JsonDownloadPro
 , m_run{true}
 , m_garbageCollector(&FileDownloadService::clearDownloads, this)
 {
+    // Create the working directory if it does not exist
     if (!FileSystemUtils::isDirectoryPresent(m_fileDownloadDirectory))
-    {
         FileSystemUtils::createDirectory(m_fileDownloadDirectory);
-    }
 
+    // If we have a listener, give it the directory and lambda expression
     if (m_fileListener != nullptr)
+    {
+        // Pass it the lambda it can use to create files
+        m_fileListener->setCreateFileLambda(
+          [&](const std::string& fileName, const std::string& fileHash, const std::string& filePath) {
+              m_fileRepository.store(FileInfo{fileName, fileHash, filePath});
+              sendFileListUpdate();
+          });
+
+        // Pass it the absolute path for directory
         m_fileListener->receiveDirectory(getDirectory());
+    }
 }
 
 FileDownloadService::~FileDownloadService()

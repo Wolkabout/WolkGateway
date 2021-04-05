@@ -208,6 +208,13 @@ void FileDownloadService::handle(const FileUploadInitiate& request)
         return;
     }
 
+    if (m_fileListener != nullptr && !m_fileListener->chooseToDownload(request.getName()))
+    {
+        LOG(WARN) << "File listener denied the file download";
+        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSUPPORTED_FILE_SIZE});
+        return;
+    }
+
     auto fileInfo = m_fileRepository.getFileInfo(request.getName());
 
     if (!fileInfo)

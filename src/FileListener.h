@@ -42,6 +42,15 @@ public:
     virtual void receiveDirectory(const std::string& absolutePath) = 0;
 
     /**
+     * This is the method that is invoked by the service to notify that a new file has been made available to download,
+     * and we can say whether or not we want to download the file.
+     *
+     * @param fileName The name of the newly initiated file.
+     * @return Whether or not we want to download the file.
+     */
+    virtual bool chooseToDownload(const std::string& fileName) = 0;
+
+    /**
      * This is the method that is invoked by the service to notify that a new file has been downloaded and is placed in
      * the file system. From this point on, the service can manipulate the file further, and cause action based on that.
      *

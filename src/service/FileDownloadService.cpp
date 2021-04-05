@@ -70,7 +70,7 @@ FileDownloadService::FileDownloadService(std::string gatewayKey, JsonDownloadPro
     }
 
     if (m_fileListener != nullptr)
-        m_fileListener->receiveDirectory(m_fileDownloadDirectory);
+        m_fileListener->receiveDirectory(getDirectory());
 }
 
 FileDownloadService::~FileDownloadService()

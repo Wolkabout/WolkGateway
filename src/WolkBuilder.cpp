@@ -299,9 +299,9 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     }
 
     // setup file download service
-    wolk->m_fileDownloadService =
-      std::make_shared<FileDownloadService>(m_device.getKey(), *wolk->m_fileDownloadProtocol, m_fileDownloadDirectory,
-                                            *wolk->m_platformPublisher, *wolk->m_fileRepository, m_urlFileDownloader);
+    wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(
+      m_device.getKey(), *wolk->m_fileDownloadProtocol, m_fileDownloadDirectory, *wolk->m_platformPublisher,
+      *wolk->m_fileRepository, m_urlFileDownloader, m_fileListener);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
 
     //    // setup firmware update service

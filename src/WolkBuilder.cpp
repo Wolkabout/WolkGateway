@@ -304,13 +304,12 @@ std::unique_ptr<Wolk> WolkBuilder::build()
       *wolk->m_fileRepository, m_urlFileDownloader, m_fileListener);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
 
-    //    // setup firmware update service
-    //    wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
-    //      m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_gatewayFirmwareUpdateProtocol,
-    //      *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher, m_firmwareInstaller,
-    //      m_firmwareVersion);
-    //    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_firmwareUpdateService);
-    //    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
+    // setup firmware update service
+    wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
+      m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_gatewayFirmwareUpdateProtocol,
+      *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_platformPublisher, m_firmwareInstaller,
+      m_firmwareVersion);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
 
     return wolk;
 }

@@ -157,6 +157,13 @@ WolkBuilder& WolkBuilder::fileDownloadDirectory(const std::string& path)
     return *this;
 }
 
+WolkBuilder& WolkBuilder::fileDownloadDirectory(const std::string& path, std::shared_ptr<FileListener> fileListener)
+{
+    m_fileDownloadDirectory = path;
+    m_fileListener = std::move(fileListener);
+    return *this;
+}
+
 WolkBuilder& WolkBuilder::withExternalDataProvider(DataProvider* provider)
 {
     m_externalDataProvider = provider;

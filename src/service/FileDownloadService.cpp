@@ -30,6 +30,7 @@
 #include "model/Message.h"
 #include "protocol/json/JsonDownloadProtocol.h"
 #include "repository/FileRepository.h"
+#include "FileListener.h"
 #include "service/UrlFileDownloader.h"
 #include "utilities/ByteUtils.h"
 #include "utilities/FileSystemUtils.h"
@@ -51,14 +52,15 @@ namespace wolkabout
 FileDownloadService::FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol,
                                          std::string fileDownloadDirectory,
                                          OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository,
-                                         std::shared_ptr<UrlFileDownloader> urlFileDownloader)
+                                         std::shared_ptr<UrlFileDownloader> urlFileDownloader,
+                                         std::shared_ptr<FileListener> fileListener)
 : m_gatewayKey{std::move(gatewayKey)}
-, m_protocol{protocol}
 , m_fileDownloadDirectory{std::move(fileDownloadDirectory)}
+, m_protocol{protocol}
 , m_outboundMessageHandler{outboundMessageHandler}
 , m_fileRepository{fileRepository}
 , m_urlFileDownloader{std::move(urlFileDownloader)}
-, m_activeDownload{""}
+, m_fileListener{std::move(fileListener)}
 , m_run{true}
 , m_garbageCollector(&FileDownloadService::clearDownloads, this)
 {
@@ -66,6 +68,9 @@ FileDownloadService::FileDownloadService(std::string gatewayKey, JsonDownloadPro
     {
         FileSystemUtils::createDirectory(m_fileDownloadDirectory);
     }
+
+    if (m_fileListener != nullptr)
+        m_fileListener->receiveDirectory(m_fileDownloadDirectory);
 }
 
 FileDownloadService::~FileDownloadService()
@@ -77,6 +82,11 @@ FileDownloadService::~FileDownloadService()
     {
         m_garbageCollector.join();
     }
+}
+
+std::string FileDownloadService::getDirectory() const
+{
+    return std::string(FileSystemUtils::absolutePath(m_fileDownloadDirectory));
 }
 
 void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> message)
@@ -313,10 +323,11 @@ void FileDownloadService::download(const std::string& fileName, uint64_t fileSiz
     m_activeDownload = fileName;
 
     std::get<FILE_DOWNLOADER_INDEX>(m_activeDownloads[fileName])
-      ->download(fileName, fileSize, byteHash, m_fileDownloadDirectory,
-                 [=](const FilePacketRequest& request) { requestPacket(request); },
-                 [=](const std::string& filePath) { downloadCompleted(fileName, filePath, fileHash); },
-                 [=](FileTransferError code) { downloadFailed(fileName, code); });
+      ->download(
+        fileName, fileSize, byteHash, m_fileDownloadDirectory,
+        [=](const FilePacketRequest& request) { requestPacket(request); },
+        [=](const std::string& filePath) { downloadCompleted(fileName, filePath, fileHash); },
+        [=](FileTransferError code) { downloadFailed(fileName, code); });
 }
 
 void FileDownloadService::urlDownload(const std::string& fileUrl)
@@ -383,6 +394,8 @@ void FileDownloadService::deleteFile(const std::string& fileName)
     }
 
     m_fileRepository.remove(fileName);
+    if (m_fileListener != nullptr)
+        m_fileListener->onRemovedFile(fileName);
 
     sendFileList();
 }
@@ -416,6 +429,8 @@ void FileDownloadService::purgeFiles()
         }
 
         m_fileRepository.remove(name);
+        if (m_fileListener != nullptr)
+            m_fileListener->onRemovedFile(name);
     }
 
     sendFileList();
@@ -497,6 +512,8 @@ void FileDownloadService::downloadCompleted(const std::string& fileName, const s
     addToCommandBuffer([=] {
         m_fileRepository.store(FileInfo{fileName, fileHash, filePath});
         sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_READY});
+        if (m_fileListener != nullptr)
+            m_fileListener->onNewFile(fileName);
     });
 
     sendFileList();
@@ -529,6 +546,8 @@ void FileDownloadService::urlDownloadCompleted(const std::string& fileUrl, const
 
         m_fileRepository.store(FileInfo{fileName, hashStr, filePath});
         sendStatus(FileUrlDownloadStatus{fileUrl, fileName});
+        if (m_fileListener != nullptr)
+            m_fileListener->onNewFile(fileName);
     });
 
     sendFileList();

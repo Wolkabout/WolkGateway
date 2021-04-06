@@ -43,13 +43,6 @@ public:
     virtual void receiveDirectory(const std::string& absolutePath) = 0;
 
     /**
-     * This is the method that is invoked by the service to give a lambda expression that can be invoked by the listener
-     * to create a file if they wish to do so.
-     */
-    virtual void setCreateFileLambda(
-      std::function<void(const std::string&, const std::string&, const std::string&)> fileCreationLambda) = 0;
-
-    /**
      * This is the method that is invoked by the service to notify that a new file has been made available to download,
      * and we can say whether or not we want to download the file.
      *

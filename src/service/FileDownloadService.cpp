@@ -71,13 +71,6 @@ FileDownloadService::FileDownloadService(std::string gatewayKey, JsonDownloadPro
     // If we have a listener, give it the directory and lambda expression
     if (m_fileListener != nullptr)
     {
-        // Pass it the lambda it can use to create files
-        m_fileListener->setCreateFileLambda(
-          [&](const std::string& fileName, const std::string& fileHash, const std::string& filePath) {
-              m_fileRepository.store(FileInfo{fileName, fileHash, filePath});
-              sendFileListUpdate();
-          });
-
         // Pass it the absolute path for directory
         m_fileListener->receiveDirectory(getDirectory());
     }

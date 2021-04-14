@@ -25,6 +25,8 @@
 #include "api/DataProvider.h"
 #include "connectivity/ConnectivityService.h"
 #include "model/GatewayDevice.h"
+#include "protocol/DataProtocol.h"
+#include "protocol/StatusProtocol.h"
 #include "service/UrlFileDownloader.h"
 
 #include <cstdint>
@@ -48,6 +50,8 @@ public:
      * @param device Device for which wolkabout::WolkBuilder is instantiated
      */
     WolkBuilder(GatewayDevice device);
+
+    WolkBuilder(WolkBuilder&&);
 
     /**
      * @brief Allows passing of URI to custom WolkAbout IoT platform instance
@@ -161,6 +165,8 @@ public:
      */
     WolkBuilder& withExternalDataProvider(DataProvider* provider);
 
+    WolkBuilder& withProtocol(std::unique_ptr<DataProtocol> dataProtocol, std::unique_ptr<StatusProtocol> statusProtocol);
+
     /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
@@ -207,6 +213,8 @@ private:
 
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
+    std::unique_ptr<DataProtocol> m_dataProtocol = nullptr;
+    std::unique_ptr<StatusProtocol> m_statusProtocol = nullptr;
     DataProvider* m_externalDataProvider = nullptr;
 
     bool m_keepAliveEnabled = true;

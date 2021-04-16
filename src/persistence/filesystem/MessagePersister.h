@@ -17,7 +17,7 @@
 #ifndef MESSAGEPERSISTER_H
 #define MESSAGEPERSISTER_H
 
-#include "model/Message.h"
+#include "core/model/Message.h"
 
 #include <memory>
 

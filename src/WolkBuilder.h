@@ -23,10 +23,11 @@
 #include "ConfigurationProvider.h"
 #include "FirmwareInstaller.h"
 #include "api/DataProvider.h"
-#include "connectivity/ConnectivityService.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/protocol/DataProtocol.h"
+#include "core/protocol/StatusProtocol.h"
 #include "model/GatewayDevice.h"
-#include "protocol/DataProtocol.h"
-#include "protocol/StatusProtocol.h"
+#include "persistence/GatewayPersistence.h"
 #include "service/UrlFileDownloader.h"
 
 #include <cstdint>

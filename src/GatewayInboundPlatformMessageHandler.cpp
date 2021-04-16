@@ -16,10 +16,10 @@
 
 #include "GatewayInboundPlatformMessageHandler.h"
 
-#include "model/Message.h"
-#include "protocol/Protocol.h"
-#include "utilities/Logger.h"
-#include "utilities/StringUtils.h"
+#include "core/model/Message.h"
+#include "core/protocol/Protocol.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
 
 #include <algorithm>
 

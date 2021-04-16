@@ -1,8 +1,8 @@
 #include "ExternalDataService.h"
 
-#include "model/Message.h"
-#include "protocol/DataProtocol.h"
-#include "utilities/Logger.h"
+#include "core/model/Message.h"
+#include "core/protocol/DataProtocol.h"
+#include "core/utilities/Logger.h"
 
 #include <algorithm>
 

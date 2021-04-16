@@ -17,10 +17,10 @@
 #define FILEDOWNLOADER_H
 
 #include "FileHandler.h"
-#include "model/FileTransferStatus.h"
-#include "utilities/ByteUtils.h"
-#include "utilities/CommandBuffer.h"
-#include "utilities/Timer.h"
+#include "core/model/FileTransferStatus.h"
+#include "core/utilities/ByteUtils.h"
+#include "core/utilities/CommandBuffer.h"
+#include "core/utilities/Timer.h"
 
 #include <chrono>
 #include <cstdint>

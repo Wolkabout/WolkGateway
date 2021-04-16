@@ -16,8 +16,8 @@
 
 #include "FileHandler.h"
 
-#include "model/BinaryData.h"
-#include "utilities/FileSystemUtils.h"
+#include "core/model/BinaryData.h"
+#include "core/utilities/FileSystemUtils.h"
 
 namespace wolkabout
 {

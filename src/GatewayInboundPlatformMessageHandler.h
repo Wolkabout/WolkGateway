@@ -18,7 +18,7 @@
 #define GATEWAYINBOUNDPLATFORMMESSAGEHANDLER_H
 
 #include "InboundPlatformMessageHandler.h"
-#include "utilities/CommandBuffer.h"
+#include "core/utilities/CommandBuffer.h"
 
 #include <map>
 #include <memory>

@@ -23,22 +23,22 @@
 #include "Wolk.h"
 #include "WolkDefault.h"
 #include "WolkExternal.h"
-#include "connectivity/ConnectivityService.h"
-#include "connectivity/mqtt/MqttConnectivityService.h"
-#include "connectivity/mqtt/PahoMqttClient.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/connectivity/mqtt/MqttConnectivityService.h"
+#include "core/connectivity/mqtt/PahoMqttClient.h"
+#include "core/model/Message.h"
+#include "core/persistence/InMemoryPersistence.h"
+#include "core/protocol/json/JsonDFUProtocol.h"
+#include "core/protocol/json/JsonDownloadProtocol.h"
+#include "core/protocol/json/JsonProtocol.h"
+#include "core/protocol/json/JsonRegistrationProtocol.h"
+#include "core/protocol/json/JsonStatusProtocol.h"
 #include "model/GatewayDevice.h"
-#include "model/Message.h"
 #include "persistence/inmemory/GatewayInMemoryPersistence.h"
-#include "persistence/inmemory/InMemoryPersistence.h"
-#include "protocol/json/JsonDFUProtocol.h"
-#include "protocol/json/JsonDownloadProtocol.h"
 #include "protocol/json/JsonGatewayDFUProtocol.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
-#include "protocol/json/JsonProtocol.h"
-#include "protocol/json/JsonRegistrationProtocol.h"
-#include "protocol/json/JsonStatusProtocol.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
@@ -217,7 +217,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     }
 
     if ((m_dataProtocol == nullptr && m_statusProtocol != nullptr) ||
-            (m_dataProtocol != nullptr && m_statusProtocol == nullptr))
+        (m_dataProtocol != nullptr && m_statusProtocol == nullptr))
     {
         throw std::logic_error("Both data and status protocols must be set");
     }

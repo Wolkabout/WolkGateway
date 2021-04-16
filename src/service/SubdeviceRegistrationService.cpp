@@ -17,17 +17,17 @@
 #include "service/SubdeviceRegistrationService.h"
 
 #include "OutboundMessageHandler.h"
-#include "model/DetailedDevice.h"
-#include "model/Message.h"
-#include "model/SubdeviceDeletionRequest.h"
-#include "model/SubdeviceRegistrationRequest.h"
-#include "model/SubdeviceRegistrationResponse.h"
-#include "model/SubdeviceUpdateRequest.h"
-#include "model/SubdeviceUpdateResponse.h"
+#include "core/model/DetailedDevice.h"
+#include "core/model/Message.h"
+#include "core/model/SubdeviceDeletionRequest.h"
+#include "core/model/SubdeviceRegistrationRequest.h"
+#include "core/model/SubdeviceRegistrationResponse.h"
+#include "core/model/SubdeviceUpdateRequest.h"
+#include "core/model/SubdeviceUpdateResponse.h"
+#include "core/protocol/RegistrationProtocol.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewaySubdeviceRegistrationProtocol.h"
-#include "protocol/RegistrationProtocol.h"
 #include "repository/DeviceRepository.h"
-#include "utilities/Logger.h"
 
 #include <algorithm>
 #include <cassert>

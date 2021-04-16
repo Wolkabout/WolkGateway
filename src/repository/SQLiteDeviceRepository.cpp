@@ -16,13 +16,13 @@
 
 #include "repository/SQLiteDeviceRepository.h"
 
-#include "model/ActuatorTemplate.h"
-#include "model/AlarmTemplate.h"
-#include "model/ConfigurationTemplate.h"
-#include "model/DataType.h"
-#include "model/DetailedDevice.h"
-#include "model/DeviceTemplate.h"
-#include "utilities/Logger.h"
+#include "core/model/ActuatorTemplate.h"
+#include "core/model/AlarmTemplate.h"
+#include "core/model/ConfigurationTemplate.h"
+#include "core/model/DataType.h"
+#include "core/model/DetailedDevice.h"
+#include "core/model/DeviceTemplate.h"
+#include "core/utilities/Logger.h"
 
 #include <Poco/Crypto/DigestEngine.h>
 #include <Poco/Data/SQLite/Connector.h>

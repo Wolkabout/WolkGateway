@@ -18,26 +18,26 @@
 
 #include "FileHandler.h"
 #include "OutboundMessageHandler.h"
-#include "connectivity/ConnectivityService.h"
-#include "model/BinaryData.h"
-#include "model/FileList.h"
-#include "model/FilePacketRequest.h"
-#include "model/FileTransferStatus.h"
-#include "model/FileUploadStatus.h"
-#include "model/FileUrlDownloadAbort.h"
-#include "model/FileUrlDownloadInitiate.h"
-#include "model/FileUrlDownloadStatus.h"
-#include "model/Message.h"
-#include "protocol/json/JsonDownloadProtocol.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/model/BinaryData.h"
+#include "core/model/FileList.h"
+#include "core/model/FilePacketRequest.h"
+#include "core/model/FileTransferStatus.h"
+#include "core/model/FileUploadStatus.h"
+#include "core/model/FileUrlDownloadAbort.h"
+#include "core/model/FileUrlDownloadInitiate.h"
+#include "core/model/FileUrlDownloadStatus.h"
+#include "core/model/Message.h"
+#include "core/protocol/json/JsonDownloadProtocol.h"
+#include "core/utilities/ByteUtils.h"
+#include "core/utilities/FileSystemUtils.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
 #include "repository/FileRepository.h"
 #include "service/UrlFileDownloader.h"
-#include "utilities/ByteUtils.h"
-#include "utilities/FileSystemUtils.h"
-#include "utilities/Logger.h"
 
 #include <cassert>
 #include <cmath>
-#include <utilities/StringUtils.h>
 
 namespace
 {

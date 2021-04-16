@@ -17,7 +17,7 @@
 #ifndef FILEHANDLER_H
 #define FILEHANDLER_H
 
-#include "utilities/ByteUtils.h"
+#include "core/utilities/ByteUtils.h"
 
 #include <string>
 

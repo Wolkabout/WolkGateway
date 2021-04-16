@@ -17,7 +17,7 @@
 #ifndef URLFILEDOWNLOADER_H
 #define URLFILEDOWNLOADER_H
 
-#include "model/FileTransferStatus.h"
+#include "core/model/FileTransferStatus.h"
 
 #include <functional>
 #include <string>

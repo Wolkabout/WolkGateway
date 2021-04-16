@@ -19,7 +19,7 @@
 
 #include "ConnectionStatusListener.h"
 #include "InboundPlatformMessageHandler.h"
-#include "utilities/Timer.h"
+#include "core/utilities/Timer.h"
 
 namespace wolkabout
 {

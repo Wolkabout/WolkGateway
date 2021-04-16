@@ -16,10 +16,10 @@
 
 #include "StatusMessageRouter.h"
 
-#include "model/Message.h"
+#include "core/model/Message.h"
+#include "core/protocol/StatusProtocol.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewayStatusProtocol.h"
-#include "protocol/StatusProtocol.h"
-#include "utilities/Logger.h"
 
 namespace wolkabout
 {

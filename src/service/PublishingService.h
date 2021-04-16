@@ -19,6 +19,7 @@
 
 #include "ConnectionStatusListener.h"
 #include "OutboundMessageHandler.h"
+#include "core/utilities/Buffer.h"
 #include "persistence/GatewayPersistence.h"
 
 #include <atomic>
@@ -34,7 +35,7 @@ class ConnectivityService;
 class PublishingService : public OutboundMessageHandler, public ConnectionStatusListener
 {
 public:
-    PublishingService(ConnectivityService& connectivityService, std::unique_ptr<GatewayPersistence> persistence);
+    PublishingService(ConnectivityService& connectivityService, std::shared_ptr<GatewayPersistence> persistence);
     ~PublishingService();
 
     void addMessage(std::shared_ptr<Message> message) override;
@@ -43,16 +44,44 @@ public:
     void disconnected() override;
 
 private:
+    class State
+    {
+    public:
+        State(PublishingService& service);
+        virtual ~State() = default;
+        virtual void run() = 0;
+
+    protected:
+        PublishingService& m_service;
+    };
+
+    class DisconnectedState : public State
+    {
+    public:
+        using State::State;
+        void run() override;
+    };
+
+    class ConnectedState : public State
+    {
+    public:
+        using State::State;
+        void run() override;
+    };
+
     void run();
 
     ConnectivityService& m_connectivityService;
-    std::unique_ptr<GatewayPersistence> m_persistence;
+    std::shared_ptr<GatewayPersistence> m_persistence;
+    ConnectedState m_connectedState;
+    DisconnectedState m_disconnectedState;
+    std::atomic<State*> m_currentState;
 
     std::atomic_bool m_connected;
 
+    Buffer<std::shared_ptr<Message>> m_buffer;
+
     std::atomic_bool m_run;
-    std::mutex m_lock;
-    std::condition_variable m_condition;
     std::unique_ptr<std::thread> m_worker;
 };
 }    // namespace wolkabout

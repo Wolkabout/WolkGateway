@@ -166,7 +166,10 @@ public:
      */
     WolkBuilder& withExternalDataProvider(DataProvider* provider);
 
-    WolkBuilder& withProtocol(std::unique_ptr<DataProtocol> dataProtocol, std::unique_ptr<StatusProtocol> statusProtocol);
+    WolkBuilder& withProtocol(std::unique_ptr<DataProtocol> dataProtocol,
+                              std::unique_ptr<StatusProtocol> statusProtocol);
+
+    WolkBuilder& withPersistence(std::shared_ptr<GatewayPersistence> persistence);
 
     /**
      * @brief Builds Wolk instance
@@ -217,6 +220,8 @@ private:
     std::unique_ptr<DataProtocol> m_dataProtocol = nullptr;
     std::unique_ptr<StatusProtocol> m_statusProtocol = nullptr;
     DataProvider* m_externalDataProvider = nullptr;
+
+    std::shared_ptr<GatewayPersistence> m_persistence;
 
     bool m_keepAliveEnabled = true;
 

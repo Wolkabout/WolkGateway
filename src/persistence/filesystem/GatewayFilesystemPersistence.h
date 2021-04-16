@@ -31,7 +31,6 @@ class GatewayFilesystemPersistence : public GatewayPersistence
 {
 public:
     GatewayFilesystemPersistence(const std::string& persistPath);
-
     ~GatewayFilesystemPersistence();
 
     bool push(std::shared_ptr<Message> message) override;
@@ -39,15 +38,18 @@ public:
     std::shared_ptr<Message> front() override;
     bool empty() const override;
 
-private:
+protected:
     void initialize();
 
     void saveReading(const std::string& fileName);
     void deleteFirstReading();
+    void deleteLastReading();
 
     std::string firstReading();
     std::string readingPath(const std::string& readingFileName) const;
     bool matchFileNumber(const std::string& fileName, unsigned long& number) const;
+
+    std::string saveToDisk(std::shared_ptr<Message> message);
 
     std::unique_ptr<MessagePersister> m_persister;
 

@@ -1,8 +1,8 @@
 #include "GatewayFilesystemPersistence.h"
 
 #include "MessagePersister.h"
-#include "utilities/FileSystemUtils.h"
-#include "utilities/Logger.h"
+#include "core/utilities/FileSystemUtils.h"
+#include "core/utilities/Logger.h"
 
 #include <regex>
 
@@ -24,25 +24,13 @@ GatewayFilesystemPersistence::~GatewayFilesystemPersistence() = default;
 
 bool GatewayFilesystemPersistence::push(std::shared_ptr<Message> message)
 {
-    const std::string fileName = READING_FILE_NAME + std::to_string(++m_messageNum);
-    const std::string path = m_persistPath + "/" + fileName;
-    LOG(INFO) << "Persisting reading " << fileName;
-
-    const auto messageContent = m_persister->save(*message);
-
-    if (!FileSystemUtils::createFileWithContent(path, messageContent))
-    {
-        LOG(ERROR) << "Failed to persist reading " << fileName;
-        return false;
-    }
-
-    saveReading(fileName);
-
-    return true;
+    std::lock_guard<decltype(m_mutex)> guard{m_mutex};
+    return saveToDisk(message) != "";
 }
 
 void GatewayFilesystemPersistence::pop()
 {
+    std::lock_guard<decltype(m_mutex)> guard{m_mutex};
     if (empty())
     {
         return;
@@ -53,6 +41,7 @@ void GatewayFilesystemPersistence::pop()
 
 std::shared_ptr<Message> GatewayFilesystemPersistence::front()
 {
+    std::lock_guard<decltype(m_mutex)> guard{m_mutex};
     if (empty())
     {
         LOG(DEBUG) << "No readings to load";
@@ -79,8 +68,27 @@ std::shared_ptr<Message> GatewayFilesystemPersistence::front()
 
 bool GatewayFilesystemPersistence::empty() const
 {
-    std::lock_guard<std::mutex> guard{m_mutex};
+    std::lock_guard<decltype(m_mutex)> guard{m_mutex};
     return m_readingFiles.empty();
+}
+
+std::string GatewayFilesystemPersistence::saveToDisk(std::shared_ptr<Message> message)
+{
+    const std::string fileName = READING_FILE_NAME + std::to_string(++m_messageNum);
+    const std::string path = m_persistPath + "/" + fileName;
+    LOG(INFO) << "Persisting reading " << fileName;
+
+    const auto messageContent = m_persister->save(*message);
+
+    if (!FileSystemUtils::createFileWithContent(path, messageContent))
+    {
+        LOG(ERROR) << "Failed to persist reading " << fileName;
+        return "";
+    }
+
+    saveReading(fileName);
+
+    return path;
 }
 
 void GatewayFilesystemPersistence::initialize()
@@ -136,7 +144,6 @@ void GatewayFilesystemPersistence::initialize()
 
 void GatewayFilesystemPersistence::saveReading(const std::string& fileName)
 {
-    std::lock_guard<std::mutex> guard{m_mutex};
     m_readingFiles.push_back(fileName);
 }
 
@@ -147,8 +154,6 @@ std::string GatewayFilesystemPersistence::readingPath(const std::string& reading
 
 void GatewayFilesystemPersistence::deleteFirstReading()
 {
-    std::lock_guard<std::mutex> guard{m_mutex};
-
     const std::string path = readingPath(m_readingFiles.front());
 
     LOG(INFO) << "Deleting reading " << m_readingFiles.front();
@@ -167,9 +172,28 @@ void GatewayFilesystemPersistence::deleteFirstReading()
     }
 }
 
+void GatewayFilesystemPersistence::deleteLastReading()
+{
+    const std::string path = readingPath(m_readingFiles.back());
+
+    LOG(INFO) << "Deleting reading " << m_readingFiles.back();
+    if (FileSystemUtils::deleteFile(path))
+    {
+        m_readingFiles.pop_back();
+
+        if (m_readingFiles.size() == 0)
+        {
+            m_messageNum = 0;
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "Failed to delete readings file " << m_readingFiles.front();
+    }
+}
+
 std::string GatewayFilesystemPersistence::firstReading()
 {
-    std::lock_guard<std::mutex> guard{m_mutex};
     return m_readingFiles.front();
 }
 

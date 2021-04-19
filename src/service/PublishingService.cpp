@@ -97,11 +97,12 @@ void PublishingService::ConnectedState::run()
         const auto message = m_service.m_buffer.pop();
         if (m_service.m_connectivityService.publish(message))
         {
-            m_service.m_persistence->pop();
         }
         else
         {
+            m_service.m_persistence->push(message);
             LOG(ERROR) << "Failed to publish message";
+            break;
         }
     }
 

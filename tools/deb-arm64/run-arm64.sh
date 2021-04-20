@@ -20,10 +20,26 @@ if [ "$EUID" -ne 0 ]; then
   exit
 fi
 
-sudo apt-get install qemu binfmt-support qemu-user-static
-docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+./build-image-arm64.sh
 
-cp ../make_deb.sh .
+docker container stop debuilder
+docker container rm debuilder
 
-docker build -t wolkabout:wg-armv7l .
-rm make_deb.sh
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ $? -eq 1 ]; then
+  branch=master
+fi
+
+docker run -dit --name debuilder --cpus $(nproc) wolkabout:wg-arm64 || exit
+docker exec -it debuilder /build/make_deb.sh $branch || exit
+docker cp debuilder:/build/ .
+
+docker container stop debuilder
+docker container rm debuilder
+
+mv ./build/*.deb .
+rm -rf ./build/
+
+rm *dbgsym*
+
+chown "$USER:$USER" *.deb

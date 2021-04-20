@@ -40,6 +40,7 @@ namespace wolkabout
 class BinaryData;
 class JsonDownloadProtocol;
 class FileDelete;
+class FileListener;
 class FileRepository;
 class FileUploadAbort;
 class FileUploadInitiate;
@@ -55,12 +56,15 @@ class FileDownloadService : public PlatformMessageListener
 public:
     FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol, std::string fileDownloadDirectory,
                         OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository,
-                        std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr);
+                        std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr,
+                        std::shared_ptr<FileListener> fileListener = nullptr);
 
-    ~FileDownloadService();
+    ~FileDownloadService() override;
 
     FileDownloadService(const FileDownloadService&) = delete;
     FileDownloadService& operator=(const FileDownloadService&) = delete;
+
+    std::string getDirectory() const;
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
@@ -109,6 +113,7 @@ private:
     FileRepository& m_fileRepository;
 
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
+    std::shared_ptr<FileListener> m_fileListener;
 
     // temporary to disallow simultaneous downloads
     std::string m_activeDownload;

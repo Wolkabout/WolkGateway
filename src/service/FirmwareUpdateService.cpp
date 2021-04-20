@@ -45,7 +45,6 @@ FirmwareUpdateService::FirmwareUpdateService(std::string gatewayKey, JsonDFUProt
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
 , m_firmwareInstaller{nullptr}
-, m_currentFirmwareVersion{""}
 {
 }
 

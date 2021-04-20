@@ -20,8 +20,8 @@
 #include "ConnectionStatusListener.h"
 #include "InboundDeviceMessageHandler.h"
 #include "InboundPlatformMessageHandler.h"
-#include "model/DeviceStatus.h"
-#include "utilities/Timer.h"
+#include "core/model/DeviceStatus.h"
+#include "core/utilities/Timer.h"
 
 #include <chrono>
 #include <map>

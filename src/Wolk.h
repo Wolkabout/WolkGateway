@@ -22,8 +22,8 @@
 #include "ConfigurationHandler.h"
 #include "ConfigurationProvider.h"
 #include "WolkBuilder.h"
+#include "core/utilities/StringUtils.h"
 #include "model/GatewayDevice.h"
-#include "utilities/StringUtils.h"
 
 #include <algorithm>
 #include <chrono>

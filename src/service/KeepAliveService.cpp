@@ -17,9 +17,9 @@
 #include "service/KeepAliveService.h"
 
 #include "OutboundMessageHandler.h"
-#include "connectivity/ConnectivityService.h"
-#include "model/Message.h"
-#include "protocol/StatusProtocol.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/model/Message.h"
+#include "core/protocol/StatusProtocol.h"
 
 namespace wolkabout
 {

@@ -17,7 +17,7 @@
 #ifndef CONFIGURATIONPROVIDER_H
 #define CONFIGURATIONPROVIDER_H
 
-#include "model/ConfigurationItem.h"
+#include "core/model/ConfigurationItem.h"
 
 #include <vector>
 

@@ -1,11 +1,11 @@
 #ifndef WOLKABOUT_DATAHANDLER_H
 #define WOLKABOUT_DATAHANDLER_H
 
-#include "model/ActuatorStatus.h"
-#include "model/Alarm.h"
-#include "model/ConfigurationItem.h"
-#include "model/DeviceStatus.h"
-#include "model/SensorReading.h"
+#include "core/model/ActuatorStatus.h"
+#include "core/model/Alarm.h"
+#include "core/model/ConfigurationItem.h"
+#include "core/model/DeviceStatus.h"
+#include "core/model/SensorReading.h"
 
 #include <string>
 #include <vector>

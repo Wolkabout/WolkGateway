@@ -62,11 +62,10 @@ set(BUILD_GTEST ON CACHE BOOL "Build the library with GTest.")
 set(BUILD_AWS_LOG_UPLOADER OFF CACHE BOOL "Build the library with AwsLogUploader.")
 option(POCO_BUILD_DATA "" ON)
 option(POCO_BUILD_NET "" ON)
+option(BUILD_AWS_LOG_UPLOADER "" OFF)
 add_subdirectory(WolkSDK-Cpp)
 
 # WolkGateway library
-include_directories("WolkSDK-Cpp/core")
-
 file(GLOB_RECURSE LIB_HEADER_FILES "src/*.h" "src/*.hpp")
 file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
 

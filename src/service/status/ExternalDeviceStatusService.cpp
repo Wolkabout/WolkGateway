@@ -1,6 +1,6 @@
 #include "ExternalDeviceStatusService.h"
 
-#include "utilities/Logger.h"
+#include "core/utilities/Logger.h"
 
 namespace wolkabout
 {

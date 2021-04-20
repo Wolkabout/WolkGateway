@@ -16,12 +16,12 @@
 
 #include "DataService.h"
 
-#include "InboundMessageHandler.h"
 #include "OutboundMessageHandler.h"
-#include "model/Message.h"
-#include "protocol/DataProtocol.h"
+#include "core/InboundMessageHandler.h"
+#include "core/model/Message.h"
+#include "core/protocol/DataProtocol.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewayDataProtocol.h"
-#include "utilities/Logger.h"
 
 #include <algorithm>
 #include <cassert>

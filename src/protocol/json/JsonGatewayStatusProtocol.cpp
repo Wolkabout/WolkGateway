@@ -16,12 +16,12 @@
 
 #include "protocol/json/JsonGatewayStatusProtocol.h"
 
-#include "model/DeviceStatus.h"
-#include "model/Message.h"
-#include "protocol/json/Json.h"
-#include "utilities/Logger.h"
-#include "utilities/StringUtils.h"
-#include "utilities/json.hpp"
+#include "core/model/DeviceStatus.h"
+#include "core/model/Message.h"
+#include "core/protocol/json/Json.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
+#include "core/utilities/json.hpp"
 
 #include <algorithm>
 

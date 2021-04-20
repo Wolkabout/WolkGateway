@@ -16,7 +16,7 @@
 
 #include "repository/SQLiteFileRepository.h"
 
-#include "utilities/Logger.h"
+#include "core/utilities/Logger.h"
 
 #include <Poco/Data/Binding.h>
 #include <Poco/Data/SQLite/Connector.h>

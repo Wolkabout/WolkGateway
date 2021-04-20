@@ -18,12 +18,12 @@
 
 #include "ConnectionStatusListener.h"
 #include "OutboundMessageHandler.h"
-#include "model/DeviceStatus.h"
-#include "model/Message.h"
+#include "core/model/DeviceStatus.h"
+#include "core/model/Message.h"
+#include "core/protocol/StatusProtocol.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewayStatusProtocol.h"
-#include "protocol/StatusProtocol.h"
 #include "repository/DeviceRepository.h"
-#include "utilities/Logger.h"
 
 namespace wolkabout
 {

@@ -17,7 +17,7 @@
 #ifndef OUTBOUNDRETRYMESSAGEHANDLER_H
 #define OUTBOUNDRETRYMESSAGEHANDLER_H
 
-#include "utilities/Timer.h"
+#include "core/utilities/Timer.h"
 
 #include <atomic>
 #include <condition_variable>

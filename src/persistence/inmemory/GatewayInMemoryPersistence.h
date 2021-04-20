@@ -28,7 +28,7 @@ class GatewayInMemoryPersistence : public GatewayPersistence
 {
 public:
     bool push(std::shared_ptr<Message> message) override;
-    std::shared_ptr<Message> pop() override;
+    void pop() override;
     std::shared_ptr<Message> front() override;
     bool empty() const override;
 

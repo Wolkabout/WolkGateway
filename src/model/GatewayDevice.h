@@ -17,9 +17,9 @@
 #ifndef GATEWAYDEVICE_H
 #define GATEWAYDEVICE_H
 
-#include "model/DetailedDevice.h"
+#include "core/model/DetailedDevice.h"
+#include "core/model/WolkOptional.h"
 #include "model/SubdeviceManagement.h"
-#include "model/WolkOptional.h"
 
 #include <string>
 

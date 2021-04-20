@@ -16,15 +16,15 @@
 
 #include "protocol/json/JsonGatewayDataProtocol.h"
 
-#include "model/ActuatorGetCommand.h"
-#include "model/ActuatorSetCommand.h"
-#include "model/ActuatorStatus.h"
-#include "model/Alarm.h"
-#include "model/Message.h"
-#include "protocol/json/Json.h"
-#include "utilities/Logger.h"
-#include "utilities/StringUtils.h"
-#include "utilities/json.hpp"
+#include "core/model/ActuatorGetCommand.h"
+#include "core/model/ActuatorSetCommand.h"
+#include "core/model/ActuatorStatus.h"
+#include "core/model/Alarm.h"
+#include "core/model/Message.h"
+#include "core/protocol/json/Json.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
+#include "core/utilities/json.hpp"
 
 #include <algorithm>
 

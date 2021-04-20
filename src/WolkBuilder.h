@@ -24,8 +24,11 @@
 #include "FileListener.h"
 #include "FirmwareInstaller.h"
 #include "api/DataProvider.h"
-#include "connectivity/ConnectivityService.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/protocol/DataProtocol.h"
+#include "core/protocol/StatusProtocol.h"
 #include "model/GatewayDevice.h"
+#include "persistence/GatewayPersistence.h"
 #include "service/UrlFileDownloader.h"
 
 #include <cstdint>
@@ -172,6 +175,22 @@ public:
     WolkBuilder& withExternalDataProvider(DataProvider* provider);
 
     /**
+     * @brief withProtocol Use external protocol implementatoion for data and status messages
+     * @param dataProtocol Implementation of DataProtocol
+     * @param statusProtocol Implementation of StatusProtocol
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& withProtocol(std::unique_ptr<DataProtocol> dataProtocol,
+                              std::unique_ptr<StatusProtocol> statusProtocol);
+
+    /**
+     * @brief withPersistence Persistence mechanism for outbound messages
+     * @param persistence Implementation of GatewayPersistence
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& withPersistence(std::shared_ptr<GatewayPersistence> persistence);
+
+    /**
      * @brief Builds Wolk instance
      * @return Wolk instance as std::unique_ptr<Wolk>
      *
@@ -218,7 +237,11 @@ private:
 
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
+    std::unique_ptr<DataProtocol> m_dataProtocol = nullptr;
+    std::unique_ptr<StatusProtocol> m_statusProtocol = nullptr;
     DataProvider* m_externalDataProvider = nullptr;
+
+    std::shared_ptr<GatewayPersistence> m_persistence;
 
     bool m_keepAliveEnabled = true;
 

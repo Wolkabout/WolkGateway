@@ -16,18 +16,19 @@
 
 #include "Wolk.h"
 
-#include "connectivity/ConnectivityService.h"
-#include "model/ConfigurationSetCommand.h"
-#include "persistence/Persistence.h"
-#include "protocol/DataProtocol.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/model/ConfigurationSetCommand.h"
+#include "core/persistence/Persistence.h"
+#include "core/protocol/DataProtocol.h"
+#include "core/protocol/RegistrationProtocol.h"
+#include "core/protocol/StatusProtocol.h"
+#include "core/protocol/json/JsonDFUProtocol.h"
+#include "core/protocol/json/JsonDownloadProtocol.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewayDataProtocol.h"
 #include "protocol/GatewayFirmwareUpdateProtocol.h"
 #include "protocol/GatewayStatusProtocol.h"
 #include "protocol/GatewaySubdeviceRegistrationProtocol.h"
-#include "protocol/RegistrationProtocol.h"
-#include "protocol/StatusProtocol.h"
-#include "protocol/json/JsonDFUProtocol.h"
-#include "protocol/json/JsonDownloadProtocol.h"
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/FileRepository.h"
@@ -39,7 +40,6 @@
 #include "service/SubdeviceRegistrationService.h"
 #include "service/data/DataService.h"
 #include "service/data/GatewayDataService.h"
-#include "utilities/Logger.h"
 
 #include <memory>
 #include <sstream>

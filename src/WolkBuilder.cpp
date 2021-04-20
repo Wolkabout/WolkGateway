@@ -285,18 +285,13 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_platformPublisher.reset(new PublishingService(*wolk->m_platformConnectivityService, m_persistence));
 
     wolk->m_inboundPlatformMessageHandler.reset(new GatewayInboundPlatformMessageHandler(m_device.getKey()));
-    //    wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
 
     auto wolkRaw = wolk.get();
 
     wolk->m_platformConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundPlatformMessageHandler>>(
       *wolk->m_inboundPlatformMessageHandler, [=] { wolkRaw->platformDisconnected(); });
 
-    //    wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
-    //      *wolk->m_inboundDeviceMessageHandler, [=] { wolk->devicesDisconnected(); });
-
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
-    //    wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
 
     // Setup actuation and configuration handlers
     wolk->m_actuationHandlerLambda = m_actuationHandlerLambda;
@@ -523,8 +518,8 @@ WolkBuilder::WolkBuilder(GatewayDevice device)
 : m_platformHost{WOLK_DEMO_HOST}
 , m_gatewayHost{MESSAGE_BUS_HOST}
 , m_device{std::move(device)}
-, m_keepAliveEnabled{true}
 , m_persistence{new GatewayInMemoryPersistence()}
+, m_keepAliveEnabled{true}
 {
 }
 }    // namespace wolkabout

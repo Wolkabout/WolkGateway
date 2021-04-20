@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,10 +101,7 @@ void PublishingService::ConnectedState::run()
         if (!message)
             break;
 
-        if (m_service.m_connectivityService.publish(message))
-        {
-        }
-        else
+        if (!m_service.m_connectivityService.publish(message))
         {
             m_service.m_persistence->push(message);
             LOG(ERROR) << "Failed to publish message";
@@ -112,7 +109,7 @@ void PublishingService::ConnectedState::run()
         }
     }
 
-    // publish persisted unitl new message arrives
+    // publish persisted until new message arrives
     while (m_service.m_run && m_service.m_connected && !m_service.m_persistence->empty() &&
            m_service.m_buffer.isEmpty())
     {

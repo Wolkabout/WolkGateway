@@ -7,12 +7,13 @@ namespace wolkabout
 {
 /**
  * @brief The GatewayCircularFileSystemPersistence class
- * LIFO
+ * Specialization  of GatewayFilesystemPersistence for limited storage
  */
 class GatewayCircularFileSystemPersistence : public GatewayFilesystemPersistence
 {
 public:
-    explicit GatewayCircularFileSystemPersistence(const std::string& persistPath, unsigned sizeLimitBytes = 0);
+    explicit GatewayCircularFileSystemPersistence(const std::string& persistPath, PersistenceMethod method,
+                                                  unsigned sizeLimitBytes = 0);
 
     bool push(std::shared_ptr<Message> message) override;
     void pop() override;

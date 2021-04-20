@@ -27,10 +27,14 @@ namespace wolkabout
 {
 class MessagePersister;
 
+/**
+ * @brief The GatewayFilesystemPersistence class
+ * Persists messages on file system
+ */
 class GatewayFilesystemPersistence : public GatewayPersistence
 {
 public:
-    GatewayFilesystemPersistence(const std::string& persistPath);
+    GatewayFilesystemPersistence(const std::string& persistPath, PersistenceMethod method);
     ~GatewayFilesystemPersistence();
 
     bool push(std::shared_ptr<Message> message) override;
@@ -46,6 +50,7 @@ protected:
     void deleteLastReading();
 
     std::string firstReading();
+    std::string lastReading();
     std::string readingPath(const std::string& readingFileName) const;
     bool matchFileNumber(const std::string& fileName, unsigned long& number) const;
 
@@ -57,6 +62,7 @@ protected:
     std::queue<std::shared_ptr<Message>> m_queue;
 
     const std::string m_persistPath;
+    PersistenceMethod m_method;
     std::list<std::string> m_readingFiles;
     unsigned long m_messageNum;
 };

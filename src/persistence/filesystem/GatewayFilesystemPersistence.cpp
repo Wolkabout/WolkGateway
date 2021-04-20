@@ -14,8 +14,8 @@ const std::string REGEX = READING_FILE_NAME + "(\\d+)";
 
 namespace wolkabout
 {
-GatewayFilesystemPersistence::GatewayFilesystemPersistence(const std::string& persistPath)
-: m_persister(new MessagePersister()), m_persistPath(persistPath), m_messageNum(0)
+GatewayFilesystemPersistence::GatewayFilesystemPersistence(const std::string& persistPath, PersistenceMethod method)
+: m_persister(new MessagePersister()), m_persistPath(persistPath), m_method(method), m_messageNum(0)
 {
     initialize();
 }
@@ -36,7 +36,7 @@ void GatewayFilesystemPersistence::pop()
         return;
     }
 
-    deleteFirstReading();
+    m_method == PersistenceMethod::FIFO ? deleteFirstReading() : deleteLastReading();
 }
 
 std::shared_ptr<Message> GatewayFilesystemPersistence::front()
@@ -48,7 +48,7 @@ std::shared_ptr<Message> GatewayFilesystemPersistence::front()
         return nullptr;
     }
 
-    const auto reading = firstReading();
+    const auto reading = m_method == PersistenceMethod::FIFO ? firstReading() : lastReading();
     const std::string path = readingPath(reading);
     LOG(INFO) << "Loading reading " << reading;
 
@@ -58,7 +58,7 @@ std::shared_ptr<Message> GatewayFilesystemPersistence::front()
     {
         LOG(ERROR) << "Failed to read readings file " << reading;
 
-        deleteFirstReading();
+        pop();
 
         return nullptr;
     }
@@ -195,6 +195,11 @@ void GatewayFilesystemPersistence::deleteLastReading()
 std::string GatewayFilesystemPersistence::firstReading()
 {
     return m_readingFiles.front();
+}
+
+std::string GatewayFilesystemPersistence::lastReading()
+{
+    return m_readingFiles.back();
 }
 
 bool GatewayFilesystemPersistence::matchFileNumber(const std::string& fileName, unsigned long& number) const

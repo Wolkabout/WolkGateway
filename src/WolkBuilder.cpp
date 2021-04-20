@@ -527,6 +527,4 @@ WolkBuilder::WolkBuilder(GatewayDevice device)
 , m_persistence{new GatewayInMemoryPersistence()}
 {
 }
-
-WolkBuilder::WolkBuilder(WolkBuilder&&) = default;
 }    // namespace wolkabout

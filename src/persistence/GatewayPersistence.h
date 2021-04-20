@@ -23,6 +23,12 @@ namespace wolkabout
 {
 class Message;
 
+enum class PersistenceMethod
+{
+    FIFO = 0,
+    LIFO
+};
+
 /**
  * @brief A storage designed for holding messages in persistent store prior to publishing.
  *

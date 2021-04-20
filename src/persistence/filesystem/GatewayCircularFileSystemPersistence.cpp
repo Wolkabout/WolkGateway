@@ -1,15 +1,19 @@
 #include "GatewayCircularFileSystemPersistence.h"
+#include "core/model/Message.h"
 #include "core/utilities/FileSystemUtils.h"
 #include "core/utilities/Logger.h"
 
-wolkabout::GatewayCircularFileSystemPersistence::GatewayCircularFileSystemPersistence(const std::string& persistPath,
-                                                                                      unsigned sizeLimitBytes)
-: GatewayFilesystemPersistence(persistPath), m_sizeLimitBytes{sizeLimitBytes}
+namespace wolkabout
+{
+GatewayCircularFileSystemPersistence::GatewayCircularFileSystemPersistence(const std::string& persistPath,
+                                                                           PersistenceMethod method,
+                                                                           unsigned sizeLimitBytes)
+: GatewayFilesystemPersistence(persistPath, method), m_sizeLimitBytes{sizeLimitBytes}
 {
     loadFileSize();
 }
 
-bool wolkabout::GatewayCircularFileSystemPersistence::push(std::shared_ptr<wolkabout::Message> message)
+bool GatewayCircularFileSystemPersistence::push(std::shared_ptr<wolkabout::Message> message)
 {
     std::lock_guard<decltype(m_mutex)> guard{m_mutex};
 
@@ -26,7 +30,7 @@ bool wolkabout::GatewayCircularFileSystemPersistence::push(std::shared_ptr<wolka
     return true;
 }
 
-void wolkabout::GatewayCircularFileSystemPersistence::pop()
+void GatewayCircularFileSystemPersistence::pop()
 {
     std::lock_guard<decltype(m_mutex)> guard{m_mutex};
 
@@ -35,14 +39,16 @@ void wolkabout::GatewayCircularFileSystemPersistence::pop()
         return;
     }
 
-    auto size = static_cast<unsigned>(FileSystemUtils::getFileSize(m_readingFiles.back()));
+    const auto reading = m_method == PersistenceMethod::FIFO ? firstReading() : lastReading();
+
+    auto size = static_cast<unsigned>(FileSystemUtils::getFileSize(reading));
 
     m_totalFileSize = size > m_totalFileSize ? 0 : m_totalFileSize - size;
 
-    deleteLastReading();
+    m_method == PersistenceMethod::FIFO ? deleteFirstReading() : deleteLastReading();
 }
 
-void wolkabout::GatewayCircularFileSystemPersistence::setSizeLimit(unsigned bytes)
+void GatewayCircularFileSystemPersistence::setSizeLimit(unsigned bytes)
 {
     LOG(INFO) << "Circular Persistence: Setting size limit " << bytes;
 
@@ -52,7 +58,7 @@ void wolkabout::GatewayCircularFileSystemPersistence::setSizeLimit(unsigned byte
     checkLimits();
 }
 
-void wolkabout::GatewayCircularFileSystemPersistence::loadFileSize()
+void GatewayCircularFileSystemPersistence::loadFileSize()
 {
     for (const auto& reading : m_readingFiles)
     {
@@ -61,7 +67,7 @@ void wolkabout::GatewayCircularFileSystemPersistence::loadFileSize()
     }
 }
 
-void wolkabout::GatewayCircularFileSystemPersistence::checkLimits()
+void GatewayCircularFileSystemPersistence::checkLimits()
 {
     if (m_sizeLimitBytes == 0)
         return;
@@ -69,6 +75,10 @@ void wolkabout::GatewayCircularFileSystemPersistence::checkLimits()
     while (m_totalFileSize > m_sizeLimitBytes && !m_readingFiles.empty())
     {
         LOG(INFO) << "Circular Persistence: Size over limit " << m_totalFileSize;
-        deleteFirstReading();
+
+        m_method == PersistenceMethod::FIFO ? deleteLastReading() : deleteFirstReading();
+
+        loadFileSize();
     }
 }
+}    // namespace wolkabout

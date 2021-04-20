@@ -52,8 +52,6 @@ public:
      */
     WolkBuilder(GatewayDevice device);
 
-    WolkBuilder(WolkBuilder&&);
-
     /**
      * @brief Allows passing of URI to custom WolkAbout IoT platform instance
      * @param host Server URI
@@ -166,9 +164,20 @@ public:
      */
     WolkBuilder& withExternalDataProvider(DataProvider* provider);
 
+    /**
+     * @brief withProtocol Use external protocol implementatoion for data and status messages
+     * @param dataProtocol Implementation of DataProtocol
+     * @param statusProtocol Implementation of StatusProtocol
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
     WolkBuilder& withProtocol(std::unique_ptr<DataProtocol> dataProtocol,
                               std::unique_ptr<StatusProtocol> statusProtocol);
 
+    /**
+     * @brief withPersistence Persistence mechanism for outbound messages
+     * @param persistence Implementation of GatewayPersistence
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
     WolkBuilder& withPersistence(std::shared_ptr<GatewayPersistence> persistence);
 
     /**

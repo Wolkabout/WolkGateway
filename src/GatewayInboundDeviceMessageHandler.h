@@ -18,7 +18,7 @@
 #define GATEWAYINBOUNDDEVICEMESSAGEHANDLER_H
 
 #include "InboundDeviceMessageHandler.h"
-#include "utilities/CommandBuffer.h"
+#include "core/utilities/CommandBuffer.h"
 
 #include <map>
 #include <memory>

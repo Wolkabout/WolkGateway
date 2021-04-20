@@ -17,12 +17,12 @@
 #include "GatewayUpdateService.h"
 
 #include "OutboundMessageHandler.h"
-#include "model/GatewayUpdateRequest.h"
-#include "model/GatewayUpdateResponse.h"
-#include "model/Message.h"
-#include "protocol/RegistrationProtocol.h"
+#include "core/model/GatewayUpdateRequest.h"
+#include "core/model/GatewayUpdateResponse.h"
+#include "core/model/Message.h"
+#include "core/protocol/RegistrationProtocol.h"
+#include "core/utilities/Logger.h"
 #include "repository/DeviceRepository.h"
-#include "utilities/Logger.h"
 
 #include <cassert>
 

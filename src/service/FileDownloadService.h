@@ -19,17 +19,18 @@
 
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "WolkaboutFileDownloader.h"
+#include "core/utilities/ByteUtils.h"
+#include "core/utilities/CommandBuffer.h"
 #include "service/FileDownloader.h"
-#include "utilities/ByteUtils.h"
-#include "utilities/CommandBuffer.h"
+
+#include "core/model/FileDelete.h"
+#include "core/model/FileUploadAbort.h"
+#include "core/model/FileUploadInitiate.h"
 
 #include <atomic>
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <model/FileDelete.h>
-#include <model/FileUploadAbort.h>
-#include <model/FileUploadInitiate.h>
 #include <mutex>
 #include <string>
 #include <thread>

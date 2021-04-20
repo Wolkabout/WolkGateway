@@ -1,8 +1,8 @@
 #include "ExternalDataService.h"
 
-#include "model/Message.h"
-#include "protocol/DataProtocol.h"
-#include "utilities/Logger.h"
+#include "core/model/Message.h"
+#include "core/protocol/DataProtocol.h"
+#include "core/utilities/Logger.h"
 
 #include <algorithm>
 
@@ -13,7 +13,7 @@ void ExternalDataService::addSensorReading(const std::string& deviceKey, const S
     const std::shared_ptr<Message> message =
       m_protocol.makeMessage(deviceKey, {std::make_shared<SensorReading>(reading)});
 
-    routeDeviceToPlatformMessage(message);
+    addMessage(message);
 }
 
 void ExternalDataService::addSensorReadings(const std::string& deviceKey, const std::vector<SensorReading>& readings)
@@ -30,14 +30,14 @@ void ExternalDataService::addSensorReadings(const std::string& deviceKey, const 
 
     const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, parsableReadings);
 
-    routeDeviceToPlatformMessage(message);
+    addMessage(message);
 }
 
 void ExternalDataService::addAlarm(const std::string& deviceKey, const Alarm& alarm)
 {
     const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, {std::make_shared<Alarm>(alarm)});
 
-    routeDeviceToPlatformMessage(message);
+    addMessage(message);
 }
 
 void ExternalDataService::addActuatorStatus(const std::string& deviceKey, const ActuatorStatus& status)
@@ -45,7 +45,7 @@ void ExternalDataService::addActuatorStatus(const std::string& deviceKey, const 
     const std::shared_ptr<Message> message =
       m_protocol.makeMessage(deviceKey, {std::make_shared<ActuatorStatus>(status)});
 
-    routeDeviceToPlatformMessage(message);
+    addMessage(message);
 }
 
 void ExternalDataService::addConfiguration(const std::string& deviceKey,
@@ -53,7 +53,7 @@ void ExternalDataService::addConfiguration(const std::string& deviceKey,
 {
     const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, configurations);
 
-    routeDeviceToPlatformMessage(message);
+    addMessage(message);
 }
 
 void ExternalDataService::requestActuatorStatusesForDevice(const std::string& /*deviceKey*/)

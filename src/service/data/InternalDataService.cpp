@@ -1,10 +1,10 @@
 #include "InternalDataService.h"
-#include "model/DetailedDevice.h"
-#include "model/Message.h"
-#include "protocol/DataProtocol.h"
+#include "core/model/DetailedDevice.h"
+#include "core/model/Message.h"
+#include "core/protocol/DataProtocol.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewayDataProtocol.h"
 #include "repository/DeviceRepository.h"
-#include "utilities/Logger.h"
 
 #include <cassert>
 

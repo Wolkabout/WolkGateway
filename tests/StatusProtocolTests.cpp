@@ -1,5 +1,5 @@
-#include "model/DeviceStatus.h"
-#include "model/Message.h"
+#include "core/model/DeviceStatus.h"
+#include "core/model/Message.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
 
 #include <gmock/gmock.h>

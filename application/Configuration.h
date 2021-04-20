@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include "core/model/WolkOptional.h"
 #include "model/SubdeviceManagement.h"
-#include "model/WolkOptional.h"
 
 #include <string>
 

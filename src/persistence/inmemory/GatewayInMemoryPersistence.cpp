@@ -25,13 +25,10 @@ bool GatewayInMemoryPersistence::push(std::shared_ptr<Message> message)
     return true;
 }
 
-std::shared_ptr<Message> GatewayInMemoryPersistence::pop()
+void GatewayInMemoryPersistence::pop()
 {
     std::lock_guard<std::mutex> lg{m_lock};
-    auto message = m_queue.front();
     m_queue.pop();
-
-    return message;
 }
 
 std::shared_ptr<Message> GatewayInMemoryPersistence::front()

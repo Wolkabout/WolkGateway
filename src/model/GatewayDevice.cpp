@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "model/GatewayDevice.h"
+#include "GatewayDevice.h"
 
 #include <string>
 

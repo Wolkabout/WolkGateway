@@ -17,9 +17,9 @@
 #include "OutboundRetryMessageHandler.h"
 
 #include "OutboundMessageHandler.h"
-#include "model/Message.h"
-#include "utilities/Logger.h"
-#include "utilities/StringUtils.h"
+#include "core/model/Message.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
 
 namespace
 {

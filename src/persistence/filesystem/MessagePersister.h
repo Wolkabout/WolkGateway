@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef ACTUATORSTATUSPROVIDER_H
-#define ACTUATORSTATUSPROVIDER_H
+#ifndef MESSAGEPERSISTER_H
+#define MESSAGEPERSISTER_H
 
-#include "core/model/ActuatorStatus.h"
+#include "core/model/Message.h"
 
-#include <string>
+#include <memory>
 
 namespace wolkabout
 {
-class ActuatorStatusProvider
+class MessagePersister
 {
 public:
-    /**
-     * @brief Actuator status provider callback<br>
-     *        Must be implemented as non blocking<br>
-     *        Must be implemented as thread safe
-     * @param reference Actuator reference
-     * @return ActuatorStatus of requested actuator
-     */
-    virtual ActuatorStatus getActuatorStatus(const std::string& reference) = 0;
+    virtual ~MessagePersister() = default;
 
-    virtual ~ActuatorStatusProvider() = default;
+    virtual std::string save(const Message& message) const;
+    virtual std::unique_ptr<Message> load(const std::string& text) const;
 };
 }    // namespace wolkabout
 
-#endif
+#endif    // MESSAGEPERSISTER_H

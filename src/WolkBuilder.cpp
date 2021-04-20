@@ -23,22 +23,22 @@
 #include "Wolk.h"
 #include "WolkDefault.h"
 #include "WolkExternal.h"
-#include "connectivity/ConnectivityService.h"
-#include "connectivity/mqtt/MqttConnectivityService.h"
-#include "connectivity/mqtt/PahoMqttClient.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/connectivity/mqtt/MqttConnectivityService.h"
+#include "core/connectivity/mqtt/PahoMqttClient.h"
+#include "core/model/Message.h"
+#include "core/persistence/InMemoryPersistence.h"
+#include "core/protocol/json/JsonDFUProtocol.h"
+#include "core/protocol/json/JsonDownloadProtocol.h"
+#include "core/protocol/json/JsonProtocol.h"
+#include "core/protocol/json/JsonRegistrationProtocol.h"
+#include "core/protocol/json/JsonStatusProtocol.h"
 #include "model/GatewayDevice.h"
-#include "model/Message.h"
 #include "persistence/inmemory/GatewayInMemoryPersistence.h"
-#include "persistence/inmemory/InMemoryPersistence.h"
-#include "protocol/json/JsonDFUProtocol.h"
-#include "protocol/json/JsonDownloadProtocol.h"
 #include "protocol/json/JsonGatewayDFUProtocol.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
-#include "protocol/json/JsonProtocol.h"
-#include "protocol/json/JsonRegistrationProtocol.h"
-#include "protocol/json/JsonStatusProtocol.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/JsonFileExistingDevicesRepository.h"
 #include "repository/SQLiteDeviceRepository.h"
@@ -170,6 +170,20 @@ WolkBuilder& WolkBuilder::withExternalDataProvider(DataProvider* provider)
     return *this;
 }
 
+WolkBuilder& WolkBuilder::withProtocol(std::unique_ptr<DataProtocol> dataProtocol,
+                                       std::unique_ptr<StatusProtocol> statusProtocol)
+{
+    m_dataProtocol = std::move(dataProtocol);
+    m_statusProtocol = std::move(statusProtocol);
+    return *this;
+}
+
+WolkBuilder& WolkBuilder::withPersistence(std::shared_ptr<GatewayPersistence> persistence)
+{
+    m_persistence = std::move(persistence);
+    return *this;
+}
+
 std::unique_ptr<Wolk> WolkBuilder::build()
 {
     if (m_device.getKey().empty())
@@ -216,6 +230,12 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         throw std::logic_error("Url downloader must be provided when url download is enabled");
     }
 
+    if ((m_dataProtocol == nullptr && m_statusProtocol != nullptr) ||
+        (m_dataProtocol != nullptr && m_statusProtocol == nullptr))
+    {
+        throw std::logic_error("Both data and status protocols must be set");
+    }
+
     auto wolk = [&] {
         if (m_externalDataProvider)
         {
@@ -228,13 +248,27 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     }();
 
     // Setup protocols
-    wolk->m_dataProtocol.reset(new wolkabout::JsonProtocol(true));
+    if (m_dataProtocol)
+    {
+        wolk->m_dataProtocol = std::move(m_dataProtocol);
+    }
+    else
+    {
+        wolk->m_dataProtocol.reset(new wolkabout::JsonProtocol(true));
+    }
     wolk->m_gatewayDataProtocol.reset(new wolkabout::JsonGatewayDataProtocol());
 
     wolk->m_registrationProtocol.reset(new JsonRegistrationProtocol());
     wolk->m_gatewayRegistrationProtocol.reset(new JsonGatewaySubdeviceRegistrationProtocol());
 
-    wolk->m_statusProtocol.reset(new JsonStatusProtocol(true));
+    if (m_statusProtocol)
+    {
+        wolk->m_statusProtocol = std::move(m_statusProtocol);
+    }
+    else
+    {
+        wolk->m_statusProtocol.reset(new JsonStatusProtocol(true));
+    }
     wolk->m_gatewayStatusProtocol.reset(new JsonGatewayStatusProtocol());
 
     wolk->m_firmwareUpdateProtocol.reset(new JsonDFUProtocol(true));
@@ -255,20 +289,16 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_platformConnectivityService->setUncontrolledDisonnectMessage(
       wolk->m_statusProtocol->makeLastWillMessage(m_device.getKey()));
 
-    wolk->m_platformPublisher.reset(new PublishingService(
-      *wolk->m_platformConnectivityService, std::unique_ptr<GatewayPersistence>(new GatewayInMemoryPersistence())));
+    wolk->m_platformPublisher.reset(new PublishingService(*wolk->m_platformConnectivityService, m_persistence));
 
     wolk->m_inboundPlatformMessageHandler.reset(new GatewayInboundPlatformMessageHandler(m_device.getKey()));
-    //    wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
+
+    auto wolkRaw = wolk.get();
 
     wolk->m_platformConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundPlatformMessageHandler>>(
-      *wolk->m_inboundPlatformMessageHandler, [&] { wolk->platformDisconnected(); });
-
-    //    wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
-    //      *wolk->m_inboundDeviceMessageHandler, [&] { wolk->devicesDisconnected(); });
+      *wolk->m_inboundPlatformMessageHandler, [=] { wolkRaw->platformDisconnected(); });
 
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
-    //    wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
 
     // Setup actuation and configuration handlers
     wolk->m_actuationHandlerLambda = m_actuationHandlerLambda;
@@ -287,7 +317,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_gatewayUpdateService.reset(new GatewayUpdateService(m_device.getKey(), *wolk->m_registrationProtocol,
                                                                 *wolk->m_deviceRepository, *wolk->m_platformPublisher));
 
-    wolk->m_gatewayUpdateService->onGatewayUpdated([&] { wolk->gatewayUpdated(); });
+    wolk->m_gatewayUpdateService->onGatewayUpdated([=] { wolkRaw->gatewayUpdated(); });
 
     if (m_externalDataProvider)
     {
@@ -324,13 +354,13 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
     wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
       std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_gatewayHost, localMqttClientId));
 
-    wolk->m_devicePublisher.reset(new PublishingService(
-      *wolk->m_deviceConnectivityService, std::unique_ptr<GatewayPersistence>(new GatewayInMemoryPersistence())));
+    wolk->m_devicePublisher.reset(
+      new PublishingService(*wolk->m_deviceConnectivityService, std::make_shared<GatewayInMemoryPersistence>()));
 
     wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
 
     wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
-      *wolk->m_inboundDeviceMessageHandler, [&] { wolk->devicesDisconnected(); });
+      *wolk->m_inboundDeviceMessageHandler, [=] { wolk->devicesDisconnected(); });
 
     wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
     //
@@ -344,10 +374,10 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
           *wolk->m_deviceRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher));
 
         wolk->m_subdeviceRegistrationService->onDeviceRegistered(
-          [&](const std::string& deviceKey) { wolk->deviceRegistered(deviceKey); });
+          [=](const std::string& deviceKey) { wolk->deviceRegistered(deviceKey); });
 
         wolk->m_subdeviceRegistrationService->onDeviceUpdated(
-          [&](const std::string& deviceKey) { wolk->deviceUpdated(deviceKey); });
+          [=](const std::string& deviceKey) { wolk->deviceUpdated(deviceKey); });
     }
 
     wolk->m_registrationMessageRouter = std::make_shared<RegistrationMessageRouter>(
@@ -491,7 +521,11 @@ wolkabout::WolkBuilder::operator std::unique_ptr<Wolk>()
 }
 
 WolkBuilder::WolkBuilder(GatewayDevice device)
-: m_platformHost{WOLK_DEMO_HOST}, m_gatewayHost{MESSAGE_BUS_HOST}, m_device{std::move(device)}, m_keepAliveEnabled{true}
+: m_platformHost{WOLK_DEMO_HOST}
+, m_gatewayHost{MESSAGE_BUS_HOST}
+, m_device{std::move(device)}
+, m_persistence{new GatewayInMemoryPersistence()}
+, m_keepAliveEnabled{true}
 {
 }
 }    // namespace wolkabout

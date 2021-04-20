@@ -17,15 +17,15 @@
 #include "GatewayDataService.h"
 
 #include "OutboundMessageHandler.h"
-#include "connectivity/ConnectivityService.h"
-#include "model/ActuatorGetCommand.h"
-#include "model/ActuatorSetCommand.h"
-#include "model/ConfigurationSetCommand.h"
-#include "model/Message.h"
-#include "model/SensorReading.h"
-#include "persistence/Persistence.h"
-#include "protocol/DataProtocol.h"
-#include "utilities/Logger.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/model/ActuatorGetCommand.h"
+#include "core/model/ActuatorSetCommand.h"
+#include "core/model/ConfigurationSetCommand.h"
+#include "core/model/Message.h"
+#include "core/model/SensorReading.h"
+#include "core/persistence/Persistence.h"
+#include "core/protocol/DataProtocol.h"
+#include "core/utilities/Logger.h"
 
 #include <algorithm>
 #include <cassert>

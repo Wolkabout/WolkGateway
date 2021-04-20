@@ -16,7 +16,7 @@
 #ifndef MOCKCONNECTIVITYSERVICE_H
 #define MOCKCONNECTIVITYSERVICE_H
 
-#include "connectivity/ConnectivityService.h"
+#include "core/connectivity/ConnectivityService.h"
 
 #include <gmock/gmock.h>
 

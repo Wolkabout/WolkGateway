@@ -17,7 +17,7 @@
 #ifndef WOLKABOUTFILEDOWNLOADER_H
 #define WOLKABOUTFILEDOWNLOADER_H
 
-#include "utilities/ByteUtils.h"
+#include "core/utilities/ByteUtils.h"
 
 #include <cstdint>
 #include <functional>

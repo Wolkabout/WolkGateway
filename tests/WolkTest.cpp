@@ -25,14 +25,15 @@
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "MockConnectivityService.h"
 #include "MockRepository.h"
+#include "core/protocol/json/JsonDFUProtocol.h"
+#include "core/protocol/json/JsonDownloadProtocol.h"
+#include "core/protocol/json/JsonProtocol.h"
+#include "core/protocol/json/JsonRegistrationProtocol.h"
+#include "core/protocol/json/JsonStatusProtocol.h"
 #include "model/SubdeviceManagement.h"
-#include "protocol/json/JsonDFUProtocol.h"
-#include "protocol/json/JsonDownloadProtocol.h"
 #include "protocol/json/JsonGatewayDFUProtocol.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
-#include "protocol/json/JsonProtocol.h"
-#include "protocol/json/JsonRegistrationProtocol.h"
 #include "service/FileDownloadService.h"
 #include "service/FirmwareUpdateService.h"
 #include "service/GatewayUpdateService.h"
@@ -43,7 +44,6 @@
 #include "service/data/InternalDataService.h"
 
 #include <memory>
-#include <protocol/json/JsonStatusProtocol.h>
 
 namespace
 {

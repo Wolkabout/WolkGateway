@@ -17,9 +17,9 @@
 #ifndef GATEWAYDATASERVICE_H
 #define GATEWAYDATASERVICE_H
 
-#include "InboundMessageHandler.h"
-#include "model/ActuatorStatus.h"
-#include "model/ConfigurationItem.h"
+#include "core/InboundMessageHandler.h"
+#include "core/model/ActuatorStatus.h"
+#include "core/model/ConfigurationItem.h"
 
 #include <functional>
 #include <map>

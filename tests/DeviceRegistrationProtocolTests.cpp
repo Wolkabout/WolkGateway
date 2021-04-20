@@ -1,4 +1,4 @@
-#include "model/Message.h"
+#include "core/model/Message.h"
 #define private public
 #define protected public
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"

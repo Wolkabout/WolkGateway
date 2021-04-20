@@ -18,8 +18,8 @@
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
-#include "model/FirmwareUpdateStatus.h"
-#include "utilities/CommandBuffer.h"
+#include "core/model/FirmwareUpdateStatus.h"
+#include "core/utilities/CommandBuffer.h"
 
 #include <functional>
 #include <memory>

@@ -81,6 +81,9 @@ void PublishingService::DisconnectedState::run()
     while (m_service.m_run && !m_service.m_connected && !m_service.m_buffer.isEmpty())
     {
         const auto message = m_service.m_buffer.pop();
+        if (!message)
+            break;
+
         if (!m_service.m_persistence->push(message))
         {
             LOG(ERROR) << "Failed to persist message";
@@ -95,6 +98,9 @@ void PublishingService::ConnectedState::run()
     while (m_service.m_run && m_service.m_connected && !m_service.m_buffer.isEmpty())
     {
         const auto message = m_service.m_buffer.pop();
+        if (!message)
+            break;
+
         if (m_service.m_connectivityService.publish(message))
         {
         }
@@ -111,6 +117,9 @@ void PublishingService::ConnectedState::run()
            m_service.m_buffer.isEmpty())
     {
         const auto message = m_service.m_persistence->front();
+        if (!message)
+            break;
+
         if (m_service.m_connectivityService.publish(message))
         {
             m_service.m_persistence->pop();

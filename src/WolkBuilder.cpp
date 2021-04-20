@@ -157,6 +157,13 @@ WolkBuilder& WolkBuilder::fileDownloadDirectory(const std::string& path)
     return *this;
 }
 
+WolkBuilder& WolkBuilder::fileDownloadDirectory(const std::string& path, std::shared_ptr<FileListener> fileListener)
+{
+    m_fileDownloadDirectory = path;
+    m_fileListener = std::move(fileListener);
+    return *this;
+}
+
 WolkBuilder& WolkBuilder::withExternalDataProvider(DataProvider* provider)
 {
     m_externalDataProvider = provider;
@@ -303,18 +310,17 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     }
 
     // setup file download service
-    wolk->m_fileDownloadService =
-      std::make_shared<FileDownloadService>(m_device.getKey(), *wolk->m_fileDownloadProtocol, m_fileDownloadDirectory,
-                                            *wolk->m_platformPublisher, *wolk->m_fileRepository, m_urlFileDownloader);
+    wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(
+      m_device.getKey(), *wolk->m_fileDownloadProtocol, m_fileDownloadDirectory, *wolk->m_platformPublisher,
+      *wolk->m_fileRepository, m_urlFileDownloader, m_fileListener);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_fileDownloadService);
 
-    //    // setup firmware update service
-    //    wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
-    //      m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_gatewayFirmwareUpdateProtocol,
-    //      *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher, m_firmwareInstaller,
-    //      m_firmwareVersion);
-    //    wolk->m_inboundDeviceMessageHandler->addListener(wolk->m_firmwareUpdateService);
-    //    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
+    // setup firmware update service
+    wolk->m_firmwareUpdateService = std::make_shared<FirmwareUpdateService>(
+      m_device.getKey(), *wolk->m_firmwareUpdateProtocol, *wolk->m_gatewayFirmwareUpdateProtocol,
+      *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_platformPublisher, m_firmwareInstaller,
+      m_firmwareVersion);
+    wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
 
     return wolk;
 }

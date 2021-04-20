@@ -21,6 +21,7 @@
 #include "ActuatorStatusProvider.h"
 #include "ConfigurationHandler.h"
 #include "ConfigurationProvider.h"
+#include "FileListener.h"
 #include "FirmwareInstaller.h"
 #include "api/DataProvider.h"
 #include "connectivity/ConnectivityService.h"
@@ -47,7 +48,7 @@ public:
      * @brief WolkBuilder Initiates wolkabout::Wolk builder
      * @param device Device for which wolkabout::WolkBuilder is instantiated
      */
-    WolkBuilder(GatewayDevice device);
+    explicit WolkBuilder(GatewayDevice device);
 
     /**
      * @brief Allows passing of URI to custom WolkAbout IoT platform instance
@@ -154,6 +155,15 @@ public:
     WolkBuilder& fileDownloadDirectory(const std::string& path);
 
     /**
+     * @brief fileDownloadDirectory specifies directory where to download files and a listener for file changes
+     * By default files are stored in the working directory of gateway
+     * @param path Path to directory where files will be stored
+     * @param fileListener The listener for file changes.
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& fileDownloadDirectory(const std::string& path, std::shared_ptr<FileListener> fileListener);
+
+    /**
      * @brief withExternalDataProvider Use external data provider instead of expecting data on local mqtt
      * with WolkAbout protocol
      * @param provider Implementation of DataProvider
@@ -201,6 +211,7 @@ private:
     std::shared_ptr<ConfigurationProvider> m_configurationProvider;
 
     std::string m_fileDownloadDirectory = "files";
+    std::shared_ptr<FileListener> m_fileListener;
 
     std::string m_firmwareVersion;
     std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;

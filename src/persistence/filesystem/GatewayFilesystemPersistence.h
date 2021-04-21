@@ -58,7 +58,7 @@ protected:
 
     std::unique_ptr<MessagePersister> m_persister;
 
-    mutable std::mutex m_mutex;
+    mutable std::recursive_mutex m_mutex;
     std::queue<std::shared_ptr<Message>> m_queue;
 
     const std::string m_persistPath;

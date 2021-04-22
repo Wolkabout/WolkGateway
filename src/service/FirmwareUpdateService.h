@@ -107,7 +107,7 @@ private:
 
     CommandBuffer m_commandBuffer;
 
-    static const constexpr char* FIRMWARE_VERSION_FILE = ".dfu-version";
+    static const constexpr char* FIRMWARE_VERSION_FILE = "version/.dfu-version";
 };
 }    // namespace wolkabout
 

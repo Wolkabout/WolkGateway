@@ -295,6 +295,10 @@ void FirmwareUpdateService::installGatewayFirmware(const std::string& filePath)
         return;
     }
 
+    const auto directory = StringUtils::tokenize(FIRMWARE_VERSION_FILE, "/").front();
+    if (!FileSystemUtils::isDirectoryPresent(directory))
+        FileSystemUtils::createDirectory(directory);
+
     if (!FileSystemUtils::createFileWithContent(FIRMWARE_VERSION_FILE, m_currentFirmwareVersion))
     {
         LOG(ERROR) << "Failed to create firmware version file";
@@ -304,7 +308,13 @@ void FirmwareUpdateService::installGatewayFirmware(const std::string& filePath)
 
     sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Status::INSTALLATION});
 
-    if (!m_firmwareInstaller->install(filePath))
+    if (m_firmwareInstaller->install(filePath))
+    {
+        LOG(INFO) << "Successfully installed gateway firmware";
+
+        sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Status::COMPLETED});
+    }
+    else
     {
         LOG(ERROR) << "Failed to install gateway firmware";
 

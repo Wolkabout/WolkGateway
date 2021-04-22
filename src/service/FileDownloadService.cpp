@@ -17,6 +17,7 @@
 #include "service/FileDownloadService.h"
 
 #include "FileHandler.h"
+#include "FileListener.h"
 #include "OutboundMessageHandler.h"
 #include "core/connectivity/ConnectivityService.h"
 #include "core/model/BinaryData.h"
@@ -34,7 +35,6 @@
 #include "core/utilities/Logger.h"
 #include "core/utilities/StringUtils.h"
 #include "repository/FileRepository.h"
-#include "FileListener.h"
 #include "service/UrlFileDownloader.h"
 
 #include <cassert>

@@ -236,7 +236,8 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         throw std::logic_error("Both data and status protocols must be set");
     }
 
-    auto wolk = [&] {
+    auto wolk = [&]
+    {
         if (m_externalDataProvider)
         {
             return std::unique_ptr<Wolk>(new WolkExternal(m_device));
@@ -373,11 +374,11 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
           m_device.getKey(), *wolk->m_registrationProtocol, *wolk->m_gatewayRegistrationProtocol,
           *wolk->m_deviceRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher));
 
-        wolk->m_subdeviceRegistrationService->onDeviceRegistered(
-          [=](const std::string& deviceKey) { wolk->deviceRegistered(deviceKey); });
+        wolk->m_subdeviceRegistrationService->onDeviceRegistered([=](const std::string& deviceKey)
+                                                                 { wolk->deviceRegistered(deviceKey); });
 
-        wolk->m_subdeviceRegistrationService->onDeviceUpdated(
-          [=](const std::string& deviceKey) { wolk->deviceUpdated(deviceKey); });
+        wolk->m_subdeviceRegistrationService->onDeviceUpdated([=](const std::string& deviceKey)
+                                                              { wolk->deviceUpdated(deviceKey); });
     }
 
     wolk->m_registrationMessageRouter = std::make_shared<RegistrationMessageRouter>(
@@ -466,7 +467,7 @@ void WolkBuilder::setupWithExternalData(WolkExternal* wolk)
     wolk->m_dataApi.reset(
       new DataHandlerApiFacade(dynamic_cast<ExternalDataService&>(*wolk->m_dataService), *wolk->m_deviceStatusService));
 
-    m_externalDataProvider->setDataHandler(wolk->m_dataApi.get());
+    m_externalDataProvider->setDataHandler(wolk->m_dataApi.get(), wolk->m_device.getKey());
 
     setupGatewayDataService(wolk, *wolk->m_dataService);
     wolk->m_dataService->setGatewayMessageListener(wolk->m_gatewayDataService.get());
@@ -506,9 +507,8 @@ void WolkBuilder::setupGatewayDataService(Wolk* wolk, OutboundMessageHandler& ou
         wolk->m_gatewayPersistence.reset(new InMemoryPersistence());
         wolk->m_gatewayDataService.reset(new GatewayDataService(
           m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayPersistence, outboundMessageHandler,
-          [wolkRaw](const std::string& reference, const std::string& value) {
-              wolkRaw->handleActuatorSetCommand(reference, value);
-          },
+          [wolkRaw](const std::string& reference, const std::string& value)
+          { wolkRaw->handleActuatorSetCommand(reference, value); },
           [wolkRaw](const std::string& reference) { wolkRaw->handleActuatorGetCommand(reference); },
           [wolkRaw](const ConfigurationSetCommand& command) { wolkRaw->handleConfigurationSetCommand(command); },
           [wolkRaw] { wolkRaw->handleConfigurationGetCommand(); }));

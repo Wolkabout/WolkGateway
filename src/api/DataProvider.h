@@ -10,7 +10,7 @@ class DataProvider
 public:
     virtual ~DataProvider() = default;
 
-    virtual void setDataHandler(DataHandler* handler) = 0;
+    virtual void setDataHandler(DataHandler* handler, const std::string& gatewayKey) = 0;
 };
 }    // namespace wolkabout
 

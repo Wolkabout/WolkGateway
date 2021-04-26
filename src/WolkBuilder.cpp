@@ -314,12 +314,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_configurationProviderLambda = m_configurationProviderLambda;
     wolk->m_configurationProvider = m_configurationProvider;
 
-    // Setup gateway update service
-    wolk->m_gatewayUpdateService.reset(new GatewayUpdateService(m_device.getKey(), *wolk->m_registrationProtocol,
-                                                                *wolk->m_deviceRepository, *wolk->m_platformPublisher));
-
-    wolk->m_gatewayUpdateService->onGatewayUpdated([=] { wolkRaw->gatewayUpdated(); });
-
     if (m_externalDataProvider)
     {
         setupWithExternalData(dynamic_cast<WolkExternal*>(wolk.get()));
@@ -347,6 +341,12 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
 void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
 {
+    // Setup gateway update service
+    wolk->m_gatewayUpdateService.reset(new GatewayUpdateService(m_device.getKey(), *wolk->m_registrationProtocol,
+                                                                *wolk->m_deviceRepository, *wolk->m_platformPublisher));
+
+    wolk->m_gatewayUpdateService->onGatewayUpdated([=] { wolk->gatewayUpdated(); });
+
     // Setup existing devices repository
     wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
 

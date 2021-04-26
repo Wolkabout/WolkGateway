@@ -331,7 +331,10 @@ void Wolk::updateGatewayAndDeleteDevices()
         //        m_gatewayUpdateService->updateGateway(m_device);
         shouldUpdate = false;
 
-        m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+        if (m_subdeviceRegistrationService && m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
+        {
+            m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
+        }
     }
 }
 

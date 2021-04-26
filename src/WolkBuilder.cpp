@@ -309,7 +309,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
 
     wolk->m_platformConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundPlatformMessageHandler>>(
-      *wolk->m_inboundPlatformMessageHandler, [=] { wolkRaw->platformDisconnected(); });
       *wolk->m_inboundPlatformMessageHandler, [wolkRaw] { wolkRaw->platformDisconnected(); });
 
     wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
@@ -364,6 +363,12 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
 void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
 {
+    // Setup gateway update service
+    wolk->m_gatewayUpdateService.reset(new GatewayUpdateService(m_device.getKey(), *wolk->m_registrationProtocol,
+                                                                *wolk->m_deviceRepository, *wolk->m_platformPublisher));
+
+    wolk->m_gatewayUpdateService->onGatewayUpdated([=] { wolk->gatewayUpdated(); });
+
     // Setup existing devices repository
     wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
 

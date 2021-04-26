@@ -28,7 +28,7 @@ public:
 class ExternalDataProvider : public wolkabout::DataProvider
 {
 public:
-    void setDataHandler(wolkabout::DataHandler* handler) override {}
+    void setDataHandler(wolkabout::DataHandler* handler, const std::string& gateway) override {}
 };
 }    // namespace
 

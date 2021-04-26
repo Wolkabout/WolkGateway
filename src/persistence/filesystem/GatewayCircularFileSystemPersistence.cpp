@@ -38,7 +38,7 @@ bool GatewayCircularFileSystemPersistence::push(std::shared_ptr<wolkabout::Messa
     if (file.empty())
         return false;
 
-    auto size = static_cast<unsigned>(FileSystemUtils::getFileSize(m_readingFiles.back()));
+    auto size = static_cast<unsigned>(FileSystemUtils::getFileSize(readingPath(m_readingFiles.back())));
     m_totalFileSize += size;
 
     checkSizeAndNormalize();
@@ -57,7 +57,7 @@ void GatewayCircularFileSystemPersistence::pop()
 
     const auto reading = m_method == PersistenceMethod::FIFO ? firstReading() : lastReading();
 
-    auto size = static_cast<unsigned>(FileSystemUtils::getFileSize(reading));
+    auto size = static_cast<unsigned>(FileSystemUtils::getFileSize(readingPath(reading)));
 
     m_totalFileSize = size > m_totalFileSize ? 0 : m_totalFileSize - size;
 
@@ -78,7 +78,7 @@ void GatewayCircularFileSystemPersistence::loadFileSize()
 {
     for (const auto& reading : m_readingFiles)
     {
-        auto size = static_cast<unsigned>(FileSystemUtils::getFileSize(reading));
+        auto size = static_cast<unsigned>(FileSystemUtils::getFileSize(readingPath(reading)));
         m_totalFileSize += size;
     }
 }

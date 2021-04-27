@@ -38,8 +38,9 @@ PublishingService::PublishingService(ConnectivityService& connectivityService,
 PublishingService::~PublishingService()
 {
     m_run = false;
-    m_buffer.notify();
-    m_worker->join();
+    m_buffer.stop();
+    if (m_worker->joinable())
+        m_worker->join();
 }
 
 void PublishingService::addMessage(std::shared_ptr<Message> message)

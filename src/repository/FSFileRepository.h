@@ -65,28 +65,6 @@ public:
 
 private:
     /**
-     * This is an internal method that will create the hash file if it does not exist.
-     */
-    void createHashFile();
-
-    /**
-     * This is an internal method that will take the values from a FileInfo object and append a line with that info
-     * into the hash file.
-     *
-     * @param fileInfo The file info object that needs to be appended into the file.
-     */
-    void appendFileInfoIntoHashFile(const FileInfo& fileInfo);
-
-    /**
-     * This is an internal method that will read the hash file and load the hash for it, or if it does not exist,
-     * calculate it, and store it in the file.
-     *
-     * @param fileName The name of the file we request the hash for.
-     * @return The hash value for the file (loaded from the hash file, or calculated just now).
-     */
-    std::string obtainFileHash(const std::string& fileName);
-
-    /**
      * This is an internal method that explicitly obtains a SHA256 hash of a file.
      *
      * @param filePath The path to the file that we wish to find a SHA256 hash of.
@@ -96,7 +74,6 @@ private:
 
     // This is where we store the path to the folder that is used for file management.
     std::string m_folderPath;
-    std::string m_hashFilePath;
 };
 }    // namespace wolkabout
 

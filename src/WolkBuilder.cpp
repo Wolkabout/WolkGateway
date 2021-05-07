@@ -198,6 +198,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     }
 
     auto wolk = std::unique_ptr<Wolk>(new Wolk(m_device));
+    auto wolkRaw = wolk.get();
 
     // Setup protocols
     wolk->m_dataProtocol.reset(new wolkabout::JsonProtocol(true));
@@ -243,10 +244,10 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
 
     wolk->m_platformConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundPlatformMessageHandler>>(
-      *wolk->m_inboundPlatformMessageHandler, [&] { wolk->platformDisconnected(); });
+      *wolk->m_inboundPlatformMessageHandler, [wolkRaw] { wolkRaw->platformDisconnected(); });
 
     wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
-      *wolk->m_inboundDeviceMessageHandler, [&] { wolk->devicesDisconnected(); });
+      *wolk->m_inboundDeviceMessageHandler, [wolkRaw] { wolkRaw->devicesDisconnected(); });
 
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
     wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
@@ -268,7 +269,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_gatewayUpdateService.reset(new GatewayUpdateService(m_device.getKey(), *wolk->m_registrationProtocol,
                                                                 *wolk->m_deviceRepository, *wolk->m_platformPublisher));
 
-    wolk->m_gatewayUpdateService->onGatewayUpdated([&] { wolk->gatewayUpdated(); });
+    wolk->m_gatewayUpdateService->onGatewayUpdated([wolkRaw] { wolkRaw->gatewayUpdated(); });
 
     if (m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
@@ -278,10 +279,10 @@ std::unique_ptr<Wolk> WolkBuilder::build()
           *wolk->m_deviceRepository, *wolk->m_platformPublisher, *wolk->m_devicePublisher));
 
         wolk->m_subdeviceRegistrationService->onDeviceRegistered(
-          [&](const std::string& deviceKey) { wolk->deviceRegistered(deviceKey); });
+          [wolkRaw](const std::string& deviceKey) { wolkRaw->deviceRegistered(deviceKey); });
 
         wolk->m_subdeviceRegistrationService->onDeviceUpdated(
-          [&](const std::string& deviceKey) { wolk->deviceUpdated(deviceKey); });
+          [wolkRaw](const std::string& deviceKey) { wolkRaw->deviceUpdated(deviceKey); });
     }
 
     wolk->m_registrationMessageRouter = std::make_shared<RegistrationMessageRouter>(
@@ -344,12 +345,12 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         wolk->m_gatewayPersistence.reset(new InMemoryPersistence());
         wolk->m_gatewayDataService.reset(new GatewayDataService(
           m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayPersistence, *wolk->m_dataService,
-          [&](const std::string& reference, const std::string& value) {
-              wolk->handleActuatorSetCommand(reference, value);
+          [wolkRaw](const std::string& reference, const std::string& value) {
+              wolkRaw->handleActuatorSetCommand(reference, value);
           },
-          [&](const std::string& reference) { wolk->handleActuatorGetCommand(reference); },
-          [&](const ConfigurationSetCommand& command) { wolk->handleConfigurationSetCommand(command); },
-          [&] { wolk->handleConfigurationGetCommand(); }));
+          [wolkRaw](const std::string& reference) { wolkRaw->handleActuatorGetCommand(reference); },
+          [wolkRaw](const ConfigurationSetCommand& command) { wolkRaw->handleConfigurationSetCommand(command); },
+          [wolkRaw] { wolkRaw->handleConfigurationGetCommand(); }));
 
         wolk->m_dataService->setGatewayMessageListener(wolk->m_gatewayDataService.get());
     }

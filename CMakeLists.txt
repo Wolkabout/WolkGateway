@@ -20,7 +20,7 @@ set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic                                                    \
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic                                                    \
                                             -pedantic-errors -Wcast-align                                              \
                                             -Wcast-qual -Wconversion                                                   \
                                             -Wdisabled-optimization                                                    \
@@ -46,6 +46,10 @@ link_directories(${CMAKE_PREFIX_PATH}/lib)
 find_package(Threads REQUIRED)
 
 # WolkAbout c++ SDK
+set(BUILD_CONNECTIVITY ON CACHE BOOL "Build the library with Paho MQTT and allow MQTT connection to the platform.")
+set(BUILD_POCO ON CACHE BOOL "Build the library with Poco.")
+set(BUILD_GTEST ON CACHE BOOL "Build the library with GTest.")
+set(BUILD_AWS_LOG_UPLOADER OFF CACHE BOOL "Build the library with AwsLogUploader.")
 option(POCO_BUILD_DATA "" ON)
 option(POCO_BUILD_NET "" ON)
 add_subdirectory(WolkSDK-Cpp)

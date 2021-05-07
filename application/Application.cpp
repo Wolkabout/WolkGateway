@@ -16,9 +16,9 @@
 
 #include "Configuration.h"
 #include "Wolk.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
-#include "utilities/ConsoleLogger.h"
-#include "utilities/StringUtils.h"
 
 #include <chrono>
 #include <stdexcept>
@@ -29,9 +29,7 @@ namespace
 {
 void setupLogger()
 {
-    auto logger = std::unique_ptr<wolkabout::ConsoleLogger>(new wolkabout::ConsoleLogger());
-    logger->setLogLevel(wolkabout::LogLevel::INFO);
-    wolkabout::Logger::setInstance(std::move(logger));
+    wolkabout::Logger::init(wolkabout::LogLevel::INFO, wolkabout::Logger::Type::CONSOLE);
 }
 
 wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
@@ -83,7 +81,7 @@ int main(int argc, char** argv)
         try
         {
             wolkabout::LogLevel level = parseLogLevel(logLevelStr);
-            wolkabout::Logger::getInstance()->setLogLevel(level);
+            wolkabout::Logger::getInstance().setLevel(level);
         }
         catch (std::logic_error& e)
         {

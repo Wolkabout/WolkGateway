@@ -26,7 +26,7 @@ FSFileRepository::FSFileRepository(std::string folderPath) : m_folderPath(std::m
 std::unique_ptr<FileInfo> FSFileRepository::getFileInfo(const std::string& fileName)
 {
     // Check if the file is found in the folder.
-    const auto filePath = m_folderPath + FILE_SYSTEM_DIVIDER + fileName;
+    const auto filePath = composeFilePath(fileName);
     if (!FileSystemUtils::isFilePresent(filePath))
     {
         LOG(DEBUG) << "FSFileRepository: Failed to obtain `FileInfo` for a file '" << fileName << "'. File not found.";
@@ -55,7 +55,7 @@ std::unique_ptr<std::vector<std::string>> FSFileRepository::getAllFileNames()
     return fileVector;
 }
 
-void FSFileRepository::store(const FileInfo& info)
+void FSFileRepository::store(const FileInfo& /** info */)
 {
     // This doesn't have to do anything, as the file should already be in the directory.
 }
@@ -63,7 +63,7 @@ void FSFileRepository::store(const FileInfo& info)
 void FSFileRepository::remove(const std::string& fileName)
 {
     // Check if the file exists
-    const auto filePath = m_folderPath + FILE_SYSTEM_DIVIDER + fileName;
+    const auto filePath = composeFilePath(fileName);
     if (FileSystemUtils::isFilePresent(filePath))
     {
         FileSystemUtils::deleteFile(filePath);
@@ -74,19 +74,24 @@ void FSFileRepository::remove(const std::string& fileName)
 void FSFileRepository::removeAll()
 {
     // Go through all the files in the folder and remove them all
-    for (const auto& file : FileSystemUtils::listFiles(m_folderPath))
+    for (const auto& fileName : FileSystemUtils::listFiles(m_folderPath))
     {
-        const auto filePath = m_folderPath + FILE_SYSTEM_DIVIDER + std::string(file);
+        const auto filePath = composeFilePath(fileName);
         FileSystemUtils::deleteFile(filePath);
-        LOG(DEBUG) << "FSFileRepository: File '" << file << "' has been deleted.";
+        LOG(DEBUG) << "FSFileRepository: File '" << fileName << "' has been deleted.";
     }
 }
 
 bool FSFileRepository::containsInfoForFile(const std::string& fileName)
 {
     // Check if the file exists
-    const auto filePath = m_folderPath + FILE_SYSTEM_DIVIDER + fileName;
+    const auto filePath = composeFilePath(fileName);
     return FileSystemUtils::isFilePresent(filePath);
+}
+
+std::string FSFileRepository::composeFilePath(const std::string& fileName)
+{
+    return m_folderPath + FILE_SYSTEM_DIVIDER + fileName;
 }
 
 std::string FSFileRepository::calculateFileHash(const std::string& filePath)
@@ -109,8 +114,7 @@ std::string FSFileRepository::calculateFileHash(const std::string& filePath)
     }
 
     // Calculate the hash
-    uint8_t hash[SHA256_DIGEST_LENGTH];
-    SHA256(reinterpret_cast<const uint8_t*>(stringContent.c_str()), stringContent.size(), hash);
+    const auto hash = wolkabout::ByteUtils::hashSHA256(wolkabout::ByteUtils::toByteArray(stringContent));
 
     // Generate the hash string
     std::stringstream ss;

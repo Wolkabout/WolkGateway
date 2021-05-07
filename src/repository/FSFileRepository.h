@@ -65,6 +65,14 @@ public:
 
 private:
     /**
+     * This is an internal method that composes the full path for a file, with the folder that it is in.
+     *
+     * @param fileName The name of the file.
+     * @return The full path with the folder we are working with.
+     */
+    std::string composeFilePath(const std::string& fileName);
+
+    /**
      * This is an internal method that explicitly obtains a SHA256 hash of a file.
      *
      * @param filePath The path to the file that we wish to find a SHA256 hash of.

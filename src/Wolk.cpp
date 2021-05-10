@@ -358,15 +358,13 @@ void Wolk::updateGatewayAndDeleteDevices()
     static bool shouldUpdate = true;
 
     // update gateway upon first connect
-    if (shouldUpdate)
+    if (shouldUpdate && m_subdeviceRegistrationService &&
+        m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
         m_gatewayUpdateService->updateGateway(m_device);
         shouldUpdate = false;
 
-        if (m_subdeviceRegistrationService && m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
-        {
-            m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
-        }
+        m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());
     }
 }
 

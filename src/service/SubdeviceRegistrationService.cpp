@@ -120,6 +120,8 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
         }
 
         auto deviceKey = request->getSubdeviceKey();
+        // This check is now intentionally disabled because the no forwarding of registration request when the gateway
+        // is not updated is disabled, because the gateway never updates now.
         //        if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
         //        {
         //            addToPostponedSubdeviceRegistrationRequests(deviceKey, *request);
@@ -139,6 +141,8 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
         }
 
         auto deviceKey = request->getSubdeviceKey();
+        // This check is now intentionally disabled because the no forwarding of registration request when the gateway
+        // is not updated is disabled, because the gateway never updates now.
         //        if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
         //        {
         //            addToPostponedSubdeviceUpdateRequests(deviceKey, *request);

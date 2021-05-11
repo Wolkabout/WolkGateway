@@ -360,6 +360,7 @@ void Wolk::updateGatewayAndDeleteDevices()
     // update gateway upon first connect
     if (shouldUpdate)
     {
+        // This call is now intentionally disabled because we don't want to update the gateway ever.
         //        m_gatewayUpdateService->updateGateway(m_device);
         shouldUpdate = false;
 

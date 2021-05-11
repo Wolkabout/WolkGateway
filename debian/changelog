@@ -1,5 +1,7 @@
-wolkgateway (4.2.8) stable; urgency=medium
+wolkgateway (4.2.9) stable; urgency=medium
 
-  * Using the newest WolkSDK-Cpp version that fixes the logger instantiation.
+  * Fixed the gateway update to allow us to pass if it has already been updated.
+  * Disabled the gateway update fow now, as it doesn't really have a purpose right now.
+  * Imported newest WolkSDK-Cpp that allows for optional `description` properties in JsonDto messages.
   
- -- Wolkabout ELab <elab@wolkabout.com>  Fri, 07 May 2021 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Tue, 11 May 2021 00:00:00 +0100

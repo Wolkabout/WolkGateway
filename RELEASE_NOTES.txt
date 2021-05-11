@@ -5,6 +5,14 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.2.9**
+    - [BUGFIX] - Fixed the gateway update to allow us to pass if it has already been updated.
+    - [BUGFIX] - Disabled the gateway update fow now, as it doesn't really have a purpose right now.
+    - [BUGFIX] - Imported newest WolkSDK-Cpp that allows for optional `description` properties in JsonDto messages.
+
+**Version 4.2.8**
+    - [IMPROVEMENT] - Using the newest WolkSDK-Cpp version that fixes the logger instantiation.
+
 **Version 4.2.7**
 - [BUGFIX] - Create FM directory on initialisation.
 

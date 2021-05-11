@@ -139,7 +139,8 @@ void GatewayUpdateService::handleUpdateResponse(const GatewayUpdateResponse& res
     }
 
     const auto updateResult = response.getResult();
-    if (updateResult.getCode() == PlatformResult::Code::OK)
+    if (updateResult.getCode() == PlatformResult::Code::OK ||
+        updateResult.getCode() == PlatformResult::Code::ERROR_SUBDEVICE_MANAGEMENT_FORBIDDEN)
     {
         LOG(INFO) << "GatewayUpdateService: Gateway successfully update on platform";
 

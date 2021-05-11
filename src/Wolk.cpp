@@ -361,7 +361,8 @@ void Wolk::updateGatewayAndDeleteDevices()
     if (shouldUpdate && m_subdeviceRegistrationService &&
         m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY)
     {
-        m_gatewayUpdateService->updateGateway(m_device);
+        // This call is now intentionally disabled because we don't want to update the gateway ever.
+        //        m_gatewayUpdateService->updateGateway(m_device);
         shouldUpdate = false;
 
         m_subdeviceRegistrationService->deleteDevicesOtherThan(m_existingDevicesRepository->getDeviceKeys());

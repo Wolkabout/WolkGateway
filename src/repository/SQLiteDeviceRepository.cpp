@@ -178,7 +178,7 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
         {
             statement << "INSERT INTO actuator_template(reference, name, description, unit_symbol, reading_type, "
                          "device_template_id) "
-                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
+                         "VALUES(?, ?, ?, ?, ?, ?);",
               useRef(actuatorTemplate.getReference()), useRef(actuatorTemplate.getName()),
               useRef(actuatorTemplate.getDescription()), useRef(actuatorTemplate.getUnitSymbol()),
               useRef(actuatorTemplate.getReadingTypeName()), useRef(deviceTemplateId);
@@ -189,7 +189,7 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
         {
             statement << "INSERT INTO sensor_template(reference, name, description, unit_symbol, reading_type, "
                          "device_template_id) "
-                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
+                         "VALUES(?, ?, ?, ?, ?, ?);",
               useRef(sensorTemplate.getReference()), useRef(sensorTemplate.getName()),
               useRef(sensorTemplate.getDescription()), useRef(sensorTemplate.getUnitSymbol()),
               useRef(sensorTemplate.getReadingTypeName()), useRef(deviceTemplateId);
@@ -217,7 +217,7 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
 
             statement << "INSERT INTO configuration_template(reference, name, description, data_type, "
                          "default_value, device_template_id)"
-                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?);",
+                         "VALUES(?, ?, ?, ?, ?, ?);",
               useRef(configurationTemplate.getReference()), useRef(configurationTemplate.getName()),
               useRef(configurationTemplate.getDescription()), bind(dataType),
               useRef(configurationTemplate.getDefaultValue()), useRef(deviceTemplateId);
@@ -259,9 +259,10 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
           useRef(device.getName()), useRef(deviceTemplateId);
         statement << "COMMIT;", now;
     }
-    catch (...)
+    catch (const Poco::Exception& exception)
     {
-        LOG(ERROR) << "SQLiteDeviceRepository: Error saving device with key " << device.getKey();
+        LOG(ERROR) << "SQLiteDeviceRepository: Error saving device with key " << device.getKey() << "("
+                   << exception.what() << ").";
     }
 }
 

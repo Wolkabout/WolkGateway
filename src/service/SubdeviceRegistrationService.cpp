@@ -120,11 +120,11 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
         }
 
         auto deviceKey = request->getSubdeviceKey();
-        if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
-        {
-            addToPostponedSubdeviceRegistrationRequests(deviceKey, *request);
-            return;
-        }
+        //        if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
+        //        {
+        //            addToPostponedSubdeviceRegistrationRequests(deviceKey, *request);
+        //            return;
+        //        }
 
         handleSubdeviceRegistrationRequest(deviceKey, *request);
     }
@@ -139,11 +139,11 @@ void SubdeviceRegistrationService::deviceMessageReceived(std::shared_ptr<Message
         }
 
         auto deviceKey = request->getSubdeviceKey();
-        if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
-        {
-            addToPostponedSubdeviceUpdateRequests(deviceKey, *request);
-            return;
-        }
+        //        if (!m_deviceRepository.containsDeviceWithKey(m_gatewayKey) && deviceKey != m_gatewayKey)
+        //        {
+        //            addToPostponedSubdeviceUpdateRequests(deviceKey, *request);
+        //            return;
+        //        }
 
         handleSubdeviceUpdateRequest(deviceKey, *request);
     }

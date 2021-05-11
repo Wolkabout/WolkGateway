@@ -82,8 +82,13 @@ public:
 
 TEST_F(
   SubdeviceRegistrationService,
-  Given_ThatNoDeviceIsRegistered_When_DeviceOtherThanGatewayRequestsRegistration_Then_RegistrationRequestIsNotForwardedToPlatform)
+  DISABLED_Given_ThatNoDeviceIsRegistered_When_DeviceOtherThanGatewayRequestsRegistration_Then_RegistrationRequestIsNotForwardedToPlatform)
 {
+    /**
+     * This test is now intentionally disabled because the no forwarding of registration request when the gateway is not
+     * updated is disabled, because the gateway never updates now.
+     */
+
     // Given
     // Intentionally left empty
 
@@ -287,8 +292,13 @@ TEST_F(
 
 TEST_F(
   SubdeviceRegistrationService,
-  Given_ThatGatewayIsNotUpdatedAndListOfSubdeviceRegistrationRequestsAndGatewayUpdateRequest_When_GatewayIsRegistered_Then_PostponedSubdeviceRegistrationRequestsAreForwardedToPlatform)
+  DISABLED_Given_ThatGatewayIsNotUpdatedAndListOfSubdeviceRegistrationRequestsAndGatewayUpdateRequest_When_GatewayIsRegistered_Then_PostponedSubdeviceRegistrationRequestsAreForwardedToPlatform)
 {
+    /**
+     * This test is now intentionally disabled because the no forwarding of registration request when the gateway is not
+     * updated is disabled, because the gateway never updates now.
+     */
+
     // Given
     wolkabout::GatewayDevice gateway(GATEWAY_KEY, "", wolkabout::SubdeviceManagement::GATEWAY, true, true);
 

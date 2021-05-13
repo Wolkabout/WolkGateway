@@ -332,12 +332,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_configurationProviderLambda = m_configurationProviderLambda;
     wolk->m_configurationProvider = m_configurationProvider;
 
-    // Setup gateway update service
-    wolk->m_gatewayUpdateService.reset(new GatewayUpdateService(m_device.getKey(), *wolk->m_registrationProtocol,
-                                                                *wolk->m_deviceRepository, *wolk->m_platformPublisher));
-
-    wolk->m_gatewayUpdateService->onGatewayUpdated([wolkRaw] { wolkRaw->gatewayUpdated(); });
-
     if (m_externalDataProvider)
     {
         setupWithExternalData(dynamic_cast<WolkExternal*>(wolk.get()));

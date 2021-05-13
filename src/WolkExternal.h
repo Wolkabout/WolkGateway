@@ -2,7 +2,6 @@
 #define WOLKEXTERNAL_H
 
 #include "Wolk.h"
-
 #include "service/DataHandlerApiFacade.h"
 #include "service/status/ExternalDeviceStatusService.h"
 

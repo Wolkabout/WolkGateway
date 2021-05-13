@@ -40,6 +40,7 @@
 #include "service/SubdeviceRegistrationService.h"
 #include "service/data/DataService.h"
 #include "service/data/GatewayDataService.h"
+#include "service/status/DeviceStatusService.h"
 
 #include <memory>
 #include <sstream>

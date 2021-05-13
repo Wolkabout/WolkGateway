@@ -290,9 +290,13 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     wolk->m_fileRepository.reset(new FSFileRepository(m_fileDownloadDirectory));
 
     // Setup connectivity services
+    const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
     wolk->m_platformConnectivityService.reset(new MqttConnectivityService(std::make_shared<PahoMqttClient>(),
                                                                           m_device.getKey(), m_device.getPassword(),
                                                                           m_platformHost, m_platformTrustStore));
+    wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
+      std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_gatewayHost, localMqttClientId));
+
     wolk->m_platformConnectivityService->setUncontrolledDisonnectMessage(
       wolk->m_statusProtocol->makeLastWillMessage(m_device.getKey()));
 
@@ -312,9 +316,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     wolk->m_platformConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundPlatformMessageHandler>>(
       *wolk->m_inboundPlatformMessageHandler, [wolkRaw] { wolkRaw->platformDisconnected(); });
-
-    wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
-      *wolk->m_inboundDeviceMessageHandler, [wolkRaw] { wolkRaw->devicesDisconnected(); });
 
     wolk->m_platformConnectivityService->setListener(wolk->m_platformConnectivityManager);
     wolk->m_deviceConnectivityService->setListener(wolk->m_deviceConnectivityManager);
@@ -364,6 +365,9 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
                                                                 *wolk->m_deviceRepository, *wolk->m_platformPublisher));
 
     wolk->m_gatewayUpdateService->onGatewayUpdated([=] { wolk->gatewayUpdated(); });
+
+    wolk->m_deviceConnectivityManager = std::make_shared<Wolk::ConnectivityFacade<InboundDeviceMessageHandler>>(
+      *wolk->m_inboundDeviceMessageHandler, [=] { wolk->devicesDisconnected(); });
 
     // Setup existing devices repository
     wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());

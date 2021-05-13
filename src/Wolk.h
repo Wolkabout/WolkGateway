@@ -41,6 +41,7 @@ class ConnectivityService;
 class DataProtocol;
 class DataService;
 class DeviceRepository;
+class DeviceStatusService;
 class ExistingDevicesRepository;
 class FileDownloadService;
 class FileRepository;
@@ -258,8 +259,13 @@ protected:
     std::unique_ptr<Persistence> m_gatewayPersistence;
 
     std::unique_ptr<ConnectivityService> m_platformConnectivityService;
+    std::unique_ptr<ConnectivityService> m_deviceConnectivityService;
+
     std::unique_ptr<InboundPlatformMessageHandler> m_inboundPlatformMessageHandler;
+    std::unique_ptr<InboundDeviceMessageHandler> m_inboundDeviceMessageHandler;
+
     std::unique_ptr<PublishingService> m_platformPublisher;
+    std::unique_ptr<PublishingService> m_devicePublisher;
 
     std::unique_ptr<DataProtocol> m_dataProtocol;
     std::unique_ptr<GatewayDataProtocol> m_gatewayDataProtocol;
@@ -275,6 +281,7 @@ protected:
     std::unique_ptr<StatusProtocol> m_statusProtocol;
     std::unique_ptr<GatewayStatusProtocol> m_gatewayStatusProtocol;
     std::unique_ptr<KeepAliveService> m_keepAliveService;
+    std::unique_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
 
     std::unique_ptr<JsonDFUProtocol> m_firmwareUpdateProtocol;

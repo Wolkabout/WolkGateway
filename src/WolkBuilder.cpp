@@ -260,12 +260,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     wolk->m_fileDownloadProtocol.reset(new JsonDownloadProtocol(true));
 
-    // Setup device repository
-    wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
-
-    // Setup existing devices repository
-    wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
-
     // Create the connectivity service for the platform
     const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
     wolk->m_platformConnectivityService.reset(new MqttConnectivityService(std::make_shared<PahoMqttClient>(),
@@ -337,13 +331,16 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
 void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
 {
+    // Setup device repository
+    wolk->m_deviceRepository.reset(new SQLiteDeviceRepository());
+
+    // Setup existing devices repository
+    wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
+
     // Setup gateway update service
     wolk->m_gatewayUpdateService.reset(new GatewayUpdateService(m_device.getKey(), *wolk->m_registrationProtocol,
                                                                 *wolk->m_deviceRepository, *wolk->m_platformPublisher));
     wolk->m_gatewayUpdateService->onGatewayUpdated([=] { wolk->gatewayUpdated(); });
-
-    // Setup existing devices repository
-    wolk->m_existingDevicesRepository.reset(new JsonFileExistingDevicesRepository());
 
     // Create the connectivity service for the devices (local MQTT)
     const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());

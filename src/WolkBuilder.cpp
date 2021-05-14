@@ -287,7 +287,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     // Setup file repository
     // Replacing the SQLifeFileRepository with the FSFileRepository
     //    wolk->m_fileRepository.reset(new SQLiteFileRepository(DATABASE));
-    wolk->m_fileRepository.reset(new FSFileRepository(m_fileDownloadDirectory));
 
     // Setup connectivity services
     const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
@@ -354,6 +353,8 @@ std::unique_ptr<Wolk> WolkBuilder::build()
       *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_platformPublisher, m_firmwareInstaller,
       m_firmwareVersion);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
+
+    wolk->m_fileRepository.reset(new FSFileRepository(m_fileDownloadDirectory));
 
     return wolk;
 }

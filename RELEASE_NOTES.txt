@@ -5,6 +5,16 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.3.0**
+    - [IMPROVEMENT] - Created WolkDefault and WolkExternal that provide different interfaces for custom subdevice data providing.
+    - [IMPROVEMENT] - Introduced the FSFileRepository to provide info about FileManagement files from the File System.
+    - [IMPROVEMENT] - Disabled the Gateway Update message sending and mechanisms as they have been found unnecessary.
+    - [IMPROVEMENT] - Imported the newest WolkSDK-Cpp that introduces various fixes and improvements.
+    - [IMPROVEMENT] - Moved the version file when firmware installing to a different location. Also, finishing the install method with `true` now reports success.
+    - [IMPROVEMENT] - Introduced the custom data and device status protocols, that allow us to define custom MQTT topics/payloads for those messages.
+    - [IMPROVEMENT] - Added the FileListener interface for FileManagementService to allow input into the File Management process and allow for hooks.
+    - [IMPROVEMENT] - Made optimizations for the application to be built as a submodule.
+
 **Version 4.2.9**
     - [BUGFIX] - Fixed the gateway update to allow us to pass if it has already been updated.
     - [BUGFIX] - Disabled the gateway update fow now, as it doesn't really have a purpose right now.

@@ -124,7 +124,7 @@ TEST_F(ExternalDataService, Given_When_EmptyReadingsAreReceived_Then_MessageIsIg
 TEST_F(ExternalDataService, Given_When_MessageFromDeviceIsReceived_Then_MessageIsSentToPlatform)
 {
     // When
-    dataService->addSensorReading("DEVICE_KEY", {"5", "REF"});
+    dataService->addSensorReading("GATEWAY_KEY", {"5", "REF", 0, "DEVICE_KEY"});
 
     // Then
     ASSERT_EQ(platformOutboundMessageHandler->getMessages().size(), 1);

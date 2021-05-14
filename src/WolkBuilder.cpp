@@ -33,6 +33,7 @@
 #include "core/protocol/json/JsonProtocol.h"
 #include "core/protocol/json/JsonRegistrationProtocol.h"
 #include "core/protocol/json/JsonStatusProtocol.h"
+#include "core/utilities/FileSystemUtils.h"
 #include "model/GatewayDevice.h"
 #include "persistence/inmemory/GatewayInMemoryPersistence.h"
 #include "protocol/json/JsonGatewayDFUProtocol.h"
@@ -341,6 +342,13 @@ std::unique_ptr<Wolk> WolkBuilder::build()
         setupWithInternalData(dynamic_cast<WolkDefault*>(wolk.get()));
     }
 
+    // Create the working directory if it does not exist
+    if (!FileSystemUtils::isDirectoryPresent(m_fileDownloadDirectory))
+        FileSystemUtils::createDirectory(m_fileDownloadDirectory);
+
+    // Create the file repository
+    wolk->m_fileRepository.reset(new FSFileRepository(m_fileDownloadDirectory));
+
     // setup file download service
     wolk->m_fileDownloadService = std::make_shared<FileDownloadService>(
       m_device.getKey(), *wolk->m_fileDownloadProtocol, m_fileDownloadDirectory, *wolk->m_platformPublisher,
@@ -353,8 +361,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
       *wolk->m_fileRepository, *wolk->m_platformPublisher, *wolk->m_platformPublisher, m_firmwareInstaller,
       m_firmwareVersion);
     wolk->m_inboundPlatformMessageHandler->addListener(wolk->m_firmwareUpdateService);
-
-    wolk->m_fileRepository.reset(new FSFileRepository(m_fileDownloadDirectory));
 
     return wolk;
 }

@@ -15,11 +15,6 @@
 #  limitations under the License.
 #
 
-if [ "$EUID" -ne 0 ]; then
-  echo "Please run as sudo."
-  exit
-fi
-
 ./build-image-amd64.sh
 
 docker container stop debuilder
@@ -31,6 +26,7 @@ if [ $? -eq 1 ]; then
 fi
 
 docker run -dit --name debuilder --cpus $(nproc) wolkabout:wg-amd64 || exit
+docker exec -it debuilder unzip /build/*.zip -d WolkGateway || exit
 docker exec -it debuilder /build/make_deb.sh $branch || exit
 docker cp debuilder:/build/ .
 
@@ -39,5 +35,10 @@ docker container rm debuilder
 
 mv ./build/*.deb .
 rm -rf ./build/
+
+rm *dbgsym*
+
+rm ./make_deb.sh
+rm ./*.zip
 
 chown "$USER:$USER" *.deb

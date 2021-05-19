@@ -1,12 +1,15 @@
-FROM raspbian/stretch:latest
+FROM arm32v7/debian:buster
 
 WORKDIR /build
 
-RUN apt-get update \
-    && apt-get install -y git gcc g++ cmake \
-    && apt-get install -y automake autotools-dev autoconf m4 zlib1g-dev cmake libtool libssl-dev \
-    && apt-get install -y devscripts debhelper
+ENV TZ=Europe/Belgrade
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt update
+RUN apt install -y git gcc g++ cmake automake autotools-dev autoconf m4 zlib1g-dev \
+ cmake libtool libssl-dev devscripts debhelper
 
 COPY make_deb.sh /build
+COPY *.zip /build
 
 #CMD ["bash", "make_deb.sh"]

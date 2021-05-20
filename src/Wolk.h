@@ -26,6 +26,7 @@
 #include "model/GatewayDevice.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -88,6 +89,20 @@ public:
      * @brief disconnect Disconnects from WolkAbout IoT platform
      */
     virtual void disconnect() = 0;
+
+    /**
+     * This is the default getter method for obtaining the platform connection status.
+     *
+     * @return Platform connection status.
+     */
+    virtual bool isConnectedToPlatform();
+
+    /**
+     * This is the default setter method for setting a callback function that listens to the platform connection status.
+     *
+     * @param platformConnectionStatusListener The callback function.
+     */
+    virtual void setPlatformConnectionStatusListener(const std::function<void(bool)>& platformConnectionStatusListener);
 
     /**
      * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
@@ -251,6 +266,9 @@ protected:
     void requestActuatorStatusesForDevice(const std::string& deviceKey);
 
     GatewayDevice m_device;
+
+    std::atomic<bool> m_connected;
+    std::function<void(bool)> m_platformConnectionStatusListener;
 
     std::unique_ptr<DeviceRepository> m_deviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;

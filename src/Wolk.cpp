@@ -62,6 +62,16 @@ WolkBuilder Wolk::newBuilder(GatewayDevice device)
     return WolkBuilder(std::move(device));
 }
 
+bool Wolk::isConnectedToPlatform()
+{
+    return m_connected;
+}
+
+void Wolk::setPlatformConnectionStatusListener(const std::function<void(bool)>& platformConnectionStatusListener)
+{
+    this->m_platformConnectionStatusListener = platformConnectionStatusListener;
+}
+
 void Wolk::addSensorReading(const std::string& reference, const std::string& value, unsigned long long rtc)
 {
     if (rtc == 0)
@@ -343,6 +353,10 @@ void Wolk::notifyPlatformConnected()
 {
     LOG(INFO) << "Connection to platform established";
 
+    m_connected = true;
+    if (m_platformConnectionStatusListener)
+        m_platformConnectionStatusListener(m_connected);
+
     m_platformPublisher->connected();
 
     if (m_keepAliveService)
@@ -354,6 +368,10 @@ void Wolk::notifyPlatformConnected()
 void Wolk::notifyPlatformDisonnected()
 {
     LOG(INFO) << "Connection to platform lost";
+
+    m_connected = false;
+    if (m_platformConnectionStatusListener)
+        m_platformConnectionStatusListener(m_connected);
 
     m_platformPublisher->disconnected();
 

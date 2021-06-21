@@ -37,19 +37,19 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic              
                                             -Wwrite-strings -Werror=non-virtual-dtor -Werror=return-type")
 
 
-
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
-if(HAS_PARENT)
-	option(BUILD_APP "" OFF)
-else()
-	option(BUILD_APP "" ON)
-	message(STATUS "Skipping build of ${PROJECT_NAME} app")
-endif()
+if (HAS_PARENT)
+    option(BUILD_APP "" OFF)
+else ()
+    option(BUILD_APP "" ON)
+    message(STATUS "Skipping build of ${PROJECT_NAME} app")
+endif ()
 
 # library output
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build)
 set(CMAKE_LIBRARY_INCLUDE_DIRECTORY ${CMAKE_PREFIX_PATH}/include)
+set(POCO_INSTALL_DIR ${CMAKE_BINARY_DIR})
 link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 link_directories(${CMAKE_PREFIX_PATH}/lib)
 
@@ -97,28 +97,28 @@ file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
 file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
 
 if (${BUILD_APP})
-	add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES})
-	target_link_libraries(${PROJECT_NAME}App WolkGateway)
-	set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+    add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES})
+    target_link_libraries(${PROJECT_NAME}App WolkGateway)
+    set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 
-	# Install target
-	install(DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} DESTINATION /usr
-		    FILES_MATCHING
-			PATTERN "*so*")
+    # Install target
+    install(DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} DESTINATION /usr
+            FILES_MATCHING
+            PATTERN "*so*")
 
-	# Place the executable file in /usr/bin
-	install(TARGETS ${PROJECT_NAME}App DESTINATION /usr/bin)
+    # Place the executable file in /usr/bin
+    install(TARGETS ${PROJECT_NAME}App DESTINATION /usr/bin)
 
-	# Place the ca.crt file in /usr/bin
-	install(FILES out/ca.crt DESTINATION /etc/wolkGateway
-		    PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
+    # Place the ca.crt file in /usr/bin
+    install(FILES out/ca.crt DESTINATION /etc/wolkGateway
+            PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
 
-	# Place the config files and service unit file.
-	install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
-		    PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
+    # Place the config files and service unit file.
+    install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
+            PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
 
-	install(CODE "MESSAGE(\"Installed WolkGateway. Configuration files for the module are placed in /etc/wolkGateway.\")")
-endif()
+    install(CODE "MESSAGE(\"Installed WolkGateway. Configuration files for the module are placed in /etc/wolkGateway.\")")
+endif ()
 
 # CMake utilities
 add_subdirectory(cmake)

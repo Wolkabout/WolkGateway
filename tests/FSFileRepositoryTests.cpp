@@ -102,7 +102,7 @@ TEST_F(FSFileRepositoryTests, GetAllFileNames_DummyFiles)
     std::unique_ptr<std::vector<std::string>> files;
     ASSERT_NO_THROW(files = fileRepository->getAllFileNames());
     EXPECT_EQ(files->size(), 1);
-    EXPECT_EQ(files->at(0), "dummy-file-1");
+    EXPECT_NE(std::find(files->cbegin(), files->cend(), "dummy-file-1"), files->cend());
 
     // Create another dummy file
     ASSERT_TRUE(
@@ -111,7 +111,7 @@ TEST_F(FSFileRepositoryTests, GetAllFileNames_DummyFiles)
     // Expect that we would get two files now
     ASSERT_NO_THROW(files = fileRepository->getAllFileNames());
     EXPECT_EQ(files->size(), 2);
-    EXPECT_EQ(files->at(1), "dummy-file-2");
+    EXPECT_NE(std::find(files->cbegin(), files->cend(), "dummy-file-2"), files->cend());
 
     // And that deleting the first dummy file returns us to 1
     ASSERT_TRUE(wolkabout::FileSystemUtils::deleteFile(FOLDER_PATH + FILE_SYSTEM_DIVIDER + "dummy-file-1"));
@@ -119,7 +119,7 @@ TEST_F(FSFileRepositoryTests, GetAllFileNames_DummyFiles)
     // Expect that we would get one file now
     ASSERT_NO_THROW(files = fileRepository->getAllFileNames());
     EXPECT_EQ(files->size(), 1);
-    EXPECT_EQ(files->at(0), "dummy-file-2");
+    EXPECT_NE(std::find(files->cbegin(), files->cend(), "dummy-file-2"), files->cend());
 }
 
 TEST_F(FSFileRepositoryTests, Remove_NonExistingFile)

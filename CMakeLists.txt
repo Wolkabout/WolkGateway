@@ -33,7 +33,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic              
                                             -Werror=shadow -Werror=stack-protector                                     \
                                             -Wstrict-aliasing=2 -Wno-unused                                            \
                                             -Werror=unreachable-code                                                   \
-                                            -Wvariadic-macros                                                          \
+                                            -Wvariadic-macros -Werror=overloaded-virtual                               \
                                             -Wwrite-strings -Werror=non-virtual-dtor -Werror=return-type")
 
 
@@ -50,7 +50,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build)
 set(CMAKE_LIBRARY_INCLUDE_DIRECTORY ${CMAKE_PREFIX_PATH}/include)
 set(POCO_INSTALL_DIR ${CMAKE_BINARY_DIR})
-include_directories(${CMAKE_BINARY_DIR}/include)
+include_directories(SYSTEM ${CMAKE_BINARY_DIR}/include)
 link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 link_directories(${CMAKE_PREFIX_PATH}/lib)
 

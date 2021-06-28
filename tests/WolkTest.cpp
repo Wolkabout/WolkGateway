@@ -132,6 +132,7 @@ public:
 class Wolk : public ::testing::Test
 {
 public:
+    using Test::SetUp;
     void SetUp(wolkabout::SubdeviceManagement control)
     {
         platformConnectivityService = new MockConnectivityService();

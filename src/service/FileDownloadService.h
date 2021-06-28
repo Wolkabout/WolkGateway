@@ -59,7 +59,7 @@ public:
                         std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr,
                         std::shared_ptr<FileListener> fileListener = nullptr);
 
-    ~FileDownloadService() override;
+    ~FileDownloadService();
 
     FileDownloadService(const FileDownloadService&) = delete;
     FileDownloadService& operator=(const FileDownloadService&) = delete;

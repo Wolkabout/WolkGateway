@@ -15,6 +15,7 @@
  */
 
 #include "GatewayCircularFileSystemPersistence.h"
+
 #include "core/model/Message.h"
 #include "core/utilities/FileSystemUtils.h"
 #include "core/utilities/Logger.h"

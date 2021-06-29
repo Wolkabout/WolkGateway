@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,19 @@
 
 #include "PublishingService.h"
 
-#include "connectivity/ConnectivityService.h"
-#include "model/Message.h"
-#include "utilities/Logger.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/model/Message.h"
+#include "core/utilities/Logger.h"
 
 namespace wolkabout
 {
 PublishingService::PublishingService(ConnectivityService& connectivityService,
-                                     std::unique_ptr<GatewayPersistence> persistence)
+                                     std::shared_ptr<GatewayPersistence> persistence)
 : m_connectivityService{connectivityService}
 , m_persistence{std::move(persistence)}
+, m_connectedState{*this}
+, m_disconnectedState{*this}
+, m_currentState{&m_disconnectedState}
 , m_connected{false}
 , m_run{true}
 , m_worker{new std::thread(&PublishingService::run, this)}
@@ -35,44 +38,97 @@ PublishingService::PublishingService(ConnectivityService& connectivityService,
 PublishingService::~PublishingService()
 {
     m_run = false;
-    m_condition.notify_one();
-    m_worker->join();
+    m_buffer.stop();
+    if (m_worker->joinable())
+        m_worker->join();
 }
 
 void PublishingService::addMessage(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << "PublishingService: Message added. Channel: '" << message->getChannel() << "' Payload: '"
                << message->getContent() << "'";
-    m_persistence->push(message);
-    m_condition.notify_one();
+    m_buffer.push(std::move(message));
 }
 
 void PublishingService::connected()
 {
     m_connected = true;
-    m_condition.notify_one();
+    m_currentState = &m_connectedState;
+    m_buffer.notify();
 }
 
 void PublishingService::disconnected()
 {
     m_connected = false;
+    m_currentState = &m_disconnectedState;
+    m_buffer.notify();
 }
 
 void PublishingService::run()
 {
     while (m_run)
     {
-        while (m_connected && !m_persistence->empty())
-        {
-            const auto message = m_persistence->front();
-            if (m_connectivityService.publish(message))
-            {
-                m_persistence->pop();
-            }
-        }
-
-        std::unique_lock<std::mutex> locker{m_lock};
-        m_condition.wait(locker);
+        auto state = m_currentState.load();
+        state->run();
     }
+
+    m_buffer.notify();
 }
+
+PublishingService::State::State(PublishingService& service) : m_service{service} {}
+
+void PublishingService::DisconnectedState::run()
+{
+    while (m_service.m_run && !m_service.m_connected && !m_service.m_buffer.isEmpty())
+    {
+        const auto message = m_service.m_buffer.pop();
+        if (!message)
+            break;
+
+        if (!m_service.m_persistence->push(message))
+        {
+            LOG(ERROR) << "Failed to persist message";
+        }
+    }
+
+    m_service.m_buffer.swapBuffers();
+}
+
+void PublishingService::ConnectedState::run()
+{
+    while (m_service.m_run && m_service.m_connected && !m_service.m_buffer.isEmpty())
+    {
+        const auto message = m_service.m_buffer.pop();
+        if (!message)
+            break;
+
+        if (!m_service.m_connectivityService.publish(message))
+        {
+            m_service.m_persistence->push(message);
+            LOG(ERROR) << "Failed to publish message";
+            break;
+        }
+    }
+
+    // publish persisted until new message arrives
+    while (m_service.m_run && m_service.m_connected && !m_service.m_persistence->empty() &&
+           m_service.m_buffer.isEmpty())
+    {
+        const auto message = m_service.m_persistence->front();
+        if (!message)
+            break;
+
+        if (m_service.m_connectivityService.publish(message))
+        {
+            m_service.m_persistence->pop();
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to publish message";
+        }
+    }
+
+    m_service.m_buffer.swapBuffers();
+}
+
 }    // namespace wolkabout

@@ -16,10 +16,10 @@
 
 #include "service/FileDownloader.h"
 
-#include "model/BinaryData.h"
-#include "model/FilePacketRequest.h"
-#include "utilities/FileSystemUtils.h"
-#include "utilities/Logger.h"
+#include "core/model/BinaryData.h"
+#include "core/model/FilePacketRequest.h"
+#include "core/utilities/FileSystemUtils.h"
+#include "core/utilities/Logger.h"
 
 #include <cmath>
 

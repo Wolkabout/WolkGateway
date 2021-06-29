@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef FIRMWAREUPDATESERVICE_H
 #define FIRMWAREUPDATESERVICE_H
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
-#include "model/FirmwareUpdateStatus.h"
-#include "utilities/CommandBuffer.h"
+#include "core/model/FirmwareUpdateStatus.h"
+#include "core/utilities/CommandBuffer.h"
 
 #include <functional>
 #include <memory>
@@ -107,7 +108,7 @@ private:
 
     CommandBuffer m_commandBuffer;
 
-    static const constexpr char* FIRMWARE_VERSION_FILE = ".dfu-version";
+    static const constexpr char* FIRMWARE_VERSION_FILE = "version/.dfu-version";
 };
 }    // namespace wolkabout
 

@@ -16,15 +16,15 @@
 
 #include "protocol/json/JsonGatewayDFUProtocol.h"
 
-#include "model/FirmwareUpdateAbort.h"
-#include "model/FirmwareUpdateInstall.h"
-#include "model/FirmwareUpdateStatus.h"
-#include "model/FirmwareVersion.h"
-#include "model/Message.h"
-#include "protocol/json/Json.h"
-#include "utilities/Logger.h"
-#include "utilities/StringUtils.h"
-#include "utilities/json.hpp"
+#include "core/model/FirmwareUpdateAbort.h"
+#include "core/model/FirmwareUpdateInstall.h"
+#include "core/model/FirmwareUpdateStatus.h"
+#include "core/model/FirmwareVersion.h"
+#include "core/model/Message.h"
+#include "core/protocol/json/Json.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
+#include "core/utilities/json.hpp"
 
 using nlohmann::json;
 

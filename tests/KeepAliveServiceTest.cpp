@@ -15,7 +15,7 @@
  */
 
 #include "OutboundMessageHandler.h"
-#include "protocol/json/JsonStatusProtocol.h"
+#include "core/protocol/json/JsonStatusProtocol.h"
 #include "service/KeepAliveService.h"
 
 #include <gtest/gtest.h>

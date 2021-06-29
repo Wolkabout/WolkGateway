@@ -1,10 +1,11 @@
 #include "MockRepository.h"
 #include "OutboundMessageHandler.h"
-#include "model/Message.h"
+#include "core/model/Message.h"
+#include "core/protocol/json/JsonProtocol.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
-#include "protocol/json/JsonProtocol.h"
 #include "repository/SQLiteDeviceRepository.h"
-#include "service/DataService.h"
+#include "service/data/DataService.h"
+#include "service/data/InternalDataService.h"
 
 #include <gtest/gtest.h>
 
@@ -49,9 +50,9 @@ public:
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
-        dataService = std::unique_ptr<wolkabout::DataService>(
-          new wolkabout::DataService(GATEWAY_KEY, *protocol, *gateawayProtocol, deviceRepository.get(),
-                                     *platformOutboundMessageHandler, *deviceOutboundMessageHandler, nullptr));
+        dataService = std::unique_ptr<wolkabout::InternalDataService>(
+          new wolkabout::InternalDataService(GATEWAY_KEY, *protocol, *gateawayProtocol, deviceRepository.get(),
+                                             *platformOutboundMessageHandler, *deviceOutboundMessageHandler, nullptr));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
@@ -61,7 +62,7 @@ public:
     std::unique_ptr<MockRepository> deviceRepository;
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;
-    std::unique_ptr<wolkabout::DataService> dataService;
+    std::unique_ptr<wolkabout::InternalDataService> dataService;
 
     static constexpr const char* DEVICE_REPOSITORY_PATH = "testsDeviceRepository.db";
     static constexpr const char* GATEWAY_KEY = "GATEWAY_KEY";

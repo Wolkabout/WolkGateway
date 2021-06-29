@@ -16,10 +16,10 @@
 
 #include "RegistrationMessageRouter.h"
 
-#include "model/Message.h"
+#include "core/model/Message.h"
+#include "core/protocol/RegistrationProtocol.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewaySubdeviceRegistrationProtocol.h"
-#include "protocol/RegistrationProtocol.h"
-#include "utilities/Logger.h"
 
 namespace wolkabout
 {

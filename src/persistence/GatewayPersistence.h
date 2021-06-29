@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,12 @@
 namespace wolkabout
 {
 class Message;
+
+enum class PersistenceMethod
+{
+    FIFO = 0,
+    LIFO
+};
 
 /**
  * @brief A storage designed for holding messages in persistent store prior to publishing.
@@ -48,12 +54,9 @@ public:
     virtual bool push(std::shared_ptr<Message> message) = 0;
 
     /**
-     * @brief Retrieves, first wolkabout::Message of this storage and removes it from storage.
-     *
-     * @return Message {@code std::shared_ptr<Message>} or returns nullptr {@code std::shared_ptr<Message>} if this
-     * storage is empty.
+     * @brief Removes first wolkabout::Message from storage.
      */
-    virtual std::shared_ptr<Message> pop() = 0;
+    virtual void pop() = 0;
 
     /**
      * @brief Retrieves, first wolkabout::Message of this storage without removing it from storage.

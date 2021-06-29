@@ -17,27 +17,28 @@
 #include "service/FileDownloadService.h"
 
 #include "FileHandler.h"
+#include "FileListener.h"
 #include "OutboundMessageHandler.h"
-#include "connectivity/ConnectivityService.h"
-#include "model/BinaryData.h"
-#include "model/FileList.h"
-#include "model/FilePacketRequest.h"
-#include "model/FileTransferStatus.h"
-#include "model/FileUploadStatus.h"
-#include "model/FileUrlDownloadAbort.h"
-#include "model/FileUrlDownloadInitiate.h"
-#include "model/FileUrlDownloadStatus.h"
-#include "model/Message.h"
-#include "protocol/json/JsonDownloadProtocol.h"
+#include "core/connectivity/ConnectivityService.h"
+#include "core/model/BinaryData.h"
+#include "core/model/FileList.h"
+#include "core/model/FilePacketRequest.h"
+#include "core/model/FileTransferStatus.h"
+#include "core/model/FileUploadStatus.h"
+#include "core/model/FileUrlDownloadAbort.h"
+#include "core/model/FileUrlDownloadInitiate.h"
+#include "core/model/FileUrlDownloadStatus.h"
+#include "core/model/Message.h"
+#include "core/protocol/json/JsonDownloadProtocol.h"
+#include "core/utilities/ByteUtils.h"
+#include "core/utilities/FileSystemUtils.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
 #include "repository/FileRepository.h"
 #include "service/UrlFileDownloader.h"
-#include "utilities/ByteUtils.h"
-#include "utilities/FileSystemUtils.h"
-#include "utilities/Logger.h"
 
 #include <cassert>
 #include <cmath>
-#include <utilities/StringUtils.h>
 
 namespace
 {
@@ -51,20 +52,27 @@ namespace wolkabout
 FileDownloadService::FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol,
                                          std::string fileDownloadDirectory,
                                          OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository,
-                                         std::shared_ptr<UrlFileDownloader> urlFileDownloader)
+                                         std::shared_ptr<UrlFileDownloader> urlFileDownloader,
+                                         std::shared_ptr<FileListener> fileListener)
 : m_gatewayKey{std::move(gatewayKey)}
-, m_protocol{protocol}
 , m_fileDownloadDirectory{std::move(fileDownloadDirectory)}
+, m_protocol{protocol}
 , m_outboundMessageHandler{outboundMessageHandler}
 , m_fileRepository{fileRepository}
 , m_urlFileDownloader{std::move(urlFileDownloader)}
-, m_activeDownload{""}
+, m_fileListener{std::move(fileListener)}
 , m_run{true}
 , m_garbageCollector(&FileDownloadService::clearDownloads, this)
 {
+    // Create the working directory if it does not exist
     if (!FileSystemUtils::isDirectoryPresent(m_fileDownloadDirectory))
-    {
         FileSystemUtils::createDirectory(m_fileDownloadDirectory);
+
+    // If we have a listener, give it the directory and lambda expression
+    if (m_fileListener != nullptr)
+    {
+        // Pass it the absolute path for directory
+        m_fileListener->receiveDirectory(getDirectory());
     }
 }
 
@@ -77,6 +85,11 @@ FileDownloadService::~FileDownloadService()
     {
         m_garbageCollector.join();
     }
+}
+
+std::string FileDownloadService::getDirectory() const
+{
+    return std::string(FileSystemUtils::absolutePath(m_fileDownloadDirectory));
 }
 
 void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> message)
@@ -195,6 +208,13 @@ void FileDownloadService::handle(const FileUploadInitiate& request)
     {
         LOG(WARN) << "Missing file hash from file upload initiate";
         sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        return;
+    }
+
+    if (m_fileListener != nullptr && !m_fileListener->chooseToDownload(request.getName()))
+    {
+        LOG(WARN) << "File listener denied the file download";
+        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSUPPORTED_FILE_SIZE});
         return;
     }
 
@@ -384,6 +404,8 @@ void FileDownloadService::deleteFile(const std::string& fileName)
     }
 
     m_fileRepository.remove(fileName);
+    if (m_fileListener != nullptr)
+        m_fileListener->onRemovedFile(fileName);
 
     sendFileList();
 }
@@ -417,6 +439,8 @@ void FileDownloadService::purgeFiles()
         }
 
         m_fileRepository.remove(name);
+        if (m_fileListener != nullptr)
+            m_fileListener->onRemovedFile(name);
     }
 
     sendFileList();
@@ -498,6 +522,8 @@ void FileDownloadService::downloadCompleted(const std::string& fileName, const s
     addToCommandBuffer([=] {
         m_fileRepository.store(FileInfo{fileName, fileHash, filePath});
         sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_READY});
+        if (m_fileListener != nullptr)
+            m_fileListener->onNewFile(fileName);
     });
 
     sendFileList();
@@ -530,6 +556,8 @@ void FileDownloadService::urlDownloadCompleted(const std::string& fileUrl, const
 
         m_fileRepository.store(FileInfo{fileName, hashStr, filePath});
         sendStatus(FileUrlDownloadStatus{fileUrl, fileName});
+        if (m_fileListener != nullptr)
+            m_fileListener->onNewFile(fileName);
     });
 
     sendFileList();

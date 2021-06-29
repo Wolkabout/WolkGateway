@@ -17,17 +17,17 @@
 #include "service/FirmwareUpdateService.h"
 
 #include "OutboundMessageHandler.h"
-#include "model/FirmwareUpdateAbort.h"
-#include "model/FirmwareUpdateInstall.h"
-#include "model/FirmwareVersion.h"
-#include "model/Message.h"
+#include "core/model/FirmwareUpdateAbort.h"
+#include "core/model/FirmwareUpdateInstall.h"
+#include "core/model/FirmwareVersion.h"
+#include "core/model/Message.h"
+#include "core/protocol/json/JsonDFUProtocol.h"
+#include "core/service/FirmwareInstaller.h"
+#include "core/utilities/FileSystemUtils.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
 #include "protocol/GatewayFirmwareUpdateProtocol.h"
-#include "protocol/json/JsonDFUProtocol.h"
 #include "repository/FileRepository.h"
-#include "service/FirmwareInstaller.h"
-#include "utilities/FileSystemUtils.h"
-#include "utilities/Logger.h"
-#include "utilities/StringUtils.h"
 
 #include <utility>
 
@@ -45,7 +45,6 @@ FirmwareUpdateService::FirmwareUpdateService(std::string gatewayKey, JsonDFUProt
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
 , m_firmwareInstaller{nullptr}
-, m_currentFirmwareVersion{""}
 {
 }
 
@@ -296,6 +295,10 @@ void FirmwareUpdateService::installGatewayFirmware(const std::string& filePath)
         return;
     }
 
+    const auto directory = StringUtils::tokenize(FIRMWARE_VERSION_FILE, "/").front();
+    if (!FileSystemUtils::isDirectoryPresent(directory))
+        FileSystemUtils::createDirectory(directory);
+
     if (!FileSystemUtils::createFileWithContent(FIRMWARE_VERSION_FILE, m_currentFirmwareVersion))
     {
         LOG(ERROR) << "Failed to create firmware version file";
@@ -305,7 +308,13 @@ void FirmwareUpdateService::installGatewayFirmware(const std::string& filePath)
 
     sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Status::INSTALLATION});
 
-    if (!m_firmwareInstaller->install(filePath))
+    if (m_firmwareInstaller->install(filePath))
+    {
+        LOG(INFO) << "Successfully installed gateway firmware";
+
+        sendStatus(FirmwareUpdateStatus{{m_gatewayKey}, FirmwareUpdateStatus::Status::COMPLETED});
+    }
+    else
     {
         LOG(ERROR) << "Failed to install gateway firmware";
 

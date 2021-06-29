@@ -2,11 +2,12 @@
 #include "MockConnectionStatusListener.h"
 #include "MockRepository.h"
 #include "OutboundMessageHandler.h"
-#include "model/Message.h"
+#include "core/model/Message.h"
+#include "core/protocol/json/JsonStatusProtocol.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
-#include "protocol/json/JsonStatusProtocol.h"
 #include "repository/SQLiteDeviceRepository.h"
-#include "service/DeviceStatusService.h"
+#include "service/status/DeviceStatusService.h"
+#include "service/status/InternalDeviceStatusService.h"
 
 #include <gtest/gtest.h>
 
@@ -51,9 +52,10 @@ public:
           std::unique_ptr<PlatformOutboundMessageHandler>(new PlatformOutboundMessageHandler());
         deviceOutboundMessageHandler =
           std::unique_ptr<DeviceOutboundMessageHandler>(new DeviceOutboundMessageHandler());
-        deviceStatusService = std::unique_ptr<wolkabout::DeviceStatusService>(new wolkabout::DeviceStatusService(
-          GATEWAY_KEY, *protocol, *gatewayProtocol, deviceRepository.get(), *platformOutboundMessageHandler,
-          *deviceOutboundMessageHandler, std::chrono::seconds{60}));
+        deviceStatusService =
+          std::unique_ptr<wolkabout::InternalDeviceStatusService>(new wolkabout::InternalDeviceStatusService(
+            GATEWAY_KEY, *protocol, *gatewayProtocol, deviceRepository.get(), *platformOutboundMessageHandler,
+            *deviceOutboundMessageHandler, std::chrono::seconds{60}));
     }
 
     void TearDown() override { remove(DEVICE_REPOSITORY_PATH); }
@@ -64,7 +66,7 @@ public:
     std::unique_ptr<PlatformOutboundMessageHandler> platformOutboundMessageHandler;
     std::unique_ptr<DeviceOutboundMessageHandler> deviceOutboundMessageHandler;
     std::shared_ptr<MockConnectionStatusListener> connectionStatusListener;
-    std::unique_ptr<wolkabout::DeviceStatusService> deviceStatusService;
+    std::unique_ptr<wolkabout::InternalDeviceStatusService> deviceStatusService;
 
     static constexpr const char* DEVICE_REPOSITORY_PATH = "testsDeviceRepository.db";
     static constexpr const char* GATEWAY_KEY = "GATEWAY_KEY";

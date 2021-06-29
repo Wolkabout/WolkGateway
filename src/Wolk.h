@@ -22,10 +22,11 @@
 #include "ConfigurationHandler.h"
 #include "ConfigurationProvider.h"
 #include "WolkBuilder.h"
+#include "core/utilities/StringUtils.h"
 #include "model/GatewayDevice.h"
-#include "utilities/StringUtils.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -40,8 +41,8 @@ class ConfigurationSetCommand;
 class ConnectivityService;
 class DataProtocol;
 class DataService;
-class DeviceStatusService;
 class DeviceRepository;
+class DeviceStatusService;
 class ExistingDevicesRepository;
 class FileDownloadService;
 class FileRepository;
@@ -82,12 +83,26 @@ public:
     /**
      * @brief connect Establishes connection with WolkAbout IoT platform
      */
-    void connect();
+    virtual void connect() = 0;
 
     /**
      * @brief disconnect Disconnects from WolkAbout IoT platform
      */
-    void disconnect();
+    virtual void disconnect() = 0;
+
+    /**
+     * This is the default getter method for obtaining the platform connection status.
+     *
+     * @return Platform connection status.
+     */
+    virtual bool isConnectedToPlatform();
+
+    /**
+     * This is the default setter method for setting a callback function that listens to the platform connection status.
+     *
+     * @param platformConnectionStatusListener The callback function.
+     */
+    virtual void setPlatformConnectionStatusListener(const std::function<void(bool)>& platformConnectionStatusListener);
 
     /**
      * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
@@ -211,7 +226,7 @@ public:
      */
     void publish();
 
-private:
+protected:
     static const constexpr std::chrono::seconds KEEP_ALIVE_INTERVAL{600};
 
     explicit Wolk(GatewayDevice device);
@@ -233,11 +248,8 @@ private:
     void handleConfigurationGetCommand();
 
     void platformDisconnected();
-    void devicesDisconnected();
 
     void gatewayUpdated();
-    void deviceRegistered(const std::string& deviceKey);
-    void deviceUpdated(const std::string& deviceKey);
     //
 
     void publishEverything();
@@ -247,16 +259,16 @@ private:
 
     void notifyPlatformConnected();
     void notifyPlatformDisonnected();
-    void notifyDevicesConnected();
-    void notifyDevicesDisonnected();
 
     void connectToPlatform(bool firstTime = false);
-    void connectToDevices(bool firstTime = false);
 
     void requestActuatorStatusesForDevices();
     void requestActuatorStatusesForDevice(const std::string& deviceKey);
 
     GatewayDevice m_device;
+
+    std::atomic<bool> m_connected;
+    std::function<void(bool)> m_platformConnectionStatusListener;
 
     std::unique_ptr<DeviceRepository> m_deviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;

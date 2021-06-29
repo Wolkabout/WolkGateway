@@ -1,7 +1,7 @@
 #ifndef MOCKREPOSITORY_H
 #define MOCKREPOSITORY_H
 
-#include "model/DetailedDevice.h"
+#include "core/model/DetailedDevice.h"
 #include "repository/DeviceRepository.h"
 #include "repository/ExistingDevicesRepository.h"
 #include "repository/FileRepository.h"

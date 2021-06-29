@@ -16,16 +16,16 @@
 
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
 
-#include "model/Message.h"
-#include "model/SubdeviceRegistrationRequest.h"
-#include "model/SubdeviceRegistrationResponse.h"
-#include "model/SubdeviceUpdateRequest.h"
-#include "model/SubdeviceUpdateResponse.h"
-#include "protocol/json/Json.h"
-#include "protocol/json/JsonDto.h"
-#include "utilities/Logger.h"
-#include "utilities/StringUtils.h"
-#include "utilities/json.hpp"
+#include "core/model/Message.h"
+#include "core/model/SubdeviceRegistrationRequest.h"
+#include "core/model/SubdeviceRegistrationResponse.h"
+#include "core/model/SubdeviceUpdateRequest.h"
+#include "core/model/SubdeviceUpdateResponse.h"
+#include "core/protocol/json/Json.h"
+#include "core/protocol/json/JsonDto.h"
+#include "core/utilities/Logger.h"
+#include "core/utilities/StringUtils.h"
+#include "core/utilities/json.hpp"
 
 #include <stdexcept>
 

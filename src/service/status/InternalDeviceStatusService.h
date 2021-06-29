@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,72 +14,48 @@
  * limitations under the License.
  */
 
-#ifndef DEVICESTATUSSERVICE_H
-#define DEVICESTATUSSERVICE_H
+#ifndef INTERNALDEVICESTATUSSERVICE_H
+#define INTERNALDEVICESTATUSSERVICE_H
 
-#include "ConnectionStatusListener.h"
-#include "InboundDeviceMessageHandler.h"
-#include "InboundPlatformMessageHandler.h"
-#include "model/DeviceStatus.h"
-#include "utilities/Timer.h"
-
-#include <chrono>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <string>
+#include "DeviceStatusService.h"
 
 namespace wolkabout
 {
-class DeviceRepository;
-class ConnectionStatusListener;
-class GatewayStatusProtocol;
-class OutboundMessageHandler;
-class StatusProtocol;
-
-class DeviceStatusService : public DeviceMessageListener,
-                            public PlatformMessageListener,
-                            public ConnectionStatusListener
+class InternalDeviceStatusService : public DeviceStatusService, public DeviceMessageListener
 {
 public:
-    DeviceStatusService(std::string gatewayKey, StatusProtocol& protocol, GatewayStatusProtocol& gatewayProtocol,
-                        DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
-                        OutboundMessageHandler& outboundDeviceMessageHandler,
-                        std::chrono::seconds statusRequestInterval);
-
-    void platformMessageReceived(std::shared_ptr<Message> message) override;
+    InternalDeviceStatusService(std::string gatewayKey, StatusProtocol& protocol,
+                                GatewayStatusProtocol& gatewayProtocol, DeviceRepository* deviceRepository,
+                                OutboundMessageHandler& outboundPlatformMessageHandler,
+                                OutboundMessageHandler& outboundDeviceMessageHandler,
+                                std::chrono::seconds statusRequestInterval);
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
 
-    const Protocol& getProtocol() const override;
-
     const GatewayProtocol& getGatewayProtocol() const override;
-
-    void sendLastKnownStatusForDevice(const std::string& deviceKey);
 
     void connected() override;
     void disconnected() override;
 
+    void sendLastKnownStatusForDevice(const std::string& deviceKey);
+
 private:
+    void requestDeviceStatus(const std::string& deviceKey) override;
+
     void requestDevicesStatus();
     void validateDevicesStatus();
 
     void sendStatusRequestForDevice(const std::string& deviceKey);
     void sendStatusRequestForAllDevices();
-    void sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus::Status status);
-    void sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus::Status status);
 
     bool containsDeviceStatus(const std::string& deviceKey);
     std::pair<std::time_t, DeviceStatus::Status> getDeviceStatus(const std::string& deviceKey);
     void logDeviceStatus(const std::string& deviceKey, DeviceStatus::Status status);
 
-    const std::string m_gatewayKey;
-    StatusProtocol& m_protocol;
     GatewayStatusProtocol& m_gatewayProtocol;
 
     DeviceRepository* m_deviceRepository;
 
-    OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundMessageHandler& m_outboundDeviceMessageHandler;
 
     const std::chrono::seconds m_statusRequestInterval;
@@ -92,4 +68,4 @@ private:
 };
 }    // namespace wolkabout
 
-#endif    // DEVICESTATUSSERVICE_H
+#endif    // INTERNALDEVICESTATUSSERVICE_H

@@ -17,7 +17,7 @@
 #ifndef CONFIGURATIONHANDLER_H
 #define CONFIGURATIONHANDLER_H
 
-#include "model/ConfigurationItem.h"
+#include "core/model/ConfigurationItem.h"
 
 #include <vector>
 

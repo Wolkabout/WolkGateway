@@ -1,7 +1,7 @@
-#include "model/ActuatorGetCommand.h"
-#include "model/ActuatorSetCommand.h"
-#include "model/ActuatorStatus.h"
-#include "model/Message.h"
+#include "core/model/ActuatorGetCommand.h"
+#include "core/model/ActuatorSetCommand.h"
+#include "core/model/ActuatorStatus.h"
+#include "core/model/Message.h"
 #define private public
 #define protected public
 #include "protocol/json/JsonGatewayDataProtocol.h"

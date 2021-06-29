@@ -22,58 +22,50 @@
 #include "InboundPlatformMessageHandler.h"
 #include "OutboundMessageHandler.h"
 
-#include <atomic>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace wolkabout
 {
 class DataProtocol;
-class DeviceRepository;
 class GatewayDataProtocol;
 class MessageListener;
 
-class DataService : public DeviceMessageListener, public PlatformMessageListener, public OutboundMessageHandler
+class DataService : public PlatformMessageListener, public OutboundMessageHandler
 {
 public:
+    virtual ~DataService() = default;
+
     DataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayDataProtocol& gatewayProtocol,
-                DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
-                OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice = nullptr);
+                OutboundMessageHandler& outboundPlatformMessageHandler, MessageListener* gatewayDevice = nullptr);
 
     void platformMessageReceived(std::shared_ptr<Message> message) override;
 
-    void deviceMessageReceived(std::shared_ptr<Message> message) override;
-
     const Protocol& getProtocol() const override;
-
-    const GatewayProtocol& getGatewayProtocol() const override;
 
     void addMessage(std::shared_ptr<Message> message) override;
 
     void setGatewayMessageListener(MessageListener* gatewayDevice);
 
-    virtual void requestActuatorStatusesForDevice(const std::string& deviceKey);
-    virtual void requestActuatorStatusesForAllDevices();
+    virtual void requestActuatorStatusesForDevice(const std::string& deviceKey) = 0;
+    virtual void requestActuatorStatusesForAllDevices() = 0;
 
-private:
-    void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
-    void routePlatformToDeviceMessage(std::shared_ptr<Message> message);
-
-    void routeGatewayToPlatformMessage(std::shared_ptr<Message> message);
-    void routePlatformToGatewayMessage(std::shared_ptr<Message> message);
+protected:
+    virtual void routeDeviceToPlatformMessage(std::shared_ptr<Message> message);
 
     const std::string m_gatewayKey;
     DataProtocol& m_protocol;
     GatewayDataProtocol& m_gatewayProtocol;
 
-    DeviceRepository* m_deviceRepository;
+private:
+    virtual void handleMessageForDevice(std::shared_ptr<Message> message) = 0;
+    virtual void handleMessageForGateway(std::shared_ptr<Message> message);
 
     OutboundMessageHandler& m_outboundPlatformMessageHandler;
-    OutboundMessageHandler& m_outboundDeviceMessageHandler;
-
     MessageListener* m_gatewayDevice;
+    std::mutex m_messageListenerMutex;
 };
-
 }    // namespace wolkabout
 
 #endif

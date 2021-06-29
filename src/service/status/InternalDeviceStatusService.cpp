@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-#include "service/DeviceStatusService.h"
+#include "InternalDeviceStatusService.h"
 
-#include "ConnectionStatusListener.h"
 #include "OutboundMessageHandler.h"
-#include "model/DeviceStatus.h"
-#include "model/Message.h"
+#include "core/model/Message.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewayStatusProtocol.h"
-#include "protocol/StatusProtocol.h"
 #include "repository/DeviceRepository.h"
-#include "utilities/Logger.h"
 
 namespace
 {
@@ -32,49 +29,22 @@ const std::chrono::seconds STATUS_RESPONSE_TIMEOUT{5};
 
 namespace wolkabout
 {
-DeviceStatusService::DeviceStatusService(std::string gatewayKey, StatusProtocol& protocol,
-                                         GatewayStatusProtocol& gatewayProtocol, DeviceRepository* deviceRepository,
-                                         OutboundMessageHandler& outboundPlatformMessageHandler,
-                                         OutboundMessageHandler& outboundDeviceMessageHandler,
-                                         std::chrono::seconds statusRequestInterval)
-: m_gatewayKey{std::move(gatewayKey)}
-, m_protocol{protocol}
+InternalDeviceStatusService::InternalDeviceStatusService(std::string gatewayKey, StatusProtocol& protocol,
+                                                         GatewayStatusProtocol& gatewayProtocol,
+                                                         DeviceRepository* deviceRepository,
+                                                         OutboundMessageHandler& outboundPlatformMessageHandler,
+                                                         OutboundMessageHandler& outboundDeviceMessageHandler,
+                                                         std::chrono::seconds statusRequestInterval)
+: DeviceStatusService(gatewayKey, protocol, outboundPlatformMessageHandler)
 , m_gatewayProtocol{gatewayProtocol}
 , m_deviceRepository{deviceRepository}
-, m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
 , m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
 , m_statusRequestInterval{statusRequestInterval}
 , m_statusResponseInterval{STATUS_RESPONSE_TIMEOUT}
 {
 }
 
-void DeviceStatusService::platformMessageReceived(std::shared_ptr<Message> message)
-{
-    LOG(TRACE) << METHOD_INFO;
-
-    const std::string topic = message->getChannel();
-
-    if (m_protocol.isStatusRequestMessage(*message))
-    {
-        const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(topic);
-
-        if (deviceKey.empty())
-        {
-            return;
-        }
-
-        sendStatusRequestForDevice(deviceKey);
-    }
-    else if (m_protocol.isStatusConfirmMessage(*message))
-    {
-    }
-    else
-    {
-        LOG(WARN) << "Message channel not parsed: " << topic;
-    }
-}
-
-void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message)
+void InternalDeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
@@ -149,17 +119,26 @@ void DeviceStatusService::deviceMessageReceived(std::shared_ptr<Message> message
     }
 }
 
-const Protocol& DeviceStatusService::getProtocol() const
-{
-    return m_protocol;
-}
-
-const GatewayProtocol& DeviceStatusService::getGatewayProtocol() const
+const GatewayProtocol& InternalDeviceStatusService::getGatewayProtocol() const
 {
     return m_gatewayProtocol;
 }
 
-void DeviceStatusService::sendLastKnownStatusForDevice(const std::string& deviceKey)
+void InternalDeviceStatusService::connected()
+{
+    requestDevicesStatus();
+
+    m_requestTimer.run(std::chrono::duration_cast<std::chrono::milliseconds>(m_statusRequestInterval),
+                       [=] { requestDevicesStatus(); });
+}
+
+void InternalDeviceStatusService::disconnected()
+{
+    m_requestTimer.stop();
+    m_responseTimer.stop();
+}
+
+void InternalDeviceStatusService::sendLastKnownStatusForDevice(const std::string& deviceKey)
 {
     if (containsDeviceStatus(deviceKey))
     {
@@ -168,21 +147,12 @@ void DeviceStatusService::sendLastKnownStatusForDevice(const std::string& device
     }
 }
 
-void DeviceStatusService::connected()
+void InternalDeviceStatusService::requestDeviceStatus(const std::string& deviceKey)
 {
-    requestDevicesStatus();
-
-    m_requestTimer.run(std::chrono::duration_cast<std::chrono::milliseconds>(m_statusRequestInterval),
-                       [=] { requestDevicesStatus(); });
+    sendStatusRequestForDevice(deviceKey);
 }
 
-void DeviceStatusService::disconnected()
-{
-    m_requestTimer.stop();
-    m_responseTimer.stop();
-}
-
-void DeviceStatusService::requestDevicesStatus()
+void InternalDeviceStatusService::requestDevicesStatus()
 {
     if (m_deviceRepository)
     {
@@ -207,7 +177,7 @@ void DeviceStatusService::requestDevicesStatus()
     }
 }
 
-void DeviceStatusService::validateDevicesStatus()
+void InternalDeviceStatusService::validateDevicesStatus()
 {
     if (!m_deviceRepository)
     {
@@ -248,7 +218,7 @@ void DeviceStatusService::validateDevicesStatus()
     }
 }
 
-void DeviceStatusService::sendStatusRequestForDevice(const std::string& deviceKey)
+void InternalDeviceStatusService::sendStatusRequestForDevice(const std::string& deviceKey)
 {
     std::shared_ptr<Message> message = m_gatewayProtocol.makeDeviceStatusRequestMessage(deviceKey);
     if (!message)
@@ -260,7 +230,7 @@ void DeviceStatusService::sendStatusRequestForDevice(const std::string& deviceKe
     m_outboundDeviceMessageHandler.addMessage(message);
 }
 
-void DeviceStatusService::sendStatusRequestForAllDevices()
+void InternalDeviceStatusService::sendStatusRequestForAllDevices()
 {
     std::shared_ptr<Message> message = m_gatewayProtocol.makeDeviceStatusRequestMessage("");
     if (!message)
@@ -272,42 +242,14 @@ void DeviceStatusService::sendStatusRequestForAllDevices()
     m_outboundDeviceMessageHandler.addMessage(message);
 }
 
-void DeviceStatusService::sendStatusResponseForDevice(const std::string& deviceKey, DeviceStatus::Status status)
-{
-    std::shared_ptr<Message> statusMessage =
-      m_protocol.makeStatusResponseMessage(m_gatewayKey, DeviceStatus{deviceKey, status});
-
-    if (!statusMessage)
-    {
-        LOG(WARN) << "Failed to create status response message for device: " << deviceKey;
-        return;
-    }
-
-    m_outboundPlatformMessageHandler.addMessage(statusMessage);
-}
-
-void DeviceStatusService::sendStatusUpdateForDevice(const std::string& deviceKey, DeviceStatus::Status status)
-{
-    std::shared_ptr<Message> statusMessage =
-      m_protocol.makeStatusUpdateMessage(m_gatewayKey, DeviceStatus{deviceKey, status});
-
-    if (!statusMessage)
-    {
-        LOG(WARN) << "Failed to create status update message for device: " << deviceKey;
-        return;
-    }
-
-    m_outboundPlatformMessageHandler.addMessage(statusMessage);
-}
-
-bool DeviceStatusService::containsDeviceStatus(const std::string& deviceKey)
+bool InternalDeviceStatusService::containsDeviceStatus(const std::string& deviceKey)
 {
     std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
 
     return m_deviceStatuses.find(deviceKey) != m_deviceStatuses.end();
 }
 
-std::pair<std::time_t, DeviceStatus::Status> DeviceStatusService::getDeviceStatus(const std::string& deviceKey)
+std::pair<std::time_t, DeviceStatus::Status> InternalDeviceStatusService::getDeviceStatus(const std::string& deviceKey)
 {
     std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
 
@@ -321,11 +263,10 @@ std::pair<std::time_t, DeviceStatus::Status> DeviceStatusService::getDeviceStatu
     return std::make_pair(0, DeviceStatus::Status::OFFLINE);
 }
 
-void DeviceStatusService::logDeviceStatus(const std::string& deviceKey, DeviceStatus::Status status)
+void InternalDeviceStatusService::logDeviceStatus(const std::string& deviceKey, DeviceStatus::Status status)
 {
     std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
 
     m_deviceStatuses[deviceKey] = std::make_pair(std::time(nullptr), status);
 }
-
 }    // namespace wolkabout

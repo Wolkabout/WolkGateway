@@ -38,6 +38,7 @@ public:
 
     std::unique_ptr<DeviceStatus> makeDeviceStatusResponse(const Message& message) const override;
     std::unique_ptr<DeviceStatus> makeDeviceStatusUpdate(const Message& message) const override;
+    std::unique_ptr<Message> makePlatformConnectionStatusMessage(const bool connected) const override;
 
     bool isStatusResponseMessage(const Message& message) const override;
     bool isStatusUpdateMessage(const Message& message) const override;
@@ -57,6 +58,7 @@ private:
     static const std::string DEVICE_STATUS_RESPONSE_TOPIC_ROOT;
     static const std::string DEVICE_STATUS_UPDATE_TOPIC_ROOT;
     static const std::string DEVICE_STATUS_REQUEST_TOPIC_ROOT;
+    static const std::string PLATFORM_CONNECTION_STATUS_ROOT;
 };
 }    // namespace wolkabout
 

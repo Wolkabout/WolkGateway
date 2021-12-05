@@ -41,6 +41,7 @@
 #include "service/data/DataService.h"
 #include "service/data/GatewayDataService.h"
 #include "service/status/DeviceStatusService.h"
+#include "service/status/PlatformStatusService.h"
 
 #include <memory>
 #include <sstream>
@@ -363,6 +364,11 @@ void Wolk::notifyPlatformConnected()
     {
         m_keepAliveService->connected();
     }
+
+    if (m_platformStatusService)
+    {
+        m_platformStatusService->sendPlatformConnectionStatusMessage(true);
+    }
 }
 
 void Wolk::notifyPlatformDisonnected()
@@ -378,6 +384,11 @@ void Wolk::notifyPlatformDisonnected()
     if (m_keepAliveService)
     {
         m_keepAliveService->disconnected();
+    }
+
+    if (m_platformStatusService)
+    {
+        m_platformStatusService->sendPlatformConnectionStatusMessage(false);
     }
 }
 

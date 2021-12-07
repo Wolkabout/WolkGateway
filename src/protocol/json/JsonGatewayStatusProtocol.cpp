@@ -33,7 +33,7 @@ const std::string JsonGatewayStatusProtocol::LAST_WILL_TOPIC_ROOT = "lastwill/";
 const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_RESPONSE_TOPIC_ROOT = "d2p/subdevice_status_response/";
 const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_UPDATE_TOPIC_ROOT = "d2p/subdevice_status_update/";
 const std::string JsonGatewayStatusProtocol::DEVICE_STATUS_REQUEST_TOPIC_ROOT = "p2d/subdevice_status_request/";
-const std::string JsonGatewayStatusProtocol::PLATFORM_CONNECTION_STATUS_ROOT = "p2d/connection_status/";
+const std::string JsonGatewayStatusProtocol::PLATFORM_CONNECTION_STATUS_ROOT = "p2d/connection_status";
 
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATE_FIELD = "state";
 const std::string JsonGatewayStatusProtocol::STATUS_RESPONSE_STATUS_CONNECTED = "CONNECTED";

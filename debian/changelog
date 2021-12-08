@@ -1,12 +1,5 @@
-wolkgateway (4.3.0) stable; urgency=medium
+wolkgateway (4.3.1) stable; urgency=medium
 
-  * Created WolkDefault and WolkExternal that provide different interfaces for custom subdevice data providing.
-  * Introduced the FSFileRepository to provide info about FileManagement files from the File System.
-  * Disabled the Gateway Update message sending and mechanisms as they have been found unnecessary.
-  * Imported the newest WolkSDK-Cpp that introduces various fixes and improvements.
-  * Moved the version file when firmware installing to a different location. Also, finishing the install method with `true` now reports success.
-  * Introduced the custom data and device status protocols, that allow us to define custom MQTT topics/payloads for those messages.
-  * Added the FileListener interface for FileManagementService to allow input into the File Management process and allow for hooks.
-  * Made optimizations for the application to be built as a submodule.
+  * Implemented sending of `p2d/connection_status` message to the local broker, to announce platform connection state to the modules.
   
- -- Wolkabout ELab <elab@wolkabout.com> Fri, 14 May 2021 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Wed, 08 Dec 2021 00:00:00 +0100

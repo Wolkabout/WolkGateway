@@ -5,11 +5,10 @@
     "password": "",
 
     "platformMqttUri": "ssl://api-demo.wolkabout.com:8883",
+    "platformMqttKeepAliveSeconds": 10,
     "localMqttUri": "tcp://localhost:1883",
 
     "platformTrustStore": "/etc/wolkGateway/ca.crt",
 
-    "subdeviceManagement": "gateway",
-
-    "mqttKeepAliveSeconds": 60
+    "subdeviceManagement": "gateway"
 }

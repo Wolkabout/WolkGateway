@@ -33,7 +33,7 @@ const std::string GatewayConfiguration::PLATFORM_URI = "platformMqttUri";
 const std::string GatewayConfiguration::PLATFORM_TRUST_STORE = "platformTrustStore";
 const std::string GatewayConfiguration::LOCAL_URI = "localMqttUri";
 const std::string GatewayConfiguration::SUBDEVICE_MANAGEMENT = "subdeviceManagement";
-const std::string GatewayConfiguration::KEEP_ALIVE = "mqttKeepAliveSeconds";
+const std::string GatewayConfiguration::KEEP_ALIVE = "platformMqttKeepAliveSeconds";
 
 GatewayConfiguration::GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri,
                                            std::string localMqttUri, SubdeviceManagement management)

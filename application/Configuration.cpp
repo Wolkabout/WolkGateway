@@ -33,6 +33,7 @@ const std::string GatewayConfiguration::PLATFORM_URI = "platformMqttUri";
 const std::string GatewayConfiguration::PLATFORM_TRUST_STORE = "platformTrustStore";
 const std::string GatewayConfiguration::LOCAL_URI = "localMqttUri";
 const std::string GatewayConfiguration::SUBDEVICE_MANAGEMENT = "subdeviceManagement";
+const std::string GatewayConfiguration::KEEP_ALIVE = "mqttKeepAliveSeconds";
 
 GatewayConfiguration::GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri,
                                            std::string localMqttUri, SubdeviceManagement management)
@@ -41,6 +42,7 @@ GatewayConfiguration::GatewayConfiguration(std::string key, std::string password
 , m_platformMqttUri(std::move(platformMqttUri))
 , m_localMqttUri(std::move(localMqttUri))
 , m_subdeviceManagement(management)
+, m_keepAliveSec(60)
 {
 }
 
@@ -77,6 +79,16 @@ void GatewayConfiguration::setPlatformTrustStore(const std::string& value)
 const WolkOptional<std::string>& GatewayConfiguration::getPlatformTrustStore() const
 {
     return m_platformTrustStore;
+}
+
+std::uint16_t GatewayConfiguration::getKeepAliveSec() const
+{
+    return m_keepAliveSec;
+}
+
+void GatewayConfiguration::setKeepAliveSec(std::uint16_t keepAlive)
+{
+    m_keepAliveSec = keepAlive;
 }
 
 wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string& gatewayConfigurationFile)
@@ -121,6 +133,11 @@ wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string
     if (j.find(PLATFORM_TRUST_STORE) != j.end())
     {
         configuration.setPlatformTrustStore(j.at(PLATFORM_TRUST_STORE).get<std::string>());
+    }
+
+    if (j.find(KEEP_ALIVE) != j.end())
+    {
+        configuration.setKeepAliveSec(j.at(KEEP_ALIVE).get<std::uint16_t>());
     }
 
     return configuration;

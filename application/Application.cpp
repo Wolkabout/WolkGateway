@@ -92,6 +92,7 @@ int main(int argc, char** argv)
     wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
                                     gatewayConfiguration.getSubdeviceManagement());
     auto builder = std::move(wolkabout::Wolk::newBuilder(device)
+                               .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
                                .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                                .platformHost(gatewayConfiguration.getPlatformMqttUri()));
 

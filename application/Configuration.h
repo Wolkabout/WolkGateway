@@ -40,6 +40,9 @@ public:
     void setPlatformTrustStore(const std::string& value);
     const WolkOptional<std::string>& getPlatformTrustStore() const;
 
+    std::uint16_t getKeepAliveSec() const;
+    void setKeepAliveSec(std::uint16_t keepAlive);
+
     static wolkabout::GatewayConfiguration fromJson(const std::string& gatewayConfigurationFile);
 
 private:
@@ -53,11 +56,14 @@ private:
 
     WolkOptional<std::string> m_platformTrustStore;
 
+    std::uint16_t m_keepAliveSec;
+
     static const std::string KEY;
     static const std::string PASSWORD;
     static const std::string PLATFORM_URI;
     static const std::string PLATFORM_TRUST_STORE;
     static const std::string LOCAL_URI;
     static const std::string SUBDEVICE_MANAGEMENT;
+    static const std::string KEEP_ALIVE;
 };
 }    // namespace wolkabout

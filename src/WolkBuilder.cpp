@@ -186,6 +186,12 @@ WolkBuilder& WolkBuilder::withPersistence(std::shared_ptr<GatewayPersistence> pe
     return *this;
 }
 
+WolkBuilder& WolkBuilder::setMqttKeepAlive(std::uint16_t keepAlive)
+{
+    m_mqttKeepAliveSec = keepAlive;
+    return *this;
+}
+
 std::unique_ptr<Wolk> WolkBuilder::build()
 {
     // Right away check a bunch of the parameters
@@ -262,9 +268,9 @@ std::unique_ptr<Wolk> WolkBuilder::build()
 
     // Create the connectivity service for the platform
     const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
-    wolk->m_platformConnectivityService.reset(new MqttConnectivityService(std::make_shared<PahoMqttClient>(),
-                                                                          m_device.getKey(), m_device.getPassword(),
-                                                                          m_platformHost, m_platformTrustStore));
+    wolk->m_platformConnectivityService.reset(
+      new MqttConnectivityService(std::make_shared<PahoMqttClient>(m_mqttKeepAliveSec), m_device.getKey(),
+                                  m_device.getPassword(), m_platformHost, m_platformTrustStore));
     wolk->m_platformConnectivityService->setUncontrolledDisonnectMessage(
       wolk->m_statusProtocol->makeLastWillMessage(m_device.getKey()));
 
@@ -473,6 +479,7 @@ WolkBuilder::WolkBuilder(GatewayDevice device)
 : m_platformHost{WOLK_DEMO_HOST}
 , m_gatewayHost{MESSAGE_BUS_HOST}
 , m_device{std::move(device)}
+, m_mqttKeepAliveSec(60)
 , m_persistence{new GatewayInMemoryPersistence()}
 , m_keepAliveEnabled{true}
 {

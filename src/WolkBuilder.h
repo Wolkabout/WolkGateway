@@ -175,7 +175,7 @@ public:
     WolkBuilder& withExternalDataProvider(DataProvider* provider);
 
     /**
-     * @brief withProtocol Use external protocol implementatoion for data and status messages
+     * @brief withProtocol Use external protocol implementation for data and status messages
      * @param dataProtocol Implementation of DataProtocol
      * @param statusProtocol Implementation of StatusProtocol
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
@@ -189,6 +189,13 @@ public:
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkBuilder& withPersistence(std::shared_ptr<GatewayPersistence> persistence);
+
+    /**
+     * @brief Sets the seconds the MQTT connection with the platform will be kept alive for.
+     * @param keepAlive The amount of seconds the connection will be pinged.
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkBuilder& setMqttKeepAlive(std::uint16_t keepAlive);
 
     /**
      * @brief Builds Wolk instance
@@ -216,6 +223,8 @@ private:
     std::string m_platformTrustStore = TRUST_STORE;
     std::string m_gatewayHost;
     GatewayDevice m_device;
+
+    std::uint16_t m_mqttKeepAliveSec;
 
     std::function<void(std::string, std::string)> m_actuationHandlerLambda;
     std::shared_ptr<ActuationHandler> m_actuationHandler;

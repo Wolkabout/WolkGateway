@@ -9,5 +9,7 @@
 
     "platformTrustStore": "/etc/wolkGateway/ca.crt",
 
-    "subdeviceManagement": "gateway"
+    "subdeviceManagement": "gateway",
+
+    "mqttKeepAliveSeconds": 60
 }

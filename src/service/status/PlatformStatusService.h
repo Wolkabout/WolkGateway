@@ -26,7 +26,7 @@ class PlatformStatusService
 {
 public:
     PlatformStatusService(ConnectivityService& connectivityService, GatewayStatusProtocol& protocol);
-    void sendPlatformConnectionStatusMessage(const bool connected);
+    void sendPlatformConnectionStatusMessage(bool connected);
 
 private:
     ConnectivityService& m_connectivityService;

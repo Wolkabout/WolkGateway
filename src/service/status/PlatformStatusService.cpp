@@ -18,6 +18,7 @@
 
 #include "core/connectivity/ConnectivityService.h"
 #include "core/model/Message.h"
+#include "core/utilities/Logger.h"
 #include "protocol/GatewayStatusProtocol.h"
 
 namespace wolkabout
@@ -28,7 +29,7 @@ PlatformStatusService::PlatformStatusService(ConnectivityService& connectivitySe
 {
 }
 
-void PlatformStatusService::sendPlatformConnectionStatusMessage(const bool connected)
+void PlatformStatusService::sendPlatformConnectionStatusMessage(bool connected)
 {
     std::shared_ptr<Message> message = m_protocol.makePlatformConnectionStatusMessage(connected);
     if(!message)
@@ -36,7 +37,14 @@ void PlatformStatusService::sendPlatformConnectionStatusMessage(const bool conne
         return;
     }
 
-    m_connectivityService.publish(message, true);
+    if(!m_connectivityService.publish(message, true))
+    {
+        LOG(DEBUG) << "PlatformStatusService: Failed to send platform status message";
+    }
+    else
+    {
+        LOG(DEBUG) << "PlatformStatusService: Published platform status message";
+    }
 }
 
 }   // namespace wolkabout

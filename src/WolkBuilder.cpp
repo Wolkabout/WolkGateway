@@ -267,7 +267,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
                                                                           m_device.getKey(), m_device.getPassword(),
                                                                           m_platformHost, m_platformTrustStore));
     wolk->m_platformConnectivityService->setUncontrolledDisonnectMessage(
-      wolk->m_gatewayStatusProtocol->makePlatformConnectionStatusMessage(false), true);
+      wolk->m_statusProtocol->makeLastWillMessage(m_device.getKey()));
 
     // Create the publisher for the platform connectivity service
     wolk->m_platformPublisher.reset(new PublishingService(
@@ -347,6 +347,8 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
     const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
     wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
       std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_gatewayHost, localMqttClientId));
+    wolk->m_deviceConnectivityService->setUncontrolledDisonnectMessage(
+      wolk->m_gatewayStatusProtocol->makePlatformConnectionStatusMessage(false), true);
 
     // Create the publisher for the devices (local MQTT)
     wolk->m_devicePublisher.reset(

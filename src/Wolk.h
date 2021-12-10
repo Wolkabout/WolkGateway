@@ -60,6 +60,7 @@ class JsonDownloadProtocol;
 class KeepAliveService;
 class PublishingService;
 class Persistence;
+class PlatformStatusService;
 class RegistrationMessageRouter;
 class RegistrationProtocol;
 class StatusMessageRouter;
@@ -301,6 +302,7 @@ protected:
     std::unique_ptr<KeepAliveService> m_keepAliveService;
     std::unique_ptr<DeviceStatusService> m_deviceStatusService;
     std::shared_ptr<StatusMessageRouter> m_statusMessageRouter;
+    std::shared_ptr<PlatformStatusService> m_platformStatusService;
 
     std::unique_ptr<JsonDFUProtocol> m_firmwareUpdateProtocol;
     std::unique_ptr<GatewayFirmwareUpdateProtocol> m_gatewayFirmwareUpdateProtocol;

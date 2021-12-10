@@ -57,6 +57,7 @@
 #include "service/status/DeviceStatusService.h"
 #include "service/status/ExternalDeviceStatusService.h"
 #include "service/status/InternalDeviceStatusService.h"
+#include "service/status/PlatformStatusService.h"
 
 #include <memory>
 #include <stdexcept>
@@ -352,6 +353,8 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
     const std::string localMqttClientId = std::string("Gateway-").append(m_device.getKey());
     wolk->m_deviceConnectivityService.reset(new MqttConnectivityService(
       std::make_shared<PahoMqttClient>(), m_device.getKey(), m_device.getPassword(), m_gatewayHost, localMqttClientId));
+    wolk->m_deviceConnectivityService->setUncontrolledDisonnectMessage(
+      wolk->m_gatewayStatusProtocol->makePlatformConnectionStatusMessage(false), true);
 
     // Create the publisher for the devices (local MQTT)
     wolk->m_devicePublisher.reset(
@@ -396,7 +399,8 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
       m_device.getSubdeviceManagement().value() == SubdeviceManagement::GATEWAY ? wolk->m_deviceRepository.get() :
                                                                                   nullptr,
       *wolk->m_platformPublisher, *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL));
-
+    // Setup platform status service
+    wolk->m_platformStatusService.reset(new PlatformStatusService(*wolk->m_deviceConnectivityService, *wolk->m_gatewayStatusProtocol));
     // Setup the data service
     wolk->m_dataService = std::make_shared<InternalDataService>(
       m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol,

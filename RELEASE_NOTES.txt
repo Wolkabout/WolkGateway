@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.3.1**
+    - [IMPROVEMENT] - Implemented sending of `p2d/connection_status` message to the local broker, to announce platform connection state to the modules.
+
 **Version 4.3.0**
     - [IMPROVEMENT] - Created WolkDefault and WolkExternal that provide different interfaces for custom subdevice data providing.
     - [IMPROVEMENT] - Introduced the FSFileRepository to provide info about FileManagement files from the File System.

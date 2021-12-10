@@ -32,8 +32,8 @@ WolkDefault::~WolkDefault() = default;
 
 void WolkDefault::connect()
 {
-    connectToPlatform(true);
     connectToDevices(true);
+    connectToPlatform(true);
 }
 
 void WolkDefault::disconnect()

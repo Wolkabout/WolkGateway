@@ -267,7 +267,7 @@ std::unique_ptr<Wolk> WolkBuilder::build()
                                                                           m_device.getKey(), m_device.getPassword(),
                                                                           m_platformHost, m_platformTrustStore));
     wolk->m_platformConnectivityService->setUncontrolledDisonnectMessage(
-      wolk->m_statusProtocol->makeLastWillMessage(m_device.getKey()));
+      wolk->m_gatewayStatusProtocol->makePlatformConnectionStatusMessage(false), true);
 
     // Create the publisher for the platform connectivity service
     wolk->m_platformPublisher.reset(new PublishingService(
@@ -392,7 +392,7 @@ void WolkBuilder::setupWithInternalData(WolkDefault* wolk)
                                                                                   nullptr,
       *wolk->m_platformPublisher, *wolk->m_devicePublisher, Wolk::KEEP_ALIVE_INTERVAL));
     // Setup platform status service
-    wolk->m_platformStatusService.reset(new PlatformStatusService(*wolk->m_devicePublisher, *wolk->m_gatewayStatusProtocol));
+    wolk->m_platformStatusService.reset(new PlatformStatusService(*wolk->m_deviceConnectivityService, *wolk->m_gatewayStatusProtocol));
     // Setup the data service
     wolk->m_dataService = std::make_shared<InternalDataService>(
       m_device.getKey(), *wolk->m_dataProtocol, *wolk->m_gatewayDataProtocol,

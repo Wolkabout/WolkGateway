@@ -16,15 +16,15 @@
 
 #include "PlatformStatusService.h"
 
-#include "OutboundMessageHandler.h"
+#include "core/connectivity/ConnectivityService.h"
 #include "core/model/Message.h"
 #include "protocol/GatewayStatusProtocol.h"
 
 namespace wolkabout
 {
 
-PlatformStatusService::PlatformStatusService(OutboundMessageHandler& outboundDeviceMessageHandler, GatewayStatusProtocol& protocol)
-: m_outboundDeviceMessageHandler(outboundDeviceMessageHandler), m_protocol(protocol)
+PlatformStatusService::PlatformStatusService(ConnectivityService& connectivityService, GatewayStatusProtocol& protocol)
+: m_connectivityService(connectivityService), m_protocol(protocol)
 {
 }
 
@@ -36,7 +36,7 @@ void PlatformStatusService::sendPlatformConnectionStatusMessage(const bool conne
         return;
     }
 
-    m_outboundDeviceMessageHandler.addMessage(message);
+    m_connectivityService.publish(message, true);
 }
 
 }   // namespace wolkabout

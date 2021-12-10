@@ -19,17 +19,17 @@
 
 namespace wolkabout
 {
-class OutboundMessageHandler;
+class ConnectivityService;
 class GatewayStatusProtocol;
 
 class PlatformStatusService
 {
 public:
-    PlatformStatusService(OutboundMessageHandler& outboundDeviceMessageHandler, GatewayStatusProtocol& protocol);
+    PlatformStatusService(ConnectivityService& connectivityService, GatewayStatusProtocol& protocol);
     void sendPlatformConnectionStatusMessage(const bool connected);
 
 private:
-    OutboundMessageHandler& m_outboundDeviceMessageHandler;
+    ConnectivityService& m_connectivityService;
     GatewayStatusProtocol& m_protocol;
 };
 

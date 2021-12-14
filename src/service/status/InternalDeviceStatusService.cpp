@@ -22,6 +22,8 @@
 #include "protocol/GatewayStatusProtocol.h"
 #include "repository/DeviceRepository.h"
 
+#include <algorithm>
+
 namespace
 {
 const std::chrono::seconds STATUS_RESPONSE_TIMEOUT{5};
@@ -91,8 +93,15 @@ void InternalDeviceStatusService::deviceMessageReceived(std::shared_ptr<Message>
         }
 
         logDeviceStatus(statusResponse->getDeviceKey(), statusResponse->getStatus());
-
-        sendStatusResponseForDevice(statusResponse->getDeviceKey(), statusResponse->getStatus());
+        if (isInSelfRequested(statusResponse->getDeviceKey()))
+        {
+            removeFromSelfRequested(statusResponse->getDeviceKey());
+            sendStatusUpdateForDevice(statusResponse->getDeviceKey(), statusResponse->getStatus());
+        }
+        else
+        {
+            sendStatusResponseForDevice(statusResponse->getDeviceKey(), statusResponse->getStatus());
+        }
     }
     else if (m_gatewayProtocol.isStatusUpdateMessage(*message))
     {
@@ -110,7 +119,6 @@ void InternalDeviceStatusService::deviceMessageReceived(std::shared_ptr<Message>
         }
 
         logDeviceStatus(statusUpdate->getDeviceKey(), statusUpdate->getStatus());
-
         sendStatusUpdateForDevice(statusUpdate->getDeviceKey(), statusUpdate->getStatus());
     }
     else
@@ -158,6 +166,8 @@ void InternalDeviceStatusService::requestDevicesStatus()
     {
         auto keys = m_deviceRepository->findAllDeviceKeys();
 
+        m_selfRequestedDevices = {};
+
         for (const auto& key : *keys)
         {
             if (key == m_gatewayKey)
@@ -165,6 +175,7 @@ void InternalDeviceStatusService::requestDevicesStatus()
                 continue;
             }
 
+            addToSelfRequest(key);
             sendStatusRequestForDevice(key);
         }
 
@@ -197,6 +208,7 @@ void InternalDeviceStatusService::validateDevicesStatus()
         {
             // device has not reported status at all, send offline status
             logDeviceStatus(key, DeviceStatus::Status::OFFLINE);
+            removeFromSelfRequested(key);
             sendStatusUpdateForDevice(key, DeviceStatus::Status::OFFLINE);
             continue;
         }
@@ -212,6 +224,7 @@ void InternalDeviceStatusService::validateDevicesStatus()
         {
             // device has not reported status in time and last status was CONNECTED, send offline status
             logDeviceStatus(key, DeviceStatus::Status::OFFLINE);
+            removeFromSelfRequested(key);
             sendStatusUpdateForDevice(key, DeviceStatus::Status::OFFLINE);
             continue;
         }
@@ -268,5 +281,23 @@ void InternalDeviceStatusService::logDeviceStatus(const std::string& deviceKey, 
     std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
 
     m_deviceStatuses[deviceKey] = std::make_pair(std::time(nullptr), status);
+}
+
+void InternalDeviceStatusService::addToSelfRequest(const std::string& key)
+{
+    m_selfRequestedDevices.emplace_back(key);
+}
+
+bool InternalDeviceStatusService::isInSelfRequested(const std::string& key)
+{
+    const auto it = std::find(m_selfRequestedDevices.cbegin(), m_selfRequestedDevices.cend(), key);
+    return it != m_selfRequestedDevices.cend();
+}
+
+void InternalDeviceStatusService::removeFromSelfRequested(const std::string& key)
+{
+    const auto it = std::find(m_selfRequestedDevices.cbegin(), m_selfRequestedDevices.cend(), key);
+    if (it != m_selfRequestedDevices.cend())
+        m_selfRequestedDevices.erase(it);
 }
 }    // namespace wolkabout

@@ -1,5 +1,5 @@
-wolkgateway (4.3.1) stable; urgency=medium
+wolkgateway (4.3.2) stable; urgency=medium
 
-  * Implemented sending of `p2d/connection_status` message to the local broker, to announce platform connection state to the modules.
+  * Fixed how the gateway sends out `subdevice_status` messages that used to confuse the platform.
   
- -- Wolkabout ELab <elab@wolkabout.com>  Wed, 08 Dec 2021 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Tue, 14 Dec 2021 00:00:00 +0100

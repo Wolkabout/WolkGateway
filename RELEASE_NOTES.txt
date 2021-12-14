@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.3.2**
+    - [BUGFIX] - Fixed how the gateway sends out `subdevice_status` messages that used to confuse the platform.
+
 **Version 4.3.1**
     - [IMPROVEMENT] - Implemented sending of `p2d/connection_status` message to the local broker, to announce platform connection state to the modules.
 

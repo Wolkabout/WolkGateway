@@ -52,6 +52,10 @@ private:
     std::pair<std::time_t, DeviceStatus::Status> getDeviceStatus(const std::string& deviceKey);
     void logDeviceStatus(const std::string& deviceKey, DeviceStatus::Status status);
 
+    void addToSelfRequest(const std::string& key);
+    bool isInSelfRequested(const std::string& key);
+    void removeFromSelfRequested(const std::string& key);
+
     GatewayStatusProtocol& m_gatewayProtocol;
 
     DeviceRepository* m_deviceRepository;
@@ -62,6 +66,8 @@ private:
     const std::chrono::seconds m_statusResponseInterval;
     Timer m_requestTimer;
     Timer m_responseTimer;
+
+    std::vector<std::string> m_selfRequestedDevices;
 
     std::mutex m_deviceStatusMutex;
     std::map<std::string, std::pair<std::time_t, DeviceStatus::Status>> m_deviceStatuses;

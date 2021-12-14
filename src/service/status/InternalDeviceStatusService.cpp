@@ -166,7 +166,7 @@ void InternalDeviceStatusService::requestDevicesStatus()
     {
         auto keys = m_deviceRepository->findAllDeviceKeys();
 
-        m_selfRequestedDevices = {};
+        clearSelfRequest();
 
         for (const auto& key : *keys)
         {
@@ -281,6 +281,11 @@ void InternalDeviceStatusService::logDeviceStatus(const std::string& deviceKey, 
     std::lock_guard<decltype(m_deviceStatusMutex)> lg{m_deviceStatusMutex};
 
     m_deviceStatuses[deviceKey] = std::make_pair(std::time(nullptr), status);
+}
+
+void InternalDeviceStatusService::clearSelfRequest()
+{
+    m_selfRequestedDevices.clear();
 }
 
 void InternalDeviceStatusService::addToSelfRequest(const std::string& key)

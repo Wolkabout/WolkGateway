@@ -52,6 +52,7 @@ private:
     std::pair<std::time_t, DeviceStatus::Status> getDeviceStatus(const std::string& deviceKey);
     void logDeviceStatus(const std::string& deviceKey, DeviceStatus::Status status);
 
+    void clearSelfRequest();
     void addToSelfRequest(const std::string& key);
     bool isInSelfRequested(const std::string& key);
     void removeFromSelfRequested(const std::string& key);

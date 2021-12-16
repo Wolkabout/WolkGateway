@@ -22,304 +22,331 @@
 #include "core/model/DataType.h"
 #include "core/model/DetailedDevice.h"
 #include "core/model/DeviceTemplate.h"
+#include "core/utilities/ByteUtils.h"
 #include "core/utilities/Logger.h"
 
-//#include <Poco/Crypto/DigestEngine.h>
-//#include <Poco/Data/SQLite/Connector.h>
-//#include <Poco/Data/SQLite/SQLiteException.h>
-//#include <Poco/Data/Session.h>
-//#include <Poco/Data/Statement.h>
-//#include <Poco/String.h>
-//#include <Poco/Types.h>
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <mutex>
-//#include <regex>
+#include <openssl/sha.h>
+#include <sqlite3.h>
 #include <string>
 
 namespace wolkabout
 {
-// using namespace Poco::Data::Keywords;
-// using Poco::Data::Session;
-// using Poco::Data::Statement;
+// Here are some create table instructions
+const std::string CREATE_ALARM_TABLE =
+  "CREATE TABLE IF NOT EXISTS alarm_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, reference TEXT, name "
+  "TEXT, description TEXT, device_template_id INTEGER, FOREIGN KEY(device_template_id) REFERENCES device_template(id) "
+  "ON DELETE CASCADE);";
+const std::string CREATE_ACTUATOR_TABLE =
+  "CREATE TABLE IF NOT EXISTS actuator_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, reference TEXT, name "
+  "TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, device_template_id INTEGER, FOREIGN "
+  "KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
+const std::string CREATE_SENSOR_TABLE =
+  "CREATE TABLE IF NOT EXISTS sensor_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, reference TEXT, name "
+  "TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, device_template_id INTEGER, FOREIGN "
+  "KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
+const std::string CREATE_CONFIGURATION_TABLE =
+  "CREATE TABLE IF NOT EXISTS configuration_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, reference TEXT, "
+  "name TEXT, description TEXT, data_type TEXT, default_value TEXT, device_template_id INTEGER, FOREIGN "
+  "KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
+const std::string CREATE_CONFIGURATION_LABEL_TABLE =
+  "CREATE TABLE IF NOT EXISTS configuration_label (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, label TEXT, "
+  "configuration_template_id INTEGER, FOREIGN KEY(configuration_template_id) REFERENCES configuration_template(id) ON "
+  "DELETE CASCADE);";
+const std::string CREATE_DEVICE_TEMPLATE_TABLE =
+  "CREATE TABLE IF NOT EXISTS device_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, firmware_update_protocol "
+  "TEXT, sha256 TEXT);";
+const std::string CREATE_TYPE_PARAMETERS_TABLE =
+  "CREATE TABLE IF NOT EXISTS type_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key TEXT, value TEXT, "
+  "device_template_id INTEGER, FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
+const std::string CREATE_CONNECTIVITY_PARAMETERS_TABLE =
+  "CREATE TABLE IF NOT EXISTS connectivity_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key TEXT, value "
+  "TEXT, device_template_id INTEGER, FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE "
+  "CASCADE);";
+const std::string CREATE_FIRMWARE_UPDATE_PARAMETERS_TABLE =
+  "CREATE TABLE IF NOT EXISTS firmware_update_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key TEXT, "
+  "value INTEGER, device_template_id INTEGER, FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE "
+  "CASCADE);";
+const std::string CREATE_DEVICE_TABLE =
+  "CREATE TABLE IF NOT EXISTS device (key TEXT PRIMARY KEY, name TEXT, device_template_id INTEGER NOT NULL, FOREIGN "
+  "KEY(device_template_id) REFERENCES device_template(id));";
+const std::string PRAGMA = "PRAGMA foreign_keys=on;";
 
-// template <class T> WolkOptional<T> toOptional(const Poco::Nullable<T>& wrapper)
-//{
-//     if (wrapper.isNull())
-//         return WolkOptional<T>{};
-//     return WolkOptional<T>{wrapper.value()};
-// }
-
-// template <class T> Poco::Nullable<T> fromOptional(const WolkOptional<T>& wrapper)
-//{
-//     if (!wrapper)
-//         return Poco::Nullable<T>{};
-//     return Poco::Nullable<T>(wrapper.value());
-// }
-
-SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionString)
+static int callback(void* data, std::int32_t argc, char** argv, char** colName)
 {
-    //    Poco::Data::SQLite::Connector::registerConnector();
-    //    m_session = std::unique_ptr<Session>(new Session(Poco::Data::SQLite::Connector::KEY, connectionString));
-    //
-    //    Statement statement(*m_session);
-    //
-    //    // Alarm template
-    //    statement << "CREATE TABLE IF NOT EXISTS alarm_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    //    reference "
-    //                 "TEXT, name TEXT, description TEXT, device_template_id INTEGER, "
-    //                 "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
-    //
-    //    // Actuator template
-    //    statement << "CREATE TABLE IF NOT EXISTS actuator_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-    //                 "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, "
-    //                 "device_template_id INTEGER, "
-    //                 "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
-    //
-    //    // Sensor template
-    //    statement << "CREATE TABLE IF NOT EXISTS sensor_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-    //                 "reference TEXT, name TEXT, description TEXT, unit_symbol TEXT, reading_type TEXT, "
-    //                 "device_template_id INTEGER, "
-    //                 "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
-    //
-    //    // Configuration template
-    //    statement << "CREATE TABLE IF NOT EXISTS configuration_template (id INTEGER NOT NULL PRIMARY KEY
-    //    AUTOINCREMENT, "
-    //                 "reference TEXT, name TEXT, description TEXT, "
-    //                 "data_type TEXT, "
-    //                 "default_value TEXT, device_template_id INTEGER, "
-    //                 "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
-    //
-    //    statement
-    //      << "CREATE TABLE IF NOT EXISTS configuration_label (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, label
-    //      TEXT, "
-    //         "configuration_template_id INTEGER, "
-    //         "FOREIGN KEY(configuration_template_id) REFERENCES configuration_template(id) ON DELETE CASCADE);";
-    //
-    //    // Device template
-    //    statement << "CREATE TABLE IF NOT EXISTS device_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-    //                 "firmware_update_protocol TEXT, sha256 TEXT);";
-    //
-    //    // Type parameters
-    //    statement << "CREATE TABLE IF NOT EXISTS type_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key "
-    //                 "TEXT, value TEXT, device_template_id INTEGER, "
-    //                 "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
-    //
-    //    // Connectivity parameters
-    //    statement
-    //      << "CREATE TABLE IF NOT EXISTS connectivity_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key "
-    //         "TEXT, value TEXT, device_template_id INTEGER, "
-    //         "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
-    //
-    //    // Firmware update parameters
-    //    statement
-    //      << "CREATE TABLE IF NOT EXISTS firmware_update_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    //      key "
-    //         "TEXT, value INTEGER, device_template_id INTEGER, "
-    //         "FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";
-    //
-    //    // Device
-    //    statement
-    //      << "CREATE TABLE IF NOT EXISTS device (key TEXT PRIMARY KEY, name TEXT, device_template_id INTEGER NOT NULL,
-    //      "
-    //         "FOREIGN KEY(device_template_id) REFERENCES device_template(id));";
-    //
-    //    statement << "PRAGMA foreign_keys=on;";
-    //
-    //    statement.execute();
+    LOG(TRACE) << METHOD_INFO;
+
+    // Check if the data has been passed a `ColumnResult`.
+    if (data != nullptr)
+    {
+        // Try to cast that into a column result
+        auto result = static_cast<ColumnResult*>(data);
+
+        // Make the first entry a column name entry
+        (*result)[0] = {};
+        auto& columnEntry = (*result)[0];
+        const auto firstColumnName = colName[0];
+
+        // Go through the data received and fill in the map
+        for (auto i = std::int32_t{0}; i < argc; ++i)
+            columnEntry.emplace_back(colName[i]);
+
+        // Now go through the data and add it all into the
+        auto entry = std::uint64_t{0};
+        for (auto i = std::int32_t{0}; i < argc; ++i)
+        {
+            // Check first if the column name is the first name
+            if (colName[i] == firstColumnName)
+                ++entry;
+
+            // Add the value into the entry vector
+            if (result->find(entry) == result->cend())
+                (*result)[entry] = {};
+            (*result)[entry].emplace_back(argv[i] != nullptr ? argv[i] : "NULL");
+        }
+    }
+    return 0;
+}
+
+SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionString) : m_db(nullptr)
+{
+    // Attempt to open up a connection.
+    auto rc = sqlite3_open(connectionString.c_str(), &m_db);
+    if (rc != 0)
+    {
+        LOG(ERROR) << "Failed to open a connection to the Device Repository '" << connectionString << "'.";
+        sqlite3_close(m_db);
+        m_db = nullptr;
+        return;
+    }
+    LOG(DEBUG) << "Successfully opened up a connection to the Device Repository '" << connectionString << "'.";
+
+    // Create all the tables
+    executeSQLStatement(CREATE_ALARM_TABLE + CREATE_ACTUATOR_TABLE + CREATE_SENSOR_TABLE + CREATE_CONFIGURATION_TABLE +
+                        CREATE_CONFIGURATION_LABEL_TABLE + CREATE_DEVICE_TEMPLATE_TABLE + CREATE_TYPE_PARAMETERS_TABLE +
+                        CREATE_CONNECTIVITY_PARAMETERS_TABLE + CREATE_FIRMWARE_UPDATE_PARAMETERS_TABLE +
+                        CREATE_DEVICE_TABLE + PRAGMA);
+}
+
+SQLiteDeviceRepository::~SQLiteDeviceRepository()
+{
+    if (m_db)
+    {
+        LOG(DEBUG) << "Closed the connection to the Device Repository.";
+        sqlite3_close(m_db);
+        m_db = nullptr;
+    }
 }
 
 void SQLiteDeviceRepository::save(const DetailedDevice& device)
 {
+    LOG(TRACE) << METHOD_INFO;
+
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    //    try
-    //    {
-    //        Statement statement(*m_session);
-    //
-    //        Poco::UInt64 devicesWithGivenKeyCount;
-    //        statement << "SELECT count(*) FROM device WHERE device.key=?;", useRef(device.getKey()),
-    //          into(devicesWithGivenKeyCount), now;
-    //
-    //        if (devicesWithGivenKeyCount != 0)
-    //        {
-    //            update(device);
-    //            return;
-    //        }
-    //
-    //        const std::string deviceTemplateSha256 = calculateSha256(device.getTemplate());
-    //        statement.reset(*m_session);
-    //        Poco::UInt64 matchingDeviceTemplatesCount;
-    //        statement << "SELECT count(*) FROM device_template WHERE sha256=?;", useRef(deviceTemplateSha256),
-    //          into(matchingDeviceTemplatesCount), now;
-    //        if (matchingDeviceTemplatesCount != 0)
-    //        {
-    //            // Equivalent template exists
-    //            statement.reset(*m_session);
-    //            statement << "INSERT INTO device SELECT ?, ?, id FROM device_template WHERE
-    //            device_template.sha256=?;",
-    //              useRef(device.getKey()), useRef(device.getName()), useRef(deviceTemplateSha256), now;
-    //            return;
-    //        }
-    //
-    //        // Create new device template
-    //        statement.reset(*m_session);
-    //        statement << "BEGIN TRANSACTION;";
-    //        statement << "INSERT INTO device_template(firmware_update_protocol, sha256) VALUES(?, ?);",
-    //          useRef(device.getTemplate().getFirmwareUpdateType()), useRef(deviceTemplateSha256);
-    //
-    //        Poco::UInt64 deviceTemplateId;
-    //        statement << "SELECT last_insert_rowid();", into(deviceTemplateId);
-    //
-    //        // Alarm templates
-    //        for (const wolkabout::AlarmTemplate& alarmTemplate : device.getTemplate().getAlarms())
-    //        {
-    //            statement << "INSERT INTO alarm_template(reference, name, description, device_template_id) "
-    //                         "VALUES(?, ?, ?, ?);",
-    //              useRef(alarmTemplate.getReference()), useRef(alarmTemplate.getName()),
-    //              useRef(alarmTemplate.getDescription()), useRef(deviceTemplateId);
-    //        }
-    //
-    //        // Actuator templates
-    //        for (const wolkabout::ActuatorTemplate& actuatorTemplate : device.getTemplate().getActuators())
-    //        {
-    //            statement << "INSERT INTO actuator_template(reference, name, description, unit_symbol, reading_type, "
-    //                         "device_template_id) "
-    //                         "VALUES(?, ?, ?, ?, ?, ?);",
-    //              useRef(actuatorTemplate.getReference()), useRef(actuatorTemplate.getName()),
-    //              useRef(actuatorTemplate.getDescription()), useRef(actuatorTemplate.getUnitSymbol()),
-    //              useRef(actuatorTemplate.getReadingTypeName()), useRef(deviceTemplateId);
-    //        }
-    //
-    //        // Sensor templates
-    //        for (const wolkabout::SensorTemplate& sensorTemplate : device.getTemplate().getSensors())
-    //        {
-    //            statement << "INSERT INTO sensor_template(reference, name, description, unit_symbol, reading_type, "
-    //                         "device_template_id) "
-    //                         "VALUES(?, ?, ?, ?, ?, ?);",
-    //              useRef(sensorTemplate.getReference()), useRef(sensorTemplate.getName()),
-    //              useRef(sensorTemplate.getDescription()), useRef(sensorTemplate.getUnitSymbol()),
-    //              useRef(sensorTemplate.getReadingTypeName()), useRef(deviceTemplateId);
-    //        }
-    //
-    //        // Configuration templates
-    //        for (const wolkabout::ConfigurationTemplate& configurationTemplate :
-    //        device.getTemplate().getConfigurations())
-    //        {
-    //            const auto dataType = [&]() -> std::string
-    //            {
-    //                if (configurationTemplate.getDataType() == DataType::BOOLEAN)
-    //                {
-    //                    return "BOOLEAN";
-    //                }
-    //                else if (configurationTemplate.getDataType() == DataType::NUMERIC)
-    //                {
-    //                    return "NUMERIC";
-    //                }
-    //                else if (configurationTemplate.getDataType() == DataType::STRING)
-    //                {
-    //                    return "STRING";
-    //                }
-    //
-    //                return "";
-    //            }();
-    //
-    //            statement << "INSERT INTO configuration_template(reference, name, description, data_type, "
-    //                         "default_value, device_template_id)"
-    //                         "VALUES(?, ?, ?, ?, ?, ?);",
-    //              useRef(configurationTemplate.getReference()), useRef(configurationTemplate.getName()),
-    //              useRef(configurationTemplate.getDescription()), bind(dataType),
-    //              useRef(configurationTemplate.getDefaultValue()), useRef(deviceTemplateId);
-    //
-    //            for (const std::string& label : configurationTemplate.getLabels())
-    //            {
-    //                statement << "INSERT INTO configuration_label SELECT NULL, ?, id FROM configuration_template WHERE
-    //                "
-    //                             "configuration_template.reference=? AND
-    //                             configuration_template.device_template_id=?;",
-    //                  useRef(label), useRef(configurationTemplate.getReference()), useRef(deviceTemplateId);
-    //            }
-    //        }
-    //
-    //        // Type parameters
-    //        for (auto const& parameter : device.getTemplate().getTypeParameters())
-    //        {
-    //            statement << "INSERT INTO type_parameters(key, value, device_template_id)"
-    //                         "VALUES(?, ?, ?);",
-    //              useRef(parameter.first), useRef(parameter.second), useRef(deviceTemplateId);
-    //        }
-    //
-    //        // Connectivity parameters
-    //        for (auto const& parameter : device.getTemplate().getConnectivityParameters())
-    //        {
-    //            statement << "INSERT INTO connectivity_parameters(key, value, device_template_id)"
-    //                         "VALUES(?, ?, ?);",
-    //              useRef(parameter.first), useRef(parameter.second), useRef(deviceTemplateId);
-    //        }
-    //
-    //        // Firmware update parameters
-    //        for (auto const& parameter : device.getTemplate().getFirmwareUpdateParameters())
-    //        {
-    //            statement << "INSERT INTO firmware_update_parameters(key, value, device_template_id)"
-    //                         "VALUES(?, ?, ?);",
-    //              useRef(parameter.first), useRef(parameter.second), useRef(deviceTemplateId);
-    //        }
-    //
-    //        // Device
-    //        statement << "INSERT INTO device(key, name, device_template_id) VALUES(?, ?, ?);",
-    //        useRef(device.getKey()),
-    //          useRef(device.getName()), useRef(deviceTemplateId);
-    //        statement << "COMMIT;", now;
-    //    }
-    //    catch (const Poco::Exception& exception)
-    //    {
-    //        LOG(ERROR) << "SQLiteDeviceRepository: Error saving device with key " << device.getKey() << "("
-    //                   << exception.what() << ").";
-    //    }
+    // Check if the device is already in the database
+    auto result = ColumnResult{};
+    executeSQLStatement("SELECT count(*) FROM device WHERE device.key = '" + device.getKey() + "';", &result);
+    if (!result.empty())
+    {
+        update(device);
+        return;
+    }
+
+    // Store the device template
+    const auto& deviceTemplate = device.getTemplate();
+    auto deviceTemplateHash = calculateSha256(deviceTemplate);
+    result = {};
+    executeSQLStatement("SELECT count(*) FROM device_template WHERE sha256 = '" + deviceTemplateHash + "';", &result);
+    if (!result.empty())
+    {
+        // Equivalent template exists
+        executeSQLStatement("INSERT INTO device SELECT '" + device.getKey() + "', '" + device.getName() +
+                            "', id FROM device_template WHERE device_template.sha256 = '" + deviceTemplateHash + "';");
+        return;
+    }
+
+    // Create new device template
+    executeSQLStatement("BEGIN TRANSACTION;");
+    executeSQLStatement("INSERT INTO device_template(firmware_update_protocol, sha256) VALUES('" +
+                        deviceTemplate.getFirmwareUpdateType() + "', '" + deviceTemplateHash + "');");
+
+    // Get the row id
+    auto deviceTemplateId = std::uint64_t{0};
+    try
+    {
+        result = {};
+        executeSQLStatement("SELECT last_insert_rowid();", &result);
+        deviceTemplateId = std::stoul(result[1].front());
+    }
+    catch (const std::exception& exception)
+    {
+        LOG(ERROR) << "Failed to obtain the id of the newly inserted device template.";
+        return;
+    }
+
+    // Insert all the alarms
+    for (const auto& alarmTemplate : deviceTemplate.getAlarms())
+    {
+        executeSQLStatement("INSERT INTO alarm_template(reference, name, description, device_template_id) VALUES ('" +
+                            alarmTemplate.getReference() + "', '" + alarmTemplate.getName() + "', '" +
+                            alarmTemplate.getDescription() + "', " + std::to_string(deviceTemplateId) + ");");
+    }
+
+    // Insert all the actuators
+    for (const auto& actuatorTemplate : deviceTemplate.getActuators())
+    {
+        executeSQLStatement("INSERT INTO actuator_template(reference, name, description, unit_symbol, reading_type, "
+                            "device_template_id) VALUES('" +
+                            actuatorTemplate.getReference() + "', '" + actuatorTemplate.getName() + "', '" +
+                            actuatorTemplate.getDescription() + "', '" + actuatorTemplate.getUnitSymbol() + "', '" +
+                            actuatorTemplate.getReadingTypeName() + "', " + std::to_string(deviceTemplateId) + ");");
+    }
+
+    // Insert all the sensors
+    for (const auto& sensorTemplate : deviceTemplate.getSensors())
+    {
+        executeSQLStatement("INSERT INTO sensor_template(reference, name, description, unit_symbol, reading_type, "
+                            "device_template_id) VALUES('" +
+                            sensorTemplate.getReference() + "', '" + sensorTemplate.getName() + "', '" +
+                            sensorTemplate.getDescription() + "', '" + sensorTemplate.getUnitSymbol() + "', '" +
+                            sensorTemplate.getReadingTypeName() + "', " + std::to_string(deviceTemplateId) + ");");
+    }
+
+    // Insert all the configurations
+    for (const auto& configurationTemplate : device.getTemplate().getConfigurations())
+    {
+        const auto dataTypeString = [&]() -> std::string {
+            if (configurationTemplate.getDataType() == DataType::BOOLEAN)
+            {
+                return "BOOLEAN";
+            }
+            else if (configurationTemplate.getDataType() == DataType::NUMERIC)
+            {
+                return "NUMERIC";
+            }
+            else if (configurationTemplate.getDataType() == DataType::STRING)
+            {
+                return "STRING";
+            }
+
+            return "";
+        }();
+
+        executeSQLStatement("INSERT INTO configuration_template(reference, name, description, data_type, "
+                            "default_value, device_template_id) VALUES('" +
+                            configurationTemplate.getReference() + "', '" + configurationTemplate.getName() + "', '" +
+                            configurationTemplate.getDescription() + "', '" + dataTypeString + "', '" +
+                            configurationTemplate.getDefaultValue() + "', " + std::to_string(deviceTemplateId) + ");");
+
+        for (const auto& label : configurationTemplate.getLabels())
+        {
+            executeSQLStatement(
+              "INSERT INTO configuration_label SELECT NULL, '" + label +
+              "', id FROM configuration_template WHERE "
+              "configuration_template.reference = '" +
+              configurationTemplate.getReference() +
+              "' AND configuration_template.device_template_id = " + std::to_string(deviceTemplateId) + ";");
+        }
+    }
+
+    // Insert all the type parameters
+    for (const auto& parameter : deviceTemplate.getTypeParameters())
+    {
+        executeSQLStatement("INSERT INTO type_parameters(key, value, device_template_id) VALUES('" + parameter.first +
+                            "', '" + parameter.second + "', " + std::to_string(deviceTemplateId) + ");");
+    }
+
+    // Insert all the firmware update parameters
+    for (const auto& parameter : deviceTemplate.getFirmwareUpdateParameters())
+    {
+        executeSQLStatement("INSERT INTO firmware_update_parameters(key, value, device_template_id) VALUES('" +
+                            parameter.first + "', " + std::to_string(parameter.second) + ", " +
+                            std::to_string(deviceTemplateId) + ");");
+    }
+
+    for (const auto& parameter : deviceTemplate.getConnectivityParameters())
+    {
+        executeSQLStatement("INSERT INTO connectivity_parameters(key, value, device_template_id) VALUES('" +
+                            parameter.first + "', '" + parameter.second + "', " + std::to_string(deviceTemplateId) +
+                            ");");
+    }
+
+    for (const auto& parameter : deviceTemplate.getFirmwareUpdateParameters())
+    {
+        executeSQLStatement("INSERT INTO firmware_update_parameters(key, value, device_template_id) VALUES('" +
+                            parameter.first + "', " + std::to_string(parameter.second) + ", " +
+                            std::to_string(deviceTemplateId) + ");");
+    }
+
+    executeSQLStatement("INSERT INTO device(key, name, device_template_id) VALUES('" + device.getKey() + "', '" +
+                        device.getName() + "', " + std::to_string(deviceTemplateId) + ");");
+    executeSQLStatement("COMMIT;");
 }
 
 void SQLiteDeviceRepository::remove(const std::string& deviceKey)
 {
+    LOG(TRACE) << METHOD_INFO;
+
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    //    try
-    //    {
-    //        Statement statement(*m_session);
-    //
-    //        Poco::UInt64 deviceTemplateId;
-    //        statement << "SELECT device_template_id FROM device WHERE device.key=?;", useRef(deviceKey),
-    //          into(deviceTemplateId);
-    //        if (statement.execute() == 0)
-    //        {
-    //            return;
-    //        }
-    //
-    //        statement.reset(*m_session);
-    //        Poco::UInt64 numberOfDevicesReferencingTemplate;
-    //        statement << "SELECT count(*) FROM device WHERE device_template_id=?;", useRef(deviceTemplateId),
-    //          into(numberOfDevicesReferencingTemplate), now;
-    //        if (numberOfDevicesReferencingTemplate != 1)
-    //        {
-    //            statement.reset(*m_session);
-    //            statement << "DELETE FROM device WHERE device.key=?;", useRef(deviceKey), now;
-    //            return;
-    //        }
-    //
-    //        statement.reset(*m_session);
-    //        statement << "BEGIN TRANSACTION;";
-    //
-    //        statement << "DELETE FROM device          WHERE device.key=?;", useRef(deviceKey);
-    //        statement << "DELETE FROM device_template WHERE device_template.id=?;", useRef(deviceTemplateId);
-    //
-    //        statement << "COMMIT;", now;
-    //    }
-    //    catch (...)
-    //    {
-    //        LOG(ERROR) << "SQLiteDeviceRepository: Error removing device with key " << deviceKey;
-    //    }
+    // See if there is a device with the device key in the database
+    auto result = ColumnResult{};
+    executeSQLStatement("SELECT device_template_id FROM device WHERE device.key = '" + deviceKey + "';", &result);
+    if (result.empty())
+    {
+        LOG(WARN) << "Tried to remove device with key '" << deviceKey << "' but device is not in the database.";
+        return;
+    }
+    auto templateId = std::uint64_t{0};
+    try
+    {
+        templateId = std::stoul(result[1].front());
+    }
+    catch (const std::exception& exception)
+    {
+        LOG(ERROR) << "Failed to convert received template id into an integer.";
+        return;
+    }
+
+    // Check for devices referencing the template
+    result = {};
+    executeSQLStatement("SELECT count(*) FROM device WHERE device_template_id = " + std::to_string(templateId) + ";",
+                        &result);
+    if (result.empty())
+    {
+        LOG(ERROR) << "Failed to obtain count of devices using device template " << templateId << ".";
+        return;
+    }
+    auto numberOfDevicesReferenceTemplate = std::uint64_t{0};
+    try
+    {
+        numberOfDevicesReferenceTemplate = std::stoul(result[1].front());
+    }
+    catch (const std::exception& exception)
+    {
+        LOG(ERROR) << "Failed to convert received count of devices into an integer.";
+        return;
+    }
+
+    // Delete this device
+    executeSQLStatement("DELETE FROM device WHERE device.key = '" + deviceKey + "';");
+
+    // And if that was the only device, delete the template too
+    if (numberOfDevicesReferenceTemplate < 2)
+    {
+        executeSQLStatement("DELETE FROM device_template WHERE device_template.id = " + std::to_string(templateId) +
+                            ";");
+    }
 }
 
 void SQLiteDeviceRepository::removeAll()
 {
+    LOG(TRACE) << METHOD_INFO;
+
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
     const auto deviceKeysFromRepository = findAllDeviceKeys();
@@ -331,411 +358,420 @@ void SQLiteDeviceRepository::removeAll()
 
 std::unique_ptr<DetailedDevice> SQLiteDeviceRepository::findByDeviceKey(const std::string& deviceKey)
 {
+    LOG(TRACE) << METHOD_INFO;
+
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    return nullptr;
-    //    Poco::UInt64 deviceTemplateId;
-    //    std::string deviceName;
-    //
-    //    try
-    //    {
-    //        Statement statement(*m_session);
-    //        statement << "SELECT name, device_template_id FROM device WHERE device.key=?;", useRef(deviceKey),
-    //          into(deviceName), into(deviceTemplateId);
-    //        if (statement.execute() == 0)
-    //        {
-    //            return nullptr;
-    //        }
-    //    }
-    //    catch (...)
-    //    {
-    //        LOG(ERROR) << "SQLiteDeviceRepository: Error finding device with key " << deviceKey;
-    //        return nullptr;
-    //    }
-    //
-    //    try
-    //    {
-    //        // Device template
-    //        std::string firmwareUpdateProtocol;
-    //
-    //        Statement statement(*m_session);
-    //        statement << "SELECT firmware_update_protocol FROM device_template WHERE id=?;", useRef(deviceTemplateId),
-    //          into(firmwareUpdateProtocol), now;
-    //
-    //        auto deviceTemplate =
-    //          std::unique_ptr<DeviceTemplate>(new DeviceTemplate({}, {}, {}, {}, firmwareUpdateProtocol));
-    //
-    //        // Alarm templates
-    //        std::string alarmReference;
-    //        std::string alarmName;
-    //        std::string alarmDescription;
-    //        statement.reset(*m_session);
-    //        statement << "SELECT reference, name, description FROM alarm_template WHERE device_template_id=?;",
-    //          useRef(deviceTemplateId), into(alarmReference), into(alarmName), into(alarmDescription), range(0, 1);
-    //
-    //        while (!statement.done())
-    //        {
-    //            if (statement.execute() == 0)
-    //            {
-    //                break;
-    //            }
-    //
-    //            deviceTemplate->addAlarm(AlarmTemplate(alarmName, alarmReference, alarmDescription));
-    //        }
-    //
-    //        // Actuator templates
-    //        std::string actuatorReference;
-    //        std::string actuatorName;
-    //        std::string actuatorDescription;
-    //        std::string actuatorUnitSymbol;
-    //        std::string actuatorReadingType;
-    //        statement.reset(*m_session);
-    //        statement << "SELECT reference, name, description, unit_symbol, reading_type "
-    //                     "FROM actuator_template WHERE device_template_id=?;",
-    //          useRef(deviceTemplateId), into(actuatorReference), into(actuatorName), into(actuatorDescription),
-    //          into(actuatorUnitSymbol), into(actuatorReadingType), range(0, 1);
-    //
-    //        while (!statement.done())
-    //        {
-    //            if (statement.execute() == 0)
-    //            {
-    //                break;
-    //            }
-    //
-    //            deviceTemplate->addActuator(ActuatorTemplate(actuatorName, actuatorReference, actuatorReadingType,
-    //                                                         actuatorUnitSymbol, actuatorDescription));
-    //        }
-    //
-    //        // Sensor templates
-    //        std::string sensorReference;
-    //        std::string sensorName;
-    //        std::string sensorDescription;
-    //        std::string sensorUnitSymbol;
-    //        std::string sensorReadingType;
-    //        statement.reset(*m_session);
-    //        statement << "SELECT reference, name, description, unit_symbol, reading_type "
-    //                     "FROM sensor_template WHERE device_template_id=?;",
-    //          useRef(deviceTemplateId), into(sensorReference), into(sensorName), into(sensorDescription),
-    //          into(sensorUnitSymbol), into(sensorReadingType), range(0, 1);
-    //
-    //        while (!statement.done())
-    //        {
-    //            if (statement.execute() == 0)
-    //            {
-    //                break;
-    //            }
-    //
-    //            deviceTemplate->addSensor(
-    //              SensorTemplate(sensorName, sensorReference, sensorReadingType, sensorUnitSymbol,
-    //              sensorDescription));
-    //        }
-    //
-    //        // Configuration templates
-    //        Poco::UInt64 configurationTemplateId;
-    //        std::string configurationReference;
-    //        std::string configurationName;
-    //        std::string configurationDescription;
-    //        std::string configurationDataTypeStr;
-    //        std::string configurationDefaultValue;
-    //        statement.reset(*m_session);
-    //        statement << "SELECT id, reference, name, description, data_type, default_value"
-    //                     " FROM configuration_template WHERE device_template_id=?;",
-    //          useRef(deviceTemplateId), into(configurationTemplateId), into(configurationReference),
-    //          into(configurationName), into(configurationDescription), into(configurationDataTypeStr),
-    //          into(configurationDefaultValue), range(0, 1);
-    //
-    //        while (!statement.done())
-    //        {
-    //            if (statement.execute() == 0)
-    //            {
-    //                break;
-    //            }
-    //
-    //            const auto configurationDataType = [&]() -> DataType
-    //            {
-    //                if (configurationDataTypeStr == "STRING")
-    //                {
-    //                    return DataType::STRING;
-    //                }
-    //                else if (configurationDataTypeStr == "BOOLEAN")
-    //                {
-    //                    return DataType::BOOLEAN;
-    //                }
-    //                else if (configurationDataTypeStr == "NUMERIC")
-    //                {
-    //                    return DataType::NUMERIC;
-    //                }
-    //
-    //                return DataType::STRING;
-    //            }();
-    //
-    //            std::vector<std::string> labels;
-    //            Statement selectLabelsStatement(*m_session);
-    //            selectLabelsStatement << "SELECT label FROM configuration_label WHERE configuration_template_id=?;",
-    //              bind(configurationTemplateId), into(labels), now;
-    //
-    //            deviceTemplate->addConfiguration(ConfigurationTemplate(configurationName, configurationReference,
-    //                                                                   configurationDataType,
-    //                                                                   configurationDescription,
-    //                                                                   configurationDefaultValue, labels));
-    //        }
-    //
-    //        // Type parameters
-    //
-    //        std::string typeParameterKey;
-    //        std::string typeParameterValue;
-    //        statement.reset(*m_session);
-    //        statement << "SELECT key, value FROM type_parameters WHERE device_template_id=?;",
-    //        useRef(deviceTemplateId),
-    //          into(typeParameterKey), into(typeParameterValue), range(0, 1);
-    //
-    //        while (!statement.done())
-    //        {
-    //            if (statement.execute() == 0)
-    //            {
-    //                break;
-    //            }
-    //
-    //            deviceTemplate->addTypeParameter(std::pair<std::string, std::string>(typeParameterKey,
-    //            typeParameterValue));
-    //        }
-    //
-    //        // Connectivity parameters
-    //
-    //        std::string connectivityParameterKey;
-    //        std::string connectivityParameterValue;
-    //        statement.reset(*m_session);
-    //        statement << "SELECT key, value FROM connectivity_parameters WHERE device_template_id=?;",
-    //          useRef(deviceTemplateId), into(connectivityParameterKey), into(connectivityParameterValue), range(0, 1);
-    //
-    //        while (!statement.done())
-    //        {
-    //            if (statement.execute() == 0)
-    //            {
-    //                break;
-    //            }
-    //
-    //            deviceTemplate->addConnectivityParameter(
-    //              std::pair<std::string, std::string>(connectivityParameterKey, connectivityParameterValue));
-    //        }
-    //
-    //        // Firmware update parameters
-    //
-    //        std::string firmwareUpdateParameterKey;
-    //        int firmwareUpdateParameterValue;
-    //        statement.reset(*m_session);
-    //        statement << "SELECT key, value FROM firmware_update_parameters WHERE device_template_id=?;",
-    //          useRef(deviceTemplateId), into(firmwareUpdateParameterKey), into(firmwareUpdateParameterValue), range(0,
-    //          1);
-    //
-    //        while (!statement.done())
-    //        {
-    //            if (statement.execute() == 0)
-    //            {
-    //                break;
-    //            }
-    //
-    //            std::pair<std::string, bool> firmwareUpdateParameterPair;
-    //            firmwareUpdateParameterPair =
-    //              std::make_pair(firmwareUpdateParameterKey, static_cast<bool>(firmwareUpdateParameterValue));
-    //            deviceTemplate->addFirmwareUpdateParameter(firmwareUpdateParameterPair);
-    //        }
-    //
-    //        return std::unique_ptr<DetailedDevice>(new DetailedDevice(deviceName, deviceKey, *deviceTemplate));
-    //    }
-    //    catch (...)
-    //    {
-    //        LOG(ERROR) << "SQLiteDeviceRepository: Error deserializing device with key " << deviceKey;
-    //        return nullptr;
-    //    }
+    // Try to find the device, and get its name and the template
+    auto result = ColumnResult{};
+    executeSQLStatement("SELECT name, device_template_id FROM device WHERE device.key = '" + deviceKey + "';", &result);
+    if (result.empty())
+    {
+        return nullptr;
+    }
+
+    // Parse the received data about the device
+    auto deviceTemplateId = std::uint64_t{0};
+    auto deviceName = std::string{};
+    try
+    {
+        // Go through the only row of data
+        deviceName = result[1][0];
+        deviceTemplateId = std::stoul(result[1][1]);
+    }
+    catch (const std::exception& exception)
+    {
+        LOG(ERROR) << "Failed to parse received data about the device.";
+        return nullptr;
+    }
+
+    // Obtain the template
+    auto deviceTemplate = getDeviceTemplate(deviceTemplateId);
+    if (deviceTemplate == nullptr)
+    {
+        LOG(ERROR) << "Failed to obtain the device template for the device.";
+        return nullptr;
+    }
+
+    // Create the device and return it
+    return std::unique_ptr<DetailedDevice>(new DetailedDevice{deviceName, deviceKey, *deviceTemplate});
+}
+
+std::unique_ptr<DeviceTemplate> SQLiteDeviceRepository::getDeviceTemplate(std::uint64_t deviceTemplateId)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    // Obtain all the entities need to form the template
+
+    // Firmware update type
+    auto result = ColumnResult{};
+    auto firmwareUpdateType = std::string{};
+    executeSQLStatement(
+      "SELECT firmware_update_protocol FROM device_template WHERE id = " + std::to_string(deviceTemplateId) + ";",
+      &result);
+    if (result.empty())
+    {
+        LOG(ERROR) << "Failed to DeviceTemplate info for id " << deviceTemplateId << ".";
+        return nullptr;
+    }
+    firmwareUpdateType = result[1][0];
+
+    // Alarms
+    result = {};
+    auto alarms = std::vector<AlarmTemplate>{};
+    executeSQLStatement("SELECT reference, name, description FROM alarm_template WHERE device_template_id = " +
+                          std::to_string(deviceTemplateId) + ";",
+                        &result);
+    for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+    {
+        alarms.emplace_back(result[i][1], result[i][0], result[i][2]);
+    }
+
+    // Actuators
+    result = {};
+    auto actuators = std::vector<ActuatorTemplate>{};
+    executeSQLStatement("SELECT reference, name, description, unit_symbol, reading_type FROM actuator_template WHERE "
+                        "device_template_id = " +
+                        std::to_string(deviceTemplateId) + ";");
+    for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+    {
+        actuators.emplace_back(result[i][1], result[i][0], result[i][4], result[i][3], result[i][2]);
+    }
+
+    // Sensors
+    result = {};
+    auto sensors = std::vector<SensorTemplate>{};
+    executeSQLStatement("SELECT reference, name, description, unit_symbol, reading_type FROM sensor_template WHERE "
+                        "device_template_id = " +
+                        std::to_string(deviceTemplateId) + ";");
+    for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+    {
+        sensors.emplace_back(result[i][1], result[i][0], result[i][4], result[i][3], result[i][2]);
+    }
+
+    // Configurations
+    result = {};
+    auto configurations = std::vector<ConfigurationTemplate>{};
+    executeSQLStatement("SELECT id, reference, name, description, data_type, default_value FROM configuration_template "
+                        "WHERE device_template_id = " +
+                        std::to_string(deviceTemplateId) + ";");
+    try
+    {
+        for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+        {
+            configurations.emplace_back(
+              result[i][2], result[i][1],
+              [&]() -> DataType {
+                  const auto dataType = result[i][4];
+                  if (dataType == "STRING")
+                      return DataType::STRING;
+                  else if (dataType == "NUMERIC")
+                      return DataType::NUMERIC;
+                  else if (dataType == "BOOLEAN")
+                      return DataType::BOOLEAN;
+                  throw std::runtime_error("Failed to parse DataType.");
+              }(),
+              result[i][3], result[i][5]);
+        }
+    }
+    catch (const std::exception& exception)
+    {
+        return nullptr;
+    }
+
+    // Now we can create the template
+    auto deviceTemplate = std::unique_ptr<DeviceTemplate>{
+      new DeviceTemplate{configurations, sensors, alarms, actuators, firmwareUpdateType}};
+
+    // Type parameters
+    result = {};
+    executeSQLStatement(
+      "SELECT key, value FROM type_parameters WHERE device_template_id = " + std::to_string(deviceTemplateId) + ";",
+      &result);
+    for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+    {
+        deviceTemplate->addTypeParameter({result[i][0], result[i][1]});
+    }
+
+    // Connectivity parameters
+    result = {};
+    executeSQLStatement("SELECT key, value FROM connectivity_parameters WHERE device_template_id = " +
+                        std::to_string(deviceTemplateId) + ";");
+    for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+    {
+        deviceTemplate->addConnectivityParameter({result[i][0], result[i][1]});
+    }
+
+    // Firmware update parameters
+    result = {};
+    executeSQLStatement("SELECT key, value FROM firmware_update_parameters WHERE device_template_id = " +
+                          std::to_string(deviceTemplateId) + ";",
+                        &result);
+    for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+    {
+        deviceTemplate->addFirmwareUpdateParameter({result[i][0], result[i][1] == "true"});
+    }
+
+    return deviceTemplate;
 }
 
 std::unique_ptr<std::vector<std::string>> SQLiteDeviceRepository::findAllDeviceKeys()
 {
+    LOG(TRACE) << METHOD_INFO;
+
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    auto deviceKeys = std::unique_ptr<std::vector<std::string>>(new std::vector<std::string>());
+    // Make place for the query result
+    auto result = ColumnResult{};
+    executeSQLStatement("SELECT key FROM device;", &result);
 
-    //    try
-    //    {
-    //        Statement statement(*m_session);
-    //        statement << "SELECT key FROM device;", into(*deviceKeys), now;
-    //    }
-    //    catch (...)
-    //    {
-    //        LOG(ERROR) << "SQLiteDeviceRepository: Error finding device keys";
-    //    }
-
-    return deviceKeys;
+    // Parse the results from the columns into the vector
+    auto keys = std::unique_ptr<std::vector<std::string>>(new std::vector<std::string>);
+    if (result.size() >= 2)
+    {
+        for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+        {
+            keys->emplace_back(result[i].front());
+        }
+    }
+    return keys;
 }
 
 bool SQLiteDeviceRepository::containsDeviceWithKey(const std::string& deviceKey)
 {
+    LOG(TRACE) << METHOD_INFO;
+
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
 
-    return false;
+    // Make place for the query result
+    auto result = ColumnResult{};
+    executeSQLStatement("SELECT count(*) FROM device WHERE device.key = '" + deviceKey + "';", &result);
+    return !result.empty();
+}
 
-    //    try
-    //    {
-    //        Poco::UInt64 deviceCount;
-    //        Statement statement(*m_session);
-    //        statement << "SELECT count(*) FROM device WHERE device.key=?;", useRef(deviceKey), into(deviceCount), now;
-    //        return deviceCount != 0 ? true : false;
-    //    }
-    //    catch (...)
-    //    {
-    //        LOG(ERROR) << "SQLiteDeviceRepository: Error finding device with key " << deviceKey;
-    //        return false;
-    //    }
+std::string SQLiteDeviceRepository::calculateSha256(const AlarmTemplate& alarmTemplate)
+{
+    // Make place for the hash
+    std::uint8_t hash[SHA256_DIGEST_LENGTH];
+
+    // Make the context, add the data
+    auto ctx = SHA256_CTX{};
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, alarmTemplate.getName().c_str(), alarmTemplate.getName().length());
+    SHA256_Update(&ctx, alarmTemplate.getReference().c_str(), alarmTemplate.getReference().length());
+    SHA256_Update(&ctx, alarmTemplate.getDescription().c_str(), alarmTemplate.getDescription().length());
+    SHA256_Final(hash, &ctx);
+
+    // And parse it into a string
+    return fromHashArray(hash);
+}
+
+std::string SQLiteDeviceRepository::calculateSha256(const ActuatorTemplate& actuatorTemplate)
+{
+    // Make place for the hash
+    std::uint8_t hash[SHA256_DIGEST_LENGTH];
+
+    // Make the context, add the data
+    auto ctx = SHA256_CTX{};
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, actuatorTemplate.getName().c_str(), actuatorTemplate.getName().length());
+    SHA256_Update(&ctx, actuatorTemplate.getReference().c_str(), actuatorTemplate.getReference().length());
+    SHA256_Update(&ctx, actuatorTemplate.getDescription().c_str(), actuatorTemplate.getDescription().length());
+    SHA256_Update(&ctx, actuatorTemplate.getUnitSymbol().c_str(), actuatorTemplate.getUnitSymbol().length());
+    SHA256_Update(&ctx, actuatorTemplate.getReadingTypeName().c_str(), actuatorTemplate.getReadingTypeName().length());
+    SHA256_Final(hash, &ctx);
+
+    // And parse it all into a string
+    return fromHashArray(hash);
+}
+
+std::string SQLiteDeviceRepository::calculateSha256(const SensorTemplate& sensorTemplate)
+{
+    // Make place for the hash
+    std::uint8_t hash[SHA256_DIGEST_LENGTH];
+
+    // Make the context, add the data
+    auto ctx = SHA256_CTX{};
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, sensorTemplate.getName().c_str(), sensorTemplate.getName().length());
+    SHA256_Update(&ctx, sensorTemplate.getReference().c_str(), sensorTemplate.getReference().length());
+    SHA256_Update(&ctx, sensorTemplate.getDescription().c_str(), sensorTemplate.getDescription().length());
+    SHA256_Update(&ctx, sensorTemplate.getUnitSymbol().c_str(), sensorTemplate.getUnitSymbol().length());
+    SHA256_Update(&ctx, sensorTemplate.getReadingTypeName().c_str(), sensorTemplate.getReadingTypeName().length());
+    SHA256_Final(hash, &ctx);
+
+    // And parse it all into a string
+    return fromHashArray(hash);
+}
+
+std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationTemplate& configurationTemplate)
+{
+    // Make place for the hash
+    std::uint8_t hash[SHA256_DIGEST_LENGTH];
+
+    // Make the context, add the data
+    auto ctx = SHA256_CTX{};
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, configurationTemplate.getName().c_str(), configurationTemplate.getName().length());
+    SHA256_Update(&ctx, configurationTemplate.getReference().c_str(), configurationTemplate.getReference().length());
+    SHA256_Update(&ctx, configurationTemplate.getDescription().c_str(),
+                  configurationTemplate.getDescription().length());
+    SHA256_Update(&ctx, configurationTemplate.getDefaultValue().c_str(),
+                  configurationTemplate.getDefaultValue().length());
+    auto dataTypeString = [&]() -> std::string {
+        if (configurationTemplate.getDataType() == wolkabout::DataType::BOOLEAN)
+        {
+            return "B";
+        }
+        else if (configurationTemplate.getDataType() == wolkabout::DataType::NUMERIC)
+        {
+            return "N";
+        }
+        else if (configurationTemplate.getDataType() == wolkabout::DataType::STRING)
+        {
+            return "S";
+        }
+        return "";
+    }();
+    if (dataTypeString.empty())
+        return "";
+    SHA256_Update(&ctx, dataTypeString.c_str(), dataTypeString.length());
+    for (const std::string& label : configurationTemplate.getLabels())
+        SHA256_Update(&ctx, label.c_str(), label.length());
+    SHA256_Final(hash, &ctx);
+
+    // And parse it all into a string
+    return fromHashArray(hash);
+}
+
+std::string SQLiteDeviceRepository::calculateSha256(const std::pair<std::string, std::string>& typeParameter)
+{
+    // Make place for the hash
+    std::uint8_t hash[SHA256_DIGEST_LENGTH];
+
+    // Make the context, add the data
+    auto ctx = SHA256_CTX{};
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, typeParameter.first.c_str(), typeParameter.first.length());
+    SHA256_Update(&ctx, typeParameter.second.c_str(), typeParameter.second.length());
+    SHA256_Final(hash, &ctx);
+
+    // And parse it into a string
+    return fromHashArray(hash);
+}
+
+std::string SQLiteDeviceRepository::calculateSha256(const std::pair<std::string, bool>& firmwareUpdateParameter)
+{
+    // Make place for the hash
+    std::uint8_t hash[SHA256_DIGEST_LENGTH];
+
+    // Make the context, add the data
+    auto ctx = SHA256_CTX{};
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, firmwareUpdateParameter.first.c_str(), firmwareUpdateParameter.first.length());
+    auto secondString = std::string{firmwareUpdateParameter.second ? "true" : "false"};
+    SHA256_Update(&ctx, secondString.c_str(), secondString.length());
+    SHA256_Final(hash, &ctx);
+
+    // And parse it into a string
+    return fromHashArray(hash);
+}
+
+std::string SQLiteDeviceRepository::calculateSha256(const DeviceTemplate& deviceTemplate)
+{
+    // Make place for the hash
+    std::uint8_t hash[SHA256_DIGEST_LENGTH];
+
+    // Make the context, add the data
+    auto ctx = SHA256_CTX{};
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, deviceTemplate.getFirmwareUpdateType().c_str(),
+                  deviceTemplate.getFirmwareUpdateType().length());
+    // Add the alarms
+    for (const auto& alarmTemplate : deviceTemplate.getAlarms())
+    {
+        auto alarmHash = calculateSha256(alarmTemplate);
+        SHA256_Update(&ctx, alarmHash.c_str(), alarmHash.length());
+    }
+    // Add the actuators
+    for (const auto& actuatorTemplate : deviceTemplate.getActuators())
+    {
+        auto actuatorHash = calculateSha256(actuatorTemplate);
+        SHA256_Update(&ctx, actuatorHash.c_str(), actuatorHash.length());
+    }
+    // Add the sensors
+    for (const auto& sensorTemplate : deviceTemplate.getSensors())
+    {
+        auto sensorHash = calculateSha256(sensorTemplate);
+        SHA256_Update(&ctx, sensorHash.c_str(), sensorHash.length());
+    }
+    // Add the configurations
+    for (const auto& configurationTemplate : deviceTemplate.getConfigurations())
+    {
+        auto configurationHash = calculateSha256(configurationTemplate);
+        SHA256_Update(&ctx, configurationHash.c_str(), configurationHash.length());
+    }
+    // Add the type parameters
+    for (const auto& typeParameter : deviceTemplate.getTypeParameters())
+    {
+        auto typeHash = calculateSha256(typeParameter);
+        SHA256_Update(&ctx, typeHash.c_str(), typeHash.length());
+    }
+    // Add the connectivity parameters
+    for (const auto& connectivityParameter : deviceTemplate.getConnectivityParameters())
+    {
+        auto connectivityHash = calculateSha256(connectivityParameter);
+        SHA256_Update(&ctx, connectivityHash.c_str(), connectivityHash.length());
+    }
+    // Add the firmware update parameters
+    for (const auto& firmwareUpdateParameter : deviceTemplate.getFirmwareUpdateParameters())
+    {
+        auto firmwareUpdateHash = calculateSha256(firmwareUpdateParameter);
+        SHA256_Update(&ctx, firmwareUpdateHash.c_str(), firmwareUpdateHash.length());
+    }
+    // And now finish the hash
+    SHA256_Final(hash, &ctx);
+    return fromHashArray(hash);
+}
+
+std::string SQLiteDeviceRepository::fromHashArray(std::uint8_t* array)
+{
+    // Make a string stream
+    auto stream = std::stringstream{};
+
+    // Go through the array
+    for (auto i = std::uint32_t{0}; i < SHA256_DIGEST_LENGTH; ++i)
+        stream << std::setw(2) << std::setfill('0') << std::hex << static_cast<std::int32_t>(array[i]);
+
+    // Return the string
+    return stream.str();
 }
 
 void SQLiteDeviceRepository::update(const DetailedDevice& device)
 {
     std::lock_guard<decltype(m_mutex)> l(m_mutex);
-
     remove(device.getKey());
     save(device);
 }
 
-std::string SQLiteDeviceRepository::calculateSha256(const AlarmTemplate& alarmTemplate)
+void SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, ColumnResult* result)
 {
-    //    Poco::Crypto::DigestEngine digestEngine("SHA256");
-    //    digestEngine.update(alarmTemplate.getName());
-    //    digestEngine.update(alarmTemplate.getReference());
-    //    digestEngine.update(alarmTemplate.getDescription());
-    //
-    //    return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
-    return "";
-}
+    // Check if the database session is established
+    if (m_db == nullptr)
+    {
+        LOG(ERROR) << "Failed to execute query - The database session is not established.";
+        return;
+    }
 
-std::string SQLiteDeviceRepository::calculateSha256(const ActuatorTemplate& actuatorTemplate)
-{
-    //    Poco::Crypto::DigestEngine digestEngine("SHA256");
-    //    digestEngine.update(actuatorTemplate.getName());
-    //    digestEngine.update(actuatorTemplate.getReference());
-    //    digestEngine.update(actuatorTemplate.getDescription());
-    //    digestEngine.update(actuatorTemplate.getUnitSymbol());
-    //    digestEngine.update(actuatorTemplate.getReadingTypeName());
-    //
-    //    return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
-    return "";
-}
+    // Make place for the error message
+    char* errorMessage;
 
-std::string SQLiteDeviceRepository::calculateSha256(const SensorTemplate& sensorTemplate)
-{
-    //    Poco::Crypto::DigestEngine digestEngine("SHA256");
-    //    digestEngine.update(sensorTemplate.getName());
-    //    digestEngine.update(sensorTemplate.getReference());
-    //    digestEngine.update(sensorTemplate.getDescription());
-    //    digestEngine.update(sensorTemplate.getUnitSymbol());
-    //    digestEngine.update(sensorTemplate.getReadingTypeName());
-    //
-    //    return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
-    return "";
+    // Execute the query
+    auto rc = sqlite3_exec(m_db, sql.c_str(), callback, result, &errorMessage);
+    if (rc != SQLITE_OK)
+    {
+        LOG(ERROR) << "Failed to execute query - '" << errorMessage << "'.";
+        sqlite3_free(errorMessage);
+    }
 }
-
-std::string SQLiteDeviceRepository::calculateSha256(const ConfigurationTemplate& configurationTemplate)
-{
-    //    Poco::Crypto::DigestEngine digestEngine("SHA256");
-    //    digestEngine.update(configurationTemplate.getName());
-    //    digestEngine.update(configurationTemplate.getReference());
-    //    digestEngine.update(configurationTemplate.getDescription());
-    //    digestEngine.update(configurationTemplate.getDefaultValue());
-    //
-    //    digestEngine.update(
-    //      [&]() -> std::string
-    //      {
-    //          if (configurationTemplate.getDataType() == wolkabout::DataType::BOOLEAN)
-    //          {
-    //              return "B";
-    //          }
-    //          else if (configurationTemplate.getDataType() == wolkabout::DataType::NUMERIC)
-    //          {
-    //              return "N";
-    //          }
-    //          else if (configurationTemplate.getDataType() == wolkabout::DataType::STRING)
-    //          {
-    //              return "S";
-    //          }
-    //
-    //          poco_assert(false);
-    //          return "";
-    //      }());
-    //
-    //    for (const std::string& label : configurationTemplate.getLabels())
-    //    {
-    //        digestEngine.update(label);
-    //    }
-    //
-    //    return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
-    return "";
-}
-
-std::string SQLiteDeviceRepository::calculateSha256(const std::pair<std::string, std::string>& typeParameter)
-{
-    //    Poco::Crypto::DigestEngine digestEngine("SHA256");
-    //    digestEngine.update(typeParameter.first);
-    //    digestEngine.update(typeParameter.second);
-    //
-    //    return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
-    return "";
-}
-
-std::string SQLiteDeviceRepository::calculateSha256(const std::pair<std::string, bool>& firmwareUpdateParameter)
-{
-    //    Poco::Crypto::DigestEngine digestEngine("SHA256");
-    //    digestEngine.update(firmwareUpdateParameter.first);
-    //    bool firmwareUpdateParameterValueBool = (firmwareUpdateParameter.second == true) ? "true" : "false";
-    //    digestEngine.update(firmwareUpdateParameterValueBool);
-    //
-    //    return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
-    return "";
-}
-
-std::string SQLiteDeviceRepository::calculateSha256(const DeviceTemplate& deviceTemplate)
-{
-    //    Poco::Crypto::DigestEngine digestEngine("SHA256");
-    //    digestEngine.update(deviceTemplate.getFirmwareUpdateType());
-    //
-    //    for (const wolkabout::AlarmTemplate& alarmTemplate : deviceTemplate.getAlarms())
-    //    {
-    //        digestEngine.update(calculateSha256(alarmTemplate));
-    //    }
-    //
-    //    for (const wolkabout::ActuatorTemplate& actuatorTemplate : deviceTemplate.getActuators())
-    //    {
-    //        digestEngine.update(calculateSha256(actuatorTemplate));
-    //    }
-    //
-    //    for (const wolkabout::SensorTemplate& sensorTemplate : deviceTemplate.getSensors())
-    //    {
-    //        digestEngine.update(calculateSha256(sensorTemplate));
-    //    }
-    //
-    //    for (const wolkabout::ConfigurationTemplate& configurationTemplate : deviceTemplate.getConfigurations())
-    //    {
-    //        digestEngine.update(calculateSha256(configurationTemplate));
-    //    }
-    //
-    //    for (const std::pair<std::string, std::string>& typeParameter : deviceTemplate.getTypeParameters())
-    //    {
-    //        digestEngine.update(calculateSha256(typeParameter));
-    //    }
-    //
-    //    for (const std::pair<std::string, std::string>& connectivityParameter :
-    //    deviceTemplate.getConnectivityParameters())
-    //    {
-    //        digestEngine.update(calculateSha256(connectivityParameter));
-    //    }
-    //
-    //    for (const std::pair<std::string, bool>& firmwareUpdateParameter :
-    //    deviceTemplate.getFirmwareUpdateParameters())
-    //    {
-    //        digestEngine.update(calculateSha256(firmwareUpdateParameter));
-    //    }
-    //
-    //    return Poco::Crypto::DigestEngine::digestToHex(digestEngine.digest());
-    return "";
-}
-
 }    // namespace wolkabout

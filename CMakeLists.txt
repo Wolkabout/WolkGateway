@@ -54,6 +54,8 @@ include_directories(SYSTEM ${CMAKE_BINARY_DIR}/include)
 link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 link_directories(${CMAKE_PREFIX_PATH}/lib)
 
+find_package(OpenSSL REQUIRED)
+find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
 
 # WolkAbout c++ SDK
@@ -69,7 +71,7 @@ file(GLOB_RECURSE LIB_HEADER_FILES "src/*.h" "src/*.hpp")
 file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
 
 add_library(${PROJECT_NAME} SHARED ${LIB_SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} WolkAboutCore z Threads::Threads)
+target_link_libraries(${PROJECT_NAME} WolkAboutCore z OpenSSL::Crypto SQLite::SQLite3 Threads::Threads)
 target_include_directories(${PROJECT_NAME} PUBLIC "src")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")

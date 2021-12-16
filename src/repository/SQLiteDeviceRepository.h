@@ -19,11 +19,18 @@
 
 #include "repository/DeviceRepository.h"
 
-#include <Poco/Data/Session.h>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
+
+namespace Poco
+{
+namespace Data
+{
+    class Session;
+}
+}    // namespace Poco
 
 namespace wolkabout
 {
@@ -63,7 +70,7 @@ private:
     void update(const DetailedDevice& device);
 
     std::recursive_mutex m_mutex;
-    std::unique_ptr<Poco::Data::Session> m_session;
+    //    std::unique_ptr<Poco::Data::Session> m_session;
 };
 }    // namespace wolkabout
 

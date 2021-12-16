@@ -21,14 +21,6 @@
 
 #include <mutex>
 
-namespace Poco
-{
-namespace Data
-{
-    class Session;
-}
-}    // namespace Poco
-
 namespace wolkabout
 {
 class SQLiteFileRepository : public FileRepository
@@ -50,7 +42,7 @@ private:
     void update(const FileInfo& info);
 
     std::recursive_mutex m_mutex;
-    std::unique_ptr<Poco::Data::Session> m_session;
+    //    std::unique_ptr<Poco::Data::Session> m_session;
 
     static const std::string FILE_INFO_TABLE;
     static const std::string ID_COLUMN;

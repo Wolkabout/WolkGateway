@@ -58,11 +58,9 @@ find_package(Threads REQUIRED)
 
 # WolkAbout c++ SDK
 set(BUILD_CONNECTIVITY ON CACHE BOOL "Build the library with Paho MQTT and allow MQTT connection to the platform.")
-set(BUILD_POCO ON CACHE BOOL "Build the library with Poco.")
+set(BUILD_POCO OFF CACHE BOOL "Build the library with Poco.")
 set(BUILD_GTEST ON CACHE BOOL "Build the library with GTest.")
 set(BUILD_AWS_LOG_UPLOADER OFF CACHE BOOL "Build the library with AwsLogUploader.")
-option(POCO_BUILD_DATA "" ON)
-option(POCO_BUILD_NET "" ON)
 option(BUILD_AWS_LOG_UPLOADER "" OFF)
 add_subdirectory(WolkSDK-Cpp)
 
@@ -71,11 +69,10 @@ file(GLOB_RECURSE LIB_HEADER_FILES "src/*.h" "src/*.hpp")
 file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
 
 add_library(${PROJECT_NAME} SHARED ${LIB_SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} WolkAboutCore z PocoUtil PocoCrypto PocoData PocoDataSQLite PocoFoundation Threads::Threads)
+target_link_libraries(${PROJECT_NAME} WolkAboutCore z Threads::Threads)
 target_include_directories(${PROJECT_NAME} PUBLIC "src")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
-add_dependencies(${PROJECT_NAME} libpoco)
 
 
 # Tests

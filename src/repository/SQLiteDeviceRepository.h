@@ -24,13 +24,13 @@
 #include <mutex>
 #include <string>
 
-namespace Poco
-{
-namespace Data
-{
-    class Session;
-}
-}    // namespace Poco
+// namespace Poco
+//{
+// namespace Data
+//{
+//     class Session;
+// }
+// }    // namespace Poco
 
 namespace wolkabout
 {

@@ -150,7 +150,7 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
     // Check if the device is already in the database
     auto result = ColumnResult{};
     executeSQLStatement("SELECT count(*) FROM device WHERE device.key = '" + device.getKey() + "';", &result);
-    if (!result.empty())
+    if (result[1][0] != "0")
     {
         update(device);
         return;
@@ -161,7 +161,7 @@ void SQLiteDeviceRepository::save(const DetailedDevice& device)
     auto deviceTemplateHash = calculateSha256(deviceTemplate);
     result = {};
     executeSQLStatement("SELECT count(*) FROM device_template WHERE sha256 = '" + deviceTemplateHash + "';", &result);
-    if (!result.empty())
+    if (result[1][0] != "0")
     {
         // Equivalent template exists
         executeSQLStatement("INSERT INTO device SELECT '" + device.getKey() + "', '" + device.getName() +
@@ -324,7 +324,7 @@ void SQLiteDeviceRepository::remove(const std::string& deviceKey)
     auto numberOfDevicesReferenceTemplate = std::uint64_t{0};
     try
     {
-        numberOfDevicesReferenceTemplate = std::stoul(result[1].front());
+        numberOfDevicesReferenceTemplate = std::stoul(result[1][0]);
     }
     catch (const std::exception& exception)
     {
@@ -546,7 +546,12 @@ bool SQLiteDeviceRepository::containsDeviceWithKey(const std::string& deviceKey)
     // Make place for the query result
     auto result = ColumnResult{};
     executeSQLStatement("SELECT count(*) FROM device WHERE device.key = '" + deviceKey + "';", &result);
-    return !result.empty();
+    if (result.empty())
+    {
+        LOG(ERROR) << "Failed to obtain the information if device is in the database.";
+        return false;
+    }
+    return result[1][0] != "0";
 }
 
 std::string SQLiteDeviceRepository::calculateSha256(const AlarmTemplate& alarmTemplate)

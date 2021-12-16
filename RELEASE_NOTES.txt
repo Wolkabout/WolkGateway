@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 4.3.2-lite**
+    - [IMPROVEMENT] - Completely removed `libpoco` as a dependency, and now rely on `sqlite` for SQLiteDeviceRepository.
+
 **Version 4.3.2**
     - [BUGFIX] - Fixed how the gateway sends out `subdevice_status` messages that used to confuse the platform.
 

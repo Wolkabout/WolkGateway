@@ -92,7 +92,8 @@ std::unique_ptr<Message> JsonGatewayStatusProtocol::makePlatformConnectionStatus
 {
     LOG(TRACE) << METHOD_INFO;
 
-    return std::unique_ptr<Message>(new Message(connected ? STATUS_RESPONSE_STATUS_CONNECTED : STATUS_RESPONSE_STATUS_OFFLINE, PLATFORM_CONNECTION_STATUS_ROOT));
+    return std::unique_ptr<Message>(new Message(
+      connected ? STATUS_RESPONSE_STATUS_CONNECTED : STATUS_RESPONSE_STATUS_OFFLINE, PLATFORM_CONNECTION_STATUS_ROOT));
 }
 
 std::unique_ptr<DeviceStatus> JsonGatewayStatusProtocol::makeDeviceStatusResponse(const Message& message) const

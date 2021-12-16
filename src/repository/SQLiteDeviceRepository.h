@@ -24,13 +24,8 @@
 #include <mutex>
 #include <string>
 
-// namespace Poco
-//{
-// namespace Data
-//{
-//     class Session;
-// }
-// }    // namespace Poco
+// Forward declare the context structure for sqlite.
+struct sqlite3;
 
 namespace wolkabout
 {
@@ -40,11 +35,15 @@ class SensorTemplate;
 class ConfigurationTemplate;
 class DeviceTemplate;
 
+// This is the map in which results from an SQL query will be returned
+using ColumnResult = std::map<std::uint64_t, std::vector<std::string>>;
+
 class SQLiteDeviceRepository : public DeviceRepository
 {
 public:
-    SQLiteDeviceRepository(const std::string& connectionString = "deviceRepository.db");
-    virtual ~SQLiteDeviceRepository() = default;
+    explicit SQLiteDeviceRepository(const std::string& connectionString = "deviceRepository.db");
+
+    ~SQLiteDeviceRepository() override;
 
     void save(const DetailedDevice& device) override;
 
@@ -53,6 +52,8 @@ public:
     void removeAll() override;
 
     std::unique_ptr<DetailedDevice> findByDeviceKey(const std::string& deviceKey) override;
+
+    virtual std::unique_ptr<DeviceTemplate> getDeviceTemplate(std::uint64_t deviceTemplateId);
 
     std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override;
 
@@ -66,11 +67,14 @@ private:
     static std::string calculateSha256(const std::pair<std::string, std::string>& typeParameter);
     static std::string calculateSha256(const std::pair<std::string, bool>& firmwareUpdateParameter);
     static std::string calculateSha256(const DeviceTemplate& deviceTemplate);
+    static std::string fromHashArray(std::uint8_t* array);
 
     void update(const DetailedDevice& device);
 
+    void executeSQLStatement(const std::string& sqlStatement, ColumnResult* result = nullptr);
+
     std::recursive_mutex m_mutex;
-    //    std::unique_ptr<Poco::Data::Session> m_session;
+    sqlite3* m_db;
 };
 }    // namespace wolkabout
 

@@ -77,8 +77,6 @@ const std::string PRAGMA = "PRAGMA foreign_keys=on;";
 
 static int callback(void* data, std::int32_t argc, char** argv, char** colName)
 {
-    LOG(TRACE) << METHOD_INFO;
-
     // Check if the data has been passed a `ColumnResult`.
     if (data != nullptr)
     {

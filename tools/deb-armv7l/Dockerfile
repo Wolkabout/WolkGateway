@@ -7,7 +7,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt update
 RUN apt install -y git gcc g++ cmake automake autotools-dev autoconf m4 zlib1g-dev \
- cmake libtool libssl-dev devscripts debhelper
+ cmake libtool libssl-dev devscripts debhelper libsqlite3-dev
 
 COPY make_deb.sh /build
 COPY *.zip /build

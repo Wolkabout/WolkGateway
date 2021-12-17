@@ -58,7 +58,7 @@ const std::string CREATE_CONFIGURATION_LABEL_TABLE =
   "DELETE CASCADE);";
 const std::string CREATE_DEVICE_TEMPLATE_TABLE =
   "CREATE TABLE IF NOT EXISTS device_template (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, firmware_update_protocol "
-  "TEXT, sha256 TEXT);";
+  "TEXT, sha256 TEXT UNIQUE);";
 const std::string CREATE_TYPE_PARAMETERS_TABLE =
   "CREATE TABLE IF NOT EXISTS type_parameters (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, key TEXT, value TEXT, "
   "device_template_id INTEGER, FOREIGN KEY(device_template_id) REFERENCES device_template(id) ON DELETE CASCADE);";

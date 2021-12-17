@@ -75,40 +75,6 @@ const std::string CREATE_DEVICE_TABLE =
   "KEY(device_template_id) REFERENCES device_template(id));";
 const std::string PRAGMA = "PRAGMA foreign_keys=on;";
 
-static int callback(void* data, std::int32_t argc, char** argv, char** colName)
-{
-    // Check if the data has been passed a `ColumnResult`.
-    if (data != nullptr)
-    {
-        // Try to cast that into a column result
-        auto result = static_cast<ColumnResult*>(data);
-
-        // Make the first entry a column name entry
-        (*result)[0] = {};
-        auto& columnEntry = (*result)[0];
-        const auto firstColumnName = colName[0];
-
-        // Go through the data received and fill in the map
-        for (auto i = std::int32_t{0}; i < argc; ++i)
-            columnEntry.emplace_back(colName[i]);
-
-        // Now go through the data and add it all into the
-        auto entry = std::uint64_t{0};
-        for (auto i = std::int32_t{0}; i < argc; ++i)
-        {
-            // Check first if the column name is the first name
-            if (colName[i] == firstColumnName)
-                ++entry;
-
-            // Add the value into the entry vector
-            if (result->find(entry) == result->cend())
-                (*result)[entry] = {};
-            (*result)[entry].emplace_back(argv[i] != nullptr ? argv[i] : "NULL");
-        }
-    }
-    return 0;
-}
-
 SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionString) : m_db(nullptr)
 {
     // Attempt to open up a connection.
@@ -430,7 +396,8 @@ std::unique_ptr<DeviceTemplate> SQLiteDeviceRepository::getDeviceTemplate(std::u
     auto actuators = std::vector<ActuatorTemplate>{};
     executeSQLStatement("SELECT reference, name, description, unit_symbol, reading_type FROM actuator_template WHERE "
                         "device_template_id = " +
-                        std::to_string(deviceTemplateId) + ";");
+                          std::to_string(deviceTemplateId) + ";",
+                        &result);
     for (auto i = std::uint64_t{1}; i < result.size(); ++i)
     {
         actuators.emplace_back(result[i][1], result[i][0], result[i][4], result[i][3], result[i][2]);
@@ -441,7 +408,8 @@ std::unique_ptr<DeviceTemplate> SQLiteDeviceRepository::getDeviceTemplate(std::u
     auto sensors = std::vector<SensorTemplate>{};
     executeSQLStatement("SELECT reference, name, description, unit_symbol, reading_type FROM sensor_template WHERE "
                         "device_template_id = " +
-                        std::to_string(deviceTemplateId) + ";");
+                          std::to_string(deviceTemplateId) + ";",
+                        &result);
     for (auto i = std::uint64_t{1}; i < result.size(); ++i)
     {
         sensors.emplace_back(result[i][1], result[i][0], result[i][4], result[i][3], result[i][2]);
@@ -452,7 +420,8 @@ std::unique_ptr<DeviceTemplate> SQLiteDeviceRepository::getDeviceTemplate(std::u
     auto configurations = std::vector<ConfigurationTemplate>{};
     executeSQLStatement("SELECT id, reference, name, description, data_type, default_value FROM configuration_template "
                         "WHERE device_template_id = " +
-                        std::to_string(deviceTemplateId) + ";");
+                          std::to_string(deviceTemplateId) + ";",
+                        &result);
     try
     {
         for (auto i = std::uint64_t{1}; i < result.size(); ++i)
@@ -494,7 +463,8 @@ std::unique_ptr<DeviceTemplate> SQLiteDeviceRepository::getDeviceTemplate(std::u
     // Connectivity parameters
     result = {};
     executeSQLStatement("SELECT key, value FROM connectivity_parameters WHERE device_template_id = " +
-                        std::to_string(deviceTemplateId) + ";");
+                          std::to_string(deviceTemplateId) + ";",
+                        &result);
     for (auto i = std::uint64_t{1}; i < result.size(); ++i)
     {
         deviceTemplate->addConnectivityParameter({result[i][0], result[i][1]});
@@ -766,15 +736,60 @@ void SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, ColumnR
         return;
     }
 
-    // Make place for the error message
-    char* errorMessage;
+    // If the query does not need to have a result, execute it
+    if (result == nullptr)
+    {
+        char* errorMessage;
+        auto rc = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &errorMessage);
+        if (rc != SQLITE_OK)
+        {
+            LOG(ERROR) << "Failed to execute query - '" << errorMessage << "'.";
+            return;
+        }
+    }
 
     // Execute the query
-    auto rc = sqlite3_exec(m_db, sql.c_str(), callback, result, &errorMessage);
+    sqlite3_stmt* statement;
+    auto rc = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &statement, nullptr);
     if (rc != SQLITE_OK)
     {
-        LOG(ERROR) << "Failed to execute query - '" << errorMessage << "'.";
-        sqlite3_free(errorMessage);
+        LOG(ERROR) << "Failed to execute query - '" << sqlite3_errmsg(m_db) << "'.";
+        return;
+    }
+
+    // Go through the rows
+    auto entry = std::uint64_t{1};
+    while (true)
+    {
+        // Check the next row
+        rc = sqlite3_step(statement);
+        if (rc == SQLITE_DONE)
+        {
+            return;
+        }
+        else if (rc != SQLITE_ROW)
+        {
+            LOG(ERROR) << "Failed to execute query - '" << sqlite3_errmsg(m_db) << "'.";
+            return;
+        }
+
+        // Get the number of columns
+        auto col = sqlite3_column_count(statement);
+
+        // Check if the first result is empty
+        if (result->find(0) == result->cend())
+        {
+            result->emplace(0, std::vector<std::string>{});
+            for (auto i = std::int32_t{0}; i < col; ++i)
+                (*result)[0].emplace_back(sqlite3_column_name(statement, i));
+        }
+
+        // Extract the data
+        if (result->find(entry) == result->cend())
+            result->emplace(entry, std::vector<std::string>{});
+        for (auto i = std::int32_t{0}; i < col; ++i)
+            (*result)[entry].emplace_back(reinterpret_cast<const char*>(sqlite3_column_text(statement, i)));
+        ++entry;
     }
 }
 }    // namespace wolkabout

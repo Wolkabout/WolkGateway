@@ -1,10 +1,10 @@
 {
     "name": "",
 
-    "key": "AWG",
-    "password": "3JJ04DF1CH",
+    "key": "",
+    "password": "",
 
-    "platformMqttUri": "ssl://integration7.wolkabout.com:8883",
+    "platformMqttUri": "ssl://api-demo.wolkabout.com:8883",
     "platformMqttKeepAliveSeconds": 10,
     "localMqttUri": "tcp://localhost:1883",
 

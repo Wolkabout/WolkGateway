@@ -53,13 +53,13 @@ public:
 
     std::unique_ptr<DetailedDevice> findByDeviceKey(const std::string& deviceKey) override;
 
-    virtual std::unique_ptr<DeviceTemplate> getDeviceTemplate(std::uint64_t deviceTemplateId);
-
     std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() override;
 
     bool containsDeviceWithKey(const std::string& deviceKey) override;
 
 private:
+    virtual std::unique_ptr<DeviceTemplate> getDeviceTemplate(std::uint64_t deviceTemplateId);
+
     static std::string calculateSha256(const AlarmTemplate& alarmTemplate);
     static std::string calculateSha256(const ActuatorTemplate& actuatorTemplate);
     static std::string calculateSha256(const SensorTemplate& sensorTemplate);

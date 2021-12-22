@@ -97,6 +97,8 @@ SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionStri
 
 SQLiteDeviceRepository::~SQLiteDeviceRepository()
 {
+    std::lock_guard<decltype(m_mutex)> l(m_mutex);
+
     if (m_db)
     {
         LOG(DEBUG) << "Closed the connection to the Device Repository.";
@@ -426,19 +428,18 @@ std::unique_ptr<DeviceTemplate> SQLiteDeviceRepository::getDeviceTemplate(std::u
     {
         for (auto i = std::uint64_t{1}; i < result.size(); ++i)
         {
-            configurations.emplace_back(
-              result[i][2], result[i][1],
-              [&]() -> DataType {
-                  const auto dataType = result[i][4];
-                  if (dataType == "STRING")
-                      return DataType::STRING;
-                  else if (dataType == "NUMERIC")
-                      return DataType::NUMERIC;
-                  else if (dataType == "BOOLEAN")
-                      return DataType::BOOLEAN;
-                  throw std::runtime_error("Failed to parse DataType.");
-              }(),
-              result[i][3], result[i][5]);
+            configurations.emplace_back(result[i][2], result[i][1],
+                                        [&]() -> DataType {
+                                            const auto dataType = result[i][4];
+                                            if (dataType == "STRING")
+                                                return DataType::STRING;
+                                            else if (dataType == "NUMERIC")
+                                                return DataType::NUMERIC;
+                                            else if (dataType == "BOOLEAN")
+                                                return DataType::BOOLEAN;
+                                            throw std::runtime_error("Failed to parse DataType.");
+                                        }(),
+                                        result[i][3], result[i][5]);
         }
     }
     catch (const std::exception& exception)
@@ -744,8 +745,10 @@ void SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, ColumnR
         if (rc != SQLITE_OK)
         {
             LOG(ERROR) << "Failed to execute query - '" << errorMessage << "'.";
-            return;
+            sqlite3_free(errorMessage);
         }
+
+        return;
     }
 
     // Execute the query
@@ -765,12 +768,12 @@ void SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, ColumnR
         rc = sqlite3_step(statement);
         if (rc == SQLITE_DONE)
         {
-            return;
+            break;
         }
         else if (rc != SQLITE_ROW)
         {
             LOG(ERROR) << "Failed to execute query - '" << sqlite3_errmsg(m_db) << "'.";
-            return;
+            break;
         }
 
         // Get the number of columns
@@ -791,5 +794,7 @@ void SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, ColumnR
             (*result)[entry].emplace_back(reinterpret_cast<const char*>(sqlite3_column_text(statement, i)));
         ++entry;
     }
+
+    sqlite3_finalize(statement);
 }
 }    // namespace wolkabout

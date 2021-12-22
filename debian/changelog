@@ -1,5 +1,5 @@
-wolkgateway (4.3.2-lite) stable; urgency=medium
+wolkgateway (4.4.0) stable; urgency=medium
 
   * Completely removed `libpoco` as a dependency, and now rely on `sqlite` for SQLiteDeviceRepository.
   
- -- Wolkabout ELab <elab@wolkabout.com>  Thu, 16 Dec 2021 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Wed, 22 Dec 2021 00:00:00 +0100

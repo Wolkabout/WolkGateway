@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 WolkAbout Technology s.r.o.
+ * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,38 +17,23 @@
 #ifndef GATEWAYPROTOCOL_H
 #define GATEWAYPROTOCOL_H
 
-#include <string>
-#include <vector>
+#include "core/protocol/Protocol.h"
 
 namespace wolkabout
 {
 class Message;
 
-class GatewayProtocol
+class GatewayProtocol : public Protocol
 {
 public:
-    virtual ~GatewayProtocol() = default;
+    virtual DeviceType getDeviceType(const Message& message) const override;
 
-    /**
-     * @brief Get generic inbound device channels
-     * @return
-     */
-    virtual std::vector<std::string> getInboundChannels() const = 0;
+    virtual std::unique_ptr<Message> makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
+                                                 MessageType type, const std::string& payload) const;
 
-    /**
-     * @brief Get inbound device channels for provided device key
-     * @param deviceKey
-     * @return
-     */
-    virtual std::vector<std::string> getInboundChannelsForDevice(const std::string& deviceKey) const = 0;
+    virtual std::unique_ptr<Message> routePlatformToDeviceMessage(const Message& message) const;
 
-protected:
-    /**
-     * Extract key from channel to which device publish
-     * @param topic
-     * @return
-     */
-    virtual std::string extractDeviceKeyFromChannel(const std::string& topic) const;
+    virtual std::unique_ptr<Message> routeDeviceToPlatformMessage(const Message& message) const;
 };
 }    // namespace wolkabout
 

@@ -18,8 +18,7 @@
 #define GATEWAYDATASERVICE_H
 
 #include "core/InboundMessageHandler.h"
-#include "core/model/ActuatorStatus.h"
-#include "core/model/ConfigurationItem.h"
+#include "core/model/Reading.h"
 
 #include <functional>
 #include <map>
@@ -32,51 +31,27 @@ namespace wolkabout
 class DataProtocol;
 class Persistence;
 class ConnectivityService;
-class ConfigurationSetCommand;
 class OutboundMessageHandler;
 
-typedef std::function<void(const std::string&, const std::string&)> ActuatorSetHandler;
-typedef std::function<void(const std::string&)> ActuatorGetHandler;
-
-typedef std::function<void(const ConfigurationSetCommand&)> ConfigurationSetHandler;
-typedef std::function<void()> ConfigurationGetHandler;
+typedef std::function<void(std::map<std::uint64_t, std::vector<Reading>>)> FeedUpdateHandler;
 
 class GatewayDataService : public MessageListener
 {
 public:
     GatewayDataService(std::string deviceKey, DataProtocol& protocol, Persistence& persistence,
-                       OutboundMessageHandler& outboundMessageHandler, const ActuatorSetHandler& actuatorSetHandler,
-                       const ActuatorGetHandler& actuatorGetHandler,
-                       const ConfigurationSetHandler& configurationSetHandler,
-                       const ConfigurationGetHandler& configurationGetHandler);
+                       OutboundMessageHandler& outboundMessageHandler, const FeedUpdateHandler& feedUpdateHandler);
 
     void messageReceived(std::shared_ptr<Message> message) override;
     const Protocol& getProtocol() override;
 
-    void addSensorReading(const std::string& reference, const std::string& value, unsigned long long int rtc);
+    void addReading(const std::string& reference, const std::string& value, std::uint64_t rtc);
 
-    void addSensorReading(const std::string& reference, const std::vector<std::string>& values,
-                          unsigned long long int rtc);
+    void addReading(const std::string& reference, const std::vector<std::string>& values, std::uint64_t rtc);
 
-    void addAlarm(const std::string& reference, bool active, unsigned long long int rtc);
-
-    void addActuatorStatus(const std::string& reference, const std::string& value, ActuatorStatus::State state);
-
-    void addConfiguration(const std::vector<ConfigurationItem>& configuration);
-
-    void publishSensorReadings();
-
-    void publishAlarms();
-
-    void publishActuatorStatuses();
-
-    void publishConfiguration();
+    void publishReadings();
 
 private:
-    void publishSensorReadingsForPersistanceKey(const std::string& persistanceKey);
-    void publishAlarmsForPersistanceKey(const std::string& persistanceKey);
-    void publishActuatorStatusesForPersistanceKey(const std::string& persistanceKey);
-    void publishConfigurationForPersistanceKey(const std::string& persistanceKey);
+    void publishReadingsForPersistanceKey(const std::string& persistanceKey);
 
     const std::string m_deviceKey;
 
@@ -84,11 +59,7 @@ private:
     Persistence& m_persistence;
     OutboundMessageHandler& m_outboundMessageHandler;
 
-    ActuatorSetHandler m_actuatorSetHandler;
-    ActuatorGetHandler m_actuatorGetHandler;
-
-    ConfigurationSetHandler m_configurationSetHandler;
-    ConfigurationGetHandler m_configurationGetHandler;
+    FeedUpdateHandler m_feedUpdateHandler;
 
     static const constexpr unsigned int PUBLISH_BATCH_ITEMS_COUNT = 50;
 };

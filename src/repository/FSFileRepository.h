@@ -38,7 +38,7 @@ public:
      * @param fileName The name of the file we wish to gather information about.
      * @return The file info if the file with the name is found.
      */
-    std::unique_ptr<FileInfo> getFileInfo(const std::string& fileName) override;
+    std::unique_ptr<FileInformation> getFileInfo(const std::string& fileName) override;
 
     /**
      * This method serves to return a list of files that are found locally.
@@ -54,7 +54,7 @@ public:
      *
      * @param info The info struct that needs to be stored about files.
      */
-    void store(const FileInfo& info) override;
+    void store(const FileInformation& info) override;
 
     /**
      * This method removes the specific file with the name.

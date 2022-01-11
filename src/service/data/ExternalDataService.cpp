@@ -24,62 +24,21 @@
 
 namespace wolkabout
 {
-void ExternalDataService::addSensorReading(const std::string& deviceKey, const SensorReading& reading)
+void ExternalDataService::addReading(const std::string& deviceKey, const Reading& reading)
 {
-    const std::shared_ptr<Message> message =
-      m_protocol.makeMessage(deviceKey, {std::make_shared<SensorReading>(reading)});
-
-    addMessage(message);
+    addReadings(deviceKey, {reading});
 }
 
-void ExternalDataService::addSensorReadings(const std::string& deviceKey, const std::vector<SensorReading>& readings)
+void ExternalDataService::addReadings(const std::string& deviceKey, const std::vector<Reading>& readings)
 {
     if (readings.empty())
     {
         return;
     }
 
-    std::vector<std::shared_ptr<SensorReading>> parsableReadings;
-
-    std::transform(readings.begin(), readings.end(), std::back_inserter(parsableReadings),
-                   [](const SensorReading& reading) { return std::make_shared<SensorReading>(reading); });
-
-    const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, parsableReadings);
+    const std::shared_ptr<Message> message = m_protocol.makeOutboundMessage(deviceKey, FeedValuesMessage{readings});
 
     addMessage(message);
-}
-
-void ExternalDataService::addAlarm(const std::string& deviceKey, const Alarm& alarm)
-{
-    const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, {std::make_shared<Alarm>(alarm)});
-
-    addMessage(message);
-}
-
-void ExternalDataService::addActuatorStatus(const std::string& deviceKey, const ActuatorStatus& status)
-{
-    const std::shared_ptr<Message> message =
-      m_protocol.makeMessage(deviceKey, {std::make_shared<ActuatorStatus>(status)});
-
-    addMessage(message);
-}
-
-void ExternalDataService::addConfiguration(const std::string& deviceKey,
-                                           const std::vector<ConfigurationItem>& configurations)
-{
-    const std::shared_ptr<Message> message = m_protocol.makeMessage(deviceKey, configurations);
-
-    addMessage(message);
-}
-
-void ExternalDataService::requestActuatorStatusesForDevice(const std::string& /*deviceKey*/)
-{
-    LOG(WARN) << "Not requesting actuator status for device";
-}
-
-void ExternalDataService::requestActuatorStatusesForAllDevices()
-{
-    LOG(WARN) << "Not handling message for devices";
 }
 
 void ExternalDataService::handleMessageForDevice(std::shared_ptr<Message> /*message*/)

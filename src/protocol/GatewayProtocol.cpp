@@ -15,24 +15,31 @@
  */
 
 #include "protocol/GatewayProtocol.h"
+#include "core/protocol/wolkabout/WolkaboutProtocol.h"
 
 #include "core/utilities/StringUtils.h"
 
 namespace wolkabout
 {
-std::string GatewayProtocol::extractDeviceKeyFromChannel(const std::string& topic) const
+DeviceType GatewayProtocol::getDeviceType(const Message& message) const
 {
-    std::string previousToken;
-    for (std::string token : StringUtils::tokenize(topic, "/"))
-    {
-        if (previousToken == "d")
-        {
-            return token;
-        }
+    return WolkaboutProtocol::getDeviceType(message);
+}
 
-        previousToken = token;
-    }
+std::unique_ptr<Message> GatewayProtocol::makeMessage(const std::string& gatewayKey, const std::string& deviceKey,
+                                                      MessageType type, const std::string& payload) const
+{
+    return nullptr;
+}
 
-    return "";
+std::unique_ptr<Message> GatewayProtocol::routePlatformToDeviceMessage(const Message& message) const
+{
+    // get type from topic, key and payload from payload
+    return nullptr;
+}
+
+std::unique_ptr<Message> GatewayProtocol::routeDeviceToPlatformMessage(const Message& message) const
+{
+    return nullptr;
 }
 }    // namespace wolkabout

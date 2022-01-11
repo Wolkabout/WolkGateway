@@ -22,19 +22,13 @@
 
 namespace wolkabout
 {
-class ExternalDataService : public DataService
+class ExternalDataService : public DataService, public DataHandler
 {
 public:
     using DataService::DataService;
 
-    void addSensorReading(const std::string& deviceKey, const SensorReading& reading);
-    void addSensorReadings(const std::string& deviceKey, const std::vector<SensorReading>& readings);
-    void addAlarm(const std::string& deviceKey, const Alarm& alarm);
-    void addActuatorStatus(const std::string& deviceKey, const ActuatorStatus& status);
-    void addConfiguration(const std::string& deviceKey, const std::vector<ConfigurationItem>& configurations);
-
-    void requestActuatorStatusesForDevice(const std::string& deviceKey) override;
-    void requestActuatorStatusesForAllDevices() override;
+    void addReading(const std::string& deviceKey, const Reading& reading) override;
+    void addReadings(const std::string& deviceKey, const std::vector<Reading>& readings) override;
 
 private:
     void handleMessageForDevice(std::shared_ptr<Message> message) override;

@@ -19,7 +19,7 @@
 
 #include "GatewayInboundDeviceMessageHandler.h"
 #include "GatewayInboundPlatformMessageHandler.h"
-#include "core/model/FirmwareUpdateStatus.h"
+#include "core/Types.h"
 #include "core/utilities/CommandBuffer.h"
 
 #include <functional>
@@ -31,9 +31,8 @@ namespace wolkabout
 {
 class FileRepository;
 class FirmwareInstaller;
-class FirmwareUpdateAbort;
-class FirmwareUpdateInstall;
-class FirmwareUpdateStatus;
+class FirmwareUpdateAbortMessage;
+class FirmwareUpdateInstallMessage;
 class FirmwareVersion;
 class GatewayFirmwareUpdateProtocol;
 class JsonDFUProtocol;
@@ -66,8 +65,8 @@ public:
     virtual void publishFirmwareVersion();
 
 private:
-    void handleFirmwareUpdateCommand(const FirmwareUpdateInstall& command);
-    void handleFirmwareUpdateCommand(const FirmwareUpdateAbort& command);
+    void handleFirmwareUpdateCommand(const FirmwareUpdateInstallMessage& command);
+    void handleFirmwareUpdateCommand(const FirmwareUpdateAbortMessage& command);
 
     void handleFirmwareUpdateStatus(const FirmwareUpdateStatus& status);
     void handleFirmwareVersion(const FirmwareVersion& version);
@@ -79,8 +78,7 @@ private:
     void installationInProgress(const std::vector<std::string>& deviceKeys);
     void installationCompleted(const std::vector<std::string>& deviceKeys);
     void installationAborted(const std::vector<std::string>& deviceKeys);
-    void installationFailed(const std::vector<std::string>& deviceKeys,
-                            WolkOptional<FirmwareUpdateStatus::Error> errorCode);
+    void installationFailed(const std::vector<std::string>& deviceKeys, WolkOptional<FirmwareUpdateError> errorCode);
 
     void abort(const std::vector<std::string>& deviceKeys);
     void abortGatewayFirmware();
@@ -89,8 +87,8 @@ private:
     void sendStatus(const FirmwareUpdateStatus& status);
     void sendVersion(const FirmwareVersion& version);
 
-    void sendCommand(const FirmwareUpdateInstall& command);
-    void sendCommand(const FirmwareUpdateAbort& command);
+    void sendCommand(const FirmwareUpdateInstallMessage& command);
+    void sendCommand(const FirmwareUpdateAbortMessage& command);
 
     void addToCommandBuffer(std::function<void()> command);
 

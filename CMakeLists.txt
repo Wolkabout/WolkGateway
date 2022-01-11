@@ -66,10 +66,117 @@ option(BUILD_AWS_LOG_UPLOADER "" OFF)
 add_subdirectory(WolkSDK-Cpp)
 
 # WolkGateway library
-file(GLOB_RECURSE LIB_HEADER_FILES "src/*.h" "src/*.hpp")
-file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
+set(LIB_HEADER_FILES
+    src/ActuationHandler.h
+    src/ActuatorStatusProvider.h
+    src/api/DataHandler.h
+    src/api/DataProvider.h
+    src/api/FeedUpdateHandler.h
+    src/ConfigurationHandler.h
+    src/ConfigurationProvider.h
+    src/ConnectionStatusListener.h
+    src/FileHandler.h
+    src/FileListener.h
+    src/FirmwareInstaller.h
+    src/GatewayInboundDeviceMessageHandler.h
+    src/GatewayInboundPlatformMessageHandler.h
+    src/InboundDeviceMessageHandler.h
+    src/InboundPlatformMessageHandler.h
+    src/model/GatewayDevice.h
+    src/model/SubdeviceManagement.h
+    src/OutboundMessageHandler.h
+    src/OutboundRetryMessageHandler.h
+    src/persistence/filesystem/GatewayCircularFileSystemPersistence.h
+    src/persistence/filesystem/GatewayFilesystemPersistence.h
+    src/persistence/filesystem/MessagePersister.h
+    src/persistence/GatewayPersistence.h
+    src/persistence/inmemory/GatewayInMemoryPersistence.h
+#    src/protocol/GatewayDataProtocol.h
+#    src/protocol/GatewayFirmwareUpdateProtocol.h
+    src/protocol/GatewayProtocol.h
+#    src/protocol/GatewayStatusProtocol.h
+#    src/protocol/GatewaySubdeviceRegistrationProtocol.h
+#    src/protocol/json/JsonGatewayDataProtocol.h
+#    src/protocol/json/JsonGatewayDFUProtocol.h
+#    src/protocol/json/JsonGatewayStatusProtocol.h
+#    src/protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h
+#    src/RegistrationMessageRouter.h
+    src/repository/DeviceRepository.h
+    src/repository/ExistingDevicesRepository.h
+#    src/repository/FileInfo.h
+    src/repository/FileRepository.h
+    src/repository/FSFileRepository.h
+    src/repository/JsonFileExistingDevicesRepository.h
+    src/repository/SQLiteDeviceRepository.h
+    src/service/data/DataService.h
+    src/service/data/ExternalDataService.h
+    src/service/data/GatewayDataService.h
+    src/service/data/InternalDataService.h
+#    src/service/DataHandlerApiFacade.h
+    src/service/FileDownloader.h
+    src/service/FileDownloadService.h
+    src/service/FirmwareUpdateService.h
+    src/service/GatewayUpdateService.h
+    src/service/KeepAliveService.h
+    src/service/PublishingService.h
+#    src/service/status/DeviceStatusService.h
+#    src/service/status/ExternalDeviceStatusService.h
+#    src/service/status/InternalDeviceStatusService.h
+    src/service/status/PlatformStatusService.h
+    src/service/SubdeviceRegistrationService.h
+    src/service/UrlFileDownloader.h
+    src/service/WolkaboutFileDownloader.h
+    src/StatusMessageRouter.h
+    src/Version.h
+    src/WolkBuilder.h
+    src/WolkDefault.h
+    src/WolkExternal.h
+    src/Wolk.h
+    )
 
-add_library(${PROJECT_NAME} SHARED ${LIB_SOURCE_FILES})
+set(LIB_SOURCE_FILES
+    src/FileHandler.cpp
+    src/GatewayInboundDeviceMessageHandler.cpp
+    src/GatewayInboundPlatformMessageHandler.cpp
+    src/model/GatewayDevice.cpp
+    src/OutboundRetryMessageHandler.cpp
+    src/persistence/filesystem/GatewayCircularFileSystemPersistence.cpp
+    src/persistence/filesystem/GatewayFilesystemPersistence.cpp
+    src/persistence/filesystem/MessagePersister.cpp
+    src/persistence/inmemory/GatewayInMemoryPersistence.cpp
+    src/protocol/GatewayProtocol.cpp
+#    src/protocol/json/JsonGatewayDataProtocol.cpp
+#    src/protocol/json/JsonGatewayDFUProtocol.cpp
+#    src/protocol/json/JsonGatewayStatusProtocol.cpp
+#    src/protocol/json/JsonGatewaySubdeviceRegistrationProtocol.cpp
+#    src/RegistrationMessageRouter.cpp
+    src/repository/FSFileRepository.cpp
+    src/repository/JsonFileExistingDevicesRepository.cpp
+#    src/repository/SQLiteDeviceRepository.cpp
+    src/service/data/DataService.cpp
+    src/service/data/ExternalDataService.cpp
+    src/service/data/GatewayDataService.cpp
+    src/service/data/InternalDataService.cpp
+#    src/service/DataHandlerApiFacade.cpp
+    src/service/FileDownloader.cpp
+    src/service/FileDownloadService.cpp
+    src/service/FirmwareUpdateService.cpp
+    src/service/GatewayUpdateService.cpp
+    src/service/KeepAliveService.cpp
+    src/service/PublishingService.cpp
+#    src/service/status/DeviceStatusService.cpp
+#    src/service/status/ExternalDeviceStatusService.cpp
+#    src/service/status/InternalDeviceStatusService.cpp
+    src/service/status/PlatformStatusService.cpp
+    src/service/SubdeviceRegistrationService.cpp
+    src/StatusMessageRouter.cpp
+    src/WolkBuilder.cpp
+    src/Wolk.cpp
+    src/WolkDefault.cpp
+    src/WolkExternal.cpp
+    )
+
+add_library(${PROJECT_NAME} SHARED ${LIB_SOURCE_FILES} ${LIB_HEADER_FILES})
 target_link_libraries(${PROJECT_NAME} WolkAboutCore z OpenSSL::Crypto Threads::Threads sqlite3)
 target_include_directories(${PROJECT_NAME} PUBLIC "src")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})

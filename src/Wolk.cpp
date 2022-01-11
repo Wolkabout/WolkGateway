@@ -56,8 +56,6 @@ const unsigned RECONNECT_DELAY_MSEC = 2000;
 
 namespace wolkabout
 {
-const constexpr std::chrono::seconds Wolk::KEEP_ALIVE_INTERVAL;
-
 WolkBuilder Wolk::newBuilder(GatewayDevice device)
 {
     return WolkBuilder(std::move(device));
@@ -73,7 +71,7 @@ void Wolk::setPlatformConnectionStatusListener(const std::function<void(bool)>& 
     this->m_platformConnectionStatusListener = platformConnectionStatusListener;
 }
 
-void Wolk::addSensorReading(const std::string& reference, const std::string& value, unsigned long long rtc)
+void Wolk::addReading(const std::string& reference, const std::string& value, std::uint64_t rtc)
 {
     if (rtc == 0)
     {
@@ -88,11 +86,11 @@ void Wolk::addSensorReading(const std::string& reference, const std::string& val
     });
 }
 
-void Wolk::addSensorReading(const std::string& reference, const std::vector<std::string>& values,
-                            unsigned long long int rtc)
+void Wolk::addReading(const std::string& reference, const std::vector<std::string>& values, std::uint64_t rtc)
 {
     if (values.empty())
     {
+        LOG(DEBUG) << "Trying to add empty reading values";
         return;
     }
 
@@ -109,77 +107,9 @@ void Wolk::addSensorReading(const std::string& reference, const std::vector<std:
     });
 }
 
-void Wolk::addAlarm(const std::string& reference, bool active, unsigned long long rtc)
-{
-    if (rtc == 0)
-    {
-        rtc = Wolk::currentRtc();
-    }
-
-    addToCommandBuffer([=]() -> void {
-        if (m_gatewayDataService)
-        {
-            m_gatewayDataService->addAlarm(reference, active, rtc);
-        }
-    });
-}
-
-void Wolk::publishActuatorStatus(const std::string& reference)
-{
-    addToCommandBuffer([=]() -> void {
-        const ActuatorStatus actuatorStatus = [&]() -> ActuatorStatus {
-            if (auto provider = m_actuatorStatusProvider.lock())
-            {
-                return provider->getActuatorStatus(reference);
-            }
-            else if (m_actuatorStatusProviderLambda)
-            {
-                return m_actuatorStatusProviderLambda(reference);
-            }
-
-            return ActuatorStatus();
-        }();
-
-        if (m_gatewayDataService)
-        {
-            m_gatewayDataService->addActuatorStatus(reference, actuatorStatus.getValue(), actuatorStatus.getState());
-        }
-        flushActuatorStatuses();
-    });
-}
-
-void Wolk::publishConfiguration()
-{
-    addToCommandBuffer([=]() -> void {
-        const auto configuration = [=]() -> std::vector<ConfigurationItem> {
-            if (auto provider = m_configurationProvider.lock())
-            {
-                return provider->getConfiguration();
-            }
-            else if (m_configurationProviderLambda)
-            {
-                return m_configurationProviderLambda();
-            }
-
-            return std::vector<ConfigurationItem>();
-        }();
-
-        if (m_gatewayDataService)
-        {
-            m_gatewayDataService->addConfiguration(configuration);
-        }
-        flushConfiguration();
-    });
-}
-
 void Wolk::publish()
 {
-    addToCommandBuffer([=]() -> void {
-        flushActuatorStatuses();
-        flushAlarms();
-        flushSensorReadings();
-        flushConfiguration();
-    });
+    addToCommandBuffer([=]() -> void { flushFeeds(); });
 }
 
 Wolk::Wolk(GatewayDevice device) : m_device{device}
@@ -194,29 +124,13 @@ void Wolk::addToCommandBuffer(std::function<void()> command)
     m_commandBuffer->pushCommand(std::make_shared<std::function<void()>>(command));
 }
 
-unsigned long long Wolk::currentRtc()
+std::uint64_t Wolk::currentRtc()
 {
-    auto duration = std::chrono::high_resolution_clock::now().time_since_epoch();
-    return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+    const auto duration = std::chrono::system_clock::now().time_since_epoch();
+    return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
 }
 
-void Wolk::flushActuatorStatuses()
-{
-    if (m_gatewayDataService)
-    {
-        m_gatewayDataService->publishActuatorStatuses();
-    }
-}
-
-void Wolk::flushAlarms()
-{
-    if (m_gatewayDataService)
-    {
-        m_gatewayDataService->publishAlarms();
-    }
-}
-
-void Wolk::flushSensorReadings()
+void Wolk::flushFeeds()
 {
     if (m_gatewayDataService)
     {
@@ -224,15 +138,7 @@ void Wolk::flushSensorReadings()
     }
 }
 
-void Wolk::flushConfiguration()
-{
-    if (m_gatewayDataService)
-    {
-        m_gatewayDataService->publishConfiguration();
-    }
-}
-
-void Wolk::handleActuatorSetCommand(const std::string& reference, const std::string& value)
+void Wolk::handleFeedUpdate(const std::map<uint64_t, std::vector<Reading>>& readings)
 {
     addToCommandBuffer([=] {
         if (auto provider = m_actuationHandler.lock())
@@ -244,34 +150,6 @@ void Wolk::handleActuatorSetCommand(const std::string& reference, const std::str
             m_actuationHandlerLambda(reference, value);
         }
     });
-
-    publishActuatorStatus(reference);
-}
-
-void Wolk::handleActuatorGetCommand(const std::string& reference)
-{
-    publishActuatorStatus(reference);
-}
-
-void Wolk::handleConfigurationSetCommand(const ConfigurationSetCommand& command)
-{
-    addToCommandBuffer([=]() -> void {
-        if (auto handler = m_configurationHandler.lock())
-        {
-            handler->handleConfiguration(command.getValues());
-        }
-        else if (m_configurationHandlerLambda)
-        {
-            m_configurationHandlerLambda(command.getValues());
-        }
-    });
-
-    publishConfiguration();
-}
-
-void Wolk::handleConfigurationGetCommand()
-{
-    publishConfiguration();
 }
 
 void Wolk::platformDisconnected()

@@ -17,7 +17,7 @@
 #ifndef FILEREPOSITORY_H
 #define FILEREPOSITORY_H
 
-#include "FileInfo.h"
+#include "core/Types.h"
 
 #include <memory>
 #include <string>
@@ -30,10 +30,10 @@ class FileRepository
 public:
     virtual ~FileRepository() = default;
 
-    virtual std::unique_ptr<FileInfo> getFileInfo(const std::string& fileName) = 0;
+    virtual std::unique_ptr<FileInformation> getFileInfo(const std::string& fileName) = 0;
     virtual std::unique_ptr<std::vector<std::string>> getAllFileNames() = 0;
 
-    virtual void store(const FileInfo& info) = 0;
+    virtual void store(const FileInformation& info) = 0;
 
     virtual void remove(const std::string& fileName) = 0;
     virtual void removeAll() = 0;

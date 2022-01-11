@@ -39,7 +39,7 @@ FSFileRepository::FSFileRepository(std::string folderPath) : m_folderPath(std::m
     LOG(TRACE) << "FSFileRepository: Created in folder '" << m_folderPath << "'.";
 }
 
-std::unique_ptr<FileInfo> FSFileRepository::getFileInfo(const std::string& fileName)
+std::unique_ptr<FileInformation> FSFileRepository::getFileInfo(const std::string& fileName)
 {
     // Check if the file is found in the folder.
     const auto filePath = composeFilePath(fileName);
@@ -50,12 +50,14 @@ std::unique_ptr<FileInfo> FSFileRepository::getFileInfo(const std::string& fileN
     }
 
     // Get the hash value for this file
-    auto hash = calculateFileHash(filePath);
+    const auto hash = calculateFileHash(filePath);
     LOG(DEBUG) << "FSFileRepository: Obtained info about file '" << fileName << "', hash: '" << hash << "', path: '"
                << filePath << "'";
 
+    const auto size = FileSystemUtils::getFileSize(filePath);
+
     // Return the `FileInfo` about this file.
-    return std::unique_ptr<FileInfo>(new FileInfo(fileName, hash, filePath));
+    return std::unique_ptr<FileInformation>(new FileInformation{fileName, size, hash});
 }
 
 std::unique_ptr<std::vector<std::string>> FSFileRepository::getAllFileNames()
@@ -71,7 +73,7 @@ std::unique_ptr<std::vector<std::string>> FSFileRepository::getAllFileNames()
     return fileVector;
 }
 
-void FSFileRepository::store(const FileInfo& /** info */)
+void FSFileRepository::store(const FileInformation& /** info */)
 {
     // This doesn't have to do anything, as the file should already be in the directory.
 }

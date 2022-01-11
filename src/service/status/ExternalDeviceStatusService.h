@@ -28,11 +28,6 @@ public:
 
     void connected() override;
     void disconnected() override;
-
-    void addDeviceStatus(const DeviceStatus& status);
-
-private:
-    void requestDeviceStatus(const std::string& deviceKey) override;
 };
 }    // namespace wolkabout
 

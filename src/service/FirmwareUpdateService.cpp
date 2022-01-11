@@ -17,11 +17,9 @@
 #include "service/FirmwareUpdateService.h"
 
 #include "OutboundMessageHandler.h"
-#include "core/model/FirmwareUpdateAbort.h"
-#include "core/model/FirmwareUpdateInstall.h"
-#include "core/model/FirmwareVersion.h"
 #include "core/model/Message.h"
-#include "core/protocol/json/JsonDFUProtocol.h"
+#include "core/model/messages/FirmwareUpdateAbortMessage.h"
+#include "core/model/messages/FirmwareUpdateInstallMessage.h"
 #include "core/service/FirmwareInstaller.h"
 #include "core/utilities/FileSystemUtils.h"
 #include "core/utilities/Logger.h"
@@ -168,7 +166,7 @@ void FirmwareUpdateService::publishFirmwareVersion()
     sendVersion(FirmwareVersion{m_gatewayKey, m_currentFirmwareVersion});
 }
 
-void FirmwareUpdateService::handleFirmwareUpdateCommand(const FirmwareUpdateInstall& command)
+void FirmwareUpdateService::handleFirmwareUpdateCommand(const FirmwareUpdateInstallMessage& command)
 {
     if (command.getDeviceKeys().empty())
     {
@@ -384,7 +382,7 @@ void FirmwareUpdateService::abortGatewayFirmware()
 void FirmwareUpdateService::abortDeviceFirmware(const std::string& deviceKey)
 {
     LOG(INFO) << "Handling firmware update abort for device: " << deviceKey;
-    sendCommand(FirmwareUpdateAbort{{deviceKey}});
+    sendCommand(FirmwareUpdateAbortMessage{{deviceKey}});
 }
 
 void FirmwareUpdateService::sendStatus(const FirmwareUpdateStatus& status)
@@ -413,7 +411,7 @@ void FirmwareUpdateService::sendVersion(const FirmwareVersion& version)
     m_outboundPlatformMessageHandler.addMessage(message);
 }
 
-void FirmwareUpdateService::sendCommand(const FirmwareUpdateInstall& command)
+void FirmwareUpdateService::sendCommand(const FirmwareUpdateInstallMessage& command)
 {
     std::shared_ptr<Message> message = m_gatewayProtocol.makeMessage(m_gatewayKey, command);
 
@@ -426,7 +424,7 @@ void FirmwareUpdateService::sendCommand(const FirmwareUpdateInstall& command)
     m_outboundDeviceMessageHandler.addMessage(message);
 }
 
-void FirmwareUpdateService::sendCommand(const FirmwareUpdateAbort& command)
+void FirmwareUpdateService::sendCommand(const FirmwareUpdateAbortMessage& command)
 {
     std::shared_ptr<Message> message = m_gatewayProtocol.makeMessage(m_gatewayKey, command);
 

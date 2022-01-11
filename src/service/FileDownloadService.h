@@ -19,9 +19,6 @@
 
 #include "GatewayInboundPlatformMessageHandler.h"
 #include "WolkaboutFileDownloader.h"
-#include "core/model/FileDelete.h"
-#include "core/model/FileUploadAbort.h"
-#include "core/model/FileUploadInitiate.h"
 #include "core/utilities/ByteUtils.h"
 #include "core/utilities/CommandBuffer.h"
 #include "service/FileDownloader.h"
@@ -37,24 +34,26 @@
 
 namespace wolkabout
 {
-class BinaryData;
-class JsonDownloadProtocol;
-class FileDelete;
+class FileBinaryResponseMessage;
+class FileDeleteMessage;
 class FileListener;
+class FileListRequestMessage;
+class FileManagementProtocol;
+class FilePurgeMessage;
 class FileRepository;
-class FileUploadAbort;
-class FileUploadInitiate;
-class FileUploadStatus;
-class FileUrlDownloadAbort;
-class FileUrlDownloadInitiate;
-class FileUrlDownloadStatus;
+class FileUploadAbortMessage;
+class FileUploadInitiateMessage;
+class FileUploadStatusMessage;
+class FileUrlDownloadAbortMessage;
+class FileUrlDownloadInitMessage;
+class FileUrlDownloadStatusMessage;
 class OutboundMessageHandler;
 class UrlFileDownloader;
 
 class FileDownloadService : public PlatformMessageListener
 {
 public:
-    FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol, std::string fileDownloadDirectory,
+    FileDownloadService(std::string gatewayKey, FileManagementProtocol& protocol, std::string fileDownloadDirectory,
                         OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository,
                         std::shared_ptr<UrlFileDownloader> urlFileDownloader = nullptr,
                         std::shared_ptr<FileListener> fileListener = nullptr);
@@ -73,25 +72,28 @@ public:
     virtual void sendFileList();
 
 private:
-    void handle(const BinaryData& binaryData);
-    void handle(const FileUploadInitiate& request);
-    void handle(const FileUploadAbort& request);
-    void handle(const FileDelete& request);
-    void handle(const FileUrlDownloadInitiate& request);
-    void handle(const FileUrlDownloadAbort& request);
+    void handle(const FileBinaryResponseMessage& response);
+    void handle(const FileUploadInitiateMessage& request);
+    void handle(const FileUploadAbortMessage& request);
+    void handle(const FileDeleteMessage& request);
+    void handle(const FilePurgeMessage& request);
+    void handle(const FileListRequestMessage& request);
+    void handle(const FileUrlDownloadInitMessage& request);
+    void handle(const FileUrlDownloadAbortMessage& request);
 
     void download(const std::string& fileName, std::uint64_t fileSize, const std::string& fileHash);
     void urlDownload(const std::string& fileUrl);
     void abortDownload(const std::string& fileName);
     void abortUrlDownload(const std::string& fileUrl);
+    void deleteFiles(const std::vector<std::string>& files);
     void deleteFile(const std::string& fileName);
     void purgeFiles();
 
-    void sendStatus(const FileUploadStatus& response);
-    void sendStatus(const FileUrlDownloadStatus& response);
+    void sendStatus(const FileUploadStatusMessage& response);
+    void sendStatus(const FileUrlDownloadStatusMessage& response);
     void sendFileListUpdate();
 
-    void requestPacket(const FilePacketRequest& request);
+    void requestPacket(const FileBinaryRequestMessage& request);
     void downloadCompleted(const std::string& fileName, const std::string& filePath, const std::string& fileHash);
     void downloadFailed(const std::string& fileName, FileTransferError errorCode);
 
@@ -107,7 +109,7 @@ private:
     const std::string m_gatewayKey;
     const std::string m_fileDownloadDirectory;
 
-    JsonDownloadProtocol& m_protocol;
+    FileManagementProtocol& m_protocol;
 
     OutboundMessageHandler& m_outboundMessageHandler;
     FileRepository& m_fileRepository;

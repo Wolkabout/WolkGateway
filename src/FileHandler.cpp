@@ -16,7 +16,7 @@
 
 #include "FileHandler.h"
 
-#include "core/model/BinaryData.h"
+#include "core/model/messages/FileBinaryResponseMessage.h"
 #include "core/utilities/FileSystemUtils.h"
 
 namespace wolkabout
@@ -29,30 +29,24 @@ void FileHandler::clear()
     m_previousPacketHash = {};
 }
 
-FileHandler::StatusCode FileHandler::handleData(const BinaryData& binaryData)
+FileHandler::StatusCode FileHandler::handle(const FileBinaryResponseMessage& response)
 {
-    if (!binaryData.valid())
+    const ByteArray hash = ByteUtils::hashSHA256(response.getData());
+    if (hash != ByteUtils::toByteArray(response.getPreviousHash()))
     {
         return FileHandler::StatusCode::PACKAGE_HASH_NOT_VALID;
     }
 
-    if (m_previousPacketHash.empty())
+    const auto validationHash =
+      m_previousPacketHash.empty() ? ByteArray(ByteUtils::SHA_256_HASH_BYTE_LENGTH, 0) : m_previousPacketHash;
+
+    if (validationHash != ByteUtils::toByteArray(response.getPreviousHash()))
     {
-        if (!binaryData.validatePrevious())
-        {
-            return FileHandler::StatusCode::PREVIOUS_PACKAGE_HASH_NOT_VALID;
-        }
-    }
-    else
-    {
-        if (!binaryData.validatePrevious(m_previousPacketHash))
-        {
-            return FileHandler::StatusCode::PREVIOUS_PACKAGE_HASH_NOT_VALID;
-        }
+        return FileHandler::StatusCode::PREVIOUS_PACKAGE_HASH_NOT_VALID;
     }
 
-    m_currentPacketData.insert(m_currentPacketData.end(), binaryData.getData().begin(), binaryData.getData().end());
-    m_previousPacketHash = binaryData.getHash();
+    m_currentPacketData.insert(m_currentPacketData.end(), response.getData().begin(), response.getData().end());
+    m_previousPacketHash = ByteUtils::toByteArray(response.getPreviousHash());
 
     return FileHandler::StatusCode::OK;
 }

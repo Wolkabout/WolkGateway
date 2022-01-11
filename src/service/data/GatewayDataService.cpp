@@ -18,11 +18,8 @@
 
 #include "OutboundMessageHandler.h"
 #include "core/connectivity/ConnectivityService.h"
-#include "core/model/ActuatorGetCommand.h"
-#include "core/model/ActuatorSetCommand.h"
-#include "core/model/ConfigurationSetCommand.h"
 #include "core/model/Message.h"
-#include "core/model/SensorReading.h"
+#include "core/model/Reading.h"
 #include "core/persistence/Persistence.h"
 #include "core/protocol/DataProtocol.h"
 #include "core/utilities/Logger.h"
@@ -34,18 +31,12 @@ namespace wolkabout
 {
 GatewayDataService::GatewayDataService(std::string deviceKey, DataProtocol& protocol, Persistence& persistence,
                                        OutboundMessageHandler& outboundMessageHandler,
-                                       const ActuatorSetHandler& actuatorSetHandler,
-                                       const ActuatorGetHandler& actuatorGetHandler,
-                                       const ConfigurationSetHandler& configurationSetHandler,
-                                       const ConfigurationGetHandler& configurationGetHandler)
+                                       const FeedUpdateHandler& feedUpdateHandler)
 : m_deviceKey{std::move(deviceKey)}
 , m_protocol{protocol}
 , m_persistence{persistence}
 , m_outboundMessageHandler{outboundMessageHandler}
-, m_actuatorSetHandler{actuatorSetHandler}
-, m_actuatorGetHandler{actuatorGetHandler}
-, m_configurationSetHandler{configurationSetHandler}
-, m_configurationGetHandler{configurationGetHandler}
+, m_feedUpdateHandler{feedUpdateHandler}
 {
 }
 
@@ -53,7 +44,7 @@ void GatewayDataService::messageReceived(std::shared_ptr<Message> message)
 {
     assert(message);
 
-    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(message->getChannel());
+    const std::string deviceKey = m_protocol.getDeviceKey(*message);
     if (deviceKey.empty())
     {
         LOG(WARN) << "Unable to extract device key from channel: " << message->getChannel();
@@ -66,58 +57,38 @@ void GatewayDataService::messageReceived(std::shared_ptr<Message> message)
         return;
     }
 
-    if (m_protocol.isActuatorGetMessage(*message))
+    switch (m_protocol.getMessageType(*message))
     {
-        auto command = m_protocol.makeActuatorGetCommand(*message);
-        if (!command)
+    case MessageType::FEED_VALUES:
+    {
+        auto feedValuesMessage = m_protocol.parseFeedValues(message);
+        if (feedValuesMessage == nullptr)
         {
-            LOG(WARN) << "Unable to parse message contents: " << message->getContent();
+            LOG(WARN) << "Unable to parse message: " << message->getChannel();
+        }
+        else if (m_feedUpdateHandler)
+        {
+            m_feedUpdateHandler(feedValuesMessage->getReadings());
+        }
+
+        break;
+    }
+    case MessageType::PARAMETER_SYNC:
+    {
+        auto parameterMessage = m_protocol.parseParameters(message);
+        if (parameterMessage == nullptr)
+        {
+            LOG(WARN) << "Unable to parse message: " << message->getChannel();
             return;
         }
 
-        if (m_actuatorGetHandler)
-        {
-            m_actuatorGetHandler(command->getReference());
-        }
+        // TODO
+        break;
     }
-    else if (m_protocol.isActuatorSetMessage(*message))
-    {
-        auto command = m_protocol.makeActuatorSetCommand(*message);
-        if (!command)
-        {
-            LOG(WARN) << "Unable to parse message contents: " << message->getContent();
-            return;
-        }
-
-        if (m_actuatorSetHandler)
-        {
-            m_actuatorSetHandler(command->getReference(), command->getValue());
-        }
-    }
-    else if (m_protocol.isConfigurationGetMessage(*message))
-    {
-        if (m_configurationGetHandler)
-        {
-            m_configurationGetHandler();
-        }
-    }
-    else if (m_protocol.isConfigurationSetMessage(*message))
-    {
-        auto command = m_protocol.makeConfigurationSetCommand(*message);
-        if (!command)
-        {
-            LOG(WARN) << "Unable to parse message contents: " << message->getContent();
-            return;
-        }
-
-        if (m_configurationSetHandler)
-        {
-            m_configurationSetHandler(*command);
-        }
-    }
-    else
+    default:
     {
         LOG(WARN) << "Unable to parse message channel: " << message->getChannel();
+    }
     }
 }
 
@@ -126,166 +97,52 @@ const Protocol& GatewayDataService::getProtocol()
     return m_protocol;
 }
 
-void GatewayDataService::addSensorReading(const std::string& reference, const std::string& value,
-                                          unsigned long long int rtc)
+void GatewayDataService::addReading(const std::string& reference, const std::string& value, std::uint64_t rtc)
 {
-    auto sensorReading = std::make_shared<SensorReading>(value, reference, rtc);
+    auto reading = Reading(reference, value, rtc);
 
-    m_persistence.putSensorReading(reference, sensorReading);
+    m_persistence.putReading(reference, reading);
 }
 
-void GatewayDataService::addSensorReading(const std::string& reference, const std::vector<std::string>& values,
-                                          unsigned long long int rtc)
+void GatewayDataService::addReading(const std::string& reference, const std::vector<std::string>& values,
+                                    std::uint64_t rtc)
 {
-    auto sensorReading = std::make_shared<SensorReading>(values, reference, rtc);
+    auto reading = Reading(reference, values, rtc);
 
-    m_persistence.putSensorReading(reference, sensorReading);
+    m_persistence.putReading(reference, reading);
 }
 
-void GatewayDataService::addAlarm(const std::string& reference, bool active, unsigned long long int rtc)
+void GatewayDataService::publishReadings()
 {
-    auto alarm = std::make_shared<Alarm>(active, reference, rtc);
-
-    m_persistence.putAlarm(reference, alarm);
-}
-
-void GatewayDataService::addActuatorStatus(const std::string& reference, const std::string& value,
-                                           ActuatorStatus::State state)
-{
-    auto actuatorStatusWithRef = std::make_shared<ActuatorStatus>(value, reference, state);
-
-    m_persistence.putActuatorStatus(reference, actuatorStatusWithRef);
-}
-
-void GatewayDataService::addConfiguration(const std::vector<ConfigurationItem>& configuration)
-{
-    auto conf = std::make_shared<std::vector<ConfigurationItem>>(configuration);
-
-    m_persistence.putConfiguration(m_deviceKey, conf);
-}
-
-void GatewayDataService::publishSensorReadings()
-{
-    for (const auto& key : m_persistence.getSensorReadingsKeys())
+    for (const auto& key : m_persistence.getReadingsKeys())
     {
-        publishSensorReadingsForPersistanceKey(key);
+        publishReadingsForPersistanceKey(key);
     }
 }
 
-void GatewayDataService::publishSensorReadingsForPersistanceKey(const std::string& persistanceKey)
+void GatewayDataService::publishReadingsForPersistanceKey(const std::string& persistanceKey)
 {
-    const auto sensorReadings = m_persistence.getSensorReadings(persistanceKey, PUBLISH_BATCH_ITEMS_COUNT);
+    const auto readings = m_persistence.getReadings(persistanceKey, PUBLISH_BATCH_ITEMS_COUNT);
 
-    if (sensorReadings.empty())
+    if (readings.empty())
     {
         return;
     }
 
-    const std::shared_ptr<Message> outboundMessage = m_protocol.makeMessage(m_deviceKey, sensorReadings);
+    // TODO shared?
+    const std::shared_ptr<Message> outboundMessage =
+      nullptr;    // m_protocol.makeOutboundMessage(m_deviceKey, FeedValuesMessage{readings});
+
+    m_persistence.removeReadings(persistanceKey, PUBLISH_BATCH_ITEMS_COUNT);
 
     if (!outboundMessage)
     {
         LOG(ERROR) << "Unable to create message from readings: " << persistanceKey;
-        m_persistence.removeSensorReadings(persistanceKey, PUBLISH_BATCH_ITEMS_COUNT);
         return;
     }
 
     m_outboundMessageHandler.addMessage(outboundMessage);
 
-    m_persistence.removeSensorReadings(persistanceKey, PUBLISH_BATCH_ITEMS_COUNT);
-
-    publishSensorReadingsForPersistanceKey(persistanceKey);
-}
-
-void GatewayDataService::publishAlarms()
-{
-    for (const auto& key : m_persistence.getAlarmsKeys())
-    {
-        publishAlarmsForPersistanceKey(key);
-    }
-}
-
-void GatewayDataService::publishAlarmsForPersistanceKey(const std::string& persistanceKey)
-{
-    const auto alarms = m_persistence.getAlarms(persistanceKey, PUBLISH_BATCH_ITEMS_COUNT);
-
-    if (alarms.empty())
-    {
-        return;
-    }
-
-    const std::shared_ptr<Message> outboundMessage = m_protocol.makeMessage(m_deviceKey, alarms);
-
-    if (!outboundMessage)
-    {
-        LOG(ERROR) << "Unable to create message from alarms: " << persistanceKey;
-        m_persistence.removeAlarms(persistanceKey, PUBLISH_BATCH_ITEMS_COUNT);
-        return;
-    }
-
-    m_outboundMessageHandler.addMessage(outboundMessage);
-
-    m_persistence.removeAlarms(persistanceKey, PUBLISH_BATCH_ITEMS_COUNT);
-
-    publishAlarmsForPersistanceKey(persistanceKey);
-}
-
-void GatewayDataService::publishActuatorStatuses()
-{
-    for (const auto& key : m_persistence.getActuatorStatusesKeys())
-    {
-        publishActuatorStatusesForPersistanceKey(key);
-    }
-}
-
-void GatewayDataService::publishActuatorStatusesForPersistanceKey(const std::string& persistanceKey)
-{
-    const auto actuatorStatus = m_persistence.getActuatorStatus(persistanceKey);
-
-    if (!actuatorStatus)
-    {
-        return;
-    }
-
-    const std::shared_ptr<Message> outboundMessage = m_protocol.makeMessage(m_deviceKey, {actuatorStatus});
-
-    if (!outboundMessage)
-    {
-        LOG(ERROR) << "Unable to create message from actuator status: " << persistanceKey;
-        m_persistence.removeActuatorStatus(persistanceKey);
-        return;
-    }
-
-    m_outboundMessageHandler.addMessage(outboundMessage);
-
-    m_persistence.removeActuatorStatus(persistanceKey);
-}
-
-void GatewayDataService::publishConfiguration()
-{
-    publishConfigurationForPersistanceKey(m_deviceKey);
-}
-
-void GatewayDataService::publishConfigurationForPersistanceKey(const std::string& persistanceKey)
-{
-    const auto configuration = m_persistence.getConfiguration(persistanceKey);
-
-    if (!configuration)
-    {
-        return;
-    }
-
-    const std::shared_ptr<Message> outboundMessage = m_protocol.makeMessage(persistanceKey, *configuration);
-
-    if (!outboundMessage)
-    {
-        LOG(ERROR) << "Unable to create message from configuration: " << persistanceKey;
-        m_persistence.removeConfiguration(persistanceKey);
-        return;
-    }
-
-    m_outboundMessageHandler.addMessage(outboundMessage);
-
-    m_persistence.removeConfiguration(persistanceKey);
+    publishReadingsForPersistanceKey(persistanceKey);
 }
 }    // namespace wolkabout

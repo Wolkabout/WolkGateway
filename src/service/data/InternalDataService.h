@@ -27,16 +27,13 @@ class DeviceRepository;
 class InternalDataService : public DataService, public DeviceMessageListener
 {
 public:
-    InternalDataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayDataProtocol& gatewayProtocol,
+    InternalDataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayProtocol& gatewayProtocol,
                         DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
                         OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice = nullptr);
 
     const GatewayProtocol& getGatewayProtocol() const override;
 
     void deviceMessageReceived(std::shared_ptr<Message> message) override;
-
-    void requestActuatorStatusesForDevice(const std::string& deviceKey) override;
-    void requestActuatorStatusesForAllDevices() override;
 
 private:
     void handleMessageForDevice(std::shared_ptr<Message> message) override;

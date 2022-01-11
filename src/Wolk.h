@@ -17,55 +17,50 @@
 #ifndef WOLK_H
 #define WOLK_H
 
-#include "ActuationHandler.h"
-#include "ActuatorStatusProvider.h"
-#include "ConfigurationHandler.h"
-#include "ConfigurationProvider.h"
 #include "WolkBuilder.h"
 #include "core/utilities/StringUtils.h"
 #include "model/GatewayDevice.h"
 
 #include <algorithm>
-#include <atomic>
-#include <chrono>
+#include <cstdint>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 
 namespace wolkabout
 {
-class CommandBuffer;
-class ConfigurationSetCommand;
-class ConnectivityService;
-class DataProtocol;
-class DataService;
-class DeviceRepository;
-class DeviceStatusService;
-class ExistingDevicesRepository;
-class FileDownloadService;
-class FileRepository;
-class FirmwareUpdateService;
-class GatewayDataProtocol;
-class GatewayDataService;
-class GatewayFirmwareUpdateProtocol;
-class GatewayStatusProtocol;
-class GatewaySubdeviceRegistrationProtocol;
-class GatewayUpdateService;
-class InboundDeviceMessageHandler;
-class InboundPlatformMessageHandler;
-class JsonDFUProtocol;
-class JsonDownloadProtocol;
-class KeepAliveService;
-class PublishingService;
-class Persistence;
-class PlatformStatusService;
-class RegistrationMessageRouter;
-class RegistrationProtocol;
-class StatusMessageRouter;
-class StatusProtocol;
-class SubdeviceRegistrationService;
+class FeedUpdateHandler;
+// class CommandBuffer;
+// class ConfigurationSetCommand;
+// class ConnectivityService;
+// class DataProtocol;
+// class DataService;
+// class DeviceRepository;
+// class DeviceStatusService;
+// class ExistingDevicesRepository;
+// class FileDownloadService;
+// class FileRepository;
+// class FirmwareUpdateService;
+// class GatewayDataProtocol;
+// class GatewayDataService;
+// class GatewayFirmwareUpdateProtocol;
+// class GatewayStatusProtocol;
+// class GatewaySubdeviceRegistrationProtocol;
+// class GatewayUpdateService;
+// class InboundDeviceMessageHandler;
+// class InboundPlatformMessageHandler;
+// class JsonDFUProtocol;
+// class JsonDownloadProtocol;
+// class KeepAliveService;
+// class PublishingService;
+// class Persistence;
+// class PlatformStatusService;
+// class RegistrationMessageRouter;
+// class RegistrationProtocol;
+// class StatusMessageRouter;
+// class StatusProtocol;
+// class SubdeviceRegistrationService;
 
 class Wolk
 {
@@ -82,16 +77,6 @@ public:
     static WolkBuilder newBuilder(GatewayDevice device);
 
     /**
-     * @brief connect Establishes connection with WolkAbout IoT platform
-     */
-    virtual void connect() = 0;
-
-    /**
-     * @brief disconnect Disconnects from WolkAbout IoT platform
-     */
-    virtual void disconnect() = 0;
-
-    /**
      * This is the default getter method for obtaining the platform connection status.
      *
      * @return Platform connection status.
@@ -106,121 +91,72 @@ public:
     virtual void setPlatformConnectionStatusListener(const std::function<void(bool)>& platformConnectionStatusListener);
 
     /**
-     * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
-     *        This method is thread safe, and can be called from multiple thread simultaneously
-     * @param reference Sensor reference
-     * @param value Sensor value<br>
-     *              Supported types:<br>
-     *               - bool<br>
-     *               - float<br>
-     *               - double<br>
-     *               - signed int<br>
-     *               - signed long int<br>
-     *               - signed long long int<br>
-     *               - unsigned int<br>
-     *               - unsigned long int<br>
-     *               - unsigned long long int<br>
-     *               - string<br>
-     *               - char*<br>
-     *               - const char*<br>
+     * @brief Publishes reading to WolkAbout IoT Cloud
+     * @param reading Reading
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    void addReading(const Reading& reading, std::uint64_t rtc = 0);
+
+    /**
+     * @brief Publishes reading to WolkAbout IoT Cloud
+     * @param reference Feed reference
+     * @param value Feed value
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    template <typename T> void addReading(const std::string& reference, const T& value, std::uint64_t rtc = 0);
+
+    /**
+     * @brief Publishes reading to WolkAbout IoT Cloud
+     * @param reference Feed reference
+     * @param value Feed value
+     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
+     *            If omitted current POSIX time is adopted
+     */
+    void addReading(const std::string& reference, const std::string& value, std::uint64_t rtc = 0);
+
+    /**
+     * @brief Publishes multi-value reading to WolkAbout IoT Cloud
+     * @param reference Feed reference
+     * @param values Multi-value feed values
      * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
      *            If omitted current POSIX time is adopted
      */
     template <typename T>
-    void addSensorReading(const std::string& reference, const T& value, unsigned long long int rtc = 0);
+    void addReading(const std::string& reference, const std::vector<T>& values, std::uint64_t rtc = 0);
 
     /**
-     * @brief Publishes sensor reading to WolkAbout IoT Cloud<br>
-     *        This method is thread safe, and can be called from multiple thread simultaneously
-     * @param reference Sensor reference
-     * @param value Sensor value
+     * @brief Publishes multi-value reading to WolkAbout IoT Cloud
+     * @param reference Feed reference
+     * @param values Multi-value feed values
      * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
      *            If omitted current POSIX time is adopted
      */
-    void addSensorReading(const std::string& reference, const std::string& value, unsigned long long int rtc = 0);
+    void addReading(const std::string& reference, const std::vector<std::string>& values, std::uint64_t rtc = 0);
+
+    void pullFeedValues();
+    void pullParameters();
+
+    void registerFeed(const Feed& feed);
+    void registerFeeds(const std::vector<Feed>& feeds);
+
+    void removeFeed(const std::string& reference);
+    void removeFeeds(const std::vector<std::string>& references);
+
+    void addAttribute(Attribute attribute);
+
+    void updateParameter(Parameter parameters);
 
     /**
-     * @brief Publishes multi-value sensor reading to WolkAbout IoT Cloud<br>
-     *        This method is thread safe, and can be called from multiple thread simultaneously
-     * @param reference Sensor reference
-     * @param values Multi-value sensor values<br>
-     *              Supported types:<br>
-     *               - bool<br>
-     *               - float<br>
-     *               - double<br>
-     *               - signed int<br>
-     *               - signed long int<br>
-     *               - signed long long int<br>
-     *               - unsigned int<br>
-     *               - unsigned long int<br>
-     *               - unsigned long long int<br>
-     *               - string<br>
-     *               - char*<br>
-     *               - const char*<br>
-     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
-     *            If omitted current POSIX time is adopted
+     * @brief connect Establishes connection with WolkAbout IoT platform
      */
-    template <typename T>
-    void addSensorReading(const std::string& reference, const std::initializer_list<T>& values,
-                          unsigned long long int rtc = 0);
+    virtual void connect() = 0;
 
     /**
-     * @brief Publishes multi-value sensor reading to WolkAbout IoT Cloud<br>
-     *        This method is thread safe, and can be called from multiple thread simultaneously
-     * @param reference Sensor reference
-     * @param values Multi-value sensor values<br>
-     *              Supported types:<br>
-     *               - bool<br>
-     *               - float<br>
-     *               - double<br>
-     *               - signed int<br>
-     *               - signed long int<br>
-     *               - signed long long int<br>
-     *               - unsigned int<br>
-     *               - unsigned long int<br>
-     *               - unsigned long long int<br>
-     *               - string<br>
-     *               - char*<br>
-     *               - const char*<br>
-     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
-     *            If omitted current POSIX time is adopted
+     * @brief disconnect Disconnects from WolkAbout IoT platform
      */
-    template <typename T>
-    void addSensorReading(const std::string& reference, const std::vector<T>& values, unsigned long long int rtc = 0);
-
-    /**
-     * @brief Publishes multi-value sensor reading to WolkAbout IoT Cloud<br>
-     *        This method is thread safe, and can be called from multiple thread simultaneously
-     * @param reference Sensor reference
-     * @param values Multi-value sensor values
-     * @param rtc Reading POSIX time - Number of seconds since 01/01/1970<br>
-     *            If omitted current POSIX time is adopted
-     */
-    void addSensorReading(const std::string& reference, const std::vector<std::string>& values,
-                          unsigned long long int rtc = 0);
-
-    /**
-     * @brief Publishes alarm to WolkAbout IoT Cloud<br>
-     *        This method is thread safe, and can be called from multiple thread simultaneously
-     * @param reference Alarm reference
-     * @param active Is alarm active or not
-     * @param rtc POSIX time at which event occurred - Number of seconds since 01/01/1970<br>
-     *            If omitted current POSIX time is adopted
-     */
-    void addAlarm(const std::string& reference, bool active, unsigned long long int rtc = 0);
-
-    /**
-     * @brief Invokes ActuatorStatusProvider to obtain actuator status, and the publishes it.<br>
-     *        This method is thread safe, and can be called from multiple thread simultaneously
-     * @param Actuator reference
-     */
-    void publishActuatorStatus(const std::string& reference);
-
-    /**
-     * @brief Invokes ConfigurationProvider to obtain device configuration, and the publishes it.<br>
-     *        This method is thread safe, and can be called from multiple thread simultaneously
-     */
-    void publishConfiguration();
+    virtual void disconnect() = 0;
 
     /**
      * @brief Publishes data
@@ -228,25 +164,17 @@ public:
     void publish();
 
 protected:
-    static const constexpr std::chrono::seconds KEEP_ALIVE_INTERVAL{600};
-
     explicit Wolk(GatewayDevice device);
 
     void addToCommandBuffer(std::function<void()> command);
 
-    static unsigned long long int currentRtc();
+    static std::uint64_t currentRtc();
 
-    void flushActuatorStatuses();
-    void flushAlarms();
-    void flushSensorReadings();
-    void flushConfiguration();
+    void flushFeeds();
 
     // callbacks
-    void handleActuatorSetCommand(const std::string& reference, const std::string& value);
-    void handleActuatorGetCommand(const std::string& reference);
-
-    void handleConfigurationSetCommand(const ConfigurationSetCommand& command);
-    void handleConfigurationGetCommand();
+    void handleFeedUpdate(const std::map<std::uint64_t, std::vector<Reading>>& readings);
+    void handleParameterUpdate(const std::vector<Parameter> parameters);
 
     void platformDisconnected();
 
@@ -311,8 +239,8 @@ protected:
     std::unique_ptr<JsonDownloadProtocol> m_fileDownloadProtocol;
     std::shared_ptr<FileDownloadService> m_fileDownloadService;
 
-    std::function<void(std::string, std::string)> m_actuationHandlerLambda;
-    std::weak_ptr<ActuationHandler> m_actuationHandler;
+    std::function<void(std::map<std::uint64_t, std::vector<Reading>>)> m_feedHandlerLambda;
+    std::shared_ptr<FeedUpdateHandler> m_feedHandler;
 
     std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
     std::weak_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
@@ -344,26 +272,19 @@ protected:
     std::shared_ptr<ConnectivityFacade<InboundDeviceMessageHandler>> m_deviceConnectivityManager;
 };
 
-template <typename T> void Wolk::addSensorReading(const std::string& reference, const T& value, unsigned long long rtc)
+template <typename T> void Wolk::addReading(const std::string& reference, const T& value, std::uint64_t rtc)
 {
-    addSensorReading(reference, StringUtils::toString(value), rtc);
+    addReading(reference, StringUtils::toString(value), rtc);
 }
 
 template <typename T>
-void Wolk::addSensorReading(const std::string& reference, const std::initializer_list<T>& values,
-                            unsigned long long int rtc)
-{
-    addSensorReading(reference, std::vector<T>(values), rtc);
-}
-
-template <typename T>
-void Wolk::addSensorReading(const std::string& reference, const std::vector<T>& values, unsigned long long int rtc)
+void Wolk::addReading(const std::string& reference, const std::vector<T>& values, std::uint64_t rtc)
 {
     std::vector<std::string> stringifiedValues(values.size());
     std::transform(values.cbegin(), values.cend(), stringifiedValues.begin(),
                    [&](const T& value) -> std::string { return StringUtils::toString(value); });
 
-    addSensorReading(reference, stringifiedValues, rtc);
+    addReading(reference, stringifiedValues, rtc);
 }
 
 template <class MessageHandler>

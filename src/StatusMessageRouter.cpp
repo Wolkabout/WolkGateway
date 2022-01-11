@@ -17,46 +17,18 @@
 #include "StatusMessageRouter.h"
 
 #include "core/model/Message.h"
-#include "core/protocol/StatusProtocol.h"
 #include "core/utilities/Logger.h"
 #include "protocol/GatewayStatusProtocol.h"
 
 namespace wolkabout
 {
-StatusMessageRouter::StatusMessageRouter(StatusProtocol& protocol, GatewayStatusProtocol& gatewayProtocol,
-                                         PlatformMessageListener* platformStatusMessageHandler,
+StatusMessageRouter::StatusMessageRouter(GatewayStatusProtocol& gatewayProtocol,
                                          DeviceMessageListener* deviceStatusMessageHandler,
-                                         DeviceMessageListener* lastWillMessageHandler,
-                                         PlatformMessageListener* platformKeepAliveMessageHandler)
-: m_protocol{protocol}
-, m_gatewayProtocol{gatewayProtocol}
-, m_platformStatusMessageHandler{platformStatusMessageHandler}
+                                         DeviceMessageListener* lastWillMessageHandler)
+: m_gatewayProtocol{gatewayProtocol}
 , m_deviceStatusMessageHandler{deviceStatusMessageHandler}
 , m_lastWillMessageHandler{lastWillMessageHandler}
-, m_platformKeepAliveMessageHandler{platformKeepAliveMessageHandler}
 {
-}
-
-void StatusMessageRouter::platformMessageReceived(std::shared_ptr<Message> message)
-{
-    LOG(TRACE) << "Routing platform status protocol message: " << message->getChannel();
-
-    if (m_protocol.isStatusRequestMessage(*message) && m_platformStatusMessageHandler)
-    {
-        m_platformStatusMessageHandler->platformMessageReceived(message);
-    }
-    else if (m_protocol.isStatusConfirmMessage(*message) && m_platformStatusMessageHandler)
-    {
-        m_platformStatusMessageHandler->platformMessageReceived(message);
-    }
-    else if (m_protocol.isPongMessage(*message) && m_platformKeepAliveMessageHandler)
-    {
-        m_platformKeepAliveMessageHandler->platformMessageReceived(message);
-    }
-    else
-    {
-        LOG(WARN) << "Failed to route platform status protocol message: " << message->getChannel();
-    }
 }
 
 void StatusMessageRouter::deviceMessageReceived(std::shared_ptr<Message> message)
@@ -79,11 +51,6 @@ void StatusMessageRouter::deviceMessageReceived(std::shared_ptr<Message> message
     {
         LOG(WARN) << "Failed to route device status protocol message: " << message->getChannel();
     }
-}
-
-const Protocol& StatusMessageRouter::getProtocol() const
-{
-    return m_protocol;
 }
 
 const GatewayProtocol& StatusMessageRouter::getGatewayProtocol() const

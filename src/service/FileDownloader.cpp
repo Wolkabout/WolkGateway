@@ -16,8 +16,8 @@
 
 #include "service/FileDownloader.h"
 
-#include "core/model/BinaryData.h"
-#include "core/model/FilePacketRequest.h"
+#include "core/model/messages/FileBinaryRequestMessage.h"
+#include "core/model/messages/FileBinaryResponseMessage.h"
 #include "core/utilities/FileSystemUtils.h"
 #include "core/utilities/Logger.h"
 
@@ -31,7 +31,7 @@ FileDownloader::FileDownloader(std::uint64_t maxPacketSize) : m_maxPacketSize{ma
 
 void FileDownloader::download(const std::string& fileName, std::uint64_t fileSize, const ByteArray& fileHash,
                               const std::string& downloadDirectory,
-                              std::function<void(const FilePacketRequest&)> packetProvider,
+                              std::function<void(const FileBinaryRequestMessage&)> packetProvider,
                               std::function<void(const std::string& filePath)> onSuccessCallback,
                               std::function<void(FileTransferError errorCode)> onFailCallback)
 {
@@ -60,16 +60,16 @@ void FileDownloader::download(const std::string& fileName, std::uint64_t fileSiz
         m_currentOnSuccessCallback = onSuccessCallback;
         m_currentOnFailCallback = onFailCallback;
 
-        requestPacket(m_currentPacketIndex, m_currentPacketSize);
+        requestPacket(m_currentPacketIndex);
     });
 }
 
-void FileDownloader::handleData(const BinaryData& binaryData)
+void FileDownloader::handle(const FileBinaryResponseMessage& response)
 {
     addToCommandBuffer([=] {
         m_timer.stop();
 
-        const auto result = m_fileHandler.handleData(binaryData);
+        const auto result = m_fileHandler.handle(response);
         switch (result)
         {
         case FileHandler::StatusCode::OK:
@@ -111,7 +111,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                     {
                         if (m_currentOnFailCallback)
                         {
-                            m_currentOnFailCallback(FileTransferError::UNSPECIFIED_ERROR);
+                            m_currentOnFailCallback(FileTransferError::UNKNOWN);
                         }
 
                         clear();
@@ -124,7 +124,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
                 {
                     if (m_currentOnFailCallback)
                     {
-                        m_currentOnFailCallback(FileTransferError::UNSPECIFIED_ERROR);
+                        m_currentOnFailCallback(FileTransferError::UNKNOWN);
                     }
 
                     clear();
@@ -135,7 +135,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
             else
             {
                 m_retryCount = 0;
-                requestPacket(m_currentPacketIndex, m_currentPacketSize);
+                requestPacket(m_currentPacketIndex);
             }
 
             break;
@@ -156,7 +156,7 @@ void FileDownloader::handleData(const BinaryData& binaryData)
         {
             if (m_currentOnFailCallback)
             {
-                m_currentOnFailCallback(FileTransferError::UNSPECIFIED_ERROR);
+                m_currentOnFailCallback(FileTransferError::UNKNOWN);
             }
 
             clear();
@@ -179,11 +179,11 @@ void FileDownloader::addToCommandBuffer(std::function<void()> command)
     m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(command));
 }
 
-void FileDownloader::requestPacket(unsigned index, std::uint_fast64_t size)
+void FileDownloader::requestPacket(unsigned index)
 {
     ++m_retryCount;
 
-    m_packetProvider(FilePacketRequest{m_currentFileName, index, size});
+    m_packetProvider(FileBinaryRequestMessage{m_currentFileName, index});
 
     m_timer.start(PACKET_REQUEST_TIMEOUT, [=] { packetFailed(); });
 }
@@ -200,7 +200,7 @@ void FileDownloader::packetFailed()
     }
     else
     {
-        requestPacket(m_currentPacketIndex, m_currentPacketSize);
+        requestPacket(m_currentPacketIndex);
     }
 }
 

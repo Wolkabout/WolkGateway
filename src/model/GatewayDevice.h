@@ -17,35 +17,23 @@
 #ifndef GATEWAYDEVICE_H
 #define GATEWAYDEVICE_H
 
-#include "core/model/DetailedDevice.h"
-#include "core/model/WolkOptional.h"
-#include "model/SubdeviceManagement.h"
-
-#include <string>
+#include "core/model/Device.h"
 
 namespace wolkabout
 {
-class GatewayDevice : public DetailedDevice
+class GatewayDevice : public Device
 {
 public:
-    GatewayDevice(std::string key, std::string password, SubdeviceManagement subdeviceManagent,
-                  bool firmwareUpdateEnabled = false, bool urlDownloadEnabled = false);
-    GatewayDevice(std::string key, std::string password, DeviceTemplate deviceTemplate);
+    GatewayDevice(std::string key, std::string password, OutboundDataMode mode, bool firmwareUpdateEnabled = false,
+                  bool urlDownloadEnabled = false);
 
-    WolkOptional<SubdeviceManagement> getSubdeviceManagement() const;
-    WolkOptional<bool> getFirmwareUpdate() const;
-    WolkOptional<bool> getUrlDownload() const;
+    //    WolkOptional<SubdeviceManagement> getSubdeviceManagement() const;
+    bool firmwareUpdateEnabled() const;
+    bool urlDownloadEnabled() const;
 
 private:
-    static const std::string FIRMWARE_UPDATE_TYPE;
-
-    static const std::string SUBDEVICE_MANAGEMENT_PARAMETER;
-    static const std::string GATEWAY_SUBDEVICE_MANAGEMENT;
-    static const std::string PLATFORM_SUBDEVICE_MANAGEMENT;
-
-    static const std::string FIRMWARE_UPDATE_PARAMETER;
-    static const std::string FILE_DOWNLOAD_PARAMETER;
-    static const std::string FILE_URL_PARAMETER;
+    bool m_firmwareUpdateEnabled;
+    bool m_urlDownloadEnabled;
 };
 }    // namespace wolkabout
 

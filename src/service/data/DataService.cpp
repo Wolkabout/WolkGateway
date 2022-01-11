@@ -21,14 +21,14 @@
 #include "core/model/Message.h"
 #include "core/protocol/DataProtocol.h"
 #include "core/utilities/Logger.h"
-#include "protocol/GatewayDataProtocol.h"
+#include "protocol/GatewayProtocol.h"
 
 #include <algorithm>
 #include <cassert>
 
 namespace wolkabout
 {
-DataService::DataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayDataProtocol& gatewayProtocol,
+DataService::DataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayProtocol& gatewayProtocol,
                          OutboundMessageHandler& outboundPlatformMessageHandler, MessageListener* gatewayDevice)
 : m_gatewayKey{gatewayKey}
 , m_protocol{protocol}
@@ -42,24 +42,16 @@ void DataService::platformMessageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string topic = message->getChannel();
+    const DeviceType type = m_gatewayProtocol.getDeviceType(*message);
 
-    const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(topic);
-
-    if (deviceKey.empty())
+    if (type == DeviceType::GATEWAY)
     {
-        LOG(WARN) << "DataService: Failed to extract device key from channel '" << topic << "'";
-        return;
-    }
-
-    if (m_gatewayKey == deviceKey)
-    {
-        handleMessageForGateway(message);
+        // messages with gateway prefix are intended for subdevices
+        handleMessageForDevice(message);
     }
     else
     {
-        // if message is for device remove gateway info from channel
-        handleMessageForDevice(message);
+        handleMessageForGateway(message);
     }
 }
 
@@ -85,14 +77,7 @@ void DataService::routeDeviceToPlatformMessage(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string channel = m_gatewayProtocol.routeDeviceToPlatformMessage(message->getChannel(), m_gatewayKey);
-    if (channel.empty())
-    {
-        LOG(WARN) << "Failed to route device message: " << message->getChannel();
-        return;
-    }
-
-    const std::shared_ptr<Message> routedMessage{new Message(message->getContent(), channel)};
+    const std::shared_ptr<Message> routedMessage = m_gatewayProtocol.routeDeviceToPlatformMessage(*message);
 
     addMessage(routedMessage);
 }

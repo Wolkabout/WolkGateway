@@ -20,16 +20,12 @@
 #include "FileListener.h"
 #include "OutboundMessageHandler.h"
 #include "core/connectivity/ConnectivityService.h"
-#include "core/model/BinaryData.h"
-#include "core/model/FileList.h"
-#include "core/model/FilePacketRequest.h"
-#include "core/model/FileTransferStatus.h"
-#include "core/model/FileUploadStatus.h"
-#include "core/model/FileUrlDownloadAbort.h"
-#include "core/model/FileUrlDownloadInitiate.h"
-#include "core/model/FileUrlDownloadStatus.h"
 #include "core/model/Message.h"
-#include "core/protocol/json/JsonDownloadProtocol.h"
+#include "core/model/messages/FileBinaryRequestMessage.h"
+#include "core/model/messages/FileBinaryResponseMessage.h"
+#include "core/model/messages/FileUploadStatusMessage.h"
+#include "core/model/messages/FileUrlDownloadInitMessage.h"
+#include "core/protocol/FileManagementProtocol.h"
 #include "core/utilities/ByteUtils.h"
 #include "core/utilities/FileSystemUtils.h"
 #include "core/utilities/Logger.h"
@@ -49,7 +45,7 @@ static const size_t FLAG_INDEX = 2;
 
 namespace wolkabout
 {
-FileDownloadService::FileDownloadService(std::string gatewayKey, JsonDownloadProtocol& protocol,
+FileDownloadService::FileDownloadService(std::string gatewayKey, FileManagementProtocol& protocol,
                                          std::string fileDownloadDirectory,
                                          OutboundMessageHandler& outboundMessageHandler, FileRepository& fileRepository,
                                          std::shared_ptr<UrlFileDownloader> urlFileDownloader,
@@ -96,76 +92,132 @@ void FileDownloadService::platformMessageReceived(std::shared_ptr<Message> messa
 {
     assert(message);
 
-    auto binary = m_protocol.makeBinaryData(*message);
-    if (binary)
+    // Look for the device this message is targeting
+    auto type = m_protocol.getMessageType(*message);
+    auto target = m_protocol.getDeviceKey(*message);
+    LOG(TRACE) << "Received message '" << toString(type) << "' for target '" << target << "'.";
+
+    // Parse the received message based on the type
+    switch (type)
     {
-        auto binaryData = *binary;
-        addToCommandBuffer([=] { handle(binaryData); });
+    case MessageType::FILE_UPLOAD_INIT:
+    {
+        if (auto parsedMessage = m_protocol.parseFileUploadInit(message))
+        {
+            auto init = *parsedMessage;
+            addToCommandBuffer([=] { handle(init); });
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to parse incoming 'FileUploadInitiate' message.";
+        }
 
         return;
     }
-
-    auto uploadInit = m_protocol.makeFileUploadInitiate(*message);
-    if (uploadInit)
+    case MessageType::FILE_UPLOAD_ABORT:
     {
-        auto initiateRequest = *uploadInit;
-        addToCommandBuffer([=] { handle(initiateRequest); });
+        if (auto parsedMessage = m_protocol.parseFileUploadAbort(message))
+        {
+            auto abort = *parsedMessage;
+
+            addToCommandBuffer([=] { handle(abort); });
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to parse 'FileUploadAbort' message.";
+        }
 
         return;
     }
-
-    auto uploadAbort = m_protocol.makeFileUploadAbort(*message);
-    if (uploadAbort)
+    case MessageType::FILE_BINARY_RESPONSE:
     {
-        auto abortRequest = *uploadAbort;
-        addToCommandBuffer([=] { handle(abortRequest); });
+        if (auto parsedMessage = m_protocol.parseFileBinaryResponse(message))
+        {
+            auto binary = *parsedMessage;
+
+            addToCommandBuffer([=] { handle(binary); });
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to parse 'FileBinaryResponse' message.";
+        }
 
         return;
     }
-
-    auto fileDelete = m_protocol.makeFileDelete(*message);
-    if (fileDelete)
+    case MessageType::FILE_URL_DOWNLOAD_INIT:
     {
-        auto deleteRequest = *fileDelete;
-        addToCommandBuffer([=] { handle(deleteRequest); });
+        if (auto parsedMessage = m_protocol.parseFileUrlDownloadInit(message))
+        {
+            auto init = *parsedMessage;
 
+            addToCommandBuffer([=] { handle(init); });
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to parse 'FileUrlDownloadInit' message.";
+        }
         return;
     }
-
-    if (m_protocol.isFilePurge(*message))
+    case MessageType::FILE_URL_DOWNLOAD_ABORT:
     {
-        addToCommandBuffer([=] { purgeFiles(); });
+        if (auto parsedMessage = m_protocol.parseFileUrlDownloadAbort(message))
+        {
+            auto abort = *parsedMessage;
 
+            addToCommandBuffer([=] { handle(abort); });
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to parse 'FileUrlDownloadAbort' message.";
+        }
         return;
     }
-
-    auto listConfirmResult = m_protocol.makeFileListConfirm(*message);
-    if (listConfirmResult)
+    case MessageType::FILE_LIST_REQUEST:
     {
-        LOG(DEBUG) << "Received file list confirm: " << listConfirmResult->getMessage();
+        if (auto parsedMessage = m_protocol.parseFileListRequest(message))
+        {
+            auto list = *parsedMessage;
+
+            addToCommandBuffer([=] { handle(list); });
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to parse 'FileListRequest' message.";
+        }
         return;
     }
-
-    auto urlDownloadInit = m_protocol.makeFileUrlDownloadInitiate(*message);
-    if (urlDownloadInit)
+    case MessageType::FILE_DELETE:
     {
-        auto initiateRequest = *urlDownloadInit;
-        addToCommandBuffer([=] { handle(initiateRequest); });
+        if (auto parsedMessage = m_protocol.parseFileDelete(message))
+        {
+            auto del = *parsedMessage;
 
+            addToCommandBuffer([=] { handle(del); });
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to parse 'FileDelete' message.";
+        }
         return;
     }
-
-    auto urlDownloadAbort = m_protocol.makeFileUrlDownloadAbort(*message);
-    if (urlDownloadAbort)
+    case MessageType::FILE_PURGE:
     {
-        auto abortRequest = *urlDownloadAbort;
-        addToCommandBuffer([=] { handle(abortRequest); });
+        if (auto parsedMessage = m_protocol.parseFilePurge(message))
+        {
+            auto purge = *parsedMessage;
 
+            addToCommandBuffer([=] { handle(purge); });
+        }
+        else
+        {
+            LOG(ERROR) << "Failed to parse 'FilePurge' message.";
+        }
         return;
     }
-
-    LOG(WARN) << "Unable to parse message; channel: " << message->getChannel()
-              << ", content: " << message->getContent();
+    default:
+        LOG(ERROR) << "Received a message of invalid type for this service.";
+        return;
+    }
 }
 
 const Protocol& FileDownloadService::getProtocol() const
@@ -173,7 +225,7 @@ const Protocol& FileDownloadService::getProtocol() const
     return m_protocol;
 }
 
-void FileDownloadService::handle(const BinaryData& binaryData)
+void FileDownloadService::handle(const FileBinaryResponseMessage& response)
 {
     std::lock_guard<decltype(m_mutex)> lg{m_mutex};
 
@@ -184,37 +236,37 @@ void FileDownloadService::handle(const BinaryData& binaryData)
         return;
     }
 
-    std::get<FILE_DOWNLOADER_INDEX>(it->second)->handleData(binaryData);
+    std::get<FILE_DOWNLOADER_INDEX>(it->second)->handle(response);
 }
 
-void FileDownloadService::handle(const FileUploadInitiate& request)
+void FileDownloadService::handle(const FileUploadInitiateMessage& request)
 {
     if (request.getName().empty())
     {
         LOG(WARN) << "Missing file name from file upload initiate";
 
-        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        sendStatus(FileUploadStatusMessage{request.getName(), FileTransferError::UNKNOWN});
         return;
     }
 
     if (request.getSize() == 0)
     {
         LOG(WARN) << "Missing file size from file upload initiate";
-        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        sendStatus(FileUploadStatusMessage{request.getName(), FileTransferError::UNKNOWN});
         return;
     }
 
     if (request.getHash().empty())
     {
         LOG(WARN) << "Missing file hash from file upload initiate";
-        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        sendStatus(FileUploadStatusMessage{request.getName(), FileTransferError::UNKNOWN});
         return;
     }
 
     if (m_fileListener != nullptr && !m_fileListener->chooseToDownload(request.getName()))
     {
         LOG(WARN) << "File listener denied the file download";
-        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSUPPORTED_FILE_SIZE});
+        sendStatus(FileUploadStatusMessage{request.getName(), FileTransferError::UNSUPPORTED_FILE_SIZE});
         return;
     }
 
@@ -226,30 +278,30 @@ void FileDownloadService::handle(const FileUploadInitiate& request)
     }
     else if (fileInfo->hash != request.getHash())
     {
-        sendStatus(FileUploadStatus{request.getName(), FileTransferError::FILE_HASH_MISMATCH});
+        sendStatus(FileUploadStatusMessage{request.getName(), FileTransferError::FILE_HASH_MISMATCH});
     }
     else
     {
-        sendStatus(FileUploadStatus{request.getName(), FileTransferStatus::FILE_READY});
+        sendStatus(FileUploadStatusMessage{request.getName(), FileTransferStatus::FILE_READY});
     }
 }
 
-void FileDownloadService::handle(const FileUploadAbort& request)
+void FileDownloadService::handle(const FileUploadAbortMessage& request)
 {
     if (request.getName().empty())
     {
         LOG(WARN) << "Missing file name from file upload abort";
 
-        sendStatus(FileUploadStatus{request.getName(), FileTransferError::UNSPECIFIED_ERROR});
+        sendStatus(FileUploadStatusMessage{request.getName(), FileTransferError::UNKNOWN});
         return;
     }
 
     abortDownload(request.getName());
 }
 
-void FileDownloadService::handle(const FileDelete& request)
+void FileDownloadService::handle(const FileDeleteMessage& request)
 {
-    if (request.getName().empty())
+    if (request.getFiles().empty())
     {
         LOG(WARN) << "Missing file name from file delete";
 
@@ -257,49 +309,59 @@ void FileDownloadService::handle(const FileDelete& request)
         return;
     }
 
-    deleteFile(request.getName());
+    deleteFiles(request.getFiles());
 }
 
-void FileDownloadService::handle(const FileUrlDownloadInitiate& request)
+void FileDownloadService::handle(const FilePurgeMessage&)
+{
+    purgeFiles();
+}
+
+void FileDownloadService::handle(const FileListRequestMessage&)
+{
+    sendFileListUpdate();
+}
+
+void FileDownloadService::handle(const FileUrlDownloadInitMessage& request)
 {
     if (!m_urlFileDownloader)
     {
         LOG(WARN) << "Url downloader not available";
 
-        sendStatus(FileUrlDownloadStatus{request.getUrl(), FileTransferError::TRANSFER_PROTOCOL_DISABLED});
+        sendStatus(FileUrlDownloadStatusMessage{request.getPath(), FileTransferError::TRANSFER_PROTOCOL_DISABLED});
         return;
     }
 
-    if (request.getUrl().empty())
+    if (request.getPath().empty())
     {
         LOG(WARN) << "Missing file url from file url download initiate";
 
-        sendStatus(FileUrlDownloadStatus{request.getUrl(), FileTransferError::UNSPECIFIED_ERROR});
+        sendStatus(FileUrlDownloadStatusMessage{request.getPath(), FileTransferError::UNKNOWN});
         return;
     }
 
-    urlDownload(request.getUrl());
+    urlDownload(request.getPath());
 }
 
-void FileDownloadService::handle(const FileUrlDownloadAbort& request)
+void FileDownloadService::handle(const FileUrlDownloadAbortMessage& request)
 {
     if (!m_urlFileDownloader)
     {
         LOG(WARN) << "Url downloader not available";
 
-        sendStatus(FileUrlDownloadStatus{request.getUrl(), FileTransferError::TRANSFER_PROTOCOL_DISABLED});
+        sendStatus(FileUrlDownloadStatusMessage{request.getPath(), FileTransferError::TRANSFER_PROTOCOL_DISABLED});
         return;
     }
 
-    if (request.getUrl().empty())
+    if (request.getPath().empty())
     {
         LOG(WARN) << "Missing file url from file url download abort";
 
-        sendStatus(FileUrlDownloadStatus{request.getUrl(), FileTransferError::UNSPECIFIED_ERROR});
+        sendStatus(FileUrlDownloadStatusMessage{request.getPath(), FileTransferError::UNKNOWN});
         return;
     }
 
-    abortUrlDownload(request.getUrl());
+    abortUrlDownload(request.getPath());
 }
 
 void FileDownloadService::download(const std::string& fileName, uint64_t fileSize, const std::string& fileHash)
@@ -314,17 +376,17 @@ void FileDownloadService::download(const std::string& fileName, uint64_t fileSiz
         {
             LOG(WARN) << "Download already active for file: " << fileName << ", but with different hash";
             // TODO another error
-            sendStatus(FileUploadStatus{fileName, FileTransferError::UNSPECIFIED_ERROR});
+            sendStatus(FileUploadStatusMessage{fileName, FileTransferError::UNKNOWN});
             return;
         }
 
         LOG(INFO) << "Download already active for file: " << fileName;
-        sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_TRANSFER});
+        sendStatus(FileUploadStatusMessage{fileName, FileTransferStatus::FILE_TRANSFER});
         return;
     }
 
     LOG(INFO) << "Downloading file: " << fileName;
-    sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_TRANSFER});
+    sendStatus(FileUploadStatusMessage{fileName, FileTransferStatus::FILE_TRANSFER});
 
     const auto byteHash = ByteUtils::toByteArray(StringUtils::base64Decode(fileHash));
 
@@ -333,11 +395,10 @@ void FileDownloadService::download(const std::string& fileName, uint64_t fileSiz
     m_activeDownload = fileName;
 
     std::get<FILE_DOWNLOADER_INDEX>(m_activeDownloads[fileName])
-      ->download(
-        fileName, fileSize, byteHash, m_fileDownloadDirectory,
-        [=](const FilePacketRequest& request) { requestPacket(request); },
-        [=](const std::string& filePath) { downloadCompleted(fileName, filePath, fileHash); },
-        [=](FileTransferError code) { downloadFailed(fileName, code); });
+      ->download(fileName, fileSize, byteHash, m_fileDownloadDirectory,
+                 [=](const FileBinaryRequestMessage& request) { requestPacket(request); },
+                 [=](const std::string& filePath) { downloadCompleted(fileName, filePath, fileHash); },
+                 [=](FileTransferError code) { downloadFailed(fileName, code); });
 }
 
 void FileDownloadService::urlDownload(const std::string& fileUrl)
@@ -365,7 +426,7 @@ void FileDownloadService::abortDownload(const std::string& fileName)
         std::get<FILE_DOWNLOADER_INDEX>(it->second)->abort();
         flagCompletedDownload(fileName);
         // TODO race with completed
-        sendStatus(FileUploadStatus{fileName, FileTransferStatus::ABORTED});
+        sendStatus(FileUploadStatusMessage{fileName, FileTransferStatus::ABORTED});
 
         m_activeDownload = "";
     }
@@ -382,12 +443,22 @@ void FileDownloadService::abortUrlDownload(const std::string& fileUrl)
     LOG(INFO) << "Aborting download for file: " << fileUrl;
     m_urlFileDownloader->abort(fileUrl);
 
-    sendStatus(FileUrlDownloadStatus{fileUrl, FileTransferStatus::ABORTED});
+    sendStatus(FileUrlDownloadStatusMessage{fileUrl, "", FileTransferStatus::ABORTED});
+}
+
+void FileDownloadService::deleteFiles(const std::vector<std::string>& files)
+{
+    LOG(DEBUG) << "FileDownloadService::deleteFiles";
+
+    for (const auto& file : files)
+    {
+        deleteFile(file);
+    }
 }
 
 void FileDownloadService::deleteFile(const std::string& fileName)
 {
-    LOG(DEBUG) << "FileDownloadService::delete " << fileName;
+    LOG(DEBUG) << "FileDownloadService::deleteFile " << fileName;
 
     auto info = m_fileRepository.getFileInfo(fileName);
     if (!info)
@@ -395,15 +466,10 @@ void FileDownloadService::deleteFile(const std::string& fileName)
         LOG(WARN) << "File info missing for file: " << fileName << ",  can't delete";
     }
 
-    LOG(INFO) << "Deleting file: " << info->path;
-    if (!FileSystemUtils::deleteFile(info->path))
-    {
-        LOG(ERROR) << "Failed to delete file: " << info->path;
-        sendFileList();
-        return;
-    }
+    LOG(INFO) << "Deleting file: " << fileName;
 
     m_fileRepository.remove(fileName);
+
     if (m_fileListener != nullptr)
         m_fileListener->onRemovedFile(fileName);
 
@@ -431,14 +497,10 @@ void FileDownloadService::purgeFiles()
             continue;
         }
 
-        LOG(INFO) << "Deleting file: " << info->path;
-        if (!FileSystemUtils::deleteFile(info->path))
-        {
-            LOG(ERROR) << "Failed to delete file: " << info->path;
-            continue;
-        }
+        LOG(INFO) << "Deleting file: " << name;
 
         m_fileRepository.remove(name);
+
         if (m_fileListener != nullptr)
             m_fileListener->onRemovedFile(name);
     }
@@ -453,9 +515,9 @@ void FileDownloadService::sendFileList()
     addToCommandBuffer([=] { sendFileListUpdate(); });
 }
 
-void FileDownloadService::sendStatus(const FileUploadStatus& response)
+void FileDownloadService::sendStatus(const FileUploadStatusMessage& response)
 {
-    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, response);
+    std::shared_ptr<Message> message = m_protocol.makeOutboundMessage(m_gatewayKey, response);
 
     if (!message)
     {
@@ -466,9 +528,9 @@ void FileDownloadService::sendStatus(const FileUploadStatus& response)
     m_outboundMessageHandler.addMessage(message);
 }
 
-void FileDownloadService::sendStatus(const FileUrlDownloadStatus& response)
+void FileDownloadService::sendStatus(const FileUrlDownloadStatusMessage& response)
 {
-    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, response);
+    std::shared_ptr<Message> message = m_protocol.makeOutboundMessage(m_gatewayKey, response);
 
     if (!message)
     {
@@ -490,7 +552,17 @@ void FileDownloadService::sendFileListUpdate()
         return;
     }
 
-    std::shared_ptr<Message> message = m_protocol.makeFileListUpdateMessage(m_gatewayKey, FileList{*fileNames});
+    std::vector<FileInformation> fileInfos;
+    for (const auto& name : *fileNames)
+    {
+        auto info = m_fileRepository.getFileInfo(name);
+        if (info)
+        {
+            fileInfos.push_back(*info);
+        }
+    }
+
+    std::shared_ptr<Message> message = m_protocol.makeOutboundMessage(m_gatewayKey, FileListResponseMessage{fileInfos});
 
     if (!message)
     {
@@ -501,9 +573,9 @@ void FileDownloadService::sendFileListUpdate()
     m_outboundMessageHandler.addMessage(message);
 }
 
-void FileDownloadService::requestPacket(const FilePacketRequest& request)
+void FileDownloadService::requestPacket(const FileBinaryRequestMessage& request)
 {
-    std::shared_ptr<Message> message = m_protocol.makeMessage(m_gatewayKey, request);
+    std::shared_ptr<Message> message = m_protocol.makeOutboundMessage(m_gatewayKey, request);
 
     if (!message)
     {
@@ -520,8 +592,9 @@ void FileDownloadService::downloadCompleted(const std::string& fileName, const s
     flagCompletedDownload(fileName);
 
     addToCommandBuffer([=] {
-        m_fileRepository.store(FileInfo{fileName, fileHash, filePath});
-        sendStatus(FileUploadStatus{fileName, FileTransferStatus::FILE_READY});
+        // we don't care about size, its already stored on disk
+        m_fileRepository.store(FileInformation{fileName, 0, fileHash});
+        sendStatus(FileUploadStatusMessage{fileName, FileTransferStatus::FILE_READY});
         if (m_fileListener != nullptr)
             m_fileListener->onNewFile(fileName);
     });
@@ -533,7 +606,7 @@ void FileDownloadService::downloadFailed(const std::string& fileName, FileTransf
 {
     flagCompletedDownload(fileName);
 
-    sendStatus(FileUploadStatus{fileName, errorCode});
+    sendStatus(FileUploadStatusMessage{fileName, errorCode});
 
     sendFileList();
 }
@@ -547,15 +620,16 @@ void FileDownloadService::urlDownloadCompleted(const std::string& fileUrl, const
         {
             LOG(ERROR) << "Failed to open downloaded file: " << filePath;
             FileSystemUtils::deleteFile(filePath);
-            sendStatus(FileUrlDownloadStatus{fileUrl, FileTransferError::FILE_SYSTEM_ERROR});
+            sendStatus(FileUrlDownloadStatusMessage{fileUrl, FileTransferError::FILE_SYSTEM_ERROR});
             return;
         }
 
         auto byteHash = ByteUtils::hashSHA256(fileContent);
         auto hashStr = StringUtils::base64Encode(byteHash);
 
-        m_fileRepository.store(FileInfo{fileName, hashStr, filePath});
-        sendStatus(FileUrlDownloadStatus{fileUrl, fileName});
+        // we don't care about size or hash, its already stored on disk
+        m_fileRepository.store(FileInformation{fileName, 0, ""});
+        sendStatus(FileUrlDownloadStatusMessage{fileUrl, fileName, FileTransferStatus::FILE_READY});
         if (m_fileListener != nullptr)
             m_fileListener->onNewFile(fileName);
     });
@@ -565,7 +639,7 @@ void FileDownloadService::urlDownloadCompleted(const std::string& fileUrl, const
 
 void FileDownloadService::urlDownloadFailed(const std::string& fileUrl, FileTransferError errorCode)
 {
-    sendStatus(FileUrlDownloadStatus{fileUrl, errorCode});
+    sendStatus(FileUrlDownloadStatusMessage{fileUrl, errorCode});
 
     sendFileList();
 }

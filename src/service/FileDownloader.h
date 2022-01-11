@@ -17,7 +17,7 @@
 #define FILEDOWNLOADER_H
 
 #include "FileHandler.h"
-#include "core/model/FileTransferStatus.h"
+#include "core/Types.h"
 #include "core/utilities/ByteUtils.h"
 #include "core/utilities/CommandBuffer.h"
 #include "core/utilities/Timer.h"
@@ -29,8 +29,8 @@
 
 namespace wolkabout
 {
-class BinaryData;
-class FilePacketRequest;
+class FileBinaryResponseMessage;
+class FileBinaryRequestMessage;
 
 class FileDownloader
 {
@@ -38,18 +38,19 @@ public:
     FileDownloader(std::uint64_t maxPacketSize);
 
     void download(const std::string& fileName, std::uint64_t fileSize, const ByteArray& fileHash,
-                  const std::string& downloadDirectory, std::function<void(const FilePacketRequest&)> packetProvider,
+                  const std::string& downloadDirectory,
+                  std::function<void(const FileBinaryRequestMessage&)> packetProvider,
                   std::function<void(const std::string& filePath)> onSuccessCallback,
                   std::function<void(FileTransferError errorCode)> onFailCallback);
 
-    void handleData(const BinaryData& binaryData);
+    void handle(const FileBinaryResponseMessage& response);
 
     void abort();
 
 private:
     void addToCommandBuffer(std::function<void()> command);
 
-    void requestPacket(unsigned index, std::uint64_t size);
+    void requestPacket(unsigned index);
 
     void packetFailed();
 
@@ -69,7 +70,7 @@ private:
     ByteArray m_currentFileHash;
     std::string m_currentDownloadDirectory;
 
-    std::function<void(const FilePacketRequest&)> m_packetProvider;
+    std::function<void(const FileBinaryRequestMessage&)> m_packetProvider;
     std::function<void(const std::string&)> m_currentOnSuccessCallback;
     std::function<void(FileTransferError)> m_currentOnFailCallback;
 

@@ -16,79 +16,25 @@
 
 #include "GatewayDevice.h"
 
-#include <string>
+#include <utility>
 
 namespace wolkabout
 {
-const std::string GatewayDevice::FIRMWARE_UPDATE_TYPE = "DFU";
-const std::string GatewayDevice::SUBDEVICE_MANAGEMENT_PARAMETER = "SUB_DEVICE_MANAGEMENT";
-const std::string GatewayDevice::GATEWAY_SUBDEVICE_MANAGEMENT = "GATEWAY";
-const std::string GatewayDevice::PLATFORM_SUBDEVICE_MANAGEMENT = "PLATFORM";
-const std::string GatewayDevice::FIRMWARE_UPDATE_PARAMETER = "supportsFirmwareUpdate";
-const std::string GatewayDevice::FILE_DOWNLOAD_PARAMETER = "supportsFileDownload";
-const std::string GatewayDevice::FILE_URL_PARAMETER = "supportsFileURL";
-
-GatewayDevice::GatewayDevice(std::string key, std::string password, SubdeviceManagement subdeviceManagent,
-                             bool firmwareUpdateEnabled, bool urlDownloadEnabled)
-: DetailedDevice{
-    "", std::move(key), std::move(password),
-    DeviceTemplate{
-      {},
-      {},
-      {},
-      {},
-      (firmwareUpdateEnabled ? FIRMWARE_UPDATE_TYPE : ""),
-      {{SUBDEVICE_MANAGEMENT_PARAMETER,
-        (static_cast<bool>(subdeviceManagent) ? GATEWAY_SUBDEVICE_MANAGEMENT : PLATFORM_SUBDEVICE_MANAGEMENT)}},
-      {},
-      {{FIRMWARE_UPDATE_PARAMETER, firmwareUpdateEnabled},
-       {FILE_DOWNLOAD_PARAMETER, true},
-       {FILE_URL_PARAMETER, urlDownloadEnabled}}}}
+GatewayDevice::GatewayDevice(std::string key, std::string password, OutboundDataMode mode, bool firmwareUpdateEnabled,
+                             bool urlDownloadEnabled)
+: Device{std::move(key), std::move(password), mode}
+, m_firmwareUpdateEnabled{firmwareUpdateEnabled}
+, m_urlDownloadEnabled{urlDownloadEnabled}
 {
 }
 
-GatewayDevice::GatewayDevice(std::string key, std::string password, DeviceTemplate deviceTemplate)
-: DetailedDevice{"", key, password, deviceTemplate}
+bool GatewayDevice::firmwareUpdateEnabled() const
 {
+    return m_firmwareUpdateEnabled;
 }
 
-WolkOptional<SubdeviceManagement> GatewayDevice::getSubdeviceManagement() const
+bool GatewayDevice::urlDownloadEnabled() const
 {
-    auto it = m_deviceTemplate.getTypeParameters().find(SUBDEVICE_MANAGEMENT_PARAMETER);
-    if (it != m_deviceTemplate.getTypeParameters().end())
-    {
-        if (it->second == GATEWAY_SUBDEVICE_MANAGEMENT)
-        {
-            return WolkOptional<SubdeviceManagement>(SubdeviceManagement::GATEWAY);
-        }
-        else if (it->second == PLATFORM_SUBDEVICE_MANAGEMENT)
-        {
-            return WolkOptional<SubdeviceManagement>(SubdeviceManagement::PLATFORM);
-        }
-    }
-
-    return {};
-}
-
-WolkOptional<bool> GatewayDevice::getFirmwareUpdate() const
-{
-    auto it = m_deviceTemplate.getFirmwareUpdateParameters().find(FIRMWARE_UPDATE_PARAMETER);
-    if (it != m_deviceTemplate.getFirmwareUpdateParameters().end())
-    {
-        return it->second;
-    }
-
-    return {};
-}
-
-WolkOptional<bool> GatewayDevice::getUrlDownload() const
-{
-    auto it = m_deviceTemplate.getFirmwareUpdateParameters().find(FILE_URL_PARAMETER);
-    if (it != m_deviceTemplate.getFirmwareUpdateParameters().end())
-    {
-        return it->second;
-    }
-
-    return {};
+    return m_urlDownloadEnabled;
 }
 }    // namespace wolkabout

@@ -23,7 +23,7 @@
 
 namespace wolkabout
 {
-class BinaryData;
+class FileBinaryResponseMessage;
 
 class FileHandler
 {
@@ -43,7 +43,7 @@ public:
 
     void clear();
 
-    FileHandler::StatusCode handleData(const BinaryData& binaryData);
+    FileHandler::StatusCode handle(const FileBinaryResponseMessage& response);
 
     FileHandler::StatusCode validateFile(const ByteArray& fileHash) const;
 

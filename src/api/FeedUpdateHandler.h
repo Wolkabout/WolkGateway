@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2021 WolkAbout Technology s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,24 +14,35 @@
  * limitations under the License.
  */
 
-#ifndef WOLKABOUT_DATAHANDLER_H
-#define WOLKABOUT_DATAHANDLER_H
+#ifndef FEEDUPDATEHANDLER_H
+#define FEEDUPDATEHANDLER_H
 
 #include "core/model/Reading.h"
 
+#include <map>
 #include <string>
-#include <vector>
 
 namespace wolkabout
 {
-class DataHandler
+/**
+ * This interface describes an object that can receive feed value updates.
+ */
+class FeedUpdateHandler
 {
 public:
-    virtual ~DataHandler() = default;
+    /**
+     * Default virtual destructor.
+     */
+    virtual ~FeedUpdateHandler() = default;
 
-    virtual void addReading(const std::string& deviceKey, const Reading& reading) = 0;
-    virtual void addReadings(const std::string& deviceKey, const std::vector<Reading>& readings) = 0;
+    /**
+     * This method will be invoked once new values have been received.
+     *
+     * @param readings All feed readings that have been updated. Grouped up by time when a reading change happened. Key
+     * is an epoch timestamp in milliseconds, and value is an array of readings changed at that time.
+     */
+    virtual void handleUpdate(std::map<std::uint64_t, std::vector<Reading>> readings) = 0;
 };
 }    // namespace wolkabout
 
-#endif    // WOLKABOUT_DATAHANDLER_H
+#endif

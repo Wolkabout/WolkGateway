@@ -8,8 +8,8 @@
 #include "model/GatewayDevice.h"
 #include "model/SubdeviceManagement.h"
 #include "protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h"
-#include "repository/DeviceRepository.h"
-#include "repository/SQLiteDeviceRepository.h"
+#include "repository/device/DeviceRepository.h"
+#include "repository/device/SQLiteDeviceRepository.h"
 #include "service/GatewayUpdateService.h"
 #include "service/SubdeviceRegistrationService.h"
 

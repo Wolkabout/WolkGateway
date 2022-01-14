@@ -3,7 +3,7 @@
 #include "core/model/Message.h"
 #include "core/protocol/json/JsonProtocol.h"
 #include "protocol/json/JsonGatewayDataProtocol.h"
-#include "repository/SQLiteDeviceRepository.h"
+#include "repository/device/SQLiteDeviceRepository.h"
 #include "service/data/DataService.h"
 #include "service/data/ExternalDataService.h"
 #include "service/data/InternalDataService.h"

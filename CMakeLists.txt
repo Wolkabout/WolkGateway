@@ -17,10 +17,34 @@ project(WolkGateway C CXX)
 
 set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+# Options of this project
+OPTION(BUILD_SHARED "Build this library as a shared library" ON)
+option(BUILD_EXECUTABLE "Build the standalone ${PROJECT_NAME} application." ON)
+if (NOT ${BUILD_EXECUTABLE})
+    message(STATUS "Skipping build of ${PROJECT_NAME} application")
+endif ()
+option(BUILD_TESTS "Build the library with GTest." ON)
 
+# Configure the paths for output
+if (NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+endif ()
+
+if (NOT DEFINED CMAKE_LIBRARY_INCLUDE_DIRECTORY)
+    set(CMAKE_LIBRARY_INCLUDE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
+endif ()
+
+if (NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+endif ()
+
+if (NOT DEFINED CMAKE_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/build")
+endif ()
+
+# Setting the compiler flags
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic                                                    \
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}     -Wall -Wextra -pedantic                                                    \
                                             -pedantic-errors -Wcast-align                                              \
                                             -Wcast-qual -Wconversion                                                   \
                                             -Wdisabled-optimization                                                    \
@@ -36,195 +60,176 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}    -Wall -Wextra -pedantic              
                                             -Wvariadic-macros -Werror=overloaded-virtual                               \
                                             -Wwrite-strings -Werror=non-virtual-dtor -Werror=return-type")
 
-
-get_directory_property(HAS_PARENT PARENT_DIRECTORY)
-if (HAS_PARENT)
-    option(BUILD_APP "" OFF)
-else ()
-    option(BUILD_APP "" ON)
-    message(STATUS "Skipping build of ${PROJECT_NAME} app")
+if (${BUILD_TESTS})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -g")
 endif ()
 
-# library output
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build)
-set(CMAKE_LIBRARY_INCLUDE_DIRECTORY ${CMAKE_PREFIX_PATH}/include)
-set(POCO_INSTALL_DIR ${CMAKE_BINARY_DIR})
-include_directories(SYSTEM ${CMAKE_BINARY_DIR}/include)
-link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+if (${BUILD_SHARED})
+    set(LIB_TYPE SHARED)
+else ()
+    set(LIB_TYPE STATIC)
+endif ()
+
+# Add linking directories and the include directories
 link_directories(${CMAKE_PREFIX_PATH}/lib)
+link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+include_directories(SYSTEM ${CMAKE_BINARY_DIR}/include)
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 
-# WolkAbout c++ SDK
-set(BUILD_CONNECTIVITY ON CACHE BOOL "Build the library with Paho MQTT and allow MQTT connection to the platform.")
-set(BUILD_POCO OFF CACHE BOOL "Build the library with Poco.")
-set(BUILD_GTEST ON CACHE BOOL "Build the library with GTest.")
-set(BUILD_AWS_LOG_UPLOADER OFF CACHE BOOL "Build the library with AwsLogUploader.")
-option(BUILD_AWS_LOG_UPLOADER "" OFF)
-add_subdirectory(WolkSDK-Cpp)
+# Bring in WolkSDK-Cpp
+if (NOT TARGET WolkAboutCore)
+    set(BUILD_CONNECTIVITY ON CACHE BOOL "Build the library with Paho MQTT and allow MQTT connection to the platform.")
+    set(BUILD_POCO OFF CACHE BOOL "Build the library with Poco.")
+    set(BUILD_GTEST ${BUILD_TESTS} CACHE BOOL "Build the library with GTest.")
+    set(BUILD_AWS_LOG_UPLOADER OFF CACHE BOOL "Build the library with AwsLogUploader.")
+    add_subdirectory(WolkSDK-Cpp)
+    include_directories(WolkSDK-Cpp)
+endif ()
+
+# Define the version of the library
+set(WOLKGATEWAY_VERSION_MAJOR 5)
+set(WOLKGATEWAY_VERSION_MINOR 0)
+set(WOLKGATEWAY_VERSION_PATCH 0)
+set(WOLKGATEWAY_VERSION_SUFFIX prerelease)
+
+set(WOLKGATEWAY_VERSION_STRING "${WOLKGATEWAY_VERSION_MAJOR}.${WOLKGATEWAY_VERSION_MINOR}.${WOLKGATEWAY_VERSION_PATCH}")
+if (NOT "${WOLKGATEWAY_VERSION_SUFFIX}" STREQUAL "")
+    set(WOLKGATEWAY_VERSION_STRING "${WOLKGATEWAY_VERSION_STRING}-${WOLKGATEWAY_VERSION_SUFFIX}")
+endif ()
 
 # WolkGateway library
-set(LIB_HEADER_FILES
-    src/ActuationHandler.h
-    src/ActuatorStatusProvider.h
-    src/api/DataHandler.h
-    src/api/DataProvider.h
-    src/api/FeedUpdateHandler.h
-    src/ConfigurationHandler.h
-    src/ConfigurationProvider.h
-    src/ConnectionStatusListener.h
-    src/FileHandler.h
-    src/FileListener.h
-    src/FirmwareInstaller.h
-    src/GatewayInboundDeviceMessageHandler.h
-    src/GatewayInboundPlatformMessageHandler.h
-    src/InboundDeviceMessageHandler.h
-    src/InboundPlatformMessageHandler.h
-    src/model/GatewayDevice.h
-    src/model/SubdeviceManagement.h
-    src/OutboundMessageHandler.h
-    src/OutboundRetryMessageHandler.h
-    src/persistence/filesystem/GatewayCircularFileSystemPersistence.h
-    src/persistence/filesystem/GatewayFilesystemPersistence.h
-    src/persistence/filesystem/MessagePersister.h
-    src/persistence/GatewayPersistence.h
-    src/persistence/inmemory/GatewayInMemoryPersistence.h
-#    src/protocol/GatewayDataProtocol.h
-#    src/protocol/GatewayFirmwareUpdateProtocol.h
-    src/protocol/GatewayProtocol.h
-#    src/protocol/GatewayStatusProtocol.h
-#    src/protocol/GatewaySubdeviceRegistrationProtocol.h
-#    src/protocol/json/JsonGatewayDataProtocol.h
-#    src/protocol/json/JsonGatewayDFUProtocol.h
-#    src/protocol/json/JsonGatewayStatusProtocol.h
-#    src/protocol/json/JsonGatewaySubdeviceRegistrationProtocol.h
-#    src/RegistrationMessageRouter.h
-    src/repository/DeviceRepository.h
-    src/repository/ExistingDevicesRepository.h
-#    src/repository/FileInfo.h
-    src/repository/FileRepository.h
-    src/repository/FSFileRepository.h
-    src/repository/JsonFileExistingDevicesRepository.h
-    src/repository/SQLiteDeviceRepository.h
-    src/service/data/DataService.h
-    src/service/data/ExternalDataService.h
-    src/service/data/GatewayDataService.h
-    src/service/data/InternalDataService.h
-#    src/service/DataHandlerApiFacade.h
-    src/service/FileDownloader.h
-    src/service/FileDownloadService.h
-    src/service/FirmwareUpdateService.h
-    src/service/GatewayUpdateService.h
-    src/service/KeepAliveService.h
-    src/service/PublishingService.h
-#    src/service/status/DeviceStatusService.h
-#    src/service/status/ExternalDeviceStatusService.h
-#    src/service/status/InternalDeviceStatusService.h
-    src/service/status/PlatformStatusService.h
-    src/service/SubdeviceRegistrationService.h
-    src/service/UrlFileDownloader.h
-    src/service/WolkaboutFileDownloader.h
-    src/StatusMessageRouter.h
-    src/Version.h
-    src/WolkBuilder.h
-    src/WolkDefault.h
-    src/WolkExternal.h
-    src/Wolk.h
-    )
-
 set(LIB_SOURCE_FILES
-    src/FileHandler.cpp
-    src/GatewayInboundDeviceMessageHandler.cpp
-    src/GatewayInboundPlatformMessageHandler.cpp
-    src/model/GatewayDevice.cpp
-    src/OutboundRetryMessageHandler.cpp
-    src/persistence/filesystem/GatewayCircularFileSystemPersistence.cpp
-    src/persistence/filesystem/GatewayFilesystemPersistence.cpp
-    src/persistence/filesystem/MessagePersister.cpp
-    src/persistence/inmemory/GatewayInMemoryPersistence.cpp
-    src/protocol/GatewayProtocol.cpp
-#    src/protocol/json/JsonGatewayDataProtocol.cpp
-#    src/protocol/json/JsonGatewayDFUProtocol.cpp
-#    src/protocol/json/JsonGatewayStatusProtocol.cpp
-#    src/protocol/json/JsonGatewaySubdeviceRegistrationProtocol.cpp
-#    src/RegistrationMessageRouter.cpp
-    src/repository/FSFileRepository.cpp
-    src/repository/JsonFileExistingDevicesRepository.cpp
-#    src/repository/SQLiteDeviceRepository.cpp
-    src/service/data/DataService.cpp
-    src/service/data/ExternalDataService.cpp
-    src/service/data/GatewayDataService.cpp
-    src/service/data/InternalDataService.cpp
-#    src/service/DataHandlerApiFacade.cpp
-    src/service/FileDownloader.cpp
-    src/service/FileDownloadService.cpp
-    src/service/FirmwareUpdateService.cpp
-    src/service/GatewayUpdateService.cpp
-    src/service/KeepAliveService.cpp
-    src/service/PublishingService.cpp
-#    src/service/status/DeviceStatusService.cpp
-#    src/service/status/ExternalDeviceStatusService.cpp
-#    src/service/status/InternalDeviceStatusService.cpp
-    src/service/status/PlatformStatusService.cpp
-    src/service/SubdeviceRegistrationService.cpp
-    src/StatusMessageRouter.cpp
-    src/WolkBuilder.cpp
-    src/Wolk.cpp
-    src/WolkDefault.cpp
-    src/WolkExternal.cpp
-    )
+        wolk/FileHandler.cpp
+        wolk/GatewayInboundDeviceMessageHandler.cpp
+        wolk/GatewayInboundPlatformMessageHandler.cpp
+        wolk/model/GatewayDevice.cpp
+        wolk/OutboundRetryMessageHandler.cpp
+        wolk/persistence/filesystem/GatewayCircularFileSystemPersistence.cpp
+        wolk/persistence/filesystem/GatewayFilesystemPersistence.cpp
+        wolk/persistence/filesystem/MessagePersister.cpp
+        wolk/persistence/inmemory/GatewayInMemoryPersistence.cpp
+        wolk/repository/file/FSFileRepository.cpp
+        wolk/repository/existing_device/JsonFileExistingDevicesRepository.cpp
+        wolk/repository/device/SQLiteDeviceRepository.cpp
+        wolk/service/data/DataService.cpp
+        wolk/service/data/ExternalDataService.cpp
+        wolk/service/data/GatewayDataService.cpp
+        wolk/service/data/InternalDataService.cpp
+        wolk/service/DataHandlerApiFacade.cpp
+        wolk/service/FileDownloader.cpp
+        wolk/service/FileDownloadService.cpp
+        wolk/service/FirmwareUpdateService.cpp
+        wolk/service/GatewayUpdateService.cpp
+        wolk/service/KeepAliveService.cpp
+        wolk/service/PublishingService.cpp
+        wolk/service/platform_status/PlatformStatusService.cpp
+        wolk/service/SubdeviceRegistrationService.cpp
+        wolk/StatusMessageRouter.cpp
+        wolk/WolkBuilder.cpp
+        wolk/Wolk.cpp
+        wolk/WolkDefault.cpp
+        wolk/WolkExternal.cpp)
+set(LIB_HEADER_FILES
+        wolk/api/ConnectionStatusListener.h
+        wolk/api/DataHandler.h
+        wolk/api/DataProvider.h
+        wolk/api/FeedUpdateHandler.h
+        wolk/api/FileListener.h
+        wolk/model/GatewayDevice.h
+        wolk/model/SubdeviceManagement.h
+        wolk/persistence/filesystem/GatewayCircularFileSystemPersistence.h
+        wolk/persistence/filesystem/GatewayFilesystemPersistence.h
+        wolk/persistence/filesystem/MessagePersister.h
+        wolk/persistence/GatewayPersistence.h
+        wolk/persistence/inmemory/GatewayInMemoryPersistence.h
+        wolk/repository/device/DeviceRepository.h
+        wolk/repository/existing_device/ExistingDevicesRepository.h
+        wolk/repository/file/FileRepository.h
+        wolk/repository/file/FSFileRepository.h
+        wolk/repository/existing_device/JsonFileExistingDevicesRepository.h
+        wolk/repository/device/SQLiteDeviceRepository.h
+        wolk/service/data/DataService.h
+        wolk/service/data/ExternalDataService.h
+        wolk/service/data/GatewayDataService.h
+        wolk/service/data/InternalDataService.h
+        wolk/service/DataHandlerApiFacade.h
+        wolk/service/FileDownloader.h
+        wolk/service/FileDownloadService.h
+        wolk/service/FirmwareUpdateService.h
+        wolk/service/GatewayUpdateService.h
+        wolk/service/KeepAliveService.h
+        wolk/service/PublishingService.h
+        wolk/service/SubdeviceRegistrationService.h
+        wolk/service/UrlFileDownloader.h
+        wolk/service/WolkaboutFileDownloader.h
+        wolk/service/platform_status/PlatformStatusService.h
+        wolk/FileHandler.h
+        wolk/FirmwareInstaller.h
+        wolk/GatewayInboundDeviceMessageHandler.h
+        wolk/GatewayInboundPlatformMessageHandler.h
+        wolk/InboundDeviceMessageHandler.h
+        wolk/InboundPlatformMessageHandler.h
+        wolk/OutboundMessageHandler.h
+        wolk/OutboundRetryMessageHandler.h
+        wolk/StatusMessageRouter.h
+        wolk/WolkBuilder.h
+        wolk/WolkDefault.h
+        wolk/WolkExternal.h
+        wolk/Wolk.h)
 
-add_library(${PROJECT_NAME} SHARED ${LIB_SOURCE_FILES} ${LIB_HEADER_FILES})
+file(COPY wolk/ DESTINATION ${CMAKE_LIBRARY_INCLUDE_DIRECTORY}/wolk/ PATTERN *.cpp EXCLUDE)
+
+add_library(${PROJECT_NAME} ${LIB_TYPE} ${LIB_SOURCE_FILES} ${LIB_HEADER_FILES})
 target_link_libraries(${PROJECT_NAME} WolkAboutCore z OpenSSL::Crypto Threads::Threads sqlite3)
-target_include_directories(${PROJECT_NAME} PUBLIC "src")
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${WOLKGATEWAY_VERSION_STRING} SOVERSION ${WOLKGATEWAY_VERSION_MAJOR}.${WOLKGATEWAY_VERSION_MINOR}.${WOLKGATEWAY_VERSION_PATCH})
 
+# Create the install rule
+install(DIRECTORY ${CMAKE_LIBRARY_INCLUDE_DIRECTORY} DESTINATION ${CMAKE_INSTALL_PREFIX}/include PATTERN *.h)
+install(DIRECTORY ${CMAKE_PREFIX_PATH}/include DESTINATION ${CMAKE_INSTALL_PREFIX} PATTERN *.h)
+install(DIRECTORY ${CMAKE_PREFIX_PATH}/lib/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 # Tests
-file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h" "tests/*.hpp")
-file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
+if (${BUILD_TESTS})
+    file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
+    file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h")
 
-add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
-target_include_directories(${PROJECT_NAME}Tests PUBLIC "tests")
-target_include_directories(${PROJECT_NAME}Tests SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
-set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
-add_dependencies(${PROJECT_NAME}Tests libgtest)
+    add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES} ${TESTS_HEADER_FILES})
+    target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
+    target_include_directories(${PROJECT_NAME}Tests PUBLIC "tests")
+    target_include_directories(${PROJECT_NAME}Tests SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
+    set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+    add_dependencies(${PROJECT_NAME}Tests libgtest)
 
-add_custom_target(tests ${PROJECT_NAME}Tests)
-add_test(gtest ${PROJECT_NAME}Tests)
-
+    add_custom_target(tests ${PROJECT_NAME}Tests)
+    add_test(NAME WolkGatewayUnitTests COMMAND ./bin/${PROJECT_NAME}Tests)
+endif ()
 
 # WolkGateway executable
-file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
-file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
+if (${BUILD_EXECUTABLE})
+    file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
+    file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
 
-if (${BUILD_APP})
-    add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES})
+    add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES} ${BIN_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}App WolkGateway)
     set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 
-    # Install target
-    install(DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} DESTINATION /usr
-            FILES_MATCHING
-            PATTERN "*so*")
-
-    # Place the executable file in /usr/bin
-    install(TARGETS ${PROJECT_NAME}App DESTINATION /usr/bin)
-
-    # Place the ca.crt file in /usr/bin
+    install(TARGETS ${PROJECT_NAME}App DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
     install(FILES out/ca.crt DESTINATION /etc/wolkGateway
             PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
-
-    # Place the config files and service unit file.
     install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
             PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
-
-    install(CODE "MESSAGE(\"Installed WolkGateway. Configuration files for the module are placed in /etc/wolkGateway.\")")
 endif ()
 
-# CMake utilities
-add_subdirectory(cmake)
+# Add the format rule
+add_custom_target(format
+        COMMAND "clang-format" -i -sort-includes -style=file ${LIB_HEADER_FILES} ${LIB_SOURCE_FILES}
+        ${BIN_HEADER_FILES} ${BIN_SOURCE_FILES} ${TESTS_HEADER_FILES} ${TESTS_SOURCE_FILES}
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        COMMENT "[Formatting source code]"
+        VERBATIM)

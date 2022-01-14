@@ -2,9 +2,9 @@
 #define MOCKREPOSITORY_H
 
 #include "core/model/DetailedDevice.h"
-#include "repository/DeviceRepository.h"
-#include "repository/ExistingDevicesRepository.h"
-#include "repository/FileRepository.h"
+#include "repository/device/DeviceRepository.h"
+#include "repository/existing_device/ExistingDevicesRepository.h"
+#include "repository/file/FileRepository.h"
 
 #include <gmock/gmock.h>
 

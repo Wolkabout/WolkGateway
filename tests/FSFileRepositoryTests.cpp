@@ -1,6 +1,6 @@
 #define private public
 #define protected public
-#include "repository/FSFileRepository.h"
+#include "repository/file/FSFileRepository.h"
 #undef private
 #undef protected
 

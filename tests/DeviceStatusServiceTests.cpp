@@ -1,11 +1,11 @@
-#include "ConnectionStatusListener.h"
 #include "MockConnectionStatusListener.h"
 #include "MockRepository.h"
 #include "OutboundMessageHandler.h"
+#include "api/ConnectionStatusListener.h"
 #include "core/model/Message.h"
 #include "core/protocol/json/JsonStatusProtocol.h"
 #include "protocol/json/JsonGatewayStatusProtocol.h"
-#include "repository/SQLiteDeviceRepository.h"
+#include "repository/device/SQLiteDeviceRepository.h"
 #include "service/status/DeviceStatusService.h"
 #include "service/status/InternalDeviceStatusService.h"
 

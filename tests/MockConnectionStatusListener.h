@@ -1,7 +1,7 @@
 #ifndef MOCKCONNECTIONSTATUSLISTENER_H
 #define MOCKCONNECTIONSTATUSLISTENER_H
 
-#include "ConnectionStatusListener.h"
+#include "api/ConnectionStatusListener.h"
 
 #include <gmock/gmock.h>
 

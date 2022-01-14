@@ -5,6 +5,10 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 5.0.0-prerelease**
+    - [REWORK] - Updated the WolkGateway to be ready for Wolkabout IoT Platform 22.GA - The Digital Twin Update
+    - [IMPROVEMENT] - Fixed the CMakeLists.txt file for private header file finding to use project files in private
+
 **Version 4.4.0**
     - [IMPROVEMENT] - Completely removed `libpoco` as a dependency, and now rely on `sqlite` for SQLiteDeviceRepository.
 

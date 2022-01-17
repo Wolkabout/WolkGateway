@@ -17,8 +17,9 @@
 #ifndef GATEWAYINMEMORYPERSISTENCE_H
 #define GATEWAYINMEMORYPERSISTENCE_H
 
-#include "persistence/GatewayPersistence.h"
+#include "wolk/persistence/GatewayPersistence.h"
 
+#include <memory>
 #include <mutex>
 #include <queue>
 

@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "persistence/inmemory/GatewayInMemoryPersistence.h"
+#include "wolk/persistence/inmemory/GatewayInMemoryPersistence.h"
+
+#include "core/model/Message.h"
 
 namespace wolkabout
 {

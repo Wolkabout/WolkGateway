@@ -84,8 +84,9 @@ if (NOT TARGET WolkAboutCore)
     set(BUILD_POCO OFF CACHE BOOL "Build the library with Poco.")
     set(BUILD_GTEST ${BUILD_TESTS} CACHE BOOL "Build the library with GTest.")
     set(BUILD_AWS_LOG_UPLOADER OFF CACHE BOOL "Build the library with AwsLogUploader.")
-    add_subdirectory(WolkSDK-Cpp)
-    include_directories(WolkSDK-Cpp)
+    set(BUILD_POCO_HTTP_DOWNLOADER OFF CACHE BOOL "Build the optional `FileDownloader` implementation that uses Poco")
+    add_subdirectory(WolkConnect-Cpp)
+    include_directories(WolkConnect-Cpp)
 endif ()
 
 # Define the version of the library
@@ -102,10 +103,8 @@ endif ()
 # WolkGateway library
 set(LIB_SOURCE_FILES
         wolk/FileHandler.cpp
-        wolk/GatewayInboundDeviceMessageHandler.cpp
-        wolk/GatewayInboundPlatformMessageHandler.cpp
         wolk/model/GatewayDevice.cpp
-        wolk/OutboundRetryMessageHandler.cpp
+        ../WolkSDK-Cpp/core/connectivity/OutboundRetryMessageHandler.cpp
         wolk/persistence/filesystem/GatewayCircularFileSystemPersistence.cpp
         wolk/persistence/filesystem/GatewayFilesystemPersistence.cpp
         wolk/persistence/filesystem/MessagePersister.cpp
@@ -123,7 +122,6 @@ set(LIB_SOURCE_FILES
         wolk/service/FirmwareUpdateService.cpp
         wolk/service/GatewayUpdateService.cpp
         wolk/service/KeepAliveService.cpp
-        wolk/service/PublishingService.cpp
         wolk/service/platform_status/PlatformStatusService.cpp
         wolk/service/SubdeviceRegistrationService.cpp
         wolk/StatusMessageRouter.cpp
@@ -159,19 +157,14 @@ set(LIB_HEADER_FILES
         wolk/service/FirmwareUpdateService.h
         wolk/service/GatewayUpdateService.h
         wolk/service/KeepAliveService.h
-        wolk/service/PublishingService.h
         wolk/service/SubdeviceRegistrationService.h
         wolk/service/UrlFileDownloader.h
         wolk/service/WolkaboutFileDownloader.h
         wolk/service/platform_status/PlatformStatusService.h
         wolk/FileHandler.h
         wolk/FirmwareInstaller.h
-        wolk/GatewayInboundDeviceMessageHandler.h
-        wolk/GatewayInboundPlatformMessageHandler.h
-        wolk/InboundDeviceMessageHandler.h
-        wolk/InboundPlatformMessageHandler.h
-        wolk/OutboundMessageHandler.h
-        wolk/OutboundRetryMessageHandler.h
+        ../WolkSDK-Cpp/core/connectivity/OutboundMessageHandler.h
+        ../WolkSDK-Cpp/core/connectivity/OutboundRetryMessageHandler.h
         wolk/StatusMessageRouter.h
         wolk/WolkBuilder.h
         wolk/WolkDefault.h

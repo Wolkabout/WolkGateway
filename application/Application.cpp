@@ -15,10 +15,9 @@
  */
 
 #include "Configuration.h"
-#include "Wolk.h"
 #include "core/utilities/Logger.h"
 #include "core/utilities/StringUtils.h"
-#include "protocol/json/JsonGatewayDataProtocol.h"
+#include "wolk/Wolk.h"
 
 #include <chrono>
 #include <stdexcept>

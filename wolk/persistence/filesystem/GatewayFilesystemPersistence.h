@@ -17,7 +17,7 @@
 #ifndef GATEWAYFILESYSTEMPERSISTENCE_H
 #define GATEWAYFILESYSTEMPERSISTENCE_H
 
-#include "persistence/GatewayPersistence.h"
+#include "wolk/persistence/GatewayPersistence.h"
 
 #include <list>
 #include <mutex>

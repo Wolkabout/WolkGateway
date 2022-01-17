@@ -132,7 +132,6 @@ set(LIB_SOURCE_FILES
         wolk/WolkDefault.cpp
         wolk/WolkExternal.cpp)
 set(LIB_HEADER_FILES
-        wolk/api/ConnectionStatusListener.h
         wolk/api/DataHandler.h
         wolk/api/DataProvider.h
         wolk/api/FeedUpdateHandler.h

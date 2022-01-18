@@ -26,21 +26,21 @@ Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 DisableFormat: false
 ExperimentalAutoDetectBinPacking: false
-ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
+ForEachMacros: [ foreach, Q_FOREACH, BOOST_FOREACH ]
 IncludeCategories:
-  - Regex:           '"[S|s][T|t][D|d][A|a][F|f][X|x]\.[H|h]'
-    Priority:        -1
-  - Regex:           '"'
-    Priority:        1
-  - Regex:           '[<|"](gtest|gmock)\/'
-    Priority:        2
+  - Regex: '"[S|s][T|t][D|d][A|a][F|f][X|x]\.[H|h]'
+    Priority: -1
+  - Regex: '"'
+    Priority: 1
+  - Regex: '[<|"](gtest|gmock)\/'
+    Priority: 2
 IndentCaseLabels: false
 IndentWidth: 4
 IndentWrappedFunctionNames: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 Language: Cpp
 MaxEmptyLinesToKeep: 1
-NamespaceIndentation: Inner
+NamespaceIndentation: None
 ObjCBlockIndentWidth: 4
 ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: false

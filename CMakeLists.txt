@@ -73,7 +73,7 @@ endif ()
 # Add linking directories and the include directories
 link_directories(${CMAKE_PREFIX_PATH}/lib)
 link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-include_directories(SYSTEM ${CMAKE_BINARY_DIR}/include)
+include_directories(SYSTEM ${CMAKE_PREFIX_PATH}/include)
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
@@ -101,27 +101,24 @@ if (NOT "${WOLKGATEWAY_VERSION_SUFFIX}" STREQUAL "")
 endif ()
 
 # WolkGateway library
-set(LIB_SOURCE_FILES gateway/FileHandler.cpp
+set(LIB_SOURCE_FILES gateway/connectivity/GatewayInboundPlatformMessageHandler.cpp
         gateway/persistence/filesystem/GatewayCircularFileSystemPersistence.cpp
         gateway/persistence/filesystem/GatewayFilesystemPersistence.cpp
         gateway/persistence/filesystem/MessagePersister.cpp
         gateway/persistence/inmemory/GatewayInMemoryPersistence.cpp
         gateway/repository/existing_device/JsonFileExistingDevicesRepository.cpp
         gateway/repository/device/SQLiteDeviceRepository.cpp
-        gateway/service/data/DataService.cpp
-        gateway/service/data/ExternalDataService.cpp
-        gateway/service/data/GatewayDataService.cpp
-        gateway/service/data/InternalDataService.cpp
-        gateway/service/DataHandlerApiFacade.cpp
-        gateway/service/platform_status/GatewayPlatformStatusService.cpp
-        gateway/service/SubdeviceRegistrationService.cpp
-        gateway/StatusMessageRouter.cpp
+        gateway/service/external_data/ExternalDataService.cpp
+        #        gateway/service/internal_data/InternalDataService.cpp
+        #        gateway/service/platform_status/GatewayPlatformStatusService.cpp
+        #        gateway/service/registration_service/SubdeviceRegistrationService.cpp
         gateway/WolkBuilder.cpp
         gateway/Wolk.cpp
-        gateway/WolkDefault.cpp
+        #        gateway/WolkDefault.cpp
         gateway/WolkExternal.cpp)
 set(LIB_HEADER_FILES gateway/api/DataHandler.h
         gateway/api/DataProvider.h
+        gateway/connectivity/GatewayInboundPlatformMessageHandler.h
         gateway/persistence/filesystem/GatewayCircularFileSystemPersistence.h
         gateway/persistence/filesystem/GatewayFilesystemPersistence.h
         gateway/persistence/filesystem/MessagePersister.h
@@ -131,18 +128,13 @@ set(LIB_HEADER_FILES gateway/api/DataHandler.h
         gateway/repository/existing_device/ExistingDevicesRepository.h
         gateway/repository/existing_device/JsonFileExistingDevicesRepository.h
         gateway/repository/device/SQLiteDeviceRepository.h
-        gateway/service/data/DataService.h
-        gateway/service/data/ExternalDataService.h
-        gateway/service/data/GatewayDataService.h
-        gateway/service/data/InternalDataService.h
-        gateway/service/DataHandlerApiFacade.h
-        gateway/service/SubdeviceRegistrationService.h
-        gateway/service/platform_status/GatewayPlatformStatusService.h
-        gateway/FileHandler.h
-        gateway/FirmwareInstaller.h
-        gateway/StatusMessageRouter.h
+        gateway/service/external_data/ExternalDataService.h
+        #        gateway/service/internal_data/InternalDataService.h
+        #        gateway/service/registration_service/SubdeviceRegistrationService.h
+        #        gateway/service/platform_status/GatewayPlatformStatusService.h
+        gateway/GatewayMessageListener.h
         gateway/WolkBuilder.h
-        gateway/WolkDefault.h
+        #        gateway/WolkDefault.h
         gateway/WolkExternal.h
         gateway/Wolk.h)
 
@@ -150,7 +142,7 @@ file(COPY gateway/ DESTINATION ${CMAKE_LIBRARY_INCLUDE_DIRECTORY}/gateway/ PATTE
 
 add_library(${PROJECT_NAME} ${LIB_TYPE} ${LIB_SOURCE_FILES} ${LIB_HEADER_FILES})
 target_link_libraries(${PROJECT_NAME} WolkAboutCore z OpenSSL::Crypto Threads::Threads sqlite3)
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${WOLKGATEWAY_VERSION_STRING} SOVERSION ${WOLKGATEWAY_VERSION_MAJOR}.${WOLKGATEWAY_VERSION_MINOR}.${WOLKGATEWAY_VERSION_PATCH})

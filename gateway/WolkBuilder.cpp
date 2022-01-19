@@ -34,6 +34,9 @@
 #include "core/protocol/json/JsonRegistrationProtocol.h"
 #include "core/protocol/json/JsonStatusProtocol.h"
 #include "core/utilities/FileSystemUtils.h"
+#include "gateway/service/external_data/ExternalDataService.h"
+#include "gateway/service/internal_data/InternalDataService.h"
+#include "gateway/service/registration_service/SubdeviceRegistrationService.h"
 #include "model/GatewayDevice.h"
 #include "persistence/inmemory/GatewayInMemoryPersistence.h"
 #include "protocol/json/JsonGatewayDFUProtocol.h"
@@ -49,10 +52,7 @@
 #include "service/GatewayUpdateService.h"
 #include "service/KeepAliveService.h"
 #include "service/PublishingService.h"
-#include "service/SubdeviceRegistrationService.h"
-#include "service/data/ExternalDataService.h"
 #include "service/data/GatewayDataService.h"
-#include "service/data/InternalDataService.h"
 #include "service/platform_status/GatewayPlatformStatusService.h"
 #include "service/status/ExternalDeviceStatusService.h"
 #include "service/status/InternalDeviceStatusService.h"
@@ -198,38 +198,6 @@ std::unique_ptr<Wolk> WolkBuilder::build()
     // Right away check a bunch of the parameters
     if (m_device.getKey().empty())
         throw std::logic_error("No device key present.");
-    if (!m_device.getSubdeviceManagement())
-        throw std::logic_error("Subdevice management must be specified");
-
-    // Check if the actuator handle and provider are set if they exist
-    if (!m_device.getActuatorReferences().empty())
-    {
-        if (m_actuationHandler == nullptr && m_actuationHandlerLambda == nullptr)
-            throw std::logic_error("Actuation handler not set.");
-
-        if (m_actuatorStatusProvider == nullptr && m_actuatorStatusProviderLambda == nullptr)
-            throw std::logic_error("Actuator status provider not set.");
-    }
-
-    // Check everything we need for configurations
-    if (!m_configurationHandlerLambda != !m_configurationProviderLambda)
-        throw std::logic_error("Both ConfigurationProvider and ConfigurationHandler must be set.");
-    if (!m_configurationHandler != !m_configurationProvider)
-        throw std::logic_error("Both ConfigurationProvider and ConfigurationHandler must be set.");
-
-    // Check if we have the firmware installer for the firmware update (if it is enabled)
-    if (m_device.getFirmwareUpdate() && m_device.getFirmwareUpdate().value() &&
-        m_device.getTemplate().getFirmwareUpdateType().empty())
-        throw std::logic_error("Firmware installer must be provided when firmware update is enabled");
-
-    // Check if we have the url downloader (if it is enabled)
-    if (m_device.getUrlDownload() && m_device.getUrlDownload().value() && !m_urlFileDownloader)
-        throw std::logic_error("Url downloader must be provided when url download is enabled");
-
-    // If a single custom protocol is set, then both must be set.
-    if ((m_dataProtocol == nullptr && m_statusProtocol != nullptr) ||
-        (m_dataProtocol != nullptr && m_statusProtocol == nullptr))
-        throw std::logic_error("Both data and status protocols must be set");
 
     // Create the instance of the Wolk based on the data provider source.
     auto wolk = [&] {

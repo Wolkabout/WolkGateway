@@ -17,9 +17,10 @@
 #ifndef WOLK_H
 #define WOLK_H
 
-#include "WolkBuilder.h"
+#include "core/model/Device.h"
 #include "core/utilities/StringUtils.h"
-#include "model/GatewayDevice.h"
+#include "gateway/WolkBuilder.h"
+#include "wolk/WolkSingle.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -76,7 +77,7 @@ public:
      * @param device wolkabout::Device
      * @return wolkabout::WolkBuilder instance
      */
-    static WolkBuilder newBuilder(GatewayDevice device);
+    static WolkBuilder newBuilder(Device device);
 
     /**
      * This is the default getter method for obtaining the platform connection status.
@@ -166,7 +167,7 @@ public:
     void publish();
 
 protected:
-    explicit Wolk(GatewayDevice device);
+    explicit Wolk(Device device);
 
     void addToCommandBuffer(std::function<void()> command);
 
@@ -196,7 +197,7 @@ protected:
     void requestActuatorStatusesForDevices();
     void requestActuatorStatusesForDevice(const std::string& deviceKey);
 
-    GatewayDevice m_device;
+    Device m_device;
 
     std::atomic<bool> m_connected;
     std::function<void(bool)> m_platformConnectionStatusListener;

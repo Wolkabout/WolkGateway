@@ -32,8 +32,8 @@ namespace wolkabout
 {
 namespace gateway
 {
-GatewayFilesystemPersistence::GatewayFilesystemPersistence(const std::string& persistPath, PersistenceMethod method)
-: m_persister(new MessagePersister()), m_persistPath(persistPath), m_method(method), m_messageNum(0)
+GatewayFilesystemPersistence::GatewayFilesystemPersistence(std::string persistPath, PersistenceMethod method)
+: m_persister(new MessagePersister()), m_persistPath(std::move(persistPath)), m_method(method), m_messageNum(0)
 {
     initialize();
 }

@@ -21,10 +21,9 @@
 
 namespace wolkabout
 {
+class Message;
 namespace gateway
 {
-class Message;
-
 enum class PersistenceMethod
 {
     FIFO = 0,

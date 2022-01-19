@@ -36,8 +36,8 @@ class MessagePersister;
 class GatewayFilesystemPersistence : public GatewayPersistence
 {
 public:
-    GatewayFilesystemPersistence(const std::string& persistPath, PersistenceMethod method);
-    ~GatewayFilesystemPersistence();
+    GatewayFilesystemPersistence(std::string persistPath, PersistenceMethod method);
+    ~GatewayFilesystemPersistence() override;
 
     bool push(std::shared_ptr<Message> message) override;
     void pop() override;

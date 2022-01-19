@@ -17,6 +17,8 @@
 #ifndef WOLKABOUT_DATAHANDLER_H
 #define WOLKABOUT_DATAHANDLER_H
 
+#include "core/model/Attribute.h"
+#include "core/model/Feed.h"
 #include "core/model/Reading.h"
 
 #include <string>
@@ -33,6 +35,19 @@ public:
 
     virtual void addReading(const std::string& deviceKey, const Reading& reading) = 0;
     virtual void addReadings(const std::string& deviceKey, const std::vector<Reading>& readings) = 0;
+
+    virtual void pullFeedValues(const std::string& deviceKey) = 0;
+    virtual void pullParameters(const std::string& deviceKey) = 0;
+
+    virtual void registerFeed(const std::string& deviceKey, const Feed& feed) = 0;
+    virtual void registerFeeds(const std::string& deviceKey, const std::vector<Feed>& feeds) = 0;
+
+    virtual void removeFeed(const std::string& deviceKey, const std::string& reference) = 0;
+    virtual void removeFeeds(const std::string& deviceKey, const std::vector<std::string>& references) = 0;
+
+    virtual void addAttribute(const std::string& deviceKey, Attribute attribute) = 0;
+
+    virtual void updateParameter(const std::string& deviceKey, Parameter parameters) = 0;
 };
 }    // namespace gateway
 }    // namespace wolkabout

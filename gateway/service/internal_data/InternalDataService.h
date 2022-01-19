@@ -17,8 +17,8 @@
 #ifndef WOLKABOUT_INTERNALDATASERVICE_H
 #define WOLKABOUT_INTERNALDATASERVICE_H
 
-#include "DataService.h"
 #include "InboundDeviceMessageHandler.h"
+#include "gateway/service/data/DataService.h"
 
 namespace wolkabout
 {

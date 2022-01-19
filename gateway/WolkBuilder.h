@@ -25,9 +25,9 @@
 #include "api/DataProvider.h"
 #include "api/FileListener.h"
 #include "core/connectivity/ConnectivityService.h"
+#include "core/model/Device.h"
 #include "core/protocol/DataProtocol.h"
 #include "core/protocol/StatusProtocol.h"
-#include "model/GatewayDevice.h"
 #include "persistence/GatewayPersistence.h"
 #include "service/UrlFileDownloader.h"
 
@@ -53,7 +53,7 @@ public:
      * @brief WolkBuilder Initiates wolkabout::Wolk builder
      * @param device Device for which wolkabout::WolkBuilder is instantiated
      */
-    explicit WolkBuilder(GatewayDevice device);
+    explicit WolkBuilder(Device device);
 
     /**
      * @brief Allows passing of URI to custom WolkAbout IoT platform instance
@@ -145,7 +145,7 @@ public:
 
     /**
      * @brief withUrlFileDownload Enables downloading file from url
-     * Url download must be enabled in GatewayDevice
+     * Url download must be enabled in Device
      * @param urlDownloader Instance of wolkabout::UrlFileDownloader used to downlad firmware from provided url
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
@@ -224,7 +224,7 @@ private:
     std::string m_platformHost;
     std::string m_platformTrustStore = TRUST_STORE;
     std::string m_gatewayHost;
-    GatewayDevice m_device;
+    Device m_device;
 
     std::uint16_t m_mqttKeepAliveSec;
 
@@ -248,9 +248,8 @@ private:
 
     std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
 
-    std::unique_ptr<DataProtocol> m_dataProtocol = nullptr;
-    std::unique_ptr<StatusProtocol> m_statusProtocol = nullptr;
-    DataProvider* m_externalDataProvider = nullptr;
+    std::unique_ptr<DataProtocol> m_dataProtocol;
+    DataProvider* m_externalDataProvider;
 
     std::shared_ptr<GatewayPersistence> m_persistence;
 

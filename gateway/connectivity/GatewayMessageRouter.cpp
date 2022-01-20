@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "gateway/connectivity/GatewayInboundPlatformMessageHandler.h"
+#include "gateway/connectivity/GatewayMessageRouter.h"
 
 #include "core/protocol/GatewaySubdeviceProtocol.h"
 #include "core/utilities/Logger.h"
@@ -23,21 +23,16 @@ namespace wolkabout
 {
 namespace gateway
 {
-GatewayInboundPlatformMessageHandler::GatewayInboundPlatformMessageHandler(
-  std::string gatewayKey, wolkabout::GatewaySubdeviceProtocol& protocol)
-: m_gatewayKey(std::move(gatewayKey)), m_protocol(protocol)
-{
-}
+GatewayMessageRouter::GatewayMessageRouter(wolkabout::GatewaySubdeviceProtocol& protocol) : m_protocol(protocol) {}
 
-void GatewayInboundPlatformMessageHandler::messageReceived(const std::string& topic, const std::string& message)
+void GatewayMessageRouter::messageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
     std::lock_guard<std::mutex> lock{m_mutex};
 
     // Look if we can figure out the type of the message
-    LOG(TRACE) << TAG << "Topic: '" << topic << "' | Payload: '" << message << "'.";
-    auto sharedMessage = std::make_shared<Message>(message, topic);
-    auto messageType = m_protocol.getMessageType(*sharedMessage);
+    LOG(TRACE) << TAG << "Topic: '" << message->getChannel() << "' | Payload: '" << message->getContent() << "'.";
+    auto messageType = m_protocol.getMessageType(*message);
     if (messageType == MessageType::UNKNOWN)
     {
         LOG(ERROR) << TAG << "Received a message but failed to recognize the type.";
@@ -59,7 +54,7 @@ void GatewayInboundPlatformMessageHandler::messageReceived(const std::string& to
     }
 
     // Parse the message
-    auto parsedMessage = m_protocol.parseIncomingSubdeviceMessage(sharedMessage);
+    auto parsedMessage = m_protocol.parseIncomingSubdeviceMessage(message);
     if (parsedMessage.empty())
     {
         LOG(ERROR) << TAG << "Received a message but failed to parse any subdevice messages from it.";
@@ -71,13 +66,12 @@ void GatewayInboundPlatformMessageHandler::messageReceived(const std::string& to
       std::make_shared<std::function<void()>>([parsedMessage, handler] { handler->receiveMessages(parsedMessage); }));
 }
 
-std::vector<std::string> GatewayInboundPlatformMessageHandler::getChannels() const
+const Protocol& GatewayMessageRouter::getProtocol()
 {
-    return m_protocol.getInboundChannelsForDevice(m_gatewayKey);
+    return m_protocol;
 }
 
-void GatewayInboundPlatformMessageHandler::addListener(const std::string& name,
-                                                       const std::shared_ptr<GatewayMessageListener>& listener)
+void GatewayMessageRouter::addListener(const std::string& name, const std::shared_ptr<GatewayMessageListener>& listener)
 {
     LOG(TRACE) << METHOD_INFO;
 

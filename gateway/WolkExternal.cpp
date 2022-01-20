@@ -22,7 +22,20 @@ namespace gateway
 {
 void WolkExternal::connect()
 {
-    connectToPlatform(true);
+    connectService(
+      "platform", m_connectivityService.get(),
+      [&]() {
+          notifyPlatformConnected();
+
+          updateGatewayAndDeleteDevices();
+
+          requestActuatorStatusesForDevices();
+
+          publishEverything();
+
+          publish();
+      },
+      true);
 }
 
 void WolkExternal::disconnect()

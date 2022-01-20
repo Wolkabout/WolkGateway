@@ -16,13 +16,10 @@
 
 #include "gateway/repository/device/SQLiteDeviceRepository.h"
 
-#include "SQLiteDeviceRepository.h"
 #include "core/model/Device.h"
 #include "core/utilities/ByteUtils.h"
 #include "core/utilities/Logger.h"
 
-#include <iomanip>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <openssl/sha.h>

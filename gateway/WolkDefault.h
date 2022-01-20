@@ -17,7 +17,7 @@
 #ifndef WOLKABOUT_WOLKDEFAULT_H
 #define WOLKABOUT_WOLKDEFAULT_H
 
-#include "Wolk.h"
+#include "WolkGateway.h"
 
 namespace wolkabout
 {
@@ -25,7 +25,7 @@ namespace gateway
 {
 class InternalDeviceStatusService;
 
-class WolkDefault : public Wolk
+class WolkDefault : public WolkGateway
 {
     friend class WolkBuilder;
 

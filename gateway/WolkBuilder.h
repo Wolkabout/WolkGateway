@@ -17,19 +17,25 @@
 #ifndef WOLKBUILDER_H
 #define WOLKBUILDER_H
 
-#include "ActuationHandler.h"
-#include "ActuatorStatusProvider.h"
-#include "ConfigurationHandler.h"
-#include "ConfigurationProvider.h"
-#include "FirmwareInstaller.h"
-#include "api/DataProvider.h"
-#include "api/FileListener.h"
-#include "core/connectivity/ConnectivityService.h"
 #include "core/model/Device.h"
+#include "core/persistence/Persistence.h"
 #include "core/protocol/DataProtocol.h"
-#include "core/protocol/StatusProtocol.h"
-#include "persistence/GatewayPersistence.h"
-#include "service/UrlFileDownloader.h"
+#include "core/protocol/ErrorProtocol.h"
+#include "core/protocol/FileManagementProtocol.h"
+#include "core/protocol/FirmwareUpdateProtocol.h"
+#include "core/protocol/GatewaySubdeviceProtocol.h"
+#include "core/protocol/PlatformStatusProtocol.h"
+#include "core/protocol/RegistrationProtocol.h"
+#include "gateway/api/DataProvider.h"
+#include "gateway/persistence/GatewayPersistence.h"
+#include "wolk/WolkInterfaceType.h"
+#include "wolk/api/FeedUpdateHandler.h"
+#include "wolk/api/FileListener.h"
+#include "wolk/api/FirmwareInstaller.h"
+#include "wolk/api/FirmwareParametersListener.h"
+#include "wolk/api/ParameterHandler.h"
+#include "wolk/api/PlatformStatusListener.h"
+#include "wolk/service/file_management/FileDownloader.h"
 
 #include <cstdint>
 #include <functional>
@@ -40,11 +46,7 @@ namespace wolkabout
 {
 namespace gateway
 {
-class Wolk;
-class WolkDefault;
-class WolkExternal;
-
-class OutboundMessageHandler;
+class WolkGateway;
 
 class WolkBuilder final
 {
@@ -77,120 +79,116 @@ public:
     WolkBuilder& gatewayHost(const std::string& host);
 
     /**
-     * @brief Sets actuation handler
-     * @param actuationHandler Lambda that handles actuation requests
+     * @brief Sets feed update handler
+     * @param feedUpdateHandler Lambda that handles feed update requests. Will receive a map of readings grouped by the
+     * time when the update happened. Key is a timestamp in milliseconds, and value is a vector of readings that changed
+     * at that time.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& actuationHandler(
-      std::function<void(const std::string& reference, const std::string& value)> actuationHandler);
+    WolkBuilder& feedUpdateHandler(
+      const std::function<void(std::string, const std::map<std::uint64_t, std::vector<Reading>>)>& feedUpdateHandler);
 
     /**
-     * @brief Sets actuation handler
-     * @param actuationHandler Instance of wolkabout::ActuationHandler
+     * @brief Sets feed update handler
+     * @param feedUpdateHandler Instance of wolkabout::FeedUpdateHandler
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& actuationHandler(std::shared_ptr<ActuationHandler> actuationHandler);
+    WolkBuilder& feedUpdateHandler(std::weak_ptr<connect::FeedUpdateHandler> feedUpdateHandler);
 
     /**
-     * @brief Sets actuation status provider
-     * @param actuatorStatusProvider Lambda that provides ActuatorStatus by reference of requested actuator
+     * @brief Sets parameter handler
+     * @param parameterHandlerLambda Lambda that handles parameters updates
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& actuatorStatusProvider(
-      std::function<ActuatorStatus(const std::string& reference)> actuatorStatusProvider);
+    WolkBuilder& parameterHandler(
+      const std::function<void(std::string, std::vector<Parameter>)>& parameterHandlerLambda);
 
     /**
-     * @brief Sets actuation status provider
-     * @param actuatorStatusProvider Instance of wolkabout::ActuatorStatusProvider
+     * @brief Sets parameter handler
+     * @param parameterHandler Instance of wolkabout::ParameterHandler
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& actuatorStatusProvider(std::shared_ptr<ActuatorStatusProvider> actuatorStatusProvider);
+    WolkBuilder& parameterHandler(std::weak_ptr<connect::ParameterHandler> parameterHandler);
 
     /**
-     * @brief Sets device configuration handler
-     * @param configurationHandler Lambda that handles setting of configuration
+     * @brief Sets underlying persistence mechanism to be used<br>
+     *        Sample in-memory persistence is used as default
+     * @param persistence std::shared_ptr to wolkabout::Persistence implementation
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& configurationHandler(
-      std::function<void(const std::vector<ConfigurationItem>& configuration)> configurationHandler);
+    WolkBuilder& withPersistence(std::unique_ptr<GatewayPersistence> persistence);
 
     /**
-     * @brief Sets device configuration handler
-     * @param configurationHandler Instance of wolkabout::ConfigurationHandler that handles setting of configuration
+     * @brief withDataProtocol Defines which data protocol to use
+     * @param Protocol unique_ptr to wolkabout::DataProtocol implementation
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& configurationHandler(std::shared_ptr<ConfigurationHandler> configurationHandler);
+    WolkBuilder& withDataProtocol(std::unique_ptr<DataProtocol> protocol);
 
     /**
-     * @brief Sets device configuration provider
-     * @param configurationProvider Lambda that provides device configuration
+     * @brief withErrorProtocol Defines which error protocol to use
+     * @param errorRetainTime The time defining how long will the error messages be retained. The default retain time is
+     * 1s (1000ms).
+     * @param protocol Unique_ptr to wolkabout::ErrorProtocol implementation (providing nullptr will still refer to
+     * default one)
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& configurationProvider(std::function<std::vector<ConfigurationItem>()> configurationProvider);
+    WolkBuilder& withErrorProtocol(std::chrono::milliseconds errorRetainTime,
+                                   std::unique_ptr<ErrorProtocol> protocol = nullptr);
 
     /**
-     * @brief Sets device configuration provider
-     * @param configurationProvider Instance of wolkabout::ConfigurationProvider that provides device configuration
+     * @brief Sets the Wolk module to allow file management functionality.
+     * @details This one is meant to enable the File Transfer, but not File URL Download.
+     * @param fileDownloadLocation The folder location for file management.
+     * @param maxPacketSize The maximum packet size for downloading chunks (in KBs).
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& configurationProvider(std::shared_ptr<ConfigurationProvider> configurationProvider);
+    WolkBuilder& withFileTransfer(const std::string& fileDownloadLocation, std::uint64_t maxPacketSize = 268435);
 
     /**
-     * @brief withFirmwareUpdate Enables firmware update for gateway
-     * @param firmwareVersion Current version of the firmware
-     * @param installer Instance of wolkabout::FirmwareInstaller used to install firmware
+     * @brief Sets the Wolk module to allow file management functionality.
+     * @details This one is meant to enable File URL Download, but can enabled File Transfer too.
+     * @param fileDownloadLocation The folder location for file management.
+     * @param fileDownloader The implementation that will download the files.
+     * @param transferEnabled Whether the File Transfer should be enabled too.
+     * @param maxPacketSize The max packet size for downloading chunks (in MBs).
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withFirmwareUpdate(const std::string& firmwareVersion, std::shared_ptr<FirmwareInstaller> installer);
+    WolkBuilder& withFileURLDownload(const std::string& fileDownloadLocation,
+                                     std::shared_ptr<connect::FileDownloader> fileDownloader = nullptr,
+                                     bool transferEnabled = false, std::uint64_t maxPacketSize = 268435);
 
     /**
-     * @brief withUrlFileDownload Enables downloading file from url
-     * Url download must be enabled in Device
-     * @param urlDownloader Instance of wolkabout::UrlFileDownloader used to downlad firmware from provided url
+     * @brief Sets the Wolk module file listener.
+     * @details This object will receive information about newly obtained or removed files. It will be used with
+     * `withFileListener` when the service gets created.
+     * @param fileListener A pointer to the instance of the file listener.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withUrlFileDownload(std::shared_ptr<UrlFileDownloader> urlDownloader);
+    WolkBuilder& withFileListener(const std::shared_ptr<connect::FileListener>& fileListener);
 
     /**
-     * @brief fileDownloadDirectory specifies directory where to download files
-     * By default files are stored in the working directory of gateway
-     * @param path Path to directory where files will be stored
+     * @brief Sets the Wolk module to allow firmware update functionality.
+     * @details This one is meant for PUSH configuration, where the functionality is implemented using the
+     * `FirmwareInstaller`. This object will received instructions from the platform of when to install new firmware.
+     * @param firmwareInstaller The implementation of the FirmwareInstaller interface.
+     * @param workingDirectory The directory where the session file will be kept.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& fileDownloadDirectory(const std::string& path);
+    WolkBuilder& withFirmwareUpdate(std::unique_ptr<connect::FirmwareInstaller> firmwareInstaller,
+                                    const std::string& workingDirectory = "./");
 
     /**
-     * @brief fileDownloadDirectory specifies directory where to download files and a listener for file changes
-     * By default files are stored in the working directory of gateway
-     * @param path Path to directory where files will be stored
-     * @param fileListener The listener for file changes.
+     * @brief Sets the Wolk module to allow firmware update functionality.
+     * @details This one is meant for PULL configuration, where the functionality is implemented using the
+     * `FirmwareParametersListener`. This object will receive information from the platform of when and where to check
+     * for firmware updates.
+     * @param firmwareParametersListener The implementation of the FirmwareParametersListener interface.
+     * @param workingDirectory The directory where the session file will be kept.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& fileDownloadDirectory(const std::string& path, std::shared_ptr<FileListener> fileListener);
-
-    /**
-     * @brief withExternalDataProvider Use external data provider instead of expecting data on local mqtt
-     * with WolkAbout protocol
-     * @param provider Implementation of DataProvider
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& withExternalDataProvider(DataProvider* provider);
-
-    /**
-     * @brief withProtocol Use external protocol implementation for data and status messages
-     * @param dataProtocol Implementation of DataProtocol
-     * @param statusProtocol Implementation of StatusProtocol
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& withProtocol(std::unique_ptr<DataProtocol> dataProtocol,
-                              std::unique_ptr<StatusProtocol> statusProtocol);
-
-    /**
-     * @brief withPersistence Persistence mechanism for outbound messages
-     * @param persistence Implementation of GatewayPersistence
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkBuilder& withPersistence(std::shared_ptr<GatewayPersistence> persistence);
+    WolkBuilder& withFirmwareUpdate(std::unique_ptr<connect::FirmwareParametersListener> firmwareParametersListener,
+                                    const std::string& workingDirectory = "./");
 
     /**
      * @brief Sets the seconds the MQTT connection with the platform will be kept alive for.
@@ -207,57 +205,64 @@ public:
      * @throws std::logic_error if actuator status provider is not set, and wolkabout::Device has actuator references
      * @throws std::logic_error if actuation handler is not set, and wolkabout::Device has actuator references
      */
-    std::unique_ptr<Wolk> build();
+    std::unique_ptr<WolkGateway> build();
 
     /**
      * @brief operator std::unique_ptr<Wolk> Conversion to wolkabout::wolk as result returns std::unique_ptr to built
      * wolkabout::Wolk instance
      */
-    operator std::unique_ptr<Wolk>();
+    operator std::unique_ptr<WolkGateway>();
 
 private:
-    void setupWithInternalData(WolkDefault* wolk);
-    void setupWithExternalData(WolkExternal* wolk);
-
-    void setupGatewayDataService(Wolk* wolk, OutboundMessageHandler& outboundMessageHandler);
-
-    std::string m_platformHost;
-    std::string m_platformTrustStore = TRUST_STORE;
-    std::string m_gatewayHost;
+    // The gateway device information
     Device m_device;
 
-    std::uint16_t m_mqttKeepAliveSec;
+    // Here we store the connection information for the connectivity services.
+    std::string m_platformHost;
+    std::string m_platformTrustStore;
+    std::uint16_t m_platformMqttKeepAliveSec;
+    std::string m_gatewayHost;
 
-    std::function<void(std::string, std::string)> m_actuationHandlerLambda;
-    std::shared_ptr<ActuationHandler> m_actuationHandler;
+    // Here is the place for external entities capable of receiving Reading values.
+    std::function<void(std::string, std::map<std::uint64_t, std::vector<Reading>>)> m_feedUpdateHandlerLambda;
+    std::weak_ptr<connect::FeedUpdateHandler> m_feedUpdateHandler;
 
-    std::function<ActuatorStatus(std::string)> m_actuatorStatusProviderLambda;
-    std::shared_ptr<ActuatorStatusProvider> m_actuatorStatusProvider;
+    // Here is the place for external entities capable of receiving Parameter values.
+    std::function<void(std::string, std::vector<Parameter>)> m_parameterHandlerLambda;
+    std::weak_ptr<connect::ParameterHandler> m_parameterHandler;
 
-    std::function<void(const std::vector<ConfigurationItem>& configuration)> m_configurationHandlerLambda;
-    std::shared_ptr<ConfigurationHandler> m_configurationHandler;
+    // Place for the gateway persistence
+    std::unique_ptr<GatewayPersistence> m_gatewayPersistence;
 
-    std::function<std::vector<ConfigurationItem>()> m_configurationProviderLambda;
-    std::shared_ptr<ConfigurationProvider> m_configurationProvider;
-
-    std::string m_fileDownloadDirectory = "files";
-    std::shared_ptr<FileListener> m_fileListener;
-
-    std::string m_firmwareVersion;
-    std::shared_ptr<FirmwareInstaller> m_firmwareInstaller;
-
-    std::shared_ptr<UrlFileDownloader> m_urlFileDownloader;
-
+    // Here is the place for all the protocols that are being held
     std::unique_ptr<DataProtocol> m_dataProtocol;
-    DataProvider* m_externalDataProvider;
+    std::unique_ptr<ErrorProtocol> m_errorProtocol;
+    std::chrono::milliseconds m_errorRetainTime;
+    std::unique_ptr<FileManagementProtocol> m_fileManagementProtocol;
+    std::unique_ptr<FirmwareUpdateProtocol> m_firmwareUpdateProtocol;
+    std::unique_ptr<GatewaySubdeviceProtocol> m_gatewaySubdeviceProtocol;
+    std::unique_ptr<PlatformStatusProtocol> m_platformStatusProtocol;
 
-    std::shared_ptr<GatewayPersistence> m_persistence;
+    // Here is the place for all the file transfer related parameters
+    std::shared_ptr<connect::FileDownloader> m_fileDownloader;
+    std::string m_fileDownloadDirectory;
+    bool m_fileTransferEnabled;
+    bool m_fileTransferUrlEnabled;
+    std::uint64_t m_maxPacketSize;
+    std::shared_ptr<connect::FileListener> m_fileListener;
 
-    bool m_keepAliveEnabled = true;
+    // Here is the place for all the firmware update related parameters
+    std::unique_ptr<connect::FirmwareInstaller> m_firmwareInstaller;
+    std::string m_workingDirectory;
+    std::unique_ptr<connect::FirmwareParametersListener> m_firmwareParametersListener;
 
+    // TODO Add gateway specific things
+
+    // These are the default values that are going to be used for the connection parameters
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
     static const constexpr char* MESSAGE_BUS_HOST = "tcp://localhost:1883";
     static const constexpr char* TRUST_STORE = "ca.crt";
+    static const constexpr std::uint64_t MAX_PACKET_SIZE = 268434;
     static const constexpr char* DATABASE = "deviceRepository.db";
 };
 }    // namespace gateway

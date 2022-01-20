@@ -29,10 +29,6 @@ struct sqlite3;
 
 namespace wolkabout
 {
-class Feed;
-class Attribute;
-class Parameter;
-
 namespace gateway
 {
 // This is the map in which results from an SQL query will be returned

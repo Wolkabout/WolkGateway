@@ -18,7 +18,7 @@
 #define WOLKGATEWAY_GATEWAYMESSAGELISTENER_H
 
 #include "core/Types.h"
-#include "core/model/Message.h"
+#include "core/model/messages/GatewaySubdeviceMessage.h"
 
 #include <memory>
 
@@ -51,7 +51,7 @@ public:
      *
      * @param messages The received messages.
      */
-    virtual void receiveMessages(std::vector<GatewaySubdeviceMessage> messages) = 0;
+    virtual void receiveMessages(const std::vector<GatewaySubdeviceMessage>& messages) = 0;
 };
 }    // namespace gateway
 }    // namespace wolkabout

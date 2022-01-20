@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef WOLKGATEWAY_GATEWAYINBOUNDPLATFORMMESSAGEHANDLER_H
-#define WOLKGATEWAY_GATEWAYINBOUNDPLATFORMMESSAGEHANDLER_H
+#ifndef WOLKGATEWAY_GATEWAYMESSAGEROUTER_H
+#define WOLKGATEWAY_GATEWAYMESSAGEROUTER_H
 
-#include "core/connectivity/ConnectivityServiceListener.h"
+#include "core/MessageListener.h"
 #include "core/protocol/GatewaySubdeviceProtocol.h"
 #include "core/utilities/CommandBuffer.h"
 #include "gateway/GatewayMessageListener.h"
@@ -30,16 +30,14 @@ namespace wolkabout
 {
 namespace gateway
 {
-class GatewayInboundPlatformMessageHandler
+class GatewayMessageRouter : public MessageListener
 {
 public:
-    GatewayInboundPlatformMessageHandler(std::string gatewayKey, GatewaySubdeviceProtocol& protocol);
+    explicit GatewayMessageRouter(GatewaySubdeviceProtocol& protocol);
 
-    virtual ~GatewayInboundPlatformMessageHandler() = default;
+    void messageReceived(std::shared_ptr<Message> message) override;
 
-    virtual void messageReceived(const std::string& topic, const std::string& message);
-
-    virtual std::vector<std::string> getChannels() const;
+    const Protocol& getProtocol() override;
 
     virtual void addListener(const std::string& name, const std::shared_ptr<GatewayMessageListener>& listener);
 
@@ -47,8 +45,7 @@ private:
     // Logging tag
     const std::string TAG = "[GatewayInboundPlatformMessageHandler] -> ";
 
-    // Gateway information and protocol
-    std::string m_gatewayKey;
+    // Protocol
     GatewaySubdeviceProtocol& m_protocol;
 
     // Message listeners
@@ -62,4 +59,4 @@ private:
 }    // namespace gateway
 }    // namespace wolkabout
 
-#endif    // WOLKGATEWAY_GATEWAYINBOUNDPLATFORMMESSAGEHANDLER_H
+#endif    // WOLKGATEWAY_GATEWAYMESSAGEROUTER_H

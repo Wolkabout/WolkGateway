@@ -17,7 +17,7 @@
 #ifndef WOLKEXTERNAL_H
 #define WOLKEXTERNAL_H
 
-#include "Wolk.h"
+#include "WolkGateway.h"
 #include "service/DataHandlerApiFacade.h"
 #include "service/status/ExternalDeviceStatusService.h"
 
@@ -25,10 +25,10 @@ namespace wolkabout
 {
 namespace gateway
 {
-class WolkExternal : public Wolk
+class WolkExternal : public WolkGateway
 {
 public:
-    using Wolk::Wolk;
+    using WolkGateway::WolkGateway;
 
     void connect() override;
     void disconnect() override;

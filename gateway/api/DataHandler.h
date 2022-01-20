@@ -47,7 +47,7 @@ public:
 
     virtual void addAttribute(const std::string& deviceKey, Attribute attribute) = 0;
 
-    virtual void updateParameter(const std::string& deviceKey, Parameter parameters) = 0;
+    virtual void updateParameter(const std::string& deviceKey, Parameter parameter) = 0;
 };
 }    // namespace gateway
 }    // namespace wolkabout

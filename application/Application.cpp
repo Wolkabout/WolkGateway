@@ -17,12 +17,15 @@
 #include "Configuration.h"
 #include "core/utilities/Logger.h"
 #include "core/utilities/StringUtils.h"
-#include "wolk/Wolk.h"
+#include "gateway/WolkGateway.h"
 
 #include <chrono>
 #include <stdexcept>
 #include <string>
 #include <thread>
+
+using namespace wolkabout;
+using namespace wolkabout::gateway;
 
 namespace
 {
@@ -88,19 +91,18 @@ int main(int argc, char** argv)
         }
     }
 
-    wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
-                                    gatewayConfiguration.getSubdeviceManagement());
-    auto builder = std::move(wolkabout::Wolk::newBuilder(device)
+    auto gateway = wolkabout::Device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
+                                     wolkabout::OutboundDataMode::PUSH);
+    auto builder = std::move(WolkGateway::newBuilder(gateway)
                                .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
                                .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                                .platformHost(gatewayConfiguration.getPlatformMqttUri()));
-
-    if (gatewayConfiguration.getPlatformTrustStore())
+    if (!gatewayConfiguration.getPlatformTrustStore().empty())
     {
-        builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore().value());
+        builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore());
     }
 
-    std::unique_ptr<wolkabout::Wolk> wolk = builder.build();
+    std::unique_ptr<WolkGateway> wolk = builder.build();
 
     wolk->connect();
     while (true)

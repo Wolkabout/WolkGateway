@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-#include "ExternalDataService.h"
+#include "gateway/service/external_data/ExternalDataService.h"
 
+#include "core/connectivity/OutboundMessageHandler.h"
 #include "core/model/Message.h"
 #include "core/protocol/DataProtocol.h"
+#include "core/protocol/GatewaySubdeviceProtocol.h"
 #include "core/utilities/Logger.h"
 
 #include <algorithm>
@@ -26,31 +28,216 @@ namespace wolkabout
 {
 namespace gateway
 {
-void ExternalDataService::addReading(const std::string& deviceKey, const Reading& reading) {}
+const std::string ExternalDataService::TAG = "[ExternalDataService] -> ";
 
-void ExternalDataService::addReadings(const std::string& deviceKey, const std::vector<Reading>& readings) {}
+const std::vector<MessageType> ExternalDataService::MESSAGE_TYPES = {MessageType::FEED_VALUES,
+                                                                     MessageType::PARAMETER_SYNC};
 
-void ExternalDataService::pullFeedValues(const std::string& deviceKey) {}
-
-void ExternalDataService::pullParameters(const std::string& deviceKey) {}
-
-void ExternalDataService::registerFeed(const std::string& deviceKey, const Feed& feed) {}
-
-void ExternalDataService::registerFeeds(const std::string& deviceKey, const std::vector<Feed>& feeds) {}
-
-void ExternalDataService::removeFeed(const std::string& deviceKey, const std::string& reference) {}
-
-void ExternalDataService::removeFeeds(const std::string& deviceKey, const std::vector<std::string>& references) {}
-
-void ExternalDataService::addAttribute(const std::string& deviceKey, Attribute attribute) {}
-
-void ExternalDataService::updateParameter(const std::string& deviceKey, Parameter parameters) {}
-
-void ExternalDataService::messageReceived(std::shared_ptr<Message> message) {}
-
-const Protocol& ExternalDataService::getProtocol()
+ExternalDataService::ExternalDataService(std::string gatewayKey, GatewaySubdeviceProtocol& gatewaySubdeviceProtocol,
+                                         DataProtocol& dataProtocol, OutboundMessageHandler& outboundMessageHandler,
+                                         DataProvider& dataProvider)
+: m_gatewayKey{std::move(gatewayKey)}
+, m_gatewaySubdeviceProtocol{gatewaySubdeviceProtocol}
+, m_dataProtocol{dataProtocol}
+, m_outboundMessageHandler{outboundMessageHandler}
+, m_dataProvider{dataProvider}
 {
-    return <#initializer #>;
+}
+
+std::vector<MessageType> ExternalDataService::getMessageTypes()
+{
+    return MESSAGE_TYPES;
+}
+
+void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMessage>& messages)
+{
+    LOG(TRACE) << METHOD_INFO;
+    LOG(DEBUG) << TAG << "Received " << messages.size() << " messages.";
+
+    // Check that the vector is not empty
+    if (messages.empty())
+    {
+        LOG(WARN) << TAG << "Received a vector containing no subdevice messages.";
+        return;
+    }
+
+    // Parse each message and call the data handler for them
+    for (const auto& message : messages)
+    {
+        // Obtain the message type and the device key
+        const auto& content = message.getMessage();
+        auto messageType = m_gatewaySubdeviceProtocol.getMessageType(message.getMessage());
+        auto deviceKey = m_gatewaySubdeviceProtocol.getDeviceKey(message.getMessage());
+        auto sharedMessage = std::make_shared<Message>(content.getContent(), content.getChannel());
+
+        // Parse it into an appropriate type and pass to the handler
+        switch (messageType)
+        {
+        case MessageType::FEED_VALUES:
+        {
+            const auto feedValuesMessage = m_dataProtocol.parseFeedValues(sharedMessage);
+            if (feedValuesMessage == nullptr)
+            {
+                LOG(ERROR) << TAG << "Received 'FeedValues' message but failed to parse it.";
+                return;
+            }
+            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>([this, deviceKey, feedValuesMessage] {
+                m_dataProvider.receiveReadingData(deviceKey, feedValuesMessage->getReadings());
+            }));
+            return;
+        }
+        case MessageType::PARAMETER_SYNC:
+        {
+            const auto parametersMessage = m_dataProtocol.parseParameters(sharedMessage);
+            if (parametersMessage == nullptr)
+            {
+                LOG(ERROR) << TAG << "Received 'Parameters' message but failed to parse it.";
+                return;
+            }
+            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>([this, deviceKey, parametersMessage] {
+                m_dataProvider.receiveParameterData(deviceKey, parametersMessage->getParameters());
+            }));
+            return;
+        }
+        default:
+            LOG(WARN) << TAG << "Received a message of type that the service can not handle.";
+        }
+    }
+}
+
+void ExternalDataService::addReading(const std::string& deviceKey, const Reading& reading)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, FeedValuesMessage{{reading}});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `FeedValues` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::addReadings(const std::string& deviceKey, const std::vector<Reading>& readings)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, FeedValuesMessage{readings});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `FeedValues` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::pullFeedValues(const std::string& deviceKey)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, PullFeedValuesMessage{});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `PullFeedValues` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::pullParameters(const std::string& deviceKey)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, ParametersPullMessage{});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `ParametersPull` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::registerFeed(const std::string& deviceKey, const Feed& feed)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, FeedRegistrationMessage{{feed}});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `FeedRegistration` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::registerFeeds(const std::string& deviceKey, const std::vector<Feed>& feeds)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, FeedRegistrationMessage{feeds});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `FeedRegistration` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::removeFeed(const std::string& deviceKey, const std::string& reference)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, FeedRemovalMessage{{reference}});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `FeedRemoval` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::removeFeeds(const std::string& deviceKey, const std::vector<std::string>& references)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, FeedRemovalMessage{references});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `FeedRemoval` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::addAttribute(const std::string& deviceKey, Attribute attribute)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, AttributeRegistrationMessage{{attribute}});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `AttributeRegistration` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::updateParameter(const std::string& deviceKey, Parameter parameter)
+{
+    LOG(TRACE) << METHOD_INFO;
+    auto message = m_dataProtocol.makeOutboundMessage(deviceKey, ParametersUpdateMessage{{parameter}});
+    if (message == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to parse an outgoing `ParametersUpdate` message.";
+        return;
+    }
+    packMessageWithGatewayAndSend(*message);
+}
+
+void ExternalDataService::packMessageWithGatewayAndSend(const Message& message)
+{
+    // Pack the message with the gateway protocol
+    auto gatewayMessage = std::shared_ptr<Message>{
+      m_gatewaySubdeviceProtocol.makeOutboundMessage(m_gatewayKey, GatewaySubdeviceMessage{message})};
+    if (gatewayMessage == nullptr)
+    {
+        LOG(ERROR) << TAG << "Failed to pack the message in a gateway message.";
+        return;
+    }
+
+    // Hand it to the outbound message handler
+    m_outboundMessageHandler.addMessage(gatewayMessage);
 }
 }    // namespace gateway
 }    // namespace wolkabout

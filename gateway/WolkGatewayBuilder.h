@@ -18,6 +18,7 @@
 #define WOLKBUILDER_H
 
 #include "core/model/Device.h"
+#include "core/persistence/MessagePersistence.h"
 #include "core/persistence/Persistence.h"
 #include "core/protocol/DataProtocol.h"
 #include "core/protocol/ErrorProtocol.h"
@@ -27,7 +28,6 @@
 #include "core/protocol/PlatformStatusProtocol.h"
 #include "core/protocol/RegistrationProtocol.h"
 #include "gateway/api/DataProvider.h"
-#include "gateway/persistence/GatewayPersistence.h"
 #include "wolk/WolkInterfaceType.h"
 #include "wolk/api/FeedUpdateHandler.h"
 #include "wolk/api/FileListener.h"
@@ -48,35 +48,35 @@ namespace gateway
 {
 class WolkGateway;
 
-class WolkBuilder final
+class WolkGatewayBuilder final
 {
 public:
     /**
      * @brief WolkBuilder Initiates wolkabout::Wolk builder
      * @param device Device for which wolkabout::WolkBuilder is instantiated
      */
-    explicit WolkBuilder(Device device);
+    explicit WolkGatewayBuilder(Device device);
 
     /**
      * @brief Allows passing of URI to custom WolkAbout IoT platform instance
      * @param host Server URI
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& platformHost(const std::string& host);
+    WolkGatewayBuilder& platformHost(const std::string& host);
 
     /**
      * @brief Allows passing of server certificate
      * @param trust store
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& platformTrustStore(const std::string& trustStore);
+    WolkGatewayBuilder& platformTrustStore(const std::string& trustStore);
 
     /**
      * @brief Allows passing of URI to custom local message bus
      * @param host Message Bus URI
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& gatewayHost(const std::string& host);
+    WolkGatewayBuilder& gatewayHost(const std::string& host);
 
     /**
      * @brief Sets feed update handler
@@ -85,7 +85,7 @@ public:
      * at that time.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& feedUpdateHandler(
+    WolkGatewayBuilder& feedUpdateHandler(
       const std::function<void(std::string, const std::map<std::uint64_t, std::vector<Reading>>)>& feedUpdateHandler);
 
     /**
@@ -93,14 +93,14 @@ public:
      * @param feedUpdateHandler Instance of wolkabout::FeedUpdateHandler
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& feedUpdateHandler(std::weak_ptr<connect::FeedUpdateHandler> feedUpdateHandler);
+    WolkGatewayBuilder& feedUpdateHandler(std::weak_ptr<connect::FeedUpdateHandler> feedUpdateHandler);
 
     /**
      * @brief Sets parameter handler
      * @param parameterHandlerLambda Lambda that handles parameters updates
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& parameterHandler(
+    WolkGatewayBuilder& parameterHandler(
       const std::function<void(std::string, std::vector<Parameter>)>& parameterHandlerLambda);
 
     /**
@@ -108,22 +108,29 @@ public:
      * @param parameterHandler Instance of wolkabout::ParameterHandler
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& parameterHandler(std::weak_ptr<connect::ParameterHandler> parameterHandler);
+    WolkGatewayBuilder& parameterHandler(std::weak_ptr<connect::ParameterHandler> parameterHandler);
+
+    /**
+     * @brief Sets underlying persistence for device services.
+     * @param persistence std
+     * @return
+     */
+    WolkGatewayBuilder& withPersistence(std::unique_ptr<Persistence> persistence);
 
     /**
      * @brief Sets underlying persistence mechanism to be used<br>
      *        Sample in-memory persistence is used as default
-     * @param persistence std::shared_ptr to wolkabout::Persistence implementation
+     * @param persistence std::unique_ptr to wolkabout::MessagePersistence implementation
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withPersistence(std::unique_ptr<GatewayPersistence> persistence);
+    WolkGatewayBuilder& withMessagePersistence(std::unique_ptr<MessagePersistence> persistence);
 
     /**
      * @brief withDataProtocol Defines which data protocol to use
      * @param Protocol unique_ptr to wolkabout::DataProtocol implementation
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withDataProtocol(std::unique_ptr<DataProtocol> protocol);
+    WolkGatewayBuilder& withDataProtocol(std::unique_ptr<DataProtocol> protocol);
 
     /**
      * @brief withErrorProtocol Defines which error protocol to use
@@ -133,8 +140,8 @@ public:
      * default one)
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withErrorProtocol(std::chrono::milliseconds errorRetainTime,
-                                   std::unique_ptr<ErrorProtocol> protocol = nullptr);
+    WolkGatewayBuilder& withErrorProtocol(std::chrono::milliseconds errorRetainTime,
+                                          std::unique_ptr<ErrorProtocol> protocol = nullptr);
 
     /**
      * @brief Sets the Wolk module to allow file management functionality.
@@ -143,7 +150,7 @@ public:
      * @param maxPacketSize The maximum packet size for downloading chunks (in KBs).
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withFileTransfer(const std::string& fileDownloadLocation, std::uint64_t maxPacketSize = 268435);
+    WolkGatewayBuilder& withFileTransfer(const std::string& fileDownloadLocation, std::uint64_t maxPacketSize = 268435);
 
     /**
      * @brief Sets the Wolk module to allow file management functionality.
@@ -154,9 +161,9 @@ public:
      * @param maxPacketSize The max packet size for downloading chunks (in MBs).
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withFileURLDownload(const std::string& fileDownloadLocation,
-                                     std::shared_ptr<connect::FileDownloader> fileDownloader = nullptr,
-                                     bool transferEnabled = false, std::uint64_t maxPacketSize = 268435);
+    WolkGatewayBuilder& withFileURLDownload(const std::string& fileDownloadLocation,
+                                            std::shared_ptr<connect::FileDownloader> fileDownloader = nullptr,
+                                            bool transferEnabled = false, std::uint64_t maxPacketSize = 268435);
 
     /**
      * @brief Sets the Wolk module file listener.
@@ -165,7 +172,7 @@ public:
      * @param fileListener A pointer to the instance of the file listener.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withFileListener(const std::shared_ptr<connect::FileListener>& fileListener);
+    WolkGatewayBuilder& withFileListener(const std::shared_ptr<connect::FileListener>& fileListener);
 
     /**
      * @brief Sets the Wolk module to allow firmware update functionality.
@@ -175,8 +182,8 @@ public:
      * @param workingDirectory The directory where the session file will be kept.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withFirmwareUpdate(std::unique_ptr<connect::FirmwareInstaller> firmwareInstaller,
-                                    const std::string& workingDirectory = "./");
+    WolkGatewayBuilder& withFirmwareUpdate(std::unique_ptr<connect::FirmwareInstaller> firmwareInstaller,
+                                           const std::string& workingDirectory = "./");
 
     /**
      * @brief Sets the Wolk module to allow firmware update functionality.
@@ -187,15 +194,23 @@ public:
      * @param workingDirectory The directory where the session file will be kept.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& withFirmwareUpdate(std::unique_ptr<connect::FirmwareParametersListener> firmwareParametersListener,
-                                    const std::string& workingDirectory = "./");
+    WolkGatewayBuilder& withFirmwareUpdate(
+      std::unique_ptr<connect::FirmwareParametersListener> firmwareParametersListener,
+      const std::string& workingDirectory = "./");
 
     /**
      * @brief Sets the seconds the MQTT connection with the platform will be kept alive for.
      * @param keepAlive The amount of seconds the connection will be pinged.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkBuilder& setMqttKeepAlive(std::uint16_t keepAlive);
+    WolkGatewayBuilder& setMqttKeepAlive(std::uint16_t keepAlive);
+
+    /**
+     * @brief Sets the data provider to engage an ExternalDataService.
+     * @param dataProvider The object that will provide/receive data for devices.
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkGatewayBuilder& withExternalDataService(DataProvider* dataProvider);
 
     /**
      * @brief Builds Wolk instance
@@ -231,8 +246,9 @@ private:
     std::function<void(std::string, std::vector<Parameter>)> m_parameterHandlerLambda;
     std::weak_ptr<connect::ParameterHandler> m_parameterHandler;
 
-    // Place for the gateway persistence
-    std::unique_ptr<GatewayPersistence> m_gatewayPersistence;
+    // Place for the persistence objects
+    std::unique_ptr<Persistence> m_persistence;
+    std::unique_ptr<MessagePersistence> m_messagePersistence;
 
     // Here is the place for all the protocols that are being held
     std::unique_ptr<DataProtocol> m_dataProtocol;
@@ -255,6 +271,9 @@ private:
     std::unique_ptr<connect::FirmwareInstaller> m_firmwareInstaller;
     std::string m_workingDirectory;
     std::unique_ptr<connect::FirmwareParametersListener> m_firmwareParametersListener;
+
+    // Here is the data provider for the ExternalDataService
+    DataProvider* m_dataProvider;
 
     // TODO Add gateway specific things
 

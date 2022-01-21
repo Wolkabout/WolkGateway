@@ -19,6 +19,8 @@
 
 #include "gateway/api/DataHandler.h"
 
+#include <map>
+
 namespace wolkabout
 {
 namespace gateway

@@ -19,7 +19,7 @@
 
 #include "core/model/Device.h"
 #include "core/utilities/StringUtils.h"
-#include "gateway/WolkBuilder.h"
+#include "gateway/WolkGatewayBuilder.h"
 #include "wolk/WolkSingle.h"
 
 #include <algorithm>
@@ -35,6 +35,8 @@ namespace wolkabout
 {
 // List the service
 class InboundPlatformMessageHandler;
+class OutboundMessageHandler;
+class OutboundRetryMessageHandler;
 
 // List of all the protocols
 class GatewayPlatformStatusProtocol;
@@ -66,7 +68,7 @@ class GatewayPlatformStatusService;
 
 class WolkGateway : public connect::WolkSingle
 {
-    friend class WolkBuilder;
+    friend class WolkGatewayBuilder;
 
 public:
     /**
@@ -79,31 +81,7 @@ public:
      * @param device wolkabout::Device
      * @return wolkabout::WolkBuilder instance
      */
-    static WolkBuilder newBuilder(Device device);
-
-    /**
-     * This is the default getter method for obtaining the platform connection status.
-     *
-     * @return Platform connection status.
-     */
-    virtual bool isConnectedToPlatform();
-
-    /**
-     * This is the default setter method for setting a callback function that listens to the platform connection status.
-     *
-     * @param platformConnectionStatusListener The callback function.
-     */
-    virtual void setPlatformConnectionStatusListener(const std::function<void(bool)>& platformConnectionStatusListener);
-
-    /**
-     * @brief connectService Establishes connection with WolkAbout IoT platform
-     */
-    void connect() override;
-
-    /**
-     * @brief disconnect Disconnects from WolkAbout IoT platform
-     */
-    void disconnect() override;
+    static WolkGatewayBuilder newBuilder(Device device);
 
     /**
      * @brief Publishes data
@@ -120,8 +98,6 @@ public:
 
 protected:
     explicit WolkGateway(Device device);
-
-    void addToCommandBuffer(std::function<void()> command);
 
     static std::uint64_t currentRtc();
 
@@ -162,6 +138,11 @@ protected:
     std::unique_ptr<DeviceRepository> m_deviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
 
+    // Additional connectivity
+    std::shared_ptr<MessagePersistence> m_messagePersistence;
+    OutboundMessageHandler* m_outboundMessageHandler;
+    std::unique_ptr<OutboundRetryMessageHandler> m_outboundRetryMessageHandler;
+
     // Gateway connectivity manager
     std::shared_ptr<GatewayMessageRouter> m_gatewayMessageRouter;
 
@@ -182,13 +163,6 @@ protected:
     std::shared_ptr<GatewayPlatformStatusService> m_gatewayPlatformStatusService;
     // TODO Uncomment
     //    std::shared_ptr<GatewayRegistrationService> m_gatewayRegistrationService;
-
-    // External API entities
-    std::shared_ptr<DataProvider> m_dataProvider;
-
-    // Internal utilities
-    std::mutex m_lock;
-    std::unique_ptr<CommandBuffer> m_commandBuffer;
 };
 }    // namespace gateway
 }    // namespace wolkabout

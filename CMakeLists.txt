@@ -102,28 +102,17 @@ endif ()
 
 # WolkGateway library
 set(LIB_SOURCE_FILES gateway/connectivity/GatewayMessageRouter.cpp
-        gateway/persistence/filesystem/GatewayCircularFileSystemPersistence.cpp
-        gateway/persistence/filesystem/GatewayFilesystemPersistence.cpp
-        gateway/persistence/filesystem/MessagePersister.cpp
-        gateway/persistence/inmemory/GatewayInMemoryPersistence.cpp
         gateway/repository/existing_device/JsonFileExistingDevicesRepository.cpp
         gateway/repository/device/SQLiteDeviceRepository.cpp
         gateway/service/external_data/ExternalDataService.cpp
         #        gateway/service/internal_data/InternalDataService.cpp
         gateway/service/platform_status/GatewayPlatformStatusService.cpp
         #        gateway/service/registration_service/SubdeviceRegistrationService.cpp
-        gateway/WolkBuilder.cpp
+        gateway/WolkGatewayBuilder.cpp
         gateway/WolkGateway.cpp)
-#        gateway/WolkDefault.cpp
-#        gateway/WolkExternal.cpp
 set(LIB_HEADER_FILES gateway/api/DataHandler.h
         gateway/api/DataProvider.h
         gateway/connectivity/GatewayMessageRouter.h
-        gateway/persistence/filesystem/GatewayCircularFileSystemPersistence.h
-        gateway/persistence/filesystem/GatewayFilesystemPersistence.h
-        gateway/persistence/filesystem/MessagePersister.h
-        gateway/persistence/GatewayPersistence.h
-        gateway/persistence/inmemory/GatewayInMemoryPersistence.h
         gateway/repository/device/DeviceRepository.h
         gateway/repository/existing_device/ExistingDevicesRepository.h
         gateway/repository/existing_device/JsonFileExistingDevicesRepository.h
@@ -133,9 +122,7 @@ set(LIB_HEADER_FILES gateway/api/DataHandler.h
         #        gateway/service/registration_service/SubdeviceRegistrationService.h
         gateway/service/platform_status/GatewayPlatformStatusService.h
         gateway/GatewayMessageListener.h
-        gateway/WolkBuilder.h
-        #        gateway/WolkDefault.h
-        #        gateway/WolkExternal.h
+        gateway/WolkGatewayBuilder.h
         gateway/WolkGateway.h)
 
 file(COPY gateway/ DESTINATION ${CMAKE_LIBRARY_INCLUDE_DIRECTORY}/gateway/ PATTERN *.cpp EXCLUDE)

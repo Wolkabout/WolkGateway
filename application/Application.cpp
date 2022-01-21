@@ -29,10 +29,47 @@ using namespace wolkabout::gateway;
 
 namespace
 {
-void setupLogger()
+class DefaultDataProvider : public DataProvider
 {
-    wolkabout::Logger::init(wolkabout::LogLevel::INFO, wolkabout::Logger::Type::CONSOLE);
-}
+public:
+    void setDataHandler(DataHandler* handler, const std::string& gatewayKey) override
+    {
+        LOG(DEBUG) << "Received DataHandler for gateway '" << gatewayKey << "'.";
+
+        m_handler = handler;
+        m_gatewayKey = gatewayKey;
+    }
+
+    void onConnected()
+    {
+        if (m_handler != nullptr)
+        {
+            m_handler->pullFeedValues("AD1");
+            m_handler->addReading("AD1", Reading{"T", std::uint64_t{25}});
+        }
+    }
+
+    void receiveReadingData(const std::string& deviceKey,
+                            std::map<std::uint64_t, std::vector<Reading>> readings) override
+    {
+        LOG(DEBUG) << "Received reading data for device '" << deviceKey << "'.";
+        for (const auto& timestamp : readings)
+            for (const auto& reading : timestamp.second)
+                LOG(DEBUG) << "\tReference: " << reading.getReference() << " | Value: " << reading.getStringValue()
+                           << " | Timestamp: " << std::to_string(timestamp.first);
+    }
+
+    void receiveParameterData(const std::string& deviceKey, std::vector<Parameter> parameters) override
+    {
+        LOG(DEBUG) << "Received parameter data for device '" << deviceKey << "'.";
+        for (const auto& parameter : parameters)
+            LOG(DEBUG) << "\tParameter: " << toString(parameter.first) << " | Value: " << parameter.second;
+    }
+
+private:
+    std::string m_gatewayKey;
+    DataHandler* m_handler = nullptr;
+};
 
 wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
 {
@@ -58,7 +95,7 @@ wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
 
 int main(int argc, char** argv)
 {
-    setupLogger();
+    wolkabout::Logger::init(wolkabout::LogLevel::INFO, wolkabout::Logger::Type::CONSOLE);
 
     if (argc < 2)
     {
@@ -93,20 +130,29 @@ int main(int argc, char** argv)
 
     auto gateway = wolkabout::Device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
                                      wolkabout::OutboundDataMode::PUSH);
+    auto dataProvider = std::unique_ptr<DefaultDataProvider>{new DefaultDataProvider};
+
     auto builder = std::move(WolkGateway::newBuilder(gateway)
                                .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
                                .gatewayHost(gatewayConfiguration.getLocalMqttUri())
-                               .platformHost(gatewayConfiguration.getPlatformMqttUri()));
+                               .platformHost(gatewayConfiguration.getPlatformMqttUri())
+                               .withExternalDataService(dataProvider.get()));
     if (!gatewayConfiguration.getPlatformTrustStore().empty())
     {
         builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore());
     }
 
-    std::unique_ptr<WolkGateway> wolk = builder.build();
+    auto wolk = builder.build();
+    wolk->setConnectionStatusListener([&](bool connected) {
+        if (connected)
+            dataProvider->onConnected();
+    });
 
     wolk->connect();
+
     while (true)
     {
+        wolk->publish();
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 

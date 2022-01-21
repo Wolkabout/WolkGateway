@@ -18,6 +18,8 @@
 
 #include "core/connectivity/ConnectivityService.h"
 #include "core/connectivity/InboundPlatformMessageHandler.h"
+#include "core/connectivity/OutboundMessageHandler.h"
+#include "core/connectivity/OutboundRetryMessageHandler.h"
 #include "core/persistence/Persistence.h"
 #include "core/protocol/DataProtocol.h"
 #include "core/protocol/ErrorProtocol.h"
@@ -59,27 +61,10 @@ namespace gateway
 {
 WolkGateway::~WolkGateway() = default;
 
-WolkBuilder WolkGateway::newBuilder(Device device)
+gateway::WolkGatewayBuilder WolkGateway::newBuilder(Device device)
 {
-    return WolkBuilder(std::move(device));
+    return gateway::WolkGatewayBuilder(std::move(device));
 }
-
-bool WolkGateway::isConnectedToPlatform()
-{
-    return m_connected;
-}
-
-void WolkGateway::setPlatformConnectionStatusListener(const std::function<void(bool)>& platformConnectionStatusListener)
-{
-    this->m_platformConnectionStatusListener = platformConnectionStatusListener;
-}
-
-void WolkGateway::connect()
-{
-    WolkInterface::connect();
-}
-
-void WolkGateway::disconnect() {}
 
 void WolkGateway::publish()
 {
@@ -91,14 +76,9 @@ connect::WolkInterfaceType WolkGateway::getType()
     return connect::WolkInterfaceType::Gateway;
 }
 
-WolkGateway::WolkGateway(Device device) : connect::WolkSingle(device)
+WolkGateway::WolkGateway(Device device) : connect::WolkSingle(std::move(device)), m_connected{false}
 {
     m_commandBuffer = std::unique_ptr<CommandBuffer>(new CommandBuffer());
-}
-
-void WolkGateway::addToCommandBuffer(std::function<void()> command)
-{
-    m_commandBuffer->pushCommand(std::make_shared<std::function<void()>>(command));
 }
 
 std::uint64_t WolkGateway::currentRtc()

@@ -20,6 +20,7 @@
 #include "gateway/WolkGateway.h"
 
 #include <chrono>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -29,6 +30,22 @@ using namespace wolkabout::gateway;
 
 namespace
 {
+/**
+ * This is a function that will generate a random Temperature value for us.
+ *
+ * @return A new Temperature value, in the range of -20 to 80.
+ */
+std::int16_t generateRandomValue()
+{
+    // Here we will create the random engine and distribution
+    static auto engine =
+      std::mt19937(static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()));
+    static auto distribution = std::uniform_real_distribution<>(-20, 80);
+
+    // And generate a random value
+    return static_cast<std::int16_t>(distribution(engine));
+}
+
 class DefaultDataProvider : public DataProvider
 {
 public:
@@ -74,7 +91,8 @@ private:
 wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
 {
     const std::string str = wolkabout::StringUtils::toUpperCase(levelStr);
-    const auto logLevel = [&]() -> wolkabout::LogLevel {
+    const auto logLevel = [&]() -> wolkabout::LogLevel
+    {
         if (str == "TRACE")
             return wolkabout::LogLevel::TRACE;
         else if (str == "DEBUG")
@@ -134,8 +152,9 @@ int main(int argc, char** argv)
 
     auto builder = std::move(WolkGateway::newBuilder(gateway)
                                .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
-                               .gatewayHost(gatewayConfiguration.getLocalMqttUri())
                                .platformHost(gatewayConfiguration.getPlatformMqttUri())
+                               .withInternalDataService(gatewayConfiguration.getLocalMqttUri())
+                               .withSubdeviceManagement()
                                .withExternalDataService(dataProvider.get()));
     if (!gatewayConfiguration.getPlatformTrustStore().empty())
     {
@@ -143,18 +162,23 @@ int main(int argc, char** argv)
     }
 
     auto wolk = builder.build();
-    wolk->setConnectionStatusListener([&](bool connected) {
-        if (connected)
-            dataProvider->onConnected();
-    });
+    wolk->setConnectionStatusListener(
+      [&](bool connected)
+      {
+          if (connected)
+              dataProvider->onConnected();
+      });
 
     wolk->connect();
 
-    while (true)
-    {
-        wolk->publish();
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    wolk->addReading("TF", generateRandomValue());
+    wolk->publish();
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    wolk->requestDevices();
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     return 0;
 }

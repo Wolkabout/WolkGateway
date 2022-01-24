@@ -34,7 +34,6 @@
 namespace wolkabout
 {
 // List the service
-class InboundPlatformMessageHandler;
 class OutboundMessageHandler;
 class OutboundRetryMessageHandler;
 
@@ -63,8 +62,7 @@ class ExternalDataService;
 // TODO Uncomment
 // class InternalDataService;
 class GatewayPlatformStatusService;
-// TODO Uncomment
-// class GatewayRegistrationService;
+class SubdeviceManagementService;
 
 class WolkGateway : public connect::WolkSingle
 {
@@ -84,9 +82,46 @@ public:
     static WolkGatewayBuilder newBuilder(Device device);
 
     /**
+     * Overridden method from `connect::WolkSingle`. Will attempt to connect to the platform and to the local broker -
+     * if the local connectivity has been set up.
+     */
+    void connect() override;
+
+    /**
+     * Overridden method from `connect::WolkSingle`. Will close both the platform and the local connectivity.
+     */
+    void disconnect() override;
+
+    /**
+     * Default getter for the platform connection status.
+     *
+     * @return The status of the connection with platform.
+     */
+    bool isPlatformConnected();
+
+    /**
+     * Default getter for the local connection status.
+     *
+     * @return The status of the connection with the local broker. If no connection with a local broker exists, will
+     * always be false.
+     */
+    bool isLocalConnected();
+
+    /**
      * @brief Publishes data
      */
     void publish() override;
+
+    /**
+     * This is a debug method that is used to make the `SubdeviceManagement` service send out a
+     * `RegisteredDevicesRequest` message.
+     *
+     * @param timestampFrom The timestamp from which on devices registered should be returned.
+     * @param deviceType The type of devices that are requested.
+     * @param externalId The external id of a specific device if a specific device is requested.
+     */
+    void requestDevices(const std::chrono::milliseconds& timestampFrom = std::chrono::milliseconds{0},
+                        const std::string& deviceType = {}, const std::string& externalId = {});
 
     /**
      * This is the overridden method from the `WolkInterface` interface.
@@ -101,17 +136,11 @@ protected:
 
     static std::uint64_t currentRtc();
 
-    void flushFeeds();
-
     // callbacks
     void handleFeedUpdate(const std::map<std::uint64_t, std::vector<Reading>>& readings);
     void handleParameterUpdate(const std::vector<Parameter>& parameters);
 
     void platformDisconnected();
-
-    void publishEverything();
-    void publishFirmwareStatus();
-    void publishFileList();
 
     void notifyPlatformConnected();
     void notifyPlatformDisconnected();
@@ -138,6 +167,11 @@ protected:
     std::unique_ptr<DeviceRepository> m_deviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
 
+    // Local connectivity stack
+    std::unique_ptr<ConnectivityService> m_localConnectivityService;
+    std::shared_ptr<InboundMessageHandler> m_localInboundMessageHandler;
+    OutboundMessageHandler* m_localOutboundMessageHandler;
+
     // Additional connectivity
     std::shared_ptr<MessagePersistence> m_messagePersistence;
     OutboundMessageHandler* m_outboundMessageHandler;
@@ -146,14 +180,10 @@ protected:
     // Gateway connectivity manager
     std::shared_ptr<GatewayMessageRouter> m_gatewayMessageRouter;
 
-    // Local connectivity stack
-    std::unique_ptr<ConnectivityService> m_localConnectivityService;
-    std::unique_ptr<InboundPlatformMessageHandler> m_localConnectivityManager;
-
     // Gateway protocols
     std::unique_ptr<GatewaySubdeviceProtocol> m_gatewaySubdeviceProtocol;
-    std::unique_ptr<RegistrationProtocol> m_registrationProtocol;
-    std::unique_ptr<GatewayRegistrationProtocol> m_gatewayRegistrationProtocol;
+    std::unique_ptr<RegistrationProtocol> m_platformRegistrationProtocol;
+    std::unique_ptr<GatewayRegistrationProtocol> m_localRegistrationProtocol;
     std::unique_ptr<GatewayPlatformStatusProtocol> m_gatewayPlatformStatusProtocol;
 
     // Gateway services
@@ -161,8 +191,7 @@ protected:
     // TODO Uncomment
     //    std::shared_ptr<InternalDataService> m_internalDataService;
     std::shared_ptr<GatewayPlatformStatusService> m_gatewayPlatformStatusService;
-    // TODO Uncomment
-    //    std::shared_ptr<GatewayRegistrationService> m_gatewayRegistrationService;
+    std::shared_ptr<SubdeviceManagementService> m_subdeviceManagementService;
 };
 }    // namespace gateway
 }    // namespace wolkabout

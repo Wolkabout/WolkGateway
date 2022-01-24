@@ -32,6 +32,7 @@ class GatewayPlatformStatusService
 public:
     GatewayPlatformStatusService(ConnectivityService& connectivityService, GatewayPlatformStatusProtocol& protocol,
                                  std::string deviceKey = "");
+
     void sendPlatformConnectionStatusMessage(bool connected);
 
 private:

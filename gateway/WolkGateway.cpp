@@ -35,6 +35,7 @@
 #include "gateway/repository/existing_device/ExistingDevicesRepository.h"
 #include "gateway/service/external_data/ExternalDataService.h"
 #include "gateway/service/platform_status/GatewayPlatformStatusService.h"
+#include "gateway/service/subdevice_management/SubdeviceManagementService.h"
 #include "wolk/api/FeedUpdateHandler.h"
 #include "wolk/api/ParameterHandler.h"
 #include "wolk/service/data/DataService.h"
@@ -66,9 +67,49 @@ gateway::WolkGatewayBuilder WolkGateway::newBuilder(Device device)
     return gateway::WolkGatewayBuilder(std::move(device));
 }
 
+void WolkGateway::connect()
+{
+    connectPlatform(true);
+    if (m_localConnectivityService != nullptr)
+        connectLocal(true);
+}
+
+void WolkGateway::disconnect()
+{
+    WolkSingle::disconnect();
+    if (m_localConnectivityService != nullptr)
+        m_localConnectivityService->disconnect();
+}
+
+bool WolkGateway::isPlatformConnected()
+{
+    return WolkSingle::isConnected();
+}
+
+bool WolkGateway::isLocalConnected()
+{
+    if (m_localConnectivityService)
+        return m_localConnectivityService->isConnected();
+    return false;
+}
+
 void WolkGateway::publish()
 {
-    addToCommandBuffer([=]() -> void { flushFeeds(); });
+    WolkInterface::publish();
+}
+
+void WolkGateway::requestDevices(const std::chrono::milliseconds& timestampFrom, const std::string& deviceType,
+                                 const std::string& externalId)
+{
+    if (m_subdeviceManagementService == nullptr)
+        return;
+
+    addToCommandBuffer(
+      [=]
+      {
+          if (m_subdeviceManagementService != nullptr)
+              m_subdeviceManagementService->sendOutRegisteredDevicesRequest(timestampFrom, deviceType, externalId);
+      });
 }
 
 connect::WolkInterfaceType WolkGateway::getType()
@@ -76,7 +117,11 @@ connect::WolkInterfaceType WolkGateway::getType()
     return connect::WolkInterfaceType::Gateway;
 }
 
-WolkGateway::WolkGateway(Device device) : connect::WolkSingle(std::move(device)), m_connected{false}
+WolkGateway::WolkGateway(Device device)
+: connect::WolkSingle(std::move(device))
+, m_connected{false}
+, m_localOutboundMessageHandler{nullptr}
+, m_outboundMessageHandler{nullptr}
 {
     m_commandBuffer = std::unique_ptr<CommandBuffer>(new CommandBuffer());
 }
@@ -87,71 +132,38 @@ std::uint64_t WolkGateway::currentRtc()
     return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
 }
 
-void WolkGateway::flushFeeds()
-{
-    //    if (m_gatewayDataService)
-    //    {
-    //        m_gatewayDataService->publishSensorReadings();
-    //    }
-}
-
 void WolkGateway::handleFeedUpdate(const std::map<uint64_t, std::vector<Reading>>& readings)
 {
-    addToCommandBuffer([=] {
-        if (auto handler = m_feedUpdateHandler.lock())
-            handler->handleUpdate(m_device.getKey(), readings);
-        else if (m_feedUpdateHandlerLambda)
-            m_feedUpdateHandlerLambda(m_device.getKey(), readings);
-    });
+    addToCommandBuffer(
+      [=]
+      {
+          if (auto handler = m_feedUpdateHandler.lock())
+              handler->handleUpdate(m_device.getKey(), readings);
+          else if (m_feedUpdateHandlerLambda)
+              m_feedUpdateHandlerLambda(m_device.getKey(), readings);
+      });
 }
 
 void WolkGateway::handleParameterUpdate(const std::vector<Parameter>& parameters)
 {
-    addToCommandBuffer([=] {
-        if (auto handler = m_parameterHandler.lock())
-            handler->handleUpdate(m_device.getKey(), parameters);
-        else if (m_parameterLambda)
-            m_parameterLambda(m_device.getKey(), parameters);
-    });
+    addToCommandBuffer(
+      [=]
+      {
+          if (auto handler = m_parameterHandler.lock())
+              handler->handleUpdate(m_device.getKey(), parameters);
+          else if (m_parameterLambda)
+              m_parameterLambda(m_device.getKey(), parameters);
+      });
 }
 
 void WolkGateway::platformDisconnected()
 {
-    addToCommandBuffer([=] {
-        notifyPlatformDisconnected();
-        connectPlatform(true);
-    });
-}
-
-void WolkGateway::publishEverything()
-{
-    //    publishFirmwareStatus();
-    //
-    //    publishConfiguration();
-    //
-    //    for (const std::string& actuatorReference : m_device.getActuatorReferences())
-    //    {
-    //        publishActuatorStatus(actuatorReference);
-    //    }
-    //
-    //    publishFileList();
-}
-
-void WolkGateway::publishFirmwareStatus()
-{
-    //    if (m_firmwareUpdateService)
-    //    {
-    //        m_firmwareUpdateService->reportFirmwareUpdateResult();
-    //        m_firmwareUpdateService->publishFirmwareVersion();
-    //    }
-}
-
-void WolkGateway::publishFileList()
-{
-    //    if (m_fileDownloadService)
-    //    {
-    //        m_fileDownloadService->sendFileList();
-    //    }
+    addToCommandBuffer(
+      [=]
+      {
+          notifyPlatformDisconnected();
+          connectPlatform(true);
+      });
 }
 
 void WolkGateway::notifyPlatformConnected()
@@ -161,6 +173,8 @@ void WolkGateway::notifyPlatformConnected()
     m_connected = true;
     if (m_platformConnectionStatusListener)
         m_platformConnectionStatusListener(m_connected);
+    if (m_gatewayPlatformStatusService != nullptr)
+        m_gatewayPlatformStatusService->sendPlatformConnectionStatusMessage(true);
 }
 
 void WolkGateway::notifyPlatformDisconnected()
@@ -170,51 +184,53 @@ void WolkGateway::notifyPlatformDisconnected()
     m_connected = false;
     if (m_platformConnectionStatusListener)
         m_platformConnectionStatusListener(m_connected);
+    if (m_gatewayPlatformStatusService != nullptr)
+        m_gatewayPlatformStatusService->sendPlatformConnectionStatusMessage(false);
 }
 
 void WolkGateway::connectPlatform(bool firstTime)
 {
-    addToCommandBuffer([=] {
-        if (firstTime)
-            LOG(INFO) << TAG << "Connecting to platform...";
+    addToCommandBuffer(
+      [=]
+      {
+          if (firstTime)
+              LOG(INFO) << TAG << "Connecting to platform...";
 
-        if (m_connectivityService->connect())
-        {
-            notifyPlatformConnected();
+          if (m_connectivityService->connect())
+          {
+              notifyPlatformConnected();
+          }
+          else
+          {
+              if (firstTime)
+                  LOG(INFO) << TAG << "Failed to connect to platform.";
 
-            publishEverything();
-
-            publish();
-        }
-        else
-        {
-            if (firstTime)
-                LOG(INFO) << TAG << "Failed to connect to platform.";
-
-            std::this_thread::sleep_for(std::chrono::milliseconds{RECONNECT_DELAY_MSEC});
-            connectPlatform();
-        }
-    });
+              std::this_thread::sleep_for(std::chrono::milliseconds{RECONNECT_DELAY_MSEC});
+              connectPlatform();
+          }
+      });
 }
 
 void WolkGateway::connectLocal(bool firstTime)
 {
-    addToCommandBuffer([=] {
-        if (firstTime)
-            LOG(INFO) << TAG << "Connecting to local broker...";
+    addToCommandBuffer(
+      [=]
+      {
+          if (firstTime)
+              LOG(INFO) << TAG << "Connecting to local broker...";
 
-        if (m_connectivityService->connect())
-        {
-        }
-        else
-        {
-            if (firstTime)
-                LOG(INFO) << TAG << "Failed to connect to local broker.";
+          if (m_connectivityService->connect())
+          {
+          }
+          else
+          {
+              if (firstTime)
+                  LOG(INFO) << TAG << "Failed to connect to local broker.";
 
-            std::this_thread::sleep_for(std::chrono::milliseconds{RECONNECT_DELAY_MSEC});
-            connectLocal();
-        }
-    });
+              std::this_thread::sleep_for(std::chrono::milliseconds{RECONNECT_DELAY_MSEC});
+              connectLocal();
+          }
+      });
 }
 }    // namespace gateway
 }    // namespace wolkabout

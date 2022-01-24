@@ -1,11 +1,11 @@
 {
     "name": "",
 
-    "key": "AWG",
-    "password": "3QCLK32JZH",
+    "key": "",
+    "password": "",
 
-    "platformMqttUri": "ssl://integration5.wolkabout.com:8883",
-    "platformMqttKeepAliveSeconds": 10,
+    "platformMqttUri": "ssl://demo.wolkabout.com:8883",
+    "platformMqttKeepAliveSeconds": 60,
     "localMqttUri": "tcp://localhost:1883",
 
     "platformTrustStore": "./ca.crt"

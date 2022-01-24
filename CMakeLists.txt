@@ -107,7 +107,7 @@ set(LIB_SOURCE_FILES gateway/connectivity/GatewayMessageRouter.cpp
         gateway/service/external_data/ExternalDataService.cpp
         #        gateway/service/internal_data/InternalDataService.cpp
         gateway/service/platform_status/GatewayPlatformStatusService.cpp
-        #        gateway/service/registration_service/SubdeviceRegistrationService.cpp
+        gateway/service/subdevice_management/SubdeviceManagementService.cpp
         gateway/WolkGatewayBuilder.cpp
         gateway/WolkGateway.cpp)
 set(LIB_HEADER_FILES gateway/api/DataHandler.h
@@ -119,7 +119,7 @@ set(LIB_HEADER_FILES gateway/api/DataHandler.h
         gateway/repository/device/SQLiteDeviceRepository.h
         gateway/service/external_data/ExternalDataService.h
         #        gateway/service/internal_data/InternalDataService.h
-        #        gateway/service/registration_service/SubdeviceRegistrationService.h
+        gateway/service/subdevice_management/SubdeviceManagementService.h
         gateway/service/platform_status/GatewayPlatformStatusService.h
         gateway/GatewayMessageListener.h
         gateway/WolkGatewayBuilder.h

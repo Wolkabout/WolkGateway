@@ -24,7 +24,9 @@
 #include "core/protocol/ErrorProtocol.h"
 #include "core/protocol/FileManagementProtocol.h"
 #include "core/protocol/FirmwareUpdateProtocol.h"
+#include "core/protocol/GatewayPlatformStatusProtocol.h"
 #include "core/protocol/GatewaySubdeviceProtocol.h"
+#include "core/protocol/GatewayRegistrationProtocol.h"
 #include "core/protocol/PlatformStatusProtocol.h"
 #include "core/protocol/RegistrationProtocol.h"
 #include "gateway/api/DataProvider.h"
@@ -70,13 +72,6 @@ public:
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkGatewayBuilder& platformTrustStore(const std::string& trustStore);
-
-    /**
-     * @brief Allows passing of URI to custom local message bus
-     * @param host Message Bus URI
-     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
-     */
-    WolkGatewayBuilder& gatewayHost(const std::string& host);
 
     /**
      * @brief Sets feed update handler
@@ -206,11 +201,36 @@ public:
     WolkGatewayBuilder& setMqttKeepAlive(std::uint16_t keepAlive);
 
     /**
+     * @brief Sets the gateway to use the InternalData service that connects to a local MQTT message broker.
+     * @param local The mqtt path that will be used to connect to a local MQTT broker.
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkGatewayBuilder& withInternalDataService(const std::string& local = MESSAGE_BUS_HOST);
+
+    /**
+     * @brief Sets the gateway to use the SubdeviceManagement service.
+     * @param platformProtocol The protocol which will be used for platform communication.
+     * @param localProtocol The protocol which will be used for local communication.
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkGatewayBuilder& withSubdeviceManagement(std::unique_ptr<RegistrationProtocol> platformProtocol = {},
+                                                std::unique_ptr<GatewayRegistrationProtocol> localProtocol = {});
+
+    /**
      * @brief Sets the data provider to engage an ExternalDataService.
      * @param dataProvider The object that will provide/receive data for devices.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkGatewayBuilder& withExternalDataService(DataProvider* dataProvider);
+
+    /**
+     * @brief Sets the gateway to use a platform status service, announcing the connection from the platform to the
+     * local broker.
+     * @param protocol The protocol that will be used to communicate. If left for default,
+     * `wolkabout::WolkaboutGatewayPlatformStatusProtocol` will be initialized.
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkGatewayBuilder& withPlatformStatusService(std::unique_ptr<GatewayPlatformStatusProtocol> protocol = nullptr);
 
     /**
      * @brief Builds Wolk instance
@@ -236,7 +256,7 @@ private:
     std::string m_platformHost;
     std::string m_platformTrustStore;
     std::uint16_t m_platformMqttKeepAliveSec;
-    std::string m_gatewayHost;
+    std::string m_localMqttHost;
 
     // Here is the place for external entities capable of receiving Reading values.
     std::function<void(std::string, std::map<std::uint64_t, std::vector<Reading>>)> m_feedUpdateHandlerLambda;
@@ -256,8 +276,10 @@ private:
     std::chrono::milliseconds m_errorRetainTime;
     std::unique_ptr<FileManagementProtocol> m_fileManagementProtocol;
     std::unique_ptr<FirmwareUpdateProtocol> m_firmwareUpdateProtocol;
+    std::unique_ptr<GatewayPlatformStatusProtocol> m_gatewayPlatformStatusProtocol;
     std::unique_ptr<GatewaySubdeviceProtocol> m_gatewaySubdeviceProtocol;
-    std::unique_ptr<PlatformStatusProtocol> m_platformStatusProtocol;
+    std::unique_ptr<GatewayRegistrationProtocol> m_localRegistrationProtocol;
+    std::unique_ptr<RegistrationProtocol> m_platformRegistrationProtocol;
 
     // Here is the place for all the file transfer related parameters
     std::shared_ptr<connect::FileDownloader> m_fileDownloader;
@@ -274,8 +296,6 @@ private:
 
     // Here is the data provider for the ExternalDataService
     DataProvider* m_dataProvider;
-
-    // TODO Add gateway specific things
 
     // These are the default values that are going to be used for the connection parameters
     static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";

@@ -17,14 +17,14 @@
 #ifndef DEVICEREPOSITORY_H
 #define DEVICEREPOSITORY_H
 
+#include "core/model/messages/RegisteredDevicesResponseMessage.h"
+
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace wolkabout
 {
-class Device;
-
 namespace gateway
 {
 class DeviceRepository
@@ -32,17 +32,15 @@ class DeviceRepository
 public:
     virtual ~DeviceRepository() = default;
 
-    virtual bool save(const Device& device) = 0;
+    virtual bool save(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device) = 0;
 
     virtual bool remove(const std::string& deviceKey) = 0;
 
-    virtual void removeAll() = 0;
+    virtual bool removeAll() = 0;
 
-    virtual std::unique_ptr<Device> findByDeviceKey(const std::string& key) = 0;
+    virtual bool containsDeviceKey(const std::string& deviceKey) = 0;
 
-    virtual std::unique_ptr<std::vector<std::string>> findAllDeviceKeys() = 0;
-
-    virtual bool containsDeviceWithKey(const std::string& deviceKey) = 0;
+    virtual std::chrono::milliseconds latestTimestamp() = 0;
 };
 }    // namespace gateway
 }    // namespace wolkabout

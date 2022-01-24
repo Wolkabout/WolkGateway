@@ -40,6 +40,7 @@ class RegistrationProtocol;
 namespace gateway
 {
 class DeviceRepository;
+class ExistingDevicesRepository;
 
 /**
  * This struct is used to cache the requests that are sent out, and connect them with the responses.
@@ -95,8 +96,8 @@ public:
     SubdeviceManagementService(std::string gatewayKey, RegistrationProtocol& platformRegistrationProtocol,
                                GatewayRegistrationProtocol& localRegistrationProtocol,
                                OutboundRetryMessageHandler& outboundPlatformMessageHandler,
-                               OutboundMessageHandler& outboundDeviceMessageHandler,
-                               DeviceRepository& deviceRepository);
+                               OutboundMessageHandler& outboundDeviceMessageHandler, DeviceRepository& deviceRepository,
+                               ExistingDevicesRepository& existingDeviceRepository);
 
     /**
      * Overridden destructor.
@@ -160,6 +161,7 @@ private:
 
     // Device information storage
     DeviceRepository& m_deviceRepository;
+    ExistingDevicesRepository& m_existingDeviceRepository;
 
     // Storage for request objects
     std::unordered_map<RegisteredDevicesRequestParameters,

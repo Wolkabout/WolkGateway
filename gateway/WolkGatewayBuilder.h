@@ -30,6 +30,8 @@
 #include "core/protocol/PlatformStatusProtocol.h"
 #include "core/protocol/RegistrationProtocol.h"
 #include "gateway/api/DataProvider.h"
+#include "gateway/repository/device/DeviceRepository.h"
+#include "gateway/repository/existing_device/ExistingDevicesRepository.h"
 #include "wolk/WolkInterfaceType.h"
 #include "wolk/api/FeedUpdateHandler.h"
 #include "wolk/api/FileListener.h"
@@ -119,6 +121,20 @@ public:
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
     WolkGatewayBuilder& withMessagePersistence(std::unique_ptr<MessagePersistence> persistence);
+
+    /**
+     * @brief Sets a custom device repository to be used by the Wolk object.
+     * @param repository std::unique_ptr to gateway::DeviceRepository implementation
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkGatewayBuilder& withDeviceRepository(std::unique_ptr<DeviceRepository> repository);
+
+    /**
+     * @brief Sets a custom existing device repository to be used by the Wolk object.
+     * @param repository std::unique_ptr to gateway::ExistingDeviceRepository implementation
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkGatewayBuilder& withExistingDeviceRepository(std::unique_ptr<ExistingDevicesRepository> repository);
 
     /**
      * @brief withDataProtocol Defines which data protocol to use
@@ -269,6 +285,10 @@ private:
     // Place for the persistence objects
     std::unique_ptr<Persistence> m_persistence;
     std::unique_ptr<MessagePersistence> m_messagePersistence;
+
+    // Place for the repository objects
+    std::unique_ptr<DeviceRepository> m_deviceRepository;
+    std::unique_ptr<ExistingDevicesRepository> m_existingDeviceRepository;
 
     // Here is the place for all the protocols that are being held
     std::unique_ptr<DataProtocol> m_dataProtocol;

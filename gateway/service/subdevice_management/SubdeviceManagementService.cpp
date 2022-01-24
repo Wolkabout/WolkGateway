@@ -23,11 +23,9 @@
 #include "core/protocol/GatewayRegistrationProtocol.h"
 #include "core/protocol/RegistrationProtocol.h"
 #include "core/utilities/Logger.h"
+#include "gateway/repository/device/DeviceRepository.h"
+#include "gateway/repository/existing_device/ExistingDevicesRepository.h"
 
-#include <algorithm>
-#include <cassert>
-#include <fstream>
-#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -84,14 +82,15 @@ SubdeviceManagementService::SubdeviceManagementService(std::string gatewayKey,
                                                        GatewayRegistrationProtocol& localRegistrationProtocol,
                                                        OutboundRetryMessageHandler& outboundPlatformMessageHandler,
                                                        OutboundMessageHandler& outboundDeviceMessageHandler,
-                                                       DeviceRepository& deviceRepository)
+                                                       DeviceRepository& deviceRepository,
+                                                       ExistingDevicesRepository& existingDevicesRepository)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_platformProtocol{platformRegistrationProtocol}
 , m_localProtocol{localRegistrationProtocol}
 , m_outboundPlatformRetryMessageHandler{outboundPlatformMessageHandler}
 , m_outboundLocalMessageHandler{outboundDeviceMessageHandler}
 , m_deviceRepository{deviceRepository}
-
+, m_existingDeviceRepository{existingDevicesRepository}
 {
 }
 
@@ -114,6 +113,10 @@ void SubdeviceManagementService::receiveMessages(const std::vector<GatewaySubdev
 {
     LOG(TRACE) << METHOD_INFO;
 
+    // Record when the message was received.
+    auto now =
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+
     // Go through every message
     for (const auto& message : messages)
     {
@@ -134,6 +137,8 @@ void SubdeviceManagementService::receiveMessages(const std::vector<GatewaySubdev
 
         // Print something about it
         LOG(INFO) << "Received info about " << response->getMatchingDevices().size() << " devices!";
+        for (const auto& device : response->getMatchingDevices())
+            m_deviceRepository.save(now, device);
     }
 }
 

@@ -180,7 +180,8 @@ protected:
     // Gateway connectivity manager
     std::shared_ptr<GatewayMessageRouter> m_gatewayMessageRouter;
 
-    // Gateway protocols
+    // Gateway protocols        LOG(ERROR) << errorPrefix << "Failed to execute the query - '" << errorMessage << "'.";
+    //        return millis;
     std::unique_ptr<GatewaySubdeviceProtocol> m_gatewaySubdeviceProtocol;
     std::unique_ptr<RegistrationProtocol> m_platformRegistrationProtocol;
     std::unique_ptr<GatewayRegistrationProtocol> m_localRegistrationProtocol;

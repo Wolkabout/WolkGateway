@@ -33,6 +33,8 @@
 #include "core/protocol/wolkabout/WolkaboutRegistrationProtocol.h"
 #include "gateway/WolkGateway.h"
 #include "gateway/connectivity/GatewayMessageRouter.h"
+#include "gateway/repository/device/SQLiteDeviceRepository.h"
+#include "gateway/repository/existing_device/JsonFileExistingDevicesRepository.h"
 #include "gateway/service/external_data/ExternalDataService.h"
 #include "gateway/service/platform_status/GatewayPlatformStatusService.h"
 #include "gateway/service/subdevice_management/SubdeviceManagementService.h"
@@ -50,6 +52,8 @@ WolkGatewayBuilder::WolkGatewayBuilder(Device device)
 , m_platformMqttKeepAliveSec{60}
 , m_persistence{new InMemoryPersistence}
 , m_messagePersistence{new InMemoryMessagePersistence}
+, m_deviceRepository{new SQLiteDeviceRepository}
+, m_existingDeviceRepository{new JsonFileExistingDevicesRepository}
 , m_dataProtocol{new WolkaboutDataProtocol}
 , m_errorProtocol{new WolkaboutErrorProtocol}
 , m_errorRetainTime{std::chrono::seconds{1}}
@@ -113,6 +117,19 @@ WolkGatewayBuilder& WolkGatewayBuilder::withPersistence(std::unique_ptr<Persiste
 WolkGatewayBuilder& WolkGatewayBuilder::withMessagePersistence(std::unique_ptr<MessagePersistence> persistence)
 {
     m_messagePersistence = std::move(persistence);
+    return *this;
+}
+
+WolkGatewayBuilder& WolkGatewayBuilder::withDeviceRepository(std::unique_ptr<DeviceRepository> repository)
+{
+    m_deviceRepository = std::move(repository);
+    return *this;
+}
+
+WolkGatewayBuilder& WolkGatewayBuilder::withExistingDeviceRepository(
+  std::unique_ptr<ExistingDevicesRepository> repository)
+{
+    m_existingDeviceRepository = std::move(repository);
     return *this;
 }
 
@@ -244,6 +261,10 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     // Move the persistence objects
     wolk->m_persistence = std::move(m_persistence);
     wolk->m_messagePersistence = std::move(m_messagePersistence);
+
+    // Move the repository objects
+    wolk->m_deviceRepository = std::move(m_deviceRepository);
+    wolk->m_existingDevicesRepository = std::move(m_existingDeviceRepository);
 
     // Create the platform connection
     auto mqttClient = std::make_shared<PahoMqttClient>(m_platformMqttKeepAliveSec);
@@ -380,7 +401,8 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
         wolk->m_localRegistrationProtocol = std::move(m_localRegistrationProtocol);
         wolk->m_subdeviceManagementService = std::make_shared<SubdeviceManagementService>(
           m_device.getKey(), *wolk->m_platformRegistrationProtocol, *wolk->m_localRegistrationProtocol,
-          *wolk->m_outboundRetryMessageHandler, *wolk->m_localOutboundMessageHandler, *wolk->m_deviceRepository);
+          *wolk->m_outboundRetryMessageHandler, *wolk->m_localOutboundMessageHandler, *wolk->m_deviceRepository,
+          *wolk->m_existingDevicesRepository);
         wolk->m_gatewayMessageRouter->addListener("SubdeviceManagement", wolk->m_subdeviceManagementService);
         wolk->m_localInboundMessageHandler->addListener(wolk->m_subdeviceManagementService);
     }

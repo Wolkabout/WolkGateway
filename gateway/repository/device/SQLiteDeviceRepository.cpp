@@ -253,7 +253,12 @@ std::string SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, 
         if (result->find(entry) == result->cend())
             result->emplace(entry, std::vector<std::string>{});
         for (auto i = std::int32_t{0}; i < col; ++i)
-            (*result)[entry].emplace_back(reinterpret_cast<const char*>(sqlite3_column_text(statement, i)));
+        {
+            auto string = reinterpret_cast<const char*>(sqlite3_column_text(statement, i));
+            if (string == nullptr)
+                string = "";
+            (*result)[entry].emplace_back(string);
+        }
         ++entry;
     }
     sqlite3_finalize(statement);

@@ -148,7 +148,7 @@ public:
         wolk->m_inboundDeviceMessageHandler.reset(new GatewayInboundDeviceMessageHandler());
 
         deviceRepository = new MockRepository();
-        wolk->m_deviceRepository.reset(deviceRepository);
+        wolk->m_persistentDeviceRepository.reset(deviceRepository);
         fileRepository = new MockFileRepository();
         wolk->m_fileRepository.reset(fileRepository);
         existingDevicesRepository = new MockExistingDevicesRepository();
@@ -164,12 +164,12 @@ public:
         gatewayRegistrationProtocol = std::make_shared<wolkabout::JsonGatewaySubdeviceRegistrationProtocol>();
 
         dataService =
-          new MockDataService(GATEWAY_KEY, *dataProtocol, *gatewayDataProtocol, wolk->m_deviceRepository.get(),
+          new MockDataService(GATEWAY_KEY, *dataProtocol, *gatewayDataProtocol, wolk->m_persistentDeviceRepository.get(),
                               *wolk->m_platformPublisher, *wolk->m_devicePublisher);
         wolk->m_dataService.reset(dataService);
 
         gatewayUpdateService = new MockGatewayUpdateService(GATEWAY_KEY, *deviceRegistrationProtocol,
-                                                            *wolk->m_deviceRepository, *wolk->m_platformPublisher);
+                                                            *wolk->m_persistentDeviceRepository, *wolk->m_platformPublisher);
         wolk->m_gatewayUpdateService.reset(gatewayUpdateService);
 
         fileDownloadService = new MockFileDownloadService(GATEWAY_KEY, *fileDownloadProtocol, "",
@@ -186,7 +186,7 @@ public:
         wolk->m_keepAliveService.reset(keepAliveService);
 
         subdeviceRegistrationService = new MockSubdeviceRegistrationService(
-          GATEWAY_KEY, *deviceRegistrationProtocol, *gatewayRegistrationProtocol, *wolk->m_deviceRepository,
+          GATEWAY_KEY, *deviceRegistrationProtocol, *gatewayRegistrationProtocol, *wolk->m_persistentDeviceRepository,
           *wolk->m_platformPublisher, *wolk->m_devicePublisher);
         wolk->m_subdeviceRegistrationService.reset(subdeviceRegistrationService);
     }

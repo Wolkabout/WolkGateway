@@ -33,9 +33,10 @@
 #include "gateway/connectivity/GatewayMessageRouter.h"
 #include "gateway/repository/device/DeviceRepository.h"
 #include "gateway/repository/existing_device/ExistingDevicesRepository.h"
+#include "gateway/service/devices/DevicesService.h"
 #include "gateway/service/external_data/ExternalDataService.h"
+#include "gateway/service/internal_data/InternalDataService.h"
 #include "gateway/service/platform_status/GatewayPlatformStatusService.h"
-#include "gateway/service/subdevice_management/SubdeviceManagementService.h"
 #include "wolk/api/FeedUpdateHandler.h"
 #include "wolk/api/ParameterHandler.h"
 #include "wolk/service/data/DataService.h"
@@ -69,9 +70,9 @@ gateway::WolkGatewayBuilder WolkGateway::newBuilder(Device device)
 
 void WolkGateway::connect()
 {
-    connectPlatform(true);
     if (m_localConnectivityService != nullptr)
         connectLocal(true);
+    connectPlatform(true);
 }
 
 void WolkGateway::disconnect()
@@ -96,20 +97,6 @@ bool WolkGateway::isLocalConnected()
 void WolkGateway::publish()
 {
     WolkInterface::publish();
-}
-
-void WolkGateway::requestDevices(const std::chrono::milliseconds& timestampFrom, const std::string& deviceType,
-                                 const std::string& externalId)
-{
-    if (m_subdeviceManagementService == nullptr)
-        return;
-
-    addToCommandBuffer(
-      [=]
-      {
-          if (m_subdeviceManagementService != nullptr)
-              m_subdeviceManagementService->sendOutRegisteredDevicesRequest(timestampFrom, deviceType, externalId);
-      });
 }
 
 connect::WolkInterfaceType WolkGateway::getType()
@@ -171,10 +158,12 @@ void WolkGateway::notifyPlatformConnected()
     LOG(INFO) << "Connection to platform established";
 
     m_connected = true;
-    if (m_platformConnectionStatusListener)
-        m_platformConnectionStatusListener(m_connected);
+    if (m_subdeviceManagementService != nullptr)
+        m_subdeviceManagementService->updateDeviceCache();
     if (m_gatewayPlatformStatusService != nullptr)
         m_gatewayPlatformStatusService->sendPlatformConnectionStatusMessage(true);
+    if (m_platformConnectionStatusListener)
+        m_platformConnectionStatusListener(m_connected);
 }
 
 void WolkGateway::notifyPlatformDisconnected()
@@ -193,6 +182,9 @@ void WolkGateway::connectPlatform(bool firstTime)
     addToCommandBuffer(
       [=]
       {
+          if (m_connectivityService == nullptr)
+              return;
+
           if (firstTime)
               LOG(INFO) << TAG << "Connecting to platform...";
 
@@ -216,10 +208,13 @@ void WolkGateway::connectLocal(bool firstTime)
     addToCommandBuffer(
       [=]
       {
+          if (m_localConnectivityService == nullptr)
+              return;
+
           if (firstTime)
               LOG(INFO) << TAG << "Connecting to local broker...";
 
-          if (m_connectivityService->connect())
+          if (m_localConnectivityService->connect())
           {
           }
           else

@@ -59,10 +59,9 @@ class DeviceRepository;
 class ExistingDevicesRepository;
 class GatewayMessageRouter;
 class ExternalDataService;
-// TODO Uncomment
-// class InternalDataService;
+class InternalDataService;
 class GatewayPlatformStatusService;
-class SubdeviceManagementService;
+class DevicesService;
 
 class WolkGateway : public connect::WolkSingle
 {
@@ -113,17 +112,6 @@ public:
     void publish() override;
 
     /**
-     * This is a debug method that is used to make the `SubdeviceManagement` service send out a
-     * `RegisteredDevicesRequest` message.
-     *
-     * @param timestampFrom The timestamp from which on devices registered should be returned.
-     * @param deviceType The type of devices that are requested.
-     * @param externalId The external id of a specific device if a specific device is requested.
-     */
-    void requestDevices(const std::chrono::milliseconds& timestampFrom = std::chrono::milliseconds{0},
-                        const std::string& deviceType = {}, const std::string& externalId = {});
-
-    /**
      * This is the overridden method from the `WolkInterface` interface.
      * This is meant to indicate what type of a `WolkInterface` this object.
      *
@@ -164,13 +152,14 @@ protected:
     std::atomic<bool> m_connected;
     std::function<void(bool)> m_platformConnectionStatusListener;
 
-    std::unique_ptr<DeviceRepository> m_deviceRepository;
+    std::shared_ptr<DeviceRepository> m_cacheDeviceRepository;
+    std::shared_ptr<DeviceRepository> m_persistentDeviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
 
     // Local connectivity stack
-    std::unique_ptr<ConnectivityService> m_localConnectivityService;
+    std::shared_ptr<ConnectivityService> m_localConnectivityService;
     std::shared_ptr<InboundMessageHandler> m_localInboundMessageHandler;
-    OutboundMessageHandler* m_localOutboundMessageHandler;
+    std::shared_ptr<OutboundMessageHandler> m_localOutboundMessageHandler;
 
     // Additional connectivity
     std::shared_ptr<MessagePersistence> m_messagePersistence;
@@ -180,19 +169,18 @@ protected:
     // Gateway connectivity manager
     std::shared_ptr<GatewayMessageRouter> m_gatewayMessageRouter;
 
-    // Gateway protocols        LOG(ERROR) << errorPrefix << "Failed to execute the query - '" << errorMessage << "'.";
-    //        return millis;
-    std::unique_ptr<GatewaySubdeviceProtocol> m_gatewaySubdeviceProtocol;
+    // Gateway protocols
+    std::unique_ptr<GatewaySubdeviceProtocol> m_platformSubdeviceProtocol;
+    std::unique_ptr<GatewaySubdeviceProtocol> m_localSubdeviceProtocol;
     std::unique_ptr<RegistrationProtocol> m_platformRegistrationProtocol;
-    std::unique_ptr<GatewayRegistrationProtocol> m_localRegistrationProtocol;
+    std::shared_ptr<GatewayRegistrationProtocol> m_localRegistrationProtocol;
     std::unique_ptr<GatewayPlatformStatusProtocol> m_gatewayPlatformStatusProtocol;
 
     // Gateway services
     std::shared_ptr<ExternalDataService> m_externalDataService;
-    // TODO Uncomment
-    //    std::shared_ptr<InternalDataService> m_internalDataService;
+    std::shared_ptr<InternalDataService> m_internalDataService;
     std::shared_ptr<GatewayPlatformStatusService> m_gatewayPlatformStatusService;
-    std::shared_ptr<SubdeviceManagementService> m_subdeviceManagementService;
+    std::shared_ptr<DevicesService> m_subdeviceManagementService;
 };
 }    // namespace gateway
 }    // namespace wolkabout

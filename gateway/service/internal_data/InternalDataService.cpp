@@ -14,119 +14,74 @@
  * limitations under the License.
  */
 
-#include "InternalDataService.h"
+#include "gateway/service/internal_data/InternalDataService.h"
 
 #include "core/model/Device.h"
 #include "core/model/Message.h"
 #include "core/protocol/DataProtocol.h"
 #include "core/utilities/Logger.h"
-#include "protocol/GatewayProtocol.h"
-#include "repository/device/DeviceRepository.h"
 
 #include <cassert>
+#include <utility>
 
 namespace wolkabout
 {
 namespace gateway
 {
-InternalDataService::InternalDataService(const std::string& gatewayKey, DataProtocol& protocol,
-                                         GatewayProtocol& gatewayProtocol, DeviceRepository* deviceRepository,
-                                         OutboundMessageHandler& outboundPlatformMessageHandler,
-                                         OutboundMessageHandler& outboundDeviceMessageHandler,
-                                         MessageListener* gatewayDevice)
-: DataService(gatewayKey, protocol, gatewayProtocol, outboundPlatformMessageHandler, gatewayDevice)
-, m_deviceRepository{deviceRepository}
-, m_outboundDeviceMessageHandler{outboundDeviceMessageHandler}
+InternalDataService::InternalDataService(std::string gatewayKey, OutboundMessageHandler& platformOutboundHandler,
+                                         OutboundMessageHandler& localOutboundHandler,
+                                         GatewaySubdeviceProtocol& protocol)
+: m_gatewayKey(std::move(gatewayKey))
+, m_platformOutboundHandler(platformOutboundHandler)
+, m_localOutboundHandler(localOutboundHandler)
+, m_protocol(protocol)
 {
 }
 
-const GatewayProtocol& InternalDataService::getGatewayProtocol() const
-{
-    return m_gatewayProtocol;
-}
-
-void InternalDataService::deviceMessageReceived(std::shared_ptr<Message> message)
+void InternalDataService::messageReceived(std::shared_ptr<Message> message)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::string channel = message->getChannel();
-
-    // TODO do we filter or not?
-    //    if (m_deviceRepository)
-    //    {
-    //        const std::string deviceKey = m_protocol.extractDeviceKeyFromChannel(channel);
-    //        const std::unique_ptr<DetailedDevice> device = m_deviceRepository->findByDeviceKey(deviceKey);
-    //        if (!device)
-    //        {
-    //            LOG(WARN) << "DataService: Not forwarding data message from device with key '" << deviceKey
-    //                      << "'. Device not registered";
-    //            return;
-    //        }
-
-    //        if (m_gatewayProtocol.isSensorReadingMessage(*message))
-    //        {
-    //            const std::string sensorReference = m_protocol.extractReferenceFromChannel(channel);
-    //            const DeviceTemplate& deviceTemplate = device->getTemplate();
-    //            if (!deviceTemplate.hasSensorTemplateWithReference(sensorReference))
-    //            {
-    //                LOG(WARN) << "DataService: Not forwarding sensor reading with reference '" << sensorReference
-    //                          << "' from device with key '" << deviceKey
-    //                          << "'. No sensor with given reference in device template";
-    //                return;
-    //            }
-    //        }
-    //        else if (m_gatewayProtocol.isAlarmMessage(*message))
-    //        {
-    //            const std::string alarmReference = m_protocol.extractReferenceFromChannel(channel);
-    //            const DeviceTemplate& deviceTemplate = device->getTemplate();
-    //            if (!deviceTemplate.hasAlarmTemplateWithReference(alarmReference))
-    //            {
-    //                LOG(WARN) << "DataService: Not forwarding alarm with reference '" << alarmReference
-    //                          << "' from device with key '" << deviceKey
-    //                          << "'. No event with given reference in device template";
-    //                return;
-    //            }
-    //        }
-    //        else if (m_gatewayProtocol.isActuatorStatusMessage(*message))
-    //        {
-    //            const std::string actuatorReference = m_protocol.extractReferenceFromChannel(channel);
-    //            const DeviceTemplate& deviceTemplate = device->getTemplate();
-    //            if (!deviceTemplate.hasActuatorTemplateWithReference(actuatorReference))
-    //            {
-    //                LOG(WARN) << "DataService: Not forwarding actuator status with reference '" << actuatorReference
-    //                          << "' from device with key '" << deviceKey
-    //                          << "'. No actuator with given reference in device template";
-    //                return;
-    //            }
-    //        }
-    //        else if (m_gatewayProtocol.isConfigurationCurrentMessage(*message))
-    //        {
-    //        }
-    //        else
-    //        {
-    //            assert(false && "DataService: Unsupported message type");
-
-    //            LOG(ERROR) << "DataService: Not forwarding message from device on channel: '" << channel
-    //                       << "'. Unsupported message type";
-    //            return;
-    //        }
-    //    }
-
-    routeDeviceToPlatformMessage(message);
+    // Parse it into a GatewaySubdeviceMessage
+    auto parsedMessage =
+      std::shared_ptr<Message>{m_protocol.makeOutboundMessage(m_gatewayKey, GatewaySubdeviceMessage{*message})};
+    if (parsedMessage == nullptr)
+    {
+        LOG(ERROR) << "Failed to parse outgoing message from received local message.";
+        return;
+    }
+    m_platformOutboundHandler.addMessage(parsedMessage);
 }
 
-void InternalDataService::handleMessageForDevice(std::shared_ptr<Message> message)
+const Protocol& InternalDataService::getProtocol()
 {
-    routePlatformToDeviceMessage(message);
+    return m_protocol;
 }
 
-void InternalDataService::routePlatformToDeviceMessage(std::shared_ptr<Message> message)
+void InternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMessage>& messages)
 {
     LOG(TRACE) << METHOD_INFO;
 
-    const std::shared_ptr<Message> routedMessage = m_gatewayProtocol.routePlatformToDeviceMessage(*message);
+    // Take every message, and reparse it into a local message, and send it out
+    for (const auto& message : messages)
+        m_localOutboundHandler.addMessage(std::make_shared<Message>(message.getMessage()));
+}
 
-    m_outboundDeviceMessageHandler.addMessage(routedMessage);
+std::vector<MessageType> InternalDataService::getMessageTypes()
+{
+    return {MessageType::FEED_VALUES,
+            MessageType::PARAMETER_SYNC,
+            MessageType::TIME_SYNC,
+            MessageType::FILE_UPLOAD_INIT,
+            MessageType::FILE_UPLOAD_ABORT,
+            MessageType::FILE_BINARY_RESPONSE,
+            MessageType::FILE_URL_DOWNLOAD_INIT,
+            MessageType::FILE_URL_DOWNLOAD_ABORT,
+            MessageType::FILE_LIST_REQUEST,
+            MessageType::FILE_DELETE,
+            MessageType::FILE_PURGE,
+            MessageType::FIRMWARE_UPDATE_INSTALL,
+            MessageType::FIRMWARE_UPDATE_ABORT};
 }
 }    // namespace gateway
 }    // namespace wolkabout

@@ -153,9 +153,7 @@ int main(int argc, char** argv)
     auto builder = std::move(WolkGateway::newBuilder(gateway)
                                .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
                                .platformHost(gatewayConfiguration.getPlatformMqttUri())
-                               .withInternalDataService(gatewayConfiguration.getLocalMqttUri())
-                               .withSubdeviceManagement()
-                               .withExternalDataService(dataProvider.get()));
+                               .withInternalDataService(gatewayConfiguration.getLocalMqttUri()));
     if (!gatewayConfiguration.getPlatformTrustStore().empty())
     {
         builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore());
@@ -175,10 +173,8 @@ int main(int argc, char** argv)
     wolk->addReading("TF", generateRandomValue());
     wolk->publish();
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    wolk->requestDevices();
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    while (true)
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
     return 0;
 }

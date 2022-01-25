@@ -27,6 +27,7 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
+#include <condition_variable>
 
 namespace wolkabout
 {
@@ -49,8 +50,8 @@ class ExistingDevicesRepository;
 struct RegisteredDevicesRequestParameters
 {
 public:
-    RegisteredDevicesRequestParameters(const std::chrono::milliseconds& timestampFrom, std::string deviceType,
-                                       std::string externalId);
+    explicit RegisteredDevicesRequestParameters(const std::chrono::milliseconds& timestampFrom,
+                                                std::string deviceType = {}, std::string externalId = {});
 
     const std::chrono::milliseconds& getTimestampFrom() const;
 
@@ -75,11 +76,42 @@ struct RegisteredDevicesRequestParametersHash
 };
 
 /**
+ * This object contains the definition of what should be done when a specific RegisteredDeviceRequest receives a
+ * response.
+ */
+struct RegisteredDevicesRequestCallback
+{
+    RegisteredDevicesRequestCallback() = default;
+
+    explicit RegisteredDevicesRequestCallback(
+      std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)> lambda);
+
+    explicit RegisteredDevicesRequestCallback(std::weak_ptr<std::condition_variable> conditionVariable);
+
+    const std::chrono::milliseconds& getSentTime() const;
+
+    const std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)>& getLambda() const;
+
+    const std::weak_ptr<std::condition_variable>& getConditionVariable() const;
+
+private:
+    // Timestamp when the request was sent
+    std::chrono::milliseconds m_sentTime =
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+
+    // Potential lambda expression that needs to be invoked
+    std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)> m_lambda;
+
+    // Potential condition variable that needs to be notified
+    std::weak_ptr<std::condition_variable> m_conditionVariable;
+};
+
+/**
  * This service is used to manage anything regarding sub-devices. This service is used to route the requests from
  * sub-devices to the platform regarding registration, deletion, and also registered devices. This service will also
  * keep a cache of registered devices.
  */
-class SubdeviceManagementService : public GatewayMessageListener, public MessageListener
+class DevicesService : public GatewayMessageListener, public MessageListener
 {
 public:
     /**
@@ -88,31 +120,42 @@ public:
      * @param gatewayKey The key of the gateway device this service will belong to.
      * @param platformRegistrationProtocol The platform registration protocol used for exchanging messages with the
      * platform.
-     * @param localRegistrationProtocol The local registration protocol used for exchanging messages with sub-devices.
      * @param outboundPlatformMessageHandler The communication service for platform communication.
+     * @param outboundPlatformRetryMessageHandler The communication service for retrying platform communication.
+     * @param localRegistrationProtocol The local registration protocol used for exchanging messages with sub-devices.
      * @param outboundDeviceMessageHandler The communication service for local communication.
      * @param deviceRepository The repository for storing device information.
      */
-    SubdeviceManagementService(std::string gatewayKey, RegistrationProtocol& platformRegistrationProtocol,
-                               GatewayRegistrationProtocol& localRegistrationProtocol,
-                               OutboundRetryMessageHandler& outboundPlatformMessageHandler,
-                               OutboundMessageHandler& outboundDeviceMessageHandler, DeviceRepository& deviceRepository,
-                               ExistingDevicesRepository& existingDeviceRepository);
+    DevicesService(std::string gatewayKey, RegistrationProtocol& platformRegistrationProtocol,
+                   OutboundMessageHandler& outboundPlatformMessageHandler,
+                   OutboundRetryMessageHandler& outboundPlatformRetryMessageHandler,
+                   std::shared_ptr<GatewayRegistrationProtocol> localRegistrationProtocol = nullptr,
+                   std::shared_ptr<OutboundMessageHandler> outboundDeviceMessageHandler = nullptr,
+                   std::shared_ptr<DeviceRepository> deviceRepository = nullptr);
 
     /**
      * Overridden destructor.
      */
-    ~SubdeviceManagementService() override;
+    ~DevicesService() override;
+
+    /**
+     * This is the method that should be run when the service is created and can use the connectivity objects.
+     * This method will check when the DeviceRepository was last updated, and will request the list of devices that have
+     * been registered since the last request.
+     *
+     * The first time this method is invoked, it will request the entire list of devices registered, from the start of
+     * the existence of the platform - to now. This might take a while, and might be a lot of data.
+     */
+    void updateDeviceCache();
 
     /**
      * Internal method that is used to send out the request to obtain the list of requested devices.
      *
-     * @param timestampFrom The timestamp from which further we want registered devices to appear in the list.
-     * @param deviceType The only acceptable device types.
-     * @param externalId The only acceptable external id.
+     * @param parameters The parameter by which the devices will be queried.
+     * @param callback The callback object that defines what will be done once a response has been received.
      */
-    bool sendOutRegisteredDevicesRequest(std::chrono::milliseconds timestampFrom, const std::string& deviceType = {},
-                                         const std::string& externalId = {});
+    bool sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters parameters,
+                                         RegisteredDevicesRequestCallback callback = {});
 
     /**
      * This method is overridden from the `wolkabout::MessageListener` interface.
@@ -150,22 +193,26 @@ public:
     std::vector<MessageType> getMessageTypes() override;
 
 private:
+    // Logging tag
+    const std::string TAG = "[DevicesService] -> ";
+
     // Device information and protocols
     const std::string m_gatewayKey;
+
+    // Required platform entities
     RegistrationProtocol& m_platformProtocol;
-    GatewayRegistrationProtocol& m_localProtocol;
-
-    // Outgoing communication entities
+    OutboundMessageHandler& m_outboundPlatformMessageHandler;
     OutboundRetryMessageHandler& m_outboundPlatformRetryMessageHandler;
-    OutboundMessageHandler& m_outboundLocalMessageHandler;
 
-    // Device information storage
-    DeviceRepository& m_deviceRepository;
-    ExistingDevicesRepository& m_existingDeviceRepository;
+    // Optional local connectivity entities
+    std::shared_ptr<GatewayRegistrationProtocol> m_localProtocol;
+    std::shared_ptr<OutboundMessageHandler> m_outboundLocalMessageHandler;
+
+    // Optional device repository
+    std::shared_ptr<DeviceRepository> m_deviceRepository;
 
     // Storage for request objects
-    std::unordered_map<RegisteredDevicesRequestParameters,
-                       std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)>,
+    std::unordered_map<RegisteredDevicesRequestParameters, RegisteredDevicesRequestCallback,
                        RegisteredDevicesRequestParametersHash>
       m_requests;
 };

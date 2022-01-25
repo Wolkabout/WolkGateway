@@ -33,11 +33,13 @@
 #include "core/protocol/wolkabout/WolkaboutRegistrationProtocol.h"
 #include "gateway/WolkGateway.h"
 #include "gateway/connectivity/GatewayMessageRouter.h"
+#include "gateway/repository/device/InMemoryDeviceRepository.h"
 #include "gateway/repository/device/SQLiteDeviceRepository.h"
 #include "gateway/repository/existing_device/JsonFileExistingDevicesRepository.h"
+#include "gateway/service/devices/DevicesService.h"
 #include "gateway/service/external_data/ExternalDataService.h"
+#include "gateway/service/internal_data/InternalDataService.h"
 #include "gateway/service/platform_status/GatewayPlatformStatusService.h"
-#include "gateway/service/subdevice_management/SubdeviceManagementService.h"
 
 #include <memory>
 #include <stdexcept>
@@ -52,12 +54,14 @@ WolkGatewayBuilder::WolkGatewayBuilder(Device device)
 , m_platformMqttKeepAliveSec{60}
 , m_persistence{new InMemoryPersistence}
 , m_messagePersistence{new InMemoryMessagePersistence}
-, m_deviceRepository{new SQLiteDeviceRepository}
+, m_deviceStoragePolicy{DeviceStoragePolicy::FULL}
 , m_existingDeviceRepository{new JsonFileExistingDevicesRepository}
 , m_dataProtocol{new WolkaboutDataProtocol}
 , m_errorProtocol{new WolkaboutErrorProtocol}
 , m_errorRetainTime{std::chrono::seconds{1}}
-, m_gatewaySubdeviceProtocol{new WolkaboutGatewaySubdeviceProtocol}
+, m_platformSubdeviceProtocol{new WolkaboutGatewaySubdeviceProtocol}
+, m_localSubdeviceProtocol{new WolkaboutGatewaySubdeviceProtocol(false)}
+, m_platformRegistrationProtocol{new WolkaboutRegistrationProtocol}
 , m_fileTransferEnabled{false}
 , m_fileTransferUrlEnabled{false}
 , m_maxPacketSize{MAX_PACKET_SIZE}
@@ -120,9 +124,9 @@ WolkGatewayBuilder& WolkGatewayBuilder::withMessagePersistence(std::unique_ptr<M
     return *this;
 }
 
-WolkGatewayBuilder& WolkGatewayBuilder::withDeviceRepository(std::unique_ptr<DeviceRepository> repository)
+WolkGatewayBuilder& WolkGatewayBuilder::deviceStoragePolicy(DeviceStoragePolicy policy)
 {
-    m_deviceRepository = std::move(repository);
+    m_deviceStoragePolicy = policy;
     return *this;
 }
 
@@ -219,17 +223,20 @@ WolkGatewayBuilder& WolkGatewayBuilder::withInternalDataService(const std::strin
     return *this;
 }
 
-WolkGatewayBuilder& WolkGatewayBuilder::withSubdeviceManagement(
-  std::unique_ptr<RegistrationProtocol> platformProtocol, std::unique_ptr<GatewayRegistrationProtocol> localProtocol)
+WolkGatewayBuilder& WolkGatewayBuilder::withPlatformRegistration(std::unique_ptr<RegistrationProtocol> platformProtocol)
 {
     if (platformProtocol == nullptr)
         platformProtocol = std::unique_ptr<WolkaboutRegistrationProtocol>{new WolkaboutRegistrationProtocol};
+    m_platformRegistrationProtocol = std::move(platformProtocol);
+    return *this;
+}
+
+WolkGatewayBuilder& WolkGatewayBuilder::withLocalRegistration(
+  std::unique_ptr<GatewayRegistrationProtocol> localProtocol)
+{
     if (localProtocol == nullptr)
         localProtocol = std::unique_ptr<WolkaboutGatewayRegistrationProtocol>{new WolkaboutGatewayRegistrationProtocol};
-
-    m_platformRegistrationProtocol = std::move(platformProtocol);
     m_localRegistrationProtocol = std::move(localProtocol);
-
     return *this;
 }
 
@@ -263,7 +270,10 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     wolk->m_messagePersistence = std::move(m_messagePersistence);
 
     // Move the repository objects
-    wolk->m_deviceRepository = std::move(m_deviceRepository);
+    if (m_deviceStoragePolicy == DeviceStoragePolicy::PERSISTENT || m_deviceStoragePolicy == DeviceStoragePolicy::FULL)
+        wolk->m_persistentDeviceRepository = std::make_shared<SQLiteDeviceRepository>();
+    if (m_deviceStoragePolicy == DeviceStoragePolicy::CACHED || m_deviceStoragePolicy == DeviceStoragePolicy::FULL)
+        wolk->m_cacheDeviceRepository = std::make_shared<InMemoryDeviceRepository>(wolk->m_persistentDeviceRepository);
     wolk->m_existingDevicesRepository = std::move(m_existingDeviceRepository);
 
     // Create the platform connection
@@ -288,8 +298,9 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     wolk->m_connectivityService->setListner(wolk->m_inboundMessageHandler);
 
     // Set up the gateway message router
-    wolk->m_gatewaySubdeviceProtocol = std::move(m_gatewaySubdeviceProtocol);
-    wolk->m_gatewayMessageRouter = std::make_shared<GatewayMessageRouter>(*wolk->m_gatewaySubdeviceProtocol);
+    wolk->m_platformSubdeviceProtocol = std::move(m_platformSubdeviceProtocol);
+    wolk->m_localSubdeviceProtocol = std::move(m_localSubdeviceProtocol);
+    wolk->m_gatewayMessageRouter = std::make_shared<GatewayMessageRouter>(*wolk->m_platformSubdeviceProtocol);
     wolk->m_inboundMessageHandler->addListener(wolk->m_gatewayMessageRouter);
 
     // Set up the device services
@@ -371,14 +382,20 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     {
         // Create the local connectivity services
         auto localMqttClient = std::make_shared<PahoMqttClient>();
-        wolk->m_localConnectivityService = std::unique_ptr<MqttConnectivityService>{
-          new MqttConnectivityService{std::move(localMqttClient), "", "", m_localMqttHost, "", m_device.getKey()}};
+        auto localConnectivityService = std::make_shared<MqttConnectivityService>(
+          std::move(localMqttClient), "", "", m_localMqttHost, "", m_device.getKey());
+        wolk->m_localConnectivityService = localConnectivityService;
         wolk->m_localInboundMessageHandler =
-          std::make_shared<InboundPlatformMessageHandler>(std::vector<std::string>{m_device.getKey()});
-        wolk->m_localOutboundMessageHandler =
-          dynamic_cast<MqttConnectivityService*>(wolk->m_localConnectivityService.get());
+          std::make_shared<InboundPlatformMessageHandler>(std::vector<std::string>{"+"});
+        wolk->m_localConnectivityService->setListner(wolk->m_localInboundMessageHandler);
+        wolk->m_localOutboundMessageHandler = localConnectivityService;
 
         // Set up the internal data service
+        wolk->m_internalDataService =
+          std::make_shared<InternalDataService>(m_device.getKey(), *wolk->m_outboundMessageHandler,
+                                                *wolk->m_localOutboundMessageHandler, *wolk->m_localSubdeviceProtocol);
+        wolk->m_gatewayMessageRouter->addListener("InternalDataService", wolk->m_internalDataService);
+        wolk->m_localInboundMessageHandler->addListener(wolk->m_internalDataService);
     }
 
     // Set up the external data service if it needs to be set up
@@ -386,25 +403,26 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     {
         // Create the external data service
         wolk->m_externalDataService = std::make_shared<ExternalDataService>(
-          m_device.getKey(), *wolk->m_gatewaySubdeviceProtocol, *wolk->m_dataProtocol, *wolk->m_outboundMessageHandler,
+          m_device.getKey(), *wolk->m_platformSubdeviceProtocol, *wolk->m_dataProtocol, *wolk->m_outboundMessageHandler,
           *m_dataProvider);
         m_dataProvider->setDataHandler(wolk->m_externalDataService.get(), m_device.getKey());
         wolk->m_gatewayMessageRouter->addListener("ExternalDataService", wolk->m_externalDataService);
     }
 
     // Set up the subdevice management service
-    if (wolk->m_localConnectivityService != nullptr && m_platformRegistrationProtocol != nullptr &&
-        m_localRegistrationProtocol != nullptr)
+    if (m_platformRegistrationProtocol != nullptr)
     {
         // Create the registration service
         wolk->m_platformRegistrationProtocol = std::move(m_platformRegistrationProtocol);
         wolk->m_localRegistrationProtocol = std::move(m_localRegistrationProtocol);
-        wolk->m_subdeviceManagementService = std::make_shared<SubdeviceManagementService>(
-          m_device.getKey(), *wolk->m_platformRegistrationProtocol, *wolk->m_localRegistrationProtocol,
-          *wolk->m_outboundRetryMessageHandler, *wolk->m_localOutboundMessageHandler, *wolk->m_deviceRepository,
-          *wolk->m_existingDevicesRepository);
+        wolk->m_subdeviceManagementService = std::make_shared<DevicesService>(
+          m_device.getKey(), *wolk->m_platformRegistrationProtocol, *wolk->m_outboundMessageHandler,
+          *wolk->m_outboundRetryMessageHandler, wolk->m_localRegistrationProtocol, wolk->m_localOutboundMessageHandler,
+          wolk->m_cacheDeviceRepository != nullptr ? wolk->m_cacheDeviceRepository :
+                                                     wolk->m_persistentDeviceRepository);
         wolk->m_gatewayMessageRouter->addListener("SubdeviceManagement", wolk->m_subdeviceManagementService);
-        wolk->m_localInboundMessageHandler->addListener(wolk->m_subdeviceManagementService);
+        if (wolk->m_localConnectivityService != nullptr && wolk->m_localRegistrationProtocol != nullptr)
+            wolk->m_localInboundMessageHandler->addListener(wolk->m_subdeviceManagementService);
     }
 
     // Set up the platform status service

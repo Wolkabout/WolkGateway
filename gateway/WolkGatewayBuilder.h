@@ -52,6 +52,21 @@ namespace gateway
 {
 class WolkGateway;
 
+/**
+ * This enumeration describes the policy of storing device data for the sake of message filtering.
+ */
+enum class DeviceStoragePolicy
+{
+    NONE,    // No device information will be stored, and no filtering will be applied - no memory/storage usage, most
+             // network usage.
+    CACHED,    // Only cache memory will be used, no data will be persisted - no storage usage, higher memory usage and
+               // higher usage of resources on startup, but fast filtering
+    PERSISTENT,    // Only persistent storage will be used, no cache memory will be used - no memory usage, persistent
+                   // storage required and high usage of resources only on first startup, and slow filtering
+    FULL    // Will use combination of both `CACHED` and `PERSISTENT` to gain both quick filtering, and low usage of
+            // resources on startup
+};
+
 class WolkGatewayBuilder final
 {
 public:
@@ -123,11 +138,11 @@ public:
     WolkGatewayBuilder& withMessagePersistence(std::unique_ptr<MessagePersistence> persistence);
 
     /**
-     * @brief Sets a custom device repository to be used by the Wolk object.
-     * @param repository std::unique_ptr to gateway::DeviceRepository implementation
+     * @brief Sets the policy that will be used for caching device data.
+     * @param policy The policy that will be used for storing device data.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkGatewayBuilder& withDeviceRepository(std::unique_ptr<DeviceRepository> repository);
+    WolkGatewayBuilder& deviceStoragePolicy(DeviceStoragePolicy policy);
 
     /**
      * @brief Sets a custom existing device repository to be used by the Wolk object.
@@ -224,13 +239,19 @@ public:
     WolkGatewayBuilder& withInternalDataService(const std::string& local = MESSAGE_BUS_HOST);
 
     /**
-     * @brief Sets the gateway to use the SubdeviceManagement service.
+     * @brief Sets the gateway to use the DevicesService for communication with the platform.
      * @param platformProtocol The protocol which will be used for platform communication.
+     * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
+     */
+    WolkGatewayBuilder& withPlatformRegistration(std::unique_ptr<RegistrationProtocol> platformProtocol = {});
+
+    /**
+     * @brief Sets the gateway to use the DevicesService for communication with the local broker - requires
+     * .withInternalDataService to be invoked.
      * @param localProtocol The protocol which will be used for local communication.
      * @return Reference to current wolkabout::WolkBuilder instance (Provides fluent interface)
      */
-    WolkGatewayBuilder& withSubdeviceManagement(std::unique_ptr<RegistrationProtocol> platformProtocol = {},
-                                                std::unique_ptr<GatewayRegistrationProtocol> localProtocol = {});
+    WolkGatewayBuilder& withLocalRegistration(std::unique_ptr<GatewayRegistrationProtocol> localProtocol = {});
 
     /**
      * @brief Sets the data provider to engage an ExternalDataService.
@@ -287,7 +308,7 @@ private:
     std::unique_ptr<MessagePersistence> m_messagePersistence;
 
     // Place for the repository objects
-    std::unique_ptr<DeviceRepository> m_deviceRepository;
+    DeviceStoragePolicy m_deviceStoragePolicy;
     std::unique_ptr<ExistingDevicesRepository> m_existingDeviceRepository;
 
     // Here is the place for all the protocols that are being held
@@ -297,7 +318,8 @@ private:
     std::unique_ptr<FileManagementProtocol> m_fileManagementProtocol;
     std::unique_ptr<FirmwareUpdateProtocol> m_firmwareUpdateProtocol;
     std::unique_ptr<GatewayPlatformStatusProtocol> m_gatewayPlatformStatusProtocol;
-    std::unique_ptr<GatewaySubdeviceProtocol> m_gatewaySubdeviceProtocol;
+    std::unique_ptr<GatewaySubdeviceProtocol> m_platformSubdeviceProtocol;
+    std::unique_ptr<GatewaySubdeviceProtocol> m_localSubdeviceProtocol;
     std::unique_ptr<GatewayRegistrationProtocol> m_localRegistrationProtocol;
     std::unique_ptr<RegistrationProtocol> m_platformRegistrationProtocol;
 

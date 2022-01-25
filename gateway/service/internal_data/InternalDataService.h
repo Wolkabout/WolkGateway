@@ -17,34 +17,38 @@
 #ifndef WOLKABOUT_INTERNALDATASERVICE_H
 #define WOLKABOUT_INTERNALDATASERVICE_H
 
-#include "InboundDeviceMessageHandler.h"
-#include "gateway/service/data/DataService.h"
+#include "core/MessageListener.h"
+#include "core/connectivity/OutboundMessageHandler.h"
+#include "core/protocol/GatewaySubdeviceProtocol.h"
+#include "gateway/GatewayMessageListener.h"
 
 namespace wolkabout
 {
 namespace gateway
 {
-class DeviceRepository;
-
-class InternalDataService : public DataService, public DeviceMessageListener
+class InternalDataService : public GatewayMessageListener, public MessageListener
 {
 public:
-    InternalDataService(const std::string& gatewayKey, DataProtocol& protocol, GatewayProtocol& gatewayProtocol,
-                        DeviceRepository* deviceRepository, OutboundMessageHandler& outboundPlatformMessageHandler,
-                        OutboundMessageHandler& outboundDeviceMessageHandler, MessageListener* gatewayDevice = nullptr);
+    InternalDataService(std::string gatewayKey, OutboundMessageHandler& platformOutboundHandler,
+                        OutboundMessageHandler& localOutboundHandler, GatewaySubdeviceProtocol& protocol);
 
-    const GatewayProtocol& getGatewayProtocol() const override;
+    void messageReceived(std::shared_ptr<Message> message) override;
+    const Protocol& getProtocol() override;
 
-    void deviceMessageReceived(std::shared_ptr<Message> message) override;
+    void receiveMessages(const std::vector<GatewaySubdeviceMessage>& messages) override;
+
+    std::vector<MessageType> getMessageTypes() override;
 
 private:
-    void handleMessageForDevice(std::shared_ptr<Message> message) override;
+    // The gateway key
+    std::string m_gatewayKey;
 
-    void routePlatformToDeviceMessage(std::shared_ptr<Message> message);
+    // The connectivity objects
+    OutboundMessageHandler& m_platformOutboundHandler;
+    OutboundMessageHandler& m_localOutboundHandler;
 
-    DeviceRepository* m_deviceRepository;
-
-    OutboundMessageHandler& m_outboundDeviceMessageHandler;
+    // The protocol
+    GatewaySubdeviceProtocol& m_protocol;
 };
 }    // namespace gateway
 }    // namespace wolkabout

@@ -151,6 +151,7 @@ int main(int argc, char** argv)
     auto dataProvider = std::unique_ptr<DefaultDataProvider>{new DefaultDataProvider};
 
     auto builder = std::move(WolkGateway::newBuilder(gateway)
+                               .withFileTransfer("./files")
                                .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
                                .platformHost(gatewayConfiguration.getPlatformMqttUri())
                                .withInternalDataService(gatewayConfiguration.getLocalMqttUri()));

@@ -121,36 +121,30 @@ std::uint64_t WolkGateway::currentRtc()
 
 void WolkGateway::handleFeedUpdate(const std::map<uint64_t, std::vector<Reading>>& readings)
 {
-    addToCommandBuffer(
-      [=]
-      {
-          if (auto handler = m_feedUpdateHandler.lock())
-              handler->handleUpdate(m_device.getKey(), readings);
-          else if (m_feedUpdateHandlerLambda)
-              m_feedUpdateHandlerLambda(m_device.getKey(), readings);
-      });
+    addToCommandBuffer([=] {
+        if (auto handler = m_feedUpdateHandler.lock())
+            handler->handleUpdate(m_device.getKey(), readings);
+        else if (m_feedUpdateHandlerLambda)
+            m_feedUpdateHandlerLambda(m_device.getKey(), readings);
+    });
 }
 
 void WolkGateway::handleParameterUpdate(const std::vector<Parameter>& parameters)
 {
-    addToCommandBuffer(
-      [=]
-      {
-          if (auto handler = m_parameterHandler.lock())
-              handler->handleUpdate(m_device.getKey(), parameters);
-          else if (m_parameterLambda)
-              m_parameterLambda(m_device.getKey(), parameters);
-      });
+    addToCommandBuffer([=] {
+        if (auto handler = m_parameterHandler.lock())
+            handler->handleUpdate(m_device.getKey(), parameters);
+        else if (m_parameterLambda)
+            m_parameterLambda(m_device.getKey(), parameters);
+    });
 }
 
 void WolkGateway::platformDisconnected()
 {
-    addToCommandBuffer(
-      [=]
-      {
-          notifyPlatformDisconnected();
-          connectPlatform(true);
-      });
+    addToCommandBuffer([=] {
+        notifyPlatformDisconnected();
+        connectPlatform(true);
+    });
 }
 
 void WolkGateway::notifyPlatformConnected()
@@ -179,53 +173,49 @@ void WolkGateway::notifyPlatformDisconnected()
 
 void WolkGateway::connectPlatform(bool firstTime)
 {
-    addToCommandBuffer(
-      [=]
-      {
-          if (m_connectivityService == nullptr)
-              return;
+    addToCommandBuffer([=] {
+        if (m_connectivityService == nullptr)
+            return;
 
-          if (firstTime)
-              LOG(INFO) << TAG << "Connecting to platform...";
+        if (firstTime)
+            LOG(INFO) << TAG << "Connecting to platform...";
 
-          if (m_connectivityService->connect())
-          {
-              notifyPlatformConnected();
-          }
-          else
-          {
-              if (firstTime)
-                  LOG(INFO) << TAG << "Failed to connect to platform.";
+        if (m_connectivityService->connect())
+        {
+            notifyPlatformConnected();
+        }
+        else
+        {
+            if (firstTime)
+                LOG(INFO) << TAG << "Failed to connect to platform.";
 
-              std::this_thread::sleep_for(std::chrono::milliseconds{RECONNECT_DELAY_MSEC});
-              connectPlatform();
-          }
-      });
+            std::this_thread::sleep_for(std::chrono::milliseconds{RECONNECT_DELAY_MSEC});
+            connectPlatform();
+        }
+    });
 }
 
 void WolkGateway::connectLocal(bool firstTime)
 {
-    addToCommandBuffer(
-      [=]
-      {
-          if (m_localConnectivityService == nullptr)
-              return;
+    addToCommandBuffer([=] {
+        if (m_localConnectivityService == nullptr)
+            return;
 
-          if (firstTime)
-              LOG(INFO) << TAG << "Connecting to local broker...";
+        if (firstTime)
+            LOG(INFO) << TAG << "Connecting to local broker...";
 
-          if (m_localConnectivityService->connect())
-          {
-          }
-          else
-          {
-              if (firstTime)
-                  LOG(INFO) << TAG << "Failed to connect to local broker.";
+        if (m_localConnectivityService->connect())
+        {
+        }
+        else
+        {
+            if (firstTime)
+                LOG(INFO) << TAG << "Failed to connect to local broker.";
 
-              std::this_thread::sleep_for(std::chrono::milliseconds{RECONNECT_DELAY_MSEC});
-              connectLocal();
-          }
-      });
+            std::this_thread::sleep_for(std::chrono::milliseconds{RECONNECT_DELAY_MSEC});
+            connectLocal();
+        }
+    });
 }
 }    // namespace gateway
 }    // namespace wolkabout

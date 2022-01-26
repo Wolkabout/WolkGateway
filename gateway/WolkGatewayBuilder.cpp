@@ -28,8 +28,8 @@
 #include "core/protocol/wolkabout/WolkaboutFileManagementProtocol.h"
 #include "core/protocol/wolkabout/WolkaboutFirmwareUpdateProtocol.h"
 #include "core/protocol/wolkabout/WolkaboutGatewayPlatformStatusProtocol.h"
-#include "core/protocol/wolkabout/WolkaboutGatewaySubdeviceProtocol.h"
 #include "core/protocol/wolkabout/WolkaboutGatewayRegistrationProtocol.h"
+#include "core/protocol/wolkabout/WolkaboutGatewaySubdeviceProtocol.h"
 #include "core/protocol/wolkabout/WolkaboutRegistrationProtocol.h"
 #include "gateway/WolkGateway.h"
 #include "gateway/connectivity/GatewayMessageRouter.h"
@@ -289,12 +289,10 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     // Set up the connection links
     wolk->m_inboundMessageHandler =
       std::make_shared<InboundPlatformMessageHandler>(std::vector<std::string>{m_device.getKey()});
-    wolk->m_connectivityService->onConnectionLost(
-      [wolkRaw]
-      {
-          wolkRaw->notifyPlatformDisconnected();
-          wolkRaw->connectPlatform(true);
-      });
+    wolk->m_connectivityService->onConnectionLost([wolkRaw] {
+        wolkRaw->notifyPlatformDisconnected();
+        wolkRaw->connectPlatform(true);
+    });
     wolk->m_connectivityService->setListner(wolk->m_inboundMessageHandler);
 
     // Set up the gateway message router
@@ -312,10 +310,12 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     wolk->m_parameterHandler = m_parameterHandler;
     wolk->m_dataService = std::make_shared<connect::DataService>(
       *wolk->m_dataProtocol, *wolk->m_persistence, *wolk->m_connectivityService,
-      [wolkRaw](const std::string& deviceKey, const std::map<std::uint64_t, std::vector<Reading>>& readings)
-      { wolkRaw->handleFeedUpdateCommand(deviceKey, readings); },
-      [wolkRaw](const std::string& deviceKey, const std::vector<Parameter>& parameters)
-      { wolkRaw->handleParameterCommand(deviceKey, parameters); });
+      [wolkRaw](const std::string& deviceKey, const std::map<std::uint64_t, std::vector<Reading>>& readings) {
+          wolkRaw->handleFeedUpdateCommand(deviceKey, readings);
+      },
+      [wolkRaw](const std::string& deviceKey, const std::vector<Parameter>& parameters) {
+          wolkRaw->handleParameterCommand(deviceKey, parameters);
+      });
     wolk->m_errorService = std::make_shared<connect::ErrorService>(*wolk->m_errorProtocol, m_errorRetainTime);
     wolk->m_inboundMessageHandler->addListener(wolk->m_dataService);
     wolk->m_inboundMessageHandler->addListener(wolk->m_errorService);

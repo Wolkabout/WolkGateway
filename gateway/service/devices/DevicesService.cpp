@@ -259,8 +259,7 @@ void DevicesService::messageReceived(std::shared_ptr<Message> message)
         if (m_localProtocol != nullptr && m_outboundLocalMessageHandler != nullptr)
         {
             callback = RegisteredDevicesRequestCallback{
-              [this, deviceKey](std::unique_ptr<RegisteredDevicesResponseMessage> response)
-              {
+              [this, deviceKey](std::unique_ptr<RegisteredDevicesResponseMessage> response) {
                   // Create the message for the local broker
                   auto localResponse =
                     std::shared_ptr<Message>{m_localProtocol->makeOutboundMessage(deviceKey, *response)};

@@ -20,14 +20,14 @@
 #include "core/MessageListener.h"
 #include "gateway/GatewayMessageListener.h"
 
+#include <condition_variable>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <vector>
-#include <functional>
 #include <unordered_map>
-#include <condition_variable>
+#include <vector>
 
 namespace wolkabout
 {

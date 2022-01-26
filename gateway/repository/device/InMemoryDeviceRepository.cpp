@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "core/utilities/Logger.h"
 #include "gateway/repository/device/InMemoryDeviceRepository.h"
+
+#include "core/utilities/Logger.h"
 
 #include <algorithm>
 

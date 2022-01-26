@@ -24,8 +24,8 @@
 #undef protected
 
 #include "core/utilities/Logger.h"
-#include "tests/mocks/OutboundMessageHandlerMock.h"
 #include "tests/mocks/GatewaySubdeviceProtocolMock.h"
+#include "tests/mocks/OutboundMessageHandlerMock.h"
 
 #include <gtest/gtest.h>
 

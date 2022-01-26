@@ -91,8 +91,7 @@ private:
 wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
 {
     const std::string str = wolkabout::StringUtils::toUpperCase(levelStr);
-    const auto logLevel = [&]() -> wolkabout::LogLevel
-    {
+    const auto logLevel = [&]() -> wolkabout::LogLevel {
         if (str == "TRACE")
             return wolkabout::LogLevel::TRACE;
         else if (str == "DEBUG")
@@ -161,12 +160,10 @@ int main(int argc, char** argv)
     }
 
     auto wolk = builder.build();
-    wolk->setConnectionStatusListener(
-      [&](bool connected)
-      {
-          if (connected)
-              dataProvider->onConnected();
-      });
+    wolk->setConnectionStatusListener([&](bool connected) {
+        if (connected)
+            dataProvider->onConnected();
+    });
 
     wolk->connect();
 

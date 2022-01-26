@@ -26,9 +26,9 @@
 #include "core/utilities/Logger.h"
 #include "tests/mocks/DeviceRepositoryMock.h"
 #include "tests/mocks/GatewayRegistrationProtocolMock.h"
-#include "tests/mocks/RegistrationProtocolMock.h"
 #include "tests/mocks/OutboundMessageHandlerMock.h"
 #include "tests/mocks/OutboundRetryMessageHandlerMock.h"
+#include "tests/mocks/RegistrationProtocolMock.h"
 
 #include <gtest/gtest.h>
 

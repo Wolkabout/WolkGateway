@@ -71,8 +71,7 @@ else ()
 endif ()
 
 # Add linking directories and the include directories
-link_directories(${CMAKE_PREFIX_PATH}/lib)
-link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY} ${CMAKE_PREFIX_PATH}/lib)
 include_directories(SYSTEM ${CMAKE_PREFIX_PATH}/include)
 
 find_package(OpenSSL REQUIRED)
@@ -144,28 +143,36 @@ install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 # Tests
 if (${BUILD_TESTS})
-    file(GLOB_RECURSE TESTS_SOURCE_FILES "tests/*.cpp")
-    file(GLOB_RECURSE TESTS_HEADER_FILES "tests/*.h")
+    set(TESTS_SOURCE_FILES tests/DevicesServiceTests.cpp
+            tests/ExternalDataServiceTests.cpp
+            tests/GatewayMessageRouterTests.cpp
+            tests/GatewayPlatformStatusServiceTests.cpp
+            tests/InternalDataServiceTests.cpp)
+    set(TESTS_HEADER_FILES tests/mocks/DataHandlerMock.h
+            tests/mocks/DataProviderMock.h
+            tests/mocks/DeviceRepositoryMock.h
+            tests/mocks/ExistingDeviceRepositoryMock.h)
 
     add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES} ${TESTS_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
-    target_include_directories(${PROJECT_NAME}Tests PUBLIC "tests")
-    target_include_directories(${PROJECT_NAME}Tests SYSTEM PRIVATE ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
-    set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+    target_include_directories(${PROJECT_NAME}Tests PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/WolkConnect-Cpp ${PROJECT_SOURCE_DIR}/WolkConnect-Cpp/WolkSDK-Cpp)
+    target_include_directories(${PROJECT_NAME}Tests PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
+    set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+    set_target_properties(${PROJECT_NAME}Tests PROPERTIES EXCLUDE_FROM_ALL TRUE)
     add_dependencies(${PROJECT_NAME}Tests libgtest)
 
     add_custom_target(tests ${PROJECT_NAME}Tests)
-    add_test(NAME WolkGatewayUnitTests COMMAND ./bin/${PROJECT_NAME}Tests)
 endif ()
 
 # WolkGateway executable
 if (${BUILD_EXECUTABLE})
-    file(GLOB_RECURSE BIN_SOURCE_FILES "application/*.cpp")
-    file(GLOB_RECURSE BIN_HEADER_FILES "application/*.h")
+    set(BIN_SOURCE_FILES application/Application.cpp
+            application/Configuration.cpp)
+    set(BIN_HEADER_FILES application/Configuration.h)
 
     add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES} ${BIN_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}App WolkGateway)
-    set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+    set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
 
     install(TARGETS ${PROJECT_NAME}App DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
     install(FILES out/ca.crt DESTINATION /etc/wolkGateway

@@ -30,7 +30,7 @@ namespace gateway
 class JsonFileExistingDevicesRepository : public ExistingDevicesRepository
 {
 public:
-    JsonFileExistingDevicesRepository(const std::string& file = "existingDevices.json");
+    explicit JsonFileExistingDevicesRepository(const std::string& file = "existingDevices.json");
 
     void addDeviceKey(const std::string& deviceKey) override;
 

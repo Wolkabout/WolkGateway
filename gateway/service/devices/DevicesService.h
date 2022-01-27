@@ -146,7 +146,7 @@ public:
      * The first time this method is invoked, it will request the entire list of devices registered, from the start of
      * the existence of the platform - to now. This might take a while, and might be a lot of data.
      */
-    void updateDeviceCache();
+    virtual void updateDeviceCache();
 
     /**
      * Internal method that is used to send out the request to obtain the list of requested devices.
@@ -154,8 +154,8 @@ public:
      * @param parameters The parameter by which the devices will be queried.
      * @param callback The callback object that defines what will be done once a response has been received.
      */
-    bool sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters parameters,
-                                         RegisteredDevicesRequestCallback callback = {});
+    virtual bool sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters parameters,
+                                                 RegisteredDevicesRequestCallback callback);
 
     /**
      * This method is overridden from the `wolkabout::MessageListener` interface.

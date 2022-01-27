@@ -33,7 +33,9 @@ public:
     GatewayPlatformStatusService(ConnectivityService& connectivityService, GatewayPlatformStatusProtocol& protocol,
                                  std::string deviceKey = "");
 
-    void sendPlatformConnectionStatusMessage(bool connected);
+    virtual ~GatewayPlatformStatusService() = default;
+
+    virtual void sendPlatformConnectionStatusMessage(bool connected);
 
 private:
     ConnectivityService& m_connectivityService;

@@ -279,12 +279,6 @@ public:
      */
     std::unique_ptr<WolkGateway> build();
 
-    /**
-     * @brief operator std::unique_ptr<Wolk> Conversion to wolkabout::wolk as result returns std::unique_ptr to built
-     * wolkabout::Wolk instance
-     */
-    operator std::unique_ptr<WolkGateway>();
-
 private:
     // The gateway device information
     Device m_device;

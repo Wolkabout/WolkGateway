@@ -138,7 +138,7 @@ void DevicesService::updateDeviceCache()
     // Obtain the last timestamp and send out a request
     auto lastTimestamp = m_deviceRepository->latestTimestamp();
     LOG(DEBUG) << TAG << "Obtaining devices from timestamp " << lastTimestamp.count() << ".";
-    sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters{lastTimestamp});
+    sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters{lastTimestamp}, {});
 }
 
 bool DevicesService::sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters parameters,

@@ -124,10 +124,6 @@ protected:
 
     static std::uint64_t currentRtc();
 
-    // callbacks
-    void handleFeedUpdate(const std::map<std::uint64_t, std::vector<Reading>>& readings);
-    void handleParameterUpdate(const std::vector<Parameter>& parameters);
-
     void platformDisconnected();
 
     void notifyPlatformConnected();
@@ -149,8 +145,7 @@ protected:
 
     const std::string TAG = "[WolkGateway] -> ";
 
-    std::atomic<bool> m_connected;
-    std::function<void(bool)> m_platformConnectionStatusListener;
+    std::atomic<bool> m_localConnected;
 
     std::shared_ptr<DeviceRepository> m_cacheDeviceRepository;
     std::shared_ptr<DeviceRepository> m_persistentDeviceRepository;

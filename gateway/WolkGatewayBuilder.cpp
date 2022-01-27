@@ -436,10 +436,5 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
 
     return wolk;
 }
-
-WolkGatewayBuilder::operator std::unique_ptr<WolkGateway>()
-{
-    return build();
-}
 }    // namespace gateway
 }    // namespace wolkabout

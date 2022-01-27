@@ -151,7 +151,8 @@ if (${BUILD_TESTS})
     set(TESTS_HEADER_FILES tests/mocks/DataHandlerMock.h
             tests/mocks/DataProviderMock.h
             tests/mocks/DeviceRepositoryMock.h
-            tests/mocks/ExistingDeviceRepositoryMock.h)
+            tests/mocks/ExistingDeviceRepositoryMock.h
+            tests/mocks/GatewayMessageListenerMock.h)
 
     add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES} ${TESTS_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)

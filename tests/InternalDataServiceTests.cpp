@@ -45,8 +45,6 @@ public:
                                   m_gatewaySubdeviceProtocolMock}};
     }
 
-    static const std::vector<MessageType> messageTypes;
-
     std::unique_ptr<InternalDataService> service;
 
     const std::string GATEWAY_KEY = "TEST_GATEWAY";
@@ -56,21 +54,21 @@ public:
     OutboundMessageHandlerMock m_localOutboundMessageHandlerMock;
 
     GatewaySubdeviceProtocolMock m_gatewaySubdeviceProtocolMock;
-};
 
-const std::vector<MessageType> InternalDataServiceTests::messageTypes = {MessageType::FEED_VALUES,
-                                                                         MessageType::PARAMETER_SYNC,
-                                                                         MessageType::TIME_SYNC,
-                                                                         MessageType::FILE_UPLOAD_INIT,
-                                                                         MessageType::FILE_UPLOAD_ABORT,
-                                                                         MessageType::FILE_BINARY_RESPONSE,
-                                                                         MessageType::FILE_URL_DOWNLOAD_INIT,
-                                                                         MessageType::FILE_URL_DOWNLOAD_ABORT,
-                                                                         MessageType::FILE_LIST_REQUEST,
-                                                                         MessageType::FILE_DELETE,
-                                                                         MessageType::FILE_PURGE,
-                                                                         MessageType::FIRMWARE_UPDATE_INSTALL,
-                                                                         MessageType::FIRMWARE_UPDATE_ABORT};
+    const std::vector<MessageType> MESSAGE_TYPE_LIST = {MessageType::FEED_VALUES,
+                                                        MessageType::PARAMETER_SYNC,
+                                                        MessageType::TIME_SYNC,
+                                                        MessageType::FILE_UPLOAD_INIT,
+                                                        MessageType::FILE_UPLOAD_ABORT,
+                                                        MessageType::FILE_BINARY_RESPONSE,
+                                                        MessageType::FILE_URL_DOWNLOAD_INIT,
+                                                        MessageType::FILE_URL_DOWNLOAD_ABORT,
+                                                        MessageType::FILE_LIST_REQUEST,
+                                                        MessageType::FILE_DELETE,
+                                                        MessageType::FILE_PURGE,
+                                                        MessageType::FIRMWARE_UPDATE_INSTALL,
+                                                        MessageType::FIRMWARE_UPDATE_ABORT};
+};
 
 TEST_F(InternalDataServiceTests, CheckProtocol)
 {
@@ -84,7 +82,7 @@ TEST_F(InternalDataServiceTests, GetMessageTypes)
     ASSERT_NO_FATAL_FAILURE(types = service->getMessageTypes());
 
     // Check all the types
-    for (const auto& type : messageTypes)
+    for (const auto& type : MESSAGE_TYPE_LIST)
     {
         auto it = std::find(types.cbegin(), types.cend(), type);
         ASSERT_TRUE(it != types.cend());

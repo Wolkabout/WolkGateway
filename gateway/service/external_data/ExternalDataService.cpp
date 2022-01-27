@@ -28,11 +28,6 @@ namespace wolkabout
 {
 namespace gateway
 {
-const std::string ExternalDataService::TAG = "[ExternalDataService] -> ";
-
-const std::vector<MessageType> ExternalDataService::MESSAGE_TYPES = {MessageType::FEED_VALUES,
-                                                                     MessageType::PARAMETER_SYNC};
-
 ExternalDataService::ExternalDataService(std::string gatewayKey, GatewaySubdeviceProtocol& gatewaySubdeviceProtocol,
                                          DataProtocol& dataProtocol, OutboundMessageHandler& outboundMessageHandler,
                                          DataProvider& dataProvider)
@@ -46,7 +41,7 @@ ExternalDataService::ExternalDataService(std::string gatewayKey, GatewaySubdevic
 
 std::vector<MessageType> ExternalDataService::getMessageTypes()
 {
-    return MESSAGE_TYPES;
+    return {MessageType::FEED_VALUES, MessageType::PARAMETER_SYNC};
 }
 
 void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMessage>& messages)

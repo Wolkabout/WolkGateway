@@ -65,10 +65,7 @@ private:
     void packMessageWithGatewayAndSend(const Message& message);
 
     // Logger tag
-    static const std::string TAG;
-
-    // Here we will store the compatible message types
-    static const std::vector<MessageType> MESSAGE_TYPES;
+    const std::string TAG = "[ExternalDataService] -> ";
 
     // We need the gateway key
     std::string m_gatewayKey;

@@ -49,7 +49,8 @@ void GatewayMessageRouter::messageReceived(std::shared_ptr<Message> message)
     auto handler = handlerIt->second.lock();
     if (handler == nullptr)
     {
-        LOG(DEBUG) << TAG << "Received a message but the handler for it has expired.";
+        m_listenersPerType.erase(handlerIt);
+        LOG(DEBUG) << TAG << "Received a message but the handler for it has expired. Deleting...";
         return;
     }
 

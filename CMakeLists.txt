@@ -15,8 +15,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(WolkGateway C CXX)
 
-set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
-
 # Options of this project
 OPTION(BUILD_SHARED "Build this library as a shared library" ON)
 option(BUILD_EXECUTABLE "Build the standalone ${PROJECT_NAME} application." ON)
@@ -158,15 +156,15 @@ if (${BUILD_TESTS})
             tests/mocks/GatewayMessageListenerMock.h
             tests/mocks/GatewayPlatformStatusServiceMock.h)
 
+    enable_testing()
     add_executable(${PROJECT_NAME}Tests ${TESTS_SOURCE_FILES} ${TESTS_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}Tests ${PROJECT_NAME} gtest gmock gtest_main gmock_main)
     target_include_directories(${PROJECT_NAME}Tests PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/WolkConnect-Cpp ${PROJECT_SOURCE_DIR}/WolkConnect-Cpp/WolkSDK-Cpp)
     target_include_directories(${PROJECT_NAME}Tests PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
     set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
-    set_target_properties(${PROJECT_NAME}Tests PROPERTIES EXCLUDE_FROM_ALL TRUE)
     add_dependencies(${PROJECT_NAME}Tests libgtest)
 
-    add_custom_target(tests ${PROJECT_NAME}Tests)
+    add_test(NAME "WolkGateway_Tests" COMMAND ${PROJECT_NAME}Tests)
 endif ()
 
 # WolkGateway executable
@@ -185,11 +183,3 @@ if (${BUILD_EXECUTABLE})
     install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
             PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
 endif ()
-
-# Add the format rule
-add_custom_target(format
-        COMMAND "clang-format" -i -sort-includes -style=file ${LIB_HEADER_FILES} ${LIB_SOURCE_FILES}
-        ${BIN_HEADER_FILES} ${BIN_SOURCE_FILES} ${TESTS_HEADER_FILES} ${TESTS_SOURCE_FILES}
-        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-        COMMENT "[Formatting source code]"
-        VERBATIM)

@@ -34,7 +34,7 @@
 #include "gateway/WolkGateway.h"
 #include "gateway/connectivity/GatewayMessageRouter.h"
 #include "gateway/repository/device/InMemoryDeviceRepository.h"
-#include "gateway/repository/device/SQLiteDeviceRepository.h"
+//#include "gateway/repository/device/SQLiteDeviceRepository.h"
 #include "gateway/repository/existing_device/JsonFileExistingDevicesRepository.h"
 #include "gateway/service/devices/DevicesService.h"
 #include "gateway/service/external_data/ExternalDataService.h"
@@ -54,7 +54,7 @@ WolkGatewayBuilder::WolkGatewayBuilder(Device device)
 , m_platformMqttKeepAliveSec{60}
 , m_persistence{new InMemoryPersistence}
 , m_messagePersistence{new InMemoryMessagePersistence}
-, m_deviceStoragePolicy{DeviceStoragePolicy::FULL}
+, m_deviceStoragePolicy{DeviceStoragePolicy::CACHED}
 , m_existingDeviceRepository{new JsonFileExistingDevicesRepository}
 , m_dataProtocol{new WolkaboutDataProtocol}
 , m_errorProtocol{new WolkaboutErrorProtocol}
@@ -270,8 +270,10 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     wolk->m_messagePersistence = std::move(m_messagePersistence);
 
     // Move the repository objects
-    if (m_deviceStoragePolicy == DeviceStoragePolicy::PERSISTENT || m_deviceStoragePolicy == DeviceStoragePolicy::FULL)
-        wolk->m_persistentDeviceRepository = std::make_shared<SQLiteDeviceRepository>();
+    // TODO Uncomment
+    //    if (m_deviceStoragePolicy == DeviceStoragePolicy::PERSISTENT || m_deviceStoragePolicy ==
+    //    DeviceStoragePolicy::FULL)
+    //        wolk->m_persistentDeviceRepository = std::make_shared<SQLiteDeviceRepository>();
     if (m_deviceStoragePolicy == DeviceStoragePolicy::CACHED || m_deviceStoragePolicy == DeviceStoragePolicy::FULL)
         wolk->m_cacheDeviceRepository = std::make_shared<InMemoryDeviceRepository>(wolk->m_persistentDeviceRepository);
     wolk->m_existingDevicesRepository = std::move(m_existingDeviceRepository);

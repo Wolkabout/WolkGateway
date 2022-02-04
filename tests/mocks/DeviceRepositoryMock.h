@@ -31,7 +31,7 @@ public:
     MOCK_METHOD(bool, remove, (const std::string&));
     MOCK_METHOD(bool, removeAll, ());
     MOCK_METHOD(bool, containsDeviceKey, (const std::string&));
-    MOCK_METHOD(std::chrono::milliseconds, latestTimestamp, ());
+    MOCK_METHOD(std::chrono::milliseconds, latestPlatformTimestamp, ());
 };
 
 #endif    // WOLKGATEWAY_DEVICEREPOSITORYMOCK_H

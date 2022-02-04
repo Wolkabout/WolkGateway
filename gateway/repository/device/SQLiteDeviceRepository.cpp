@@ -20,7 +20,6 @@
 #include "core/utilities/ByteUtils.h"
 #include "core/utilities/Logger.h"
 
-#include <memory>
 #include <mutex>
 #include <openssl/sha.h>
 #include <sqlite3.h>
@@ -67,12 +66,11 @@ SQLiteDeviceRepository::~SQLiteDeviceRepository()
 
 bool SQLiteDeviceRepository::save(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device)
 {
-    LOG(TRACE) << METHOD_INFO;
     const auto errorPrefix = "Failed to save a device in the database - ";
 
     // If the device is already present, go to the update routine
     std::lock_guard<std::recursive_mutex> lock{m_mutex};
-    if (containsDeviceKey(device.deviceKey))
+    if (containsDevice(device.deviceKey))
         return update(timestamp, device);
 
     // Store the information about the device
@@ -101,7 +99,6 @@ bool SQLiteDeviceRepository::save(std::chrono::milliseconds timestamp, const Reg
 
 bool SQLiteDeviceRepository::remove(const std::string& deviceKey)
 {
-    LOG(TRACE) << METHOD_INFO;
     const auto errorPrefix = "Failed to remove a device from the database - ";
 
     std::lock_guard<std::recursive_mutex> lock{m_mutex};
@@ -116,7 +113,6 @@ bool SQLiteDeviceRepository::remove(const std::string& deviceKey)
 
 bool SQLiteDeviceRepository::removeAll()
 {
-    LOG(TRACE) << METHOD_INFO;
     const auto errorPrefix = "Failed to remove all devices from the database - ";
 
     std::lock_guard<std::recursive_mutex> lock{m_mutex};
@@ -129,9 +125,8 @@ bool SQLiteDeviceRepository::removeAll()
     return true;
 }
 
-bool SQLiteDeviceRepository::containsDeviceKey(const std::string& deviceKey)
+bool SQLiteDeviceRepository::containsDevice(const std::string& deviceKey)
 {
-    LOG(TRACE) << METHOD_INFO;
     const auto errorPrefix = "Failed to obtain information whether device info is stored - ";
 
     std::lock_guard<std::recursive_mutex> lock{m_mutex};
@@ -146,9 +141,18 @@ bool SQLiteDeviceRepository::containsDeviceKey(const std::string& deviceKey)
     return result.size() >= 2 && result[1].front() == deviceKey;
 }
 
-std::chrono::milliseconds SQLiteDeviceRepository::latestTimestamp()
+StoredDeviceInformation SQLiteDeviceRepository::get(const std::string& deviceKey)
 {
-    LOG(TRACE) << METHOD_INFO;
+    return StoredDeviceInformation();
+}
+
+std::vector<StoredDeviceInformation> SQLiteDeviceRepository::getGatewayDevices()
+{
+    return std::vector<StoredDeviceInformation>();
+}
+
+std::chrono::milliseconds SQLiteDeviceRepository::latestPlatformTimestamp()
+{
     const auto errorPrefix = "Failed to obtain the latest timestamp value - ";
 
     std::lock_guard<std::recursive_mutex> lock{m_mutex};
@@ -175,18 +179,19 @@ std::chrono::milliseconds SQLiteDeviceRepository::latestTimestamp()
     return millis;
 }
 
-bool SQLiteDeviceRepository::update(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device)
+bool SQLiteDeviceRepository::update(const std::vector<StoredDeviceInformation>& devices)
 {
-    if (remove(device.deviceKey))
-        return save(timestamp, device);
+    auto keys = std::vector<std::string>{};
+    for (const auto& device : devices)
+        keys.emplace_back(device.getDeviceKey());
+    if (remove(keys))
+        return save(devices);
     else
         return false;
 }
 
 std::string SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, ColumnResult* result)
 {
-    // This would spam too much
-    //    LOG(TRACE) << METHOD_INFO;
     const auto errorPrefix = "Failed to execute query - ";
 
     // Check if the database session is established

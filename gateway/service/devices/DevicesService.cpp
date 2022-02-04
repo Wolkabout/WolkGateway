@@ -27,6 +27,7 @@
 #include "gateway/repository/device/DeviceRepository.h"
 #include "gateway/repository/existing_device/ExistingDevicesRepository.h"
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -106,6 +107,39 @@ const std::weak_ptr<std::condition_variable>& RegisteredDevicesRequestCallback::
     return m_conditionVariable;
 }
 
+ChildrenSynchronizationRequestCallback::ChildrenSynchronizationRequestCallback(
+  std::function<void(std::unique_ptr<ChildrenSynchronizationResponseMessage>)> lambda,
+  std::vector<std::string> registeringDevices)
+: m_registeringDevices{std::move(registeringDevices)}, m_lambda{std::move(lambda)}
+{
+}
+
+ChildrenSynchronizationRequestCallback::ChildrenSynchronizationRequestCallback(
+  std::weak_ptr<std::condition_variable> conditionVariable, std::vector<std::string> registeringDevices)
+: m_registeringDevices{std::move(registeringDevices)}, m_conditionVariable{std::move(conditionVariable)}
+{
+}
+
+const std::chrono::milliseconds& ChildrenSynchronizationRequestCallback::getSentTime() const
+{
+    return m_sentTime;
+}
+
+const std::vector<std::string>& ChildrenSynchronizationRequestCallback::getRegisteringDevices() const
+{
+    return m_registeringDevices;
+}
+
+const std::function<void(std::unique_ptr<ChildrenSynchronizationResponseMessage>)>&
+ChildrenSynchronizationRequestCallback::getLambda() const
+{
+    return m_lambda;
+}
+const std::weak_ptr<std::condition_variable>& ChildrenSynchronizationRequestCallback::getConditionVariable() const
+{
+    return m_conditionVariable;
+}
+
 DevicesService::DevicesService(std::string gatewayKey, RegistrationProtocol& platformRegistrationProtocol,
                                OutboundMessageHandler& outboundPlatformMessageHandler,
                                OutboundRetryMessageHandler& outboundPlatformRetryMessageHandler,
@@ -124,6 +158,51 @@ DevicesService::DevicesService(std::string gatewayKey, RegistrationProtocol& pla
 
 DevicesService::~DevicesService() = default;
 
+bool DevicesService::registerChildDevices(
+  const std::vector<DeviceRegistrationData>& devices,
+  std::function<void(const std::vector<std::string>&, const std::vector<std::string>&)> callback)
+{
+    LOG(TRACE) << METHOD_INFO;
+    const auto errorPrefix = "Failed to register child devices -> ";
+
+    // Form the message for the registration
+    const auto parsedMessage = std::shared_ptr<Message>{
+      m_platformProtocol.makeOutboundMessage(m_gatewayKey, DeviceRegistrationMessage{devices})};
+    if (parsedMessage == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "Failed to parse the outbound 'DeviceRegistrationMessage'.";
+        return false;
+    }
+
+    // Publish the message
+    m_outboundPlatformMessageHandler.addMessage(parsedMessage);
+
+    // Now that that's publish, we want to verify that with the ChildrenSynchronizationMessage
+    auto deviceKeys = std::vector<std::string>{};
+    for (const auto& device : devices)
+        deviceKeys.emplace_back(device.key);
+    sendOutChildrenSynchronizationRequest(std::make_shared<ChildrenSynchronizationRequestCallback>(
+      [=](const std::unique_ptr<ChildrenSynchronizationResponseMessage>& response) {
+          // Contains all devices
+          auto succeeded = std::vector<std::string>{};
+          auto failed = std::vector<std::string>{};
+
+          // Check the devices
+          const auto& children = response != nullptr ? response->getChildren() : std::vector<std::string>{};
+          for (const auto& device : deviceKeys)
+          {
+              const auto it = std::find(children.cbegin(), children.cend(), device);
+              if (it != children.cend())
+                  succeeded.emplace_back(device);
+              else
+                  failed.emplace_back(device);
+          }
+          callback(succeeded, failed);
+      },
+      deviceKeys));
+    return true;
+}
+
 void DevicesService::updateDeviceCache()
 {
     LOG(TRACE) << METHOD_INFO;
@@ -136,16 +215,57 @@ void DevicesService::updateDeviceCache()
     }
 
     // Obtain the last timestamp and send out a request
-    auto lastTimestamp = m_deviceRepository->latestTimestamp();
+    auto lastTimestamp = m_deviceRepository->latestPlatformTimestamp();
     LOG(DEBUG) << TAG << "Obtaining devices from timestamp " << lastTimestamp.count() << ".";
     sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters{lastTimestamp}, {});
 }
 
-bool DevicesService::sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters parameters,
-                                                     RegisteredDevicesRequestCallback callback)
+bool DevicesService::sendOutChildrenSynchronizationRequest(
+  std::shared_ptr<ChildrenSynchronizationRequestCallback> callback)
 {
     LOG(TRACE) << METHOD_INFO;
-    const auto errorPrefix = "Failed to send out a 'RegisteredDevicesRequest' message -> ";
+    const auto errorPrefix = "Failed to send out a 'ChildrenSynchronizationRequestMessage' -> ";
+
+    // Form the message
+    auto parsedMessage = std::shared_ptr<Message>{
+      m_platformProtocol.makeOutboundMessage(m_gatewayKey, ChildrenSynchronizationRequestMessage{})};
+    if (parsedMessage == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "Failed to parse the outbound message.";
+        return false;
+    }
+    m_outboundPlatformRetryMessageHandler.addMessage(RetryMessageStruct{
+      parsedMessage,
+      m_platformProtocol.getResponseChannelForMessage(MessageType::CHILDREN_SYNCHRONIZATION_REQUEST, m_gatewayKey),
+      [=](const std::shared_ptr<Message>&) {
+          LOG(ERROR)
+            << TAG
+            << "Failed to receive response for 'ChildrenSynchronizationRequestMessage' - no response from platform.";
+          // Check the callback
+          if (!callback->getRegisteringDevices().empty())
+          {
+              LOG(ERROR) << "Failed to register devices: ";
+              for (const auto& device : callback->getRegisteringDevices())
+                  LOG(ERROR) << "\t" << device;
+          }
+          if (auto cv = callback->getConditionVariable().lock())
+              cv->notify_one();
+          if (callback->getLambda())
+              callback->getLambda()(nullptr);
+      },
+      RETRY_COUNT, RETRY_TIMEOUT});
+    {
+        std::lock_guard<std::mutex> lock{m_childSyncMutex};
+        m_childSyncRequests.push(std::move(callback));
+    }
+    return true;
+}
+
+bool DevicesService::sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters parameters,
+                                                     std::shared_ptr<RegisteredDevicesRequestCallback> callback)
+{
+    LOG(TRACE) << METHOD_INFO;
+    const auto errorPrefix = "Failed to send out a 'RegisteredDevicesRequestMessage' -> ";
 
     // Form the message
     auto message = RegisteredDevicesRequestMessage{parameters.getTimestampFrom(), parameters.getDeviceType(),
@@ -169,7 +289,7 @@ bool DevicesService::sendOutRegisteredDevicesRequest(RegisteredDevicesRequestPar
           LOG(ERROR) << TAG << "Failed to receive response for 'RegisteredDevicesRequest' - no response from platform.";
       },
       RETRY_COUNT, RETRY_TIMEOUT});
-    m_requests.emplace(std::move(parameters), std::move(callback));
+    m_registeredDevicesRequests.emplace(std::move(parameters), std::move(callback));
     return true;
 }
 
@@ -256,10 +376,10 @@ void DevicesService::messageReceived(std::shared_ptr<Message> message)
           parsedMessage->getTimestampFrom(), parsedMessage->getDeviceType(), parsedMessage->getExternalId()};
 
         // Create the callback
-        auto callback = RegisteredDevicesRequestCallback{};
+        auto callback = std::shared_ptr<RegisteredDevicesRequestCallback>{};
         if (m_localProtocol != nullptr && m_outboundLocalMessageHandler != nullptr)
         {
-            callback = RegisteredDevicesRequestCallback{
+            callback = std::make_shared<RegisteredDevicesRequestCallback>(
               [this, deviceKey](std::unique_ptr<RegisteredDevicesResponseMessage> response) {
                   // Create the message for the local broker
                   auto localResponse =
@@ -271,7 +391,7 @@ void DevicesService::messageReceived(std::shared_ptr<Message> message)
                       return;
                   }
                   m_outboundLocalMessageHandler->addMessage(localResponse);
-              }};
+              });
         }
 
         // Send out the request
@@ -297,55 +417,127 @@ void DevicesService::receiveMessages(const std::vector<GatewaySubdeviceMessage>&
     // Go through every message
     for (const auto& message : messages)
     {
-        // Try to parse the message
-        const auto type = m_platformProtocol.getMessageType(message.getMessage());
-        if (type != MessageType::REGISTERED_DEVICES_RESPONSE)
-        {
-            LOG(WARN) << TAG << "Received message that is not 'RegisteredDevicesResponse' message. Ignoring...";
-            return;
-        }
+        // Give the message to the RetryMessageHandler
         const auto sharedMessage = std::make_shared<Message>(message.getMessage());
         m_outboundPlatformRetryMessageHandler.messageReceived(sharedMessage);
-        auto response = m_platformProtocol.parseRegisteredDevicesResponse(sharedMessage);
-        if (response == nullptr)
+
+        // Try to parse the message
+        const auto type = m_platformProtocol.getMessageType(message.getMessage());
+        switch (type)
         {
-            LOG(ERROR) << TAG << "Failed to parse incoming 'RegisteredDevicesResponse' message.";
-            return;
+        case MessageType::CHILDREN_SYNCHRONIZATION_RESPONSE:
+        {
+            auto response = m_platformProtocol.parseChildrenSynchronizationResponse(sharedMessage);
+            if (response == nullptr)
+                LOG(ERROR) << TAG << "Failed to parse incoming 'ChildrenSynchronizationResponseMessage'.";
+            else
+                handleChildrenSynchronizationResponse(std::move(response));
+            break;
         }
-
-        // Look for the callback object
-        auto now =
-          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-        const auto params = RegisteredDevicesRequestParameters{response->getTimestampFrom(), response->getDeviceType(),
-                                                               response->getExternalId()};
-        const auto callbackIt = m_requests.find(params);
-        if (callbackIt != m_requests.cend())
+        case MessageType::REGISTERED_DEVICES_RESPONSE:
         {
-            // Update the time when the request was sent out
-            now = callbackIt->second.getSentTime();
+            auto response = m_platformProtocol.parseRegisteredDevicesResponse(sharedMessage);
+            if (response == nullptr)
+                LOG(ERROR) << TAG << "Failed to parse incoming 'RegisteredDevicesResponseMessage'.";
+            else
+                handleRegisteredDevicesResponse(std::move(response));
+            break;
         }
-
-        // Print something about it
-        LOG(INFO) << TAG << "Received info about " << response->getMatchingDevices().size() << " devices!";
-        if (m_deviceRepository != nullptr)
-            for (const auto& device : response->getMatchingDevices())
-                m_deviceRepository->save(now, device);
-
-        // Handle the callback
-        if (callbackIt != m_requests.cend())
-        {
-            const auto& callback = callbackIt->second;
-            if (auto cv = callback.getConditionVariable().lock())
-                cv->notify_one();
-            else if (callback.getLambda())
-                callback.getLambda()(std::move(response));
+        default:
+            LOG(WARN) << TAG << "Received message is of type that can not be handled. Ignoring...";
+            break;
         }
     }
 }
 
 std::vector<MessageType> DevicesService::getMessageTypes()
 {
-    return {MessageType::REGISTERED_DEVICES_RESPONSE};
+    return {MessageType::CHILDREN_SYNCHRONIZATION_RESPONSE, MessageType::REGISTERED_DEVICES_RESPONSE};
+}
+
+void DevicesService::handleChildrenSynchronizationResponse(
+  std::unique_ptr<ChildrenSynchronizationResponseMessage> response)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    // Check if any callbacks are waiting
+    auto callback = std::shared_ptr<ChildrenSynchronizationRequestCallback>{};
+    {
+        std::lock_guard<std::mutex> lock{m_childSyncMutex};
+        if (!m_childSyncRequests.empty())
+        {
+            callback = m_childSyncRequests.front();
+            m_childSyncRequests.pop();
+        }
+    }
+
+    // Add the devices to storage
+    LOG(INFO) << TAG << "Received info about " << response->getChildren().size() << " child devices!.";
+    if (m_deviceRepository != nullptr)
+    {
+        auto devicesToSave = std::vector<StoredDeviceInformation>{};
+        if (m_deviceRepository != nullptr)
+            for (const auto& device : response->getChildren())
+                devicesToSave.emplace_back(
+                  StoredDeviceInformation{device, DeviceOwnership::Gateway, std::chrono::milliseconds{0}});
+        m_deviceRepository->save(devicesToSave);
+    }
+
+    // Handle the callback
+    if (callback != nullptr)
+    {
+        if (auto cv = callback->getConditionVariable().lock())
+            cv->notify_one();
+        else if (callback->getLambda())
+            callback->getLambda()(std::move(response));
+    }
+}
+
+void DevicesService::handleRegisteredDevicesResponse(std::unique_ptr<RegisteredDevicesResponseMessage> response)
+{
+    LOG(TRACE) << METHOD_INFO;
+
+    // Look for the callback object
+    auto now =
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    auto callback = std::shared_ptr<RegisteredDevicesRequestCallback>{};
+    const auto params = RegisteredDevicesRequestParameters{response->getTimestampFrom(), response->getDeviceType(),
+                                                           response->getExternalId()};
+    {
+        std::lock_guard<std::mutex> lock{m_registeredDevicesMutex};
+        const auto callbackIt = m_registeredDevicesRequests.find(params);
+        if (callbackIt != m_registeredDevicesRequests.cend() && callbackIt->second != nullptr)
+        {
+            // Update the time when the request was sent out
+            callback = callbackIt->second;
+            now = callback->getSentTime();
+        }
+    }
+
+    // Print something about it
+    LOG(INFO) << TAG << "Received info about " << response->getMatchingDevices().size() << " roaming devices!";
+    if (m_deviceRepository != nullptr)
+    {
+        auto devicesToSave = std::vector<StoredDeviceInformation>{};
+        if (m_deviceRepository != nullptr)
+            for (const auto& device : response->getMatchingDevices())
+                devicesToSave.emplace_back(StoredDeviceInformation{device, now});
+        m_deviceRepository->save(devicesToSave);
+    }
+
+    // Handle the callback
+    if (callback != nullptr)
+    {
+        if (auto cv = callback->getConditionVariable().lock())
+            cv->notify_one();
+        else if (callback->getLambda())
+            callback->getLambda()(std::move(response));
+    }
+}
+
+void DevicesService::onSucceededRegistration(const std::vector<std::string>& deviceKeys)
+{
+    LOG(TRACE) << METHOD_INFO;
 }
 }    // namespace gateway
 }    // namespace wolkabout

@@ -43,16 +43,20 @@ public:
 
     bool save(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& deviceKey) override;
 
-    bool remove(const std::string& deviceKey) override;
+    bool remove(const std::vector<std::string>& deviceKey) override;
 
     bool removeAll() override;
 
-    bool containsDeviceKey(const std::string& deviceKey) override;
+    bool containsDevice(const std::string& deviceKey) override;
 
-    std::chrono::milliseconds latestTimestamp() override;
+    StoredDeviceInformation get(const std::string& deviceKey) override;
+
+    std::vector<StoredDeviceInformation> getGatewayDevices() override;
+
+    std::chrono::milliseconds latestPlatformTimestamp() override;
 
 private:
-    bool update(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device);
+    bool update(const std::vector<StoredDeviceInformation>& devices);
 
     std::string executeSQLStatement(const std::string& sqlStatement, ColumnResult* result = nullptr);
 

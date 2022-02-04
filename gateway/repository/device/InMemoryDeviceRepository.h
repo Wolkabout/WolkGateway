@@ -36,30 +36,28 @@ public:
     explicit InMemoryDeviceRepository(std::shared_ptr<DeviceRepository> persistentDeviceRepository = nullptr);
 
     /**
-     * This method will load the `latestTimestamp` value from the persistence repository and set it as the value of the
-     * InMemory repository.
+     * This will cache the information from the persistent repository in the memory.
      */
-    void loadLatestTimestampFromPersistentRepository();
+    void loadInformationFromPersistentRepository();
 
     /**
      * This method is overridden from the `gateway::DeviceRepository` interface.
-     * This method will save the device data in the cache storage, and the persistent storage if it is present.
+     * This method will save the devices data in the cache storage, and the persistent storage if it is present.
      *
-     * @param timestamp The timestamp at which the request has been sent for this device.
-     * @param device The device information.
-     * @return Whether the device has been successfully saved.
+     * @param devices The devices information.
+     * @return Whether the devices have been successfully saved.
      */
-    bool save(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device) override;
+    bool save(const std::vector<StoredDeviceInformation>& devices) override;
 
     /**
      * This method is overridden from the `gateway::DeviceRepository` interface.
-     * This method will remove the device from the cache storage, and queue the same thing to be done in persistent
+     * This method will remove the devices from the cache storage, and queue the same thing to be done in persistent
      * storage if present.
      *
-     * @param deviceKey The device key that needs to be removed.
-     * @return Whether the device has been removed.
+     * @param deviceKeys The device keys that need to be removed.
+     * @return Whether the devices have been removed.
      */
-    bool remove(const std::string& deviceKey) override;
+    bool remove(const std::vector<std::string>& deviceKeys) override;
 
     /**
      * This method is overridden from the `gateway::DeviceRepository` interface.
@@ -78,7 +76,24 @@ public:
      * @param deviceKey The device key for which presence must be confirmed.
      * @return Whether the device key is present in either cache or persistent storage.
      */
-    bool containsDeviceKey(const std::string& deviceKey) override;
+    bool containsDevice(const std::string& deviceKey) override;
+
+    /**
+     * This method is overridden from the `gateway::DeviceRepository` interface.
+     * This method is used to obtain information about a device.
+     *
+     * @param deviceKey The device in which the user is interested.
+     * @return The information about the device. Can be empty if the device is not in persistence.
+     */
+    StoredDeviceInformation get(const std::string& deviceKey) override;
+
+    /**
+     * This method is overridden from the `gateway::DeviceRepository` interface.
+     * This method is used to obtain the list of devices this gateway owns.
+     *
+     * @return The list of devices registered by this gateway.
+     */
+    std::vector<StoredDeviceInformation> getGatewayDevices() override;
 
     /**
      * This method is overridden from the `gateway::DeviceRepository` interface.
@@ -87,7 +102,7 @@ public:
      *
      * @return The last timestamp.
      */
-    std::chrono::milliseconds latestTimestamp() override;
+    std::chrono::milliseconds latestPlatformTimestamp() override;
 
 private:
     // Store the latest timestamp
@@ -95,7 +110,7 @@ private:
 
     // Here we actually store the data
     std::recursive_mutex m_mutex;
-    std::vector<std::string> m_devices;
+    std::vector<StoredDeviceInformation> m_devices;
 
     // And optional pointer for a more persistence DeviceRepository
     std::shared_ptr<DeviceRepository> m_persistentDeviceRepository;

@@ -56,9 +56,10 @@ class RegistrationService;
 namespace gateway
 {
 class DeviceRepository;
+class ExternalDataService;
 class ExistingDevicesRepository;
 class GatewayMessageRouter;
-class ExternalDataService;
+class InMemoryDeviceRepository;
 class InternalDataService;
 class GatewayPlatformStatusService;
 class DevicesService;
@@ -147,7 +148,7 @@ protected:
 
     std::atomic<bool> m_localConnected;
 
-    std::shared_ptr<DeviceRepository> m_cacheDeviceRepository;
+    std::shared_ptr<InMemoryDeviceRepository> m_cacheDeviceRepository;
     std::shared_ptr<DeviceRepository> m_persistentDeviceRepository;
     std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
 

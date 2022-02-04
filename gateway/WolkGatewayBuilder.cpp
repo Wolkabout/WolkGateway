@@ -58,7 +58,7 @@ WolkGatewayBuilder::WolkGatewayBuilder(Device device)
 , m_existingDeviceRepository{new JsonFileExistingDevicesRepository}
 , m_dataProtocol{new WolkaboutDataProtocol}
 , m_errorProtocol{new WolkaboutErrorProtocol}
-, m_errorRetainTime{std::chrono::seconds{1}}
+, m_errorRetainTime{1}
 , m_platformSubdeviceProtocol{new WolkaboutGatewaySubdeviceProtocol}
 , m_localSubdeviceProtocol{new WolkaboutGatewaySubdeviceProtocol(false)}
 , m_platformRegistrationProtocol{new WolkaboutRegistrationProtocol}
@@ -309,12 +309,22 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     wolk->m_parameterLambda = m_parameterHandlerLambda;
     wolk->m_parameterHandler = m_parameterHandler;
     wolk->m_dataService = std::make_shared<connect::DataService>(
-      *wolk->m_dataProtocol, *wolk->m_persistence, *wolk->m_connectivityService,
+      *wolk->m_dataProtocol, *wolk->m_persistence, *wolk->m_connectivityService, *wolk->m_outboundRetryMessageHandler,
       [wolkRaw](const std::string& deviceKey, const std::map<std::uint64_t, std::vector<Reading>>& readings) {
           wolkRaw->handleFeedUpdateCommand(deviceKey, readings);
       },
       [wolkRaw](const std::string& deviceKey, const std::vector<Parameter>& parameters) {
           wolkRaw->handleParameterCommand(deviceKey, parameters);
+      },
+      [](const std::string& deviceKey, const std::vector<std::string>& feeds,
+         const std::vector<std::string>& attributes) {
+          LOG(DEBUG) << "Received details for device '" << deviceKey << "':";
+          LOG(DEBUG) << "Feeds: ";
+          for (const auto& feed : feeds)
+              LOG(DEBUG) << "\t" << feed;
+          LOG(DEBUG) << "Attributes: ";
+          for (const auto& attribute : attributes)
+              LOG(DEBUG) << "\t" << attribute;
       });
     wolk->m_errorService = std::make_shared<connect::ErrorService>(*wolk->m_errorProtocol, m_errorRetainTime);
     wolk->m_inboundMessageHandler->addListener(wolk->m_dataService);

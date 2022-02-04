@@ -49,10 +49,8 @@ public:
 
     void SetUp() override
     {
-        dataServiceMock = std::unique_ptr<DataServiceMock>{
-          new DataServiceMock{dataProtocolMock, persistenceMock, connectivityServiceMock,
-                              [](const std::string&, const std::map<std::uint64_t, std::vector<Reading>>&) {},
-                              [](const std::string&, const std::vector<Parameter>&) {}}};
+        dataServiceMock = std::unique_ptr<DataServiceMock>{new DataServiceMock{
+          dataProtocolMock, persistenceMock, connectivityServiceMock, outboundRetryMessageHandlerMock, {}, {}, {}}};
         devicesServiceMock = std::unique_ptr<DevicesServiceMock>{new DevicesServiceMock{
           gateway.getKey(), registrationProtocolMock, outboundMessageHandlerMock, outboundRetryMessageHandlerMock}};
         gatewayPlatformStatusServiceMock = std::unique_ptr<GatewayPlatformStatusServiceMock>{

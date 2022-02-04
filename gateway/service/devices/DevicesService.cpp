@@ -163,7 +163,8 @@ bool DevicesService::sendOutRegisteredDevicesRequest(RegisteredDevicesRequestPar
     auto sendTime =
       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
     m_outboundPlatformRetryMessageHandler.addMessage(RetryMessageStruct{
-      parsedMessage, m_platformProtocol.getResponseChannelForRegisteredDeviceRequest(m_gatewayKey),
+      parsedMessage,
+      m_platformProtocol.getResponseChannelForMessage(MessageType::REGISTERED_DEVICES_REQUEST, m_gatewayKey),
       [=](const std::shared_ptr<Message>&) {
           LOG(ERROR) << TAG << "Failed to receive response for 'RegisteredDevicesRequest' - no response from platform.";
       },

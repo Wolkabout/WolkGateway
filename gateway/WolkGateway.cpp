@@ -137,24 +137,11 @@ void WolkGateway::notifyPlatformConnected()
     WolkSingle::notifyConnected();
     if (m_cacheDeviceRepository != nullptr)
         m_cacheDeviceRepository->loadInformationFromPersistentRepository();
+    // TODO Uncomment
     //    if (m_subdeviceManagementService != nullptr)
     //        m_subdeviceManagementService->updateDeviceCache();
     if (m_gatewayPlatformStatusService != nullptr)
         m_gatewayPlatformStatusService->sendPlatformConnectionStatusMessage(true);
-
-    if (m_subdeviceManagementService)
-    {
-        m_subdeviceManagementService->registerChildDevices(
-          {DeviceRegistrationData{"Test Device 1", "TD1", "", {}, {}, {}}},
-          [](const std::vector<std::string>& succeeded, const std::vector<std::string>& failed) {
-              LOG(INFO) << "Succeeded to register: ";
-              for (const auto& key : succeeded)
-                  LOG(INFO) << "\t" << key;
-              LOG(INFO) << "Failed to register: ";
-              for (const auto& key : failed)
-                  LOG(INFO) << "\t" << key;
-          });
-    }
 }
 
 void WolkGateway::notifyPlatformDisconnected()

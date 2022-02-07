@@ -160,7 +160,7 @@ DevicesService::~DevicesService() = default;
 
 bool DevicesService::registerChildDevices(
   const std::vector<DeviceRegistrationData>& devices,
-  std::function<void(const std::vector<std::string>&, const std::vector<std::string>&)> callback)
+  const std::function<void(const std::vector<std::string>&, const std::vector<std::string>&)>& callback)
 {
     LOG(TRACE) << METHOD_INFO;
     const auto errorPrefix = "Failed to register child devices -> ";
@@ -320,18 +320,17 @@ void DevicesService::messageReceived(std::shared_ptr<Message> message)
             return;
         }
 
-        // Make the platform request
-        auto request = std::shared_ptr<Message>{m_platformProtocol.makeOutboundMessage(m_gatewayKey, *parsedMessage)};
-        if (request == nullptr)
-        {
-            LOG(ERROR) << TAG
-                       << "Failed to handler incoming local 'DeviceRegistration' message - Failed to parse outgoing "
-                          "registration request.";
-            return;
-        }
-
         // Send the message
-        m_outboundPlatformMessageHandler.addMessage(request);
+        registerChildDevices(parsedMessage->getDevices(), [=](const std::vector<std::string>& registeredDevices,
+                                                              const std::vector<std::string>& unregisteredDevices) {
+            if (m_localProtocol == nullptr)
+                return;
+            auto responseMessage = std::shared_ptr<Message>{m_localProtocol->makeOutboundMessage(
+              deviceKey, DeviceRegistrationResponseMessage{registeredDevices, unregisteredDevices})};
+            if (responseMessage == nullptr)
+                return;
+            m_outboundLocalMessageHandler->addMessage(responseMessage);
+        });
     }
     case MessageType::DEVICE_REMOVAL:
     {

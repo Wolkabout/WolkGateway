@@ -187,7 +187,7 @@ public:
      */
     virtual bool registerChildDevices(
       const std::vector<DeviceRegistrationData>& devices,
-      std::function<void(const std::vector<std::string>&, const std::vector<std::string>&)> callback);
+      const std::function<void(const std::vector<std::string>&, const std::vector<std::string>&)>& callback);
 
     /**
      * This is the method that should be run when the service is created and can use the connectivity objects.

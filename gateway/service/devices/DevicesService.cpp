@@ -145,7 +145,8 @@ DevicesService::DevicesService(std::string gatewayKey, RegistrationProtocol& pla
                                OutboundRetryMessageHandler& outboundPlatformRetryMessageHandler,
                                std::shared_ptr<GatewayRegistrationProtocol> localRegistrationProtocol,
                                std::shared_ptr<OutboundMessageHandler> outboundDeviceMessageHandler,
-                               std::shared_ptr<DeviceRepository> deviceRepository)
+                               std::shared_ptr<DeviceRepository> deviceRepository,
+                               std::shared_ptr<ExistingDevicesRepository> existingDevicesRepository)
 : m_gatewayKey{std::move(gatewayKey)}
 , m_platformProtocol{platformRegistrationProtocol}
 , m_outboundPlatformMessageHandler{outboundPlatformMessageHandler}
@@ -153,6 +154,7 @@ DevicesService::DevicesService(std::string gatewayKey, RegistrationProtocol& pla
 , m_localProtocol{std::move(localRegistrationProtocol)}
 , m_outboundLocalMessageHandler{std::move(outboundDeviceMessageHandler)}
 , m_deviceRepository{std::move(deviceRepository)}
+, m_existingDeviceRepository{std::move(existingDevicesRepository)}
 {
 }
 
@@ -203,6 +205,25 @@ bool DevicesService::registerChildDevices(
     return true;
 }
 
+bool DevicesService::removeChildDevices(const std::vector<std::string>& deviceKeys)
+{
+    LOG(TRACE) << METHOD_INFO;
+    const auto errorPrefix = "Failed to remove child devices -> ";
+
+    // Form the message for the registration
+    const auto parsedMessage =
+      std::shared_ptr<Message>{m_platformProtocol.makeOutboundMessage(m_gatewayKey, DeviceRemovalMessage{deviceKeys})};
+    if (parsedMessage == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "Failed to parse the outbound 'DeviceRemovalMessage'.";
+        return false;
+    }
+
+    // Publish the message
+    m_outboundPlatformMessageHandler.addMessage(parsedMessage);
+    return true;
+}
+
 void DevicesService::updateDeviceCache()
 {
     LOG(TRACE) << METHOD_INFO;
@@ -213,11 +234,30 @@ void DevicesService::updateDeviceCache()
         LOG(WARN) << "Skipping update device cache - no device repository exists...";
         return;
     }
+    // If we have an existing device repository, we want to check whether the user wants any devices deleted.
+    if (m_existingDeviceRepository != nullptr)
+    {
+        const auto gatewayDevices = m_deviceRepository->getGatewayDevices();
+        const auto keys = m_existingDeviceRepository->getDeviceKeys();
+        auto toDelete = std::vector<std::string>{};
+        for (const auto& gatewayDevice : gatewayDevices)
+        {
+            const auto it = std::find(keys.cbegin(), keys.cend(), gatewayDevice.getDeviceKey());
+            if (it == keys.cend())
+                toDelete.emplace_back(gatewayDevice.getDeviceKey());
+        }
+        if (removeChildDevices(toDelete))
+            m_deviceRepository->remove(toDelete);
+        else
+            LOG(ERROR) << "Failed to send out a 'DeviceRemoval' request to remove devices deleted from "
+                          "'ExistingDeviceRepository'.";
+    }
 
     // Obtain the last timestamp and send out a request
     auto lastTimestamp = m_deviceRepository->latestPlatformTimestamp();
     LOG(DEBUG) << TAG << "Obtaining devices from timestamp " << lastTimestamp.count() << ".";
     sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters{lastTimestamp}, {});
+    sendOutChildrenSynchronizationRequest({});
 }
 
 bool DevicesService::sendOutChildrenSynchronizationRequest(
@@ -242,21 +282,25 @@ bool DevicesService::sendOutChildrenSynchronizationRequest(
             << TAG
             << "Failed to receive response for 'ChildrenSynchronizationRequestMessage' - no response from platform.";
           // Check the callback
-          if (!callback->getRegisteringDevices().empty())
+          if (callback != nullptr)
           {
-              LOG(ERROR) << "Failed to register devices: ";
-              for (const auto& device : callback->getRegisteringDevices())
-                  LOG(ERROR) << "\t" << device;
+              if (!callback->getRegisteringDevices().empty())
+              {
+                  LOG(ERROR) << "Failed to register devices: ";
+                  for (const auto& device : callback->getRegisteringDevices())
+                      LOG(ERROR) << "\t" << device;
+              }
+              if (auto cv = callback->getConditionVariable().lock())
+                  cv->notify_one();
+              if (callback->getLambda())
+                  callback->getLambda()(nullptr);
           }
-          if (auto cv = callback->getConditionVariable().lock())
-              cv->notify_one();
-          if (callback->getLambda())
-              callback->getLambda()(nullptr);
       },
       RETRY_COUNT, RETRY_TIMEOUT});
     {
         std::lock_guard<std::mutex> lock{m_childSyncMutex};
-        m_childSyncRequests.push(std::move(callback));
+        if (callback != nullptr)
+            m_childSyncRequests.push(std::move(callback));
     }
     return true;
 }
@@ -454,6 +498,11 @@ std::vector<MessageType> DevicesService::getMessageTypes()
     return {MessageType::CHILDREN_SYNCHRONIZATION_RESPONSE, MessageType::REGISTERED_DEVICES_RESPONSE};
 }
 
+bool DevicesService::deviceExists(const std::string& deviceKey)
+{
+    return m_deviceRepository == nullptr || m_deviceRepository->containsDevice(deviceKey);
+}
+
 void DevicesService::handleChildrenSynchronizationResponse(
   std::unique_ptr<ChildrenSynchronizationResponseMessage> response)
 {
@@ -475,11 +524,17 @@ void DevicesService::handleChildrenSynchronizationResponse(
     if (m_deviceRepository != nullptr)
     {
         auto devicesToSave = std::vector<StoredDeviceInformation>{};
-        if (m_deviceRepository != nullptr)
-            for (const auto& device : response->getChildren())
-                devicesToSave.emplace_back(
-                  StoredDeviceInformation{device, DeviceOwnership::Gateway, std::chrono::milliseconds{0}});
+        for (const auto& device : response->getChildren())
+            devicesToSave.emplace_back(
+              StoredDeviceInformation{device, DeviceOwnership::Gateway, std::chrono::milliseconds{0}});
         m_deviceRepository->save(devicesToSave);
+    }
+    if (m_existingDeviceRepository != nullptr)
+    {
+        auto savedDevices = m_existingDeviceRepository->getDeviceKeys();
+        for (const auto& device : response->getChildren())
+            if (std::find(savedDevices.cbegin(), savedDevices.cend(), device) == savedDevices.cend())
+                m_existingDeviceRepository->addDeviceKey(device);
     }
 
     // Handle the callback
@@ -532,11 +587,6 @@ void DevicesService::handleRegisteredDevicesResponse(std::unique_ptr<RegisteredD
         else if (callback->getLambda())
             callback->getLambda()(std::move(response));
     }
-}
-
-void DevicesService::onSucceededRegistration(const std::vector<std::string>& deviceKeys)
-{
-    LOG(TRACE) << METHOD_INFO;
 }
 }    // namespace gateway
 }    // namespace wolkabout

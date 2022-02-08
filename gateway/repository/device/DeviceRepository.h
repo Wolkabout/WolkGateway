@@ -18,6 +18,7 @@
 #define DEVICEREPOSITORY_H
 
 #include "core/model/messages/RegisteredDevicesResponseMessage.h"
+#include "gateway/repository/DeviceOwnership.h"
 
 #include <memory>
 #include <string>
@@ -28,13 +29,6 @@ namespace wolkabout
 {
 namespace gateway
 {
-// This enum value describes who the device belongs to.
-enum class DeviceOwnership
-{
-    Platform,
-    Gateway
-};
-
 // This enum represents the data that is stored about a device.
 struct StoredDeviceInformation
 {

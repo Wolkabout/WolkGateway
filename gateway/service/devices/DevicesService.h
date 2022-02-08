@@ -19,6 +19,7 @@
 
 #include "core/MessageListener.h"
 #include "gateway/GatewayMessageListener.h"
+#include "gateway/repository/DeviceFilter.h"
 
 #include <condition_variable>
 #include <functional>
@@ -151,7 +152,7 @@ private:
  * sub-devices to the platform regarding registration, deletion, and also registered devices. This service will also
  * keep a cache of registered devices.
  */
-class DevicesService : public GatewayMessageListener, public MessageListener
+class DevicesService : public GatewayMessageListener, public MessageListener, public DeviceFilter
 {
 public:
     /**
@@ -171,7 +172,8 @@ public:
                    OutboundRetryMessageHandler& outboundPlatformRetryMessageHandler,
                    std::shared_ptr<GatewayRegistrationProtocol> localRegistrationProtocol = nullptr,
                    std::shared_ptr<OutboundMessageHandler> outboundDeviceMessageHandler = nullptr,
-                   std::shared_ptr<DeviceRepository> deviceRepository = nullptr);
+                   std::shared_ptr<DeviceRepository> deviceRepository = nullptr,
+                   std::shared_ptr<ExistingDevicesRepository> existingDevicesRepository = nullptr);
 
     /**
      * Overridden destructor.
@@ -188,6 +190,14 @@ public:
     virtual bool registerChildDevices(
       const std::vector<DeviceRegistrationData>& devices,
       const std::function<void(const std::vector<std::string>&, const std::vector<std::string>&)>& callback);
+
+    /**
+     * Method that is used to remove child devices on the platform.
+     *
+     * @param deviceKeys The list of device keys the user would like to delete.
+     * @return Whether the removal request has been successfully sent out.
+     */
+    virtual bool removeChildDevices(const std::vector<std::string>& deviceKeys);
 
     /**
      * This is the method that should be run when the service is created and can use the connectivity objects.
@@ -251,17 +261,12 @@ public:
      */
     std::vector<MessageType> getMessageTypes() override;
 
+    bool deviceExists(const std::string& deviceKey) override;
+
 private:
     void handleChildrenSynchronizationResponse(std::unique_ptr<ChildrenSynchronizationResponseMessage> response);
 
     void handleRegisteredDevicesResponse(std::unique_ptr<RegisteredDevicesResponseMessage> response);
-
-    /**
-     * This method is used to handle the logic when devices are verified to be registered.
-     *
-     * @param deviceKeys The list of devices that have been successfully registered.
-     */
-    void onSucceededRegistration(const std::vector<std::string>& deviceKeys);
 
     // Logging tag
     const std::string TAG = "[DevicesService] -> ";
@@ -280,6 +285,7 @@ private:
 
     // Optional device repository
     std::shared_ptr<DeviceRepository> m_deviceRepository;
+    std::shared_ptr<ExistingDevicesRepository> m_existingDeviceRepository;
 
     // Storage for request objects
     std::mutex m_childSyncMutex;

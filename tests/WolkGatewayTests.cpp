@@ -20,6 +20,7 @@
 #define private public
 #define protected public
 #include "gateway/WolkGateway.h"
+#include "gateway/repository/device/InMemoryDeviceRepository.h"
 #undef private
 #undef protected
 
@@ -51,6 +52,7 @@ public:
     {
         dataServiceMock = std::unique_ptr<DataServiceMock>{new DataServiceMock{
           dataProtocolMock, persistenceMock, connectivityServiceMock, outboundRetryMessageHandlerMock, {}, {}, {}}};
+        deviceRepositoryMock = std::make_shared<InMemoryDeviceRepository>();
         devicesServiceMock = std::unique_ptr<DevicesServiceMock>{new DevicesServiceMock{
           gateway.getKey(), registrationProtocolMock, outboundMessageHandlerMock, outboundRetryMessageHandlerMock}};
         gatewayPlatformStatusServiceMock = std::unique_ptr<GatewayPlatformStatusServiceMock>{
@@ -75,6 +77,8 @@ public:
     OutboundMessageHandlerMock outboundMessageHandlerMock;
 
     OutboundRetryMessageHandlerMock outboundRetryMessageHandlerMock{outboundMessageHandlerMock};
+
+    std::shared_ptr<InMemoryDeviceRepository> deviceRepositoryMock;
 
     std::unique_ptr<DevicesServiceMock> devicesServiceMock;
 
@@ -174,6 +178,7 @@ TEST_F(WolkGatewayTests, ConnectHappyFlow)
     EXPECT_CALL(*devicesServiceMock, updateDeviceCache).Times(1);
     EXPECT_CALL(*gatewayPlatformStatusServiceMock, sendPlatformConnectionStatusMessage).Times(2);
     service->m_dataService = std::move(dataServiceMock);
+    service->m_cacheDeviceRepository = std::move(deviceRepositoryMock);
     service->m_subdeviceManagementService = std::move(devicesServiceMock);
     service->m_gatewayPlatformStatusService = std::move(gatewayPlatformStatusServiceMock);
 

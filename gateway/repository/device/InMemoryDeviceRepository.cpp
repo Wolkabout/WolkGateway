@@ -40,7 +40,7 @@ void InMemoryDeviceRepository::loadInformationFromPersistentRepository()
     {
         // Copy all the gateway devices
         const auto gatewayDevices = m_persistentDeviceRepository->getGatewayDevices();
-        std::copy(gatewayDevices.cbegin(), gatewayDevices.cend(), m_devices.begin());
+        std::copy(gatewayDevices.cbegin(), gatewayDevices.cend(), std::back_inserter(m_devices));
 
         // Copy the timestamp
         const auto loadedTimestamp = m_persistentDeviceRepository->latestPlatformTimestamp();
@@ -167,7 +167,7 @@ std::vector<StoredDeviceInformation> InMemoryDeviceRepository::getGatewayDevices
     auto gatewayDevices = std::vector<StoredDeviceInformation>{};
     {
         std::lock_guard<std::recursive_mutex> lock{m_mutex};
-        std::copy_if(m_devices.cbegin(), m_devices.cend(), gatewayDevices.begin(),
+        std::copy_if(m_devices.cbegin(), m_devices.cend(), std::back_inserter(gatewayDevices),
                      [&](const StoredDeviceInformation& information) {
                          return information.getDeviceBelongsTo() == DeviceOwnership::Gateway;
                      });

@@ -38,9 +38,13 @@ public:
                      std::move(outboundDeviceMessageHandler), std::move(deviceRepository))
     {
     }
+    MOCK_METHOD(bool, registerChildDevices,
+                (const std::vector<DeviceRegistrationData>&,
+                 const std::function<void(const std::vector<std::string>&, const std::vector<std::string>&)>&));
     MOCK_METHOD(void, updateDeviceCache, ());
+    MOCK_METHOD(bool, sendOutChildrenSynchronizationRequest, (std::shared_ptr<ChildrenSynchronizationRequestCallback>));
     MOCK_METHOD(bool, sendOutRegisteredDevicesRequest,
-                (RegisteredDevicesRequestParameters, RegisteredDevicesRequestCallback));
+                (RegisteredDevicesRequestParameters, std::shared_ptr<RegisteredDevicesRequestCallback>));
 };
 
 #endif    // WOLKGATEWAY_DEVICESSERVICEMOCK_H

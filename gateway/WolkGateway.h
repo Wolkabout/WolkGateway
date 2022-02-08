@@ -150,7 +150,7 @@ protected:
 
     std::shared_ptr<InMemoryDeviceRepository> m_cacheDeviceRepository;
     std::shared_ptr<DeviceRepository> m_persistentDeviceRepository;
-    std::unique_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
+    std::shared_ptr<ExistingDevicesRepository> m_existingDevicesRepository;
 
     // Local connectivity stack
     std::shared_ptr<ConnectivityService> m_localConnectivityService;

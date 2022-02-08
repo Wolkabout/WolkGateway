@@ -137,9 +137,8 @@ void WolkGateway::notifyPlatformConnected()
     WolkSingle::notifyConnected();
     if (m_cacheDeviceRepository != nullptr)
         m_cacheDeviceRepository->loadInformationFromPersistentRepository();
-    // TODO Uncomment
-    //    if (m_subdeviceManagementService != nullptr)
-    //        m_subdeviceManagementService->updateDeviceCache();
+    if (m_subdeviceManagementService != nullptr)
+        m_subdeviceManagementService->updateDeviceCache();
     if (m_gatewayPlatformStatusService != nullptr)
         m_gatewayPlatformStatusService->sendPlatformConnectionStatusMessage(true);
 }

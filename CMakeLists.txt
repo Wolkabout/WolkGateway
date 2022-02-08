@@ -99,9 +99,10 @@ endif ()
 
 # WolkGateway library
 set(LIB_SOURCE_FILES gateway/connectivity/GatewayMessageRouter.cpp
+        gateway/repository/DeviceOwnership.cpp
         gateway/repository/existing_device/JsonFileExistingDevicesRepository.cpp
         gateway/repository/device/InMemoryDeviceRepository.cpp
-        #        gateway/repository/device/SQLiteDeviceRepository.cpp
+        gateway/repository/device/SQLiteDeviceRepository.cpp
         gateway/service/external_data/ExternalDataService.cpp
         gateway/service/internal_data/InternalDataService.cpp
         gateway/service/platform_status/GatewayPlatformStatusService.cpp
@@ -111,11 +112,13 @@ set(LIB_SOURCE_FILES gateway/connectivity/GatewayMessageRouter.cpp
 set(LIB_HEADER_FILES gateway/api/DataHandler.h
         gateway/api/DataProvider.h
         gateway/connectivity/GatewayMessageRouter.h
+        gateway/repository/DeviceFilter.h
+        gateway/repository/DeviceOwnership.h
         gateway/repository/device/DeviceRepository.h
         gateway/repository/existing_device/ExistingDevicesRepository.h
         gateway/repository/existing_device/JsonFileExistingDevicesRepository.h
         gateway/repository/device/InMemoryDeviceRepository.h
-        #        gateway/repository/device/SQLiteDeviceRepository.h
+        gateway/repository/device/SQLiteDeviceRepository.h
         gateway/service/external_data/ExternalDataService.h
         gateway/service/internal_data/InternalDataService.h
         gateway/service/devices/DevicesService.h

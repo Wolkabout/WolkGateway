@@ -18,6 +18,7 @@
 #define SUBDEVICEREGISTRATIONSERVICE_H
 
 #include "core/MessageListener.h"
+#include "core/utilities/CommandBuffer.h"
 #include "gateway/GatewayMessageListener.h"
 #include "gateway/repository/DeviceFilter.h"
 
@@ -90,13 +91,13 @@ public:
     RegisteredDevicesRequestCallback() = default;
 
     explicit RegisteredDevicesRequestCallback(
-      std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)> lambda);
+      std::function<void(std::shared_ptr<RegisteredDevicesResponseMessage>)> lambda);
 
     explicit RegisteredDevicesRequestCallback(std::weak_ptr<std::condition_variable> conditionVariable);
 
     const std::chrono::milliseconds& getSentTime() const;
 
-    const std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)>& getLambda() const;
+    const std::function<void(std::shared_ptr<RegisteredDevicesResponseMessage>)>& getLambda() const;
 
     const std::weak_ptr<std::condition_variable>& getConditionVariable() const;
 
@@ -106,7 +107,7 @@ private:
       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 
     // Potential lambda expression that needs to be invoked
-    std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)> m_lambda;
+    std::function<void(std::shared_ptr<RegisteredDevicesResponseMessage>)> m_lambda;
 
     // Potential condition variable that needs to be notified
     std::weak_ptr<std::condition_variable> m_conditionVariable;
@@ -118,17 +119,15 @@ public:
     ChildrenSynchronizationRequestCallback() = default;
 
     explicit ChildrenSynchronizationRequestCallback(
-      std::function<void(std::unique_ptr<ChildrenSynchronizationResponseMessage>)> lambda,
+      std::function<void(std::shared_ptr<ChildrenSynchronizationResponseMessage>)> lambda,
       std::vector<std::string> registeringDevices = {});
 
     explicit ChildrenSynchronizationRequestCallback(std::weak_ptr<std::condition_variable> conditionVariable,
                                                     std::vector<std::string> registeringDevices = {});
 
-    const std::chrono::milliseconds& getSentTime() const;
-
     const std::vector<std::string>& getRegisteringDevices() const;
 
-    const std::function<void(std::unique_ptr<ChildrenSynchronizationResponseMessage>)>& getLambda() const;
+    const std::function<void(std::shared_ptr<ChildrenSynchronizationResponseMessage>)>& getLambda() const;
 
     const std::weak_ptr<std::condition_variable>& getConditionVariable() const;
 
@@ -141,7 +140,7 @@ private:
     std::vector<std::string> m_registeringDevices;
 
     // Potential lambda expression that needs to be invoked
-    std::function<void(std::unique_ptr<ChildrenSynchronizationResponseMessage>)> m_lambda;
+    std::function<void(std::shared_ptr<ChildrenSynchronizationResponseMessage>)> m_lambda;
 
     // Potential condition variable that needs to be notified
     std::weak_ptr<std::condition_variable> m_conditionVariable;
@@ -288,6 +287,7 @@ private:
     std::shared_ptr<ExistingDevicesRepository> m_existingDeviceRepository;
 
     // Storage for request objects
+    CommandBuffer m_commandBuffer;
     std::mutex m_childSyncMutex;
     std::queue<std::shared_ptr<ChildrenSynchronizationRequestCallback>> m_childSyncRequests;
     std::mutex m_registeredDevicesMutex;

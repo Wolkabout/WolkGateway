@@ -39,7 +39,7 @@ ExternalDataService::ExternalDataService(std::string gatewayKey, GatewaySubdevic
 {
 }
 
-std::vector<MessageType> ExternalDataService::getMessageTypes()
+std::vector<MessageType> ExternalDataService::getMessageTypes() const
 {
     return {MessageType::FEED_VALUES, MessageType::PARAMETER_SYNC};
 }

@@ -190,7 +190,7 @@ public:
      *
      * @return The list of MessageTypes we can handle.
      */
-    std::vector<MessageType> getMessageTypes() override;
+    std::vector<MessageType> getMessageTypes() const override;
 
 private:
     // Logging tag

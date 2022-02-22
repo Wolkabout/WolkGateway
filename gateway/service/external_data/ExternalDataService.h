@@ -37,7 +37,7 @@ public:
                         DataProtocol& dataProtocol, OutboundMessageHandler& outboundMessageHandler,
                         DataProvider& dataProvider);
 
-    std::vector<MessageType> getMessageTypes() override;
+    std::vector<MessageType> getMessageTypes() const override;
 
     void receiveMessages(const std::vector<GatewaySubdeviceMessage>& messages) override;
 

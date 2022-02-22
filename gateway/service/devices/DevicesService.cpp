@@ -342,7 +342,7 @@ void DevicesService::receiveMessages(const std::vector<GatewaySubdeviceMessage>&
     }
 }
 
-std::vector<MessageType> DevicesService::getMessageTypes()
+std::vector<MessageType> DevicesService::getMessageTypes() const
 {
     return {MessageType::REGISTERED_DEVICES_RESPONSE};
 }

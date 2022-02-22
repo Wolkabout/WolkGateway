@@ -37,7 +37,7 @@ public:
 
     void receiveMessages(const std::vector<GatewaySubdeviceMessage>& messages) override;
 
-    std::vector<MessageType> getMessageTypes() override;
+    std::vector<MessageType> getMessageTypes() const override;
 
 private:
     // The gateway key

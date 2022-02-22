@@ -43,7 +43,7 @@ public:
      *
      * @return A list of message types.
      */
-    virtual std::vector<MessageType> getMessageTypes() = 0;
+    virtual std::vector<MessageType> getMessageTypes() const = 0;
 
     /**
      * This is the method by which an object receives messages that has been routed to it by the

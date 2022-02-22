@@ -1,5 +1,6 @@
-wolkgateway (4.4.0) stable; urgency=medium
+wolkgateway (5.0.0-prerelease) stable; urgency=medium
 
-  * Completely removed `libpoco` as a dependency, and now rely on `sqlite` for SQLiteDeviceRepository.
+    * Updated the WolkGateway to be ready for Wolkabout IoT Platform 22.GA - The Digital Twin Update
+    * Fixed the CMakeLists.txt file for private header file finding to use project files in private
   
- -- Wolkabout ELab <elab@wolkabout.com>  Wed, 22 Dec 2021 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Tue, 22 Feb 2022 14:22:00 +0100

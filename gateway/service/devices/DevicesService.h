@@ -86,13 +86,9 @@ struct RegisteredDevicesRequestCallback
     explicit RegisteredDevicesRequestCallback(
       std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)> lambda);
 
-    explicit RegisteredDevicesRequestCallback(std::weak_ptr<std::condition_variable> conditionVariable);
-
     const std::chrono::milliseconds& getSentTime() const;
 
     const std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)>& getLambda() const;
-
-    const std::weak_ptr<std::condition_variable>& getConditionVariable() const;
 
 private:
     // Timestamp when the request was sent
@@ -101,9 +97,6 @@ private:
 
     // Potential lambda expression that needs to be invoked
     std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)> m_lambda;
-
-    // Potential condition variable that needs to be notified
-    std::weak_ptr<std::condition_variable> m_conditionVariable;
 };
 
 /**

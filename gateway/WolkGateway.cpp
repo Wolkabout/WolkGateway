@@ -101,7 +101,7 @@ void WolkGateway::publish()
     WolkInterface::publish();
 }
 
-connect::WolkInterfaceType WolkGateway::getType()
+connect::WolkInterfaceType WolkGateway::getType() const
 {
     return connect::WolkInterfaceType::Gateway;
 }

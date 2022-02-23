@@ -84,12 +84,6 @@ RegisteredDevicesRequestCallback::RegisteredDevicesRequestCallback(
 {
 }
 
-RegisteredDevicesRequestCallback::RegisteredDevicesRequestCallback(
-  std::weak_ptr<std::condition_variable> conditionVariable)
-: m_conditionVariable{std::move(conditionVariable)}
-{
-}
-
 const std::chrono::milliseconds& RegisteredDevicesRequestCallback::getSentTime() const
 {
     return m_sentTime;
@@ -99,11 +93,6 @@ const std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)>&
 RegisteredDevicesRequestCallback::getLambda() const
 {
     return m_lambda;
-}
-
-const std::weak_ptr<std::condition_variable>& RegisteredDevicesRequestCallback::getConditionVariable() const
-{
-    return m_conditionVariable;
 }
 
 DevicesService::DevicesService(std::string gatewayKey, RegistrationProtocol& platformRegistrationProtocol,
@@ -334,9 +323,7 @@ void DevicesService::receiveMessages(const std::vector<GatewaySubdeviceMessage>&
         if (callbackIt != m_requests.cend())
         {
             const auto& callback = callbackIt->second;
-            if (auto cv = callback.getConditionVariable().lock())
-                cv->notify_one();
-            else if (callback.getLambda())
+            if (callback.getLambda())
                 callback.getLambda()(std::move(response));
         }
     }

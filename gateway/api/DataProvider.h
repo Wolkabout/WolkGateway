@@ -32,10 +32,10 @@ public:
 
     virtual void setDataHandler(DataHandler* handler, const std::string& gatewayKey) = 0;
 
-    virtual void receiveReadingData(const std::string& deviceKey,
-                                    std::map<std::uint64_t, std::vector<Reading>> readings) = 0;
+    virtual void onReadingData(const std::string& deviceKey,
+                               std::map<std::uint64_t, std::vector<Reading>> readings) = 0;
 
-    virtual void receiveParameterData(const std::string& deviceKey, std::vector<Parameter> parameters) = 0;
+    virtual void onParameterData(const std::string& deviceKey, std::vector<Parameter> parameters) = 0;
 };
 }    // namespace gateway
 }    // namespace wolkabout

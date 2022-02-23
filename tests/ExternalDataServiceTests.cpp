@@ -285,7 +285,7 @@ TEST_F(ExternalDataServiceTests, ReceiveFeedValuesButFailsToParse)
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getMessageType).WillOnce(Return(MessageType::FEED_VALUES));
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getDeviceKey).WillOnce(Return(GATEWAY_KEY));
     EXPECT_CALL(m_dataProtocolMock, parseFeedValues).WillOnce(Return(nullptr));
-    EXPECT_CALL(m_dataProviderMock, receiveReadingData).Times(0);
+    EXPECT_CALL(m_dataProviderMock, onReadingData).Times(0);
     ASSERT_NO_FATAL_FAILURE(service->receiveMessages(GenerateMessages(1)));
 }
 
@@ -295,7 +295,7 @@ TEST_F(ExternalDataServiceTests, ReceiveFeedValuesMessage)
     std::atomic_bool called{false};
     std::mutex mutex;
     std::condition_variable conditionVariable;
-    EXPECT_CALL(m_dataProviderMock, receiveReadingData)
+    EXPECT_CALL(m_dataProviderMock, onReadingData)
       .WillOnce([&](const std::string& deviceKey, const std::map<std::uint64_t, std::vector<Reading>>& readings) {
           if (deviceKey == GATEWAY_KEY && !readings.empty())
           {
@@ -323,7 +323,7 @@ TEST_F(ExternalDataServiceTests, ReceiveParametersButFailsToParse)
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getMessageType).WillOnce(Return(MessageType::PARAMETER_SYNC));
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getDeviceKey).WillOnce(Return(GATEWAY_KEY));
     EXPECT_CALL(m_dataProtocolMock, parseParameters).WillOnce(Return(nullptr));
-    EXPECT_CALL(m_dataProviderMock, receiveParameterData).Times(0);
+    EXPECT_CALL(m_dataProviderMock, onParameterData).Times(0);
     ASSERT_NO_FATAL_FAILURE(service->receiveMessages(GenerateMessages(1)));
 }
 
@@ -333,7 +333,7 @@ TEST_F(ExternalDataServiceTests, ReceiveParametersMessage)
     std::atomic_bool called{false};
     std::mutex mutex;
     std::condition_variable conditionVariable;
-    EXPECT_CALL(m_dataProviderMock, receiveParameterData)
+    EXPECT_CALL(m_dataProviderMock, onParameterData)
       .WillOnce([&](const std::string& deviceKey, const std::vector<Parameter>& parameters) {
           if (deviceKey == GATEWAY_KEY && !parameters.empty())
           {

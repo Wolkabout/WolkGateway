@@ -125,7 +125,7 @@ Gateway can have its own feeds, configuration and firmware update.
     	.platformHost(gatewayConfiguration.getPlatformMqttUri())
         .build();
 
-        wolk->connect();
+        wolk->connectService();
 ```
 
 **Specifying actuation and configuration handlers/providers**
@@ -159,7 +159,7 @@ auto builder = wolkabout::Wolk::newBuilder(device)
     })
     .build();
 
-    wolk->connect();
+    wolk->connectService();
 ```
 
 **Publishing sensor readings**
@@ -216,7 +216,7 @@ auto builder = wolkabout::Wolk::newBuilder(device)
 	.platformTrustStore("path_to_trust_store");
     .build();
 
-    wolk->connect();
+    wolk->connectService();
 ```
 
 **Firmware Update**
@@ -258,7 +258,7 @@ auto builder = wolkabout::Wolk::newBuilder(device)
 						urlDownloader)							// Optional implementation of UrlFileDownloader for cases when one wants to download device firmware via given URL
     .build();
 
-    wolk->connect();
+    wolk->connectService();
 ```
 
 Firmware update for gateway subdevices is enabled by default. To change default settings without enabling firmware update for gateway use the above api

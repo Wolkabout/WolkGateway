@@ -18,5 +18,5 @@ cp tools/git/pre-commit .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 
 pushd out
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_GTEST=OFF -DBUILD_TESTS=OFF -DBUILD_POCO_HTTP_DOWNLOADER=OFF -DBUILD_EXAMPLES=OFF ..
 popd

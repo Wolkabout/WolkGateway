@@ -42,20 +42,21 @@ public:
 
     void SetUp() override
     {
+        m_dataProtocolMock = std::make_shared<DataProtocolMock>();
         service = std::unique_ptr<ExternalDataService>{
-          new ExternalDataService{GATEWAY_KEY, m_gatewaySubdeviceProtocolMock, m_dataProtocolMock,
+          new ExternalDataService{GATEWAY_KEY, m_gatewaySubdeviceProtocolMock, *m_dataProtocolMock,
                                   m_platformOutboundMessageHandler, m_dataProviderMock}};
     }
 
     template <class T> void MakeOutboundReturnsNull()
     {
-        EXPECT_CALL(m_dataProtocolMock, makeOutboundMessage(A<const std::string&>(), A<T>()))
+        EXPECT_CALL(*m_dataProtocolMock, makeOutboundMessage(A<const std::string&>(), A<T>()))
           .WillOnce(Return(ByMove(nullptr)));
     }
 
     template <class T> void MakeOutboundReturnsMessage()
     {
-        EXPECT_CALL(m_dataProtocolMock, makeOutboundMessage(A<const std::string&>(), A<T>()))
+        EXPECT_CALL(*m_dataProtocolMock, makeOutboundMessage(A<const std::string&>(), A<T>()))
           .WillOnce(Return(ByMove(std::unique_ptr<wolkabout::Message>{new wolkabout::Message{"", ""}})));
     }
 
@@ -87,7 +88,7 @@ public:
 
     GatewaySubdeviceProtocolMock m_gatewaySubdeviceProtocolMock;
 
-    DataProtocolMock m_dataProtocolMock;
+    std::shared_ptr<DataProtocolMock> m_dataProtocolMock;
 
     OutboundMessageHandlerMock m_platformOutboundMessageHandler;
 
@@ -274,8 +275,8 @@ TEST_F(ExternalDataServiceTests, ReceiveMessagesNotHandledType)
 {
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getMessageType).WillOnce(Return(MessageType::TIME_SYNC));
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getDeviceKey).WillOnce(Return(GATEWAY_KEY));
-    EXPECT_CALL(m_dataProtocolMock, parseFeedValues).Times(0);
-    EXPECT_CALL(m_dataProtocolMock, parseParameters).Times(0);
+    EXPECT_CALL(*m_dataProtocolMock, parseFeedValues).Times(0);
+    EXPECT_CALL(*m_dataProtocolMock, parseParameters).Times(0);
     ASSERT_NO_FATAL_FAILURE(service->receiveMessages(GenerateMessages(1)));
 }
 
@@ -284,7 +285,7 @@ TEST_F(ExternalDataServiceTests, ReceiveFeedValuesButFailsToParse)
     // Set up the service call, and await the callback call
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getMessageType).WillOnce(Return(MessageType::FEED_VALUES));
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getDeviceKey).WillOnce(Return(GATEWAY_KEY));
-    EXPECT_CALL(m_dataProtocolMock, parseFeedValues).WillOnce(Return(nullptr));
+    EXPECT_CALL(*m_dataProtocolMock, parseFeedValues).WillOnce(Return(ByMove(nullptr)));
     EXPECT_CALL(m_dataProviderMock, receiveReadingData).Times(0);
     ASSERT_NO_FATAL_FAILURE(service->receiveMessages(GenerateMessages(1)));
 }
@@ -306,8 +307,9 @@ TEST_F(ExternalDataServiceTests, ReceiveFeedValuesMessage)
     // Set up the service call, and await the callback call
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getMessageType).WillOnce(Return(MessageType::FEED_VALUES));
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getDeviceKey).WillOnce(Return(GATEWAY_KEY));
-    EXPECT_CALL(m_dataProtocolMock, parseFeedValues)
-      .WillOnce(Return(std::make_shared<FeedValuesMessage>(std::vector<Reading>{GenerateReading()})));
+    EXPECT_CALL(*m_dataProtocolMock, parseFeedValues)
+      .WillOnce(Return(
+        ByMove(std::unique_ptr<FeedValuesMessage>{new FeedValuesMessage{std::vector<Reading>{GenerateReading()}}})));
     ASSERT_NO_FATAL_FAILURE(service->receiveMessages(GenerateMessages(1)));
     if (!called)
     {
@@ -322,7 +324,7 @@ TEST_F(ExternalDataServiceTests, ReceiveParametersButFailsToParse)
     // Set up the service call, and await the callback call
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getMessageType).WillOnce(Return(MessageType::PARAMETER_SYNC));
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getDeviceKey).WillOnce(Return(GATEWAY_KEY));
-    EXPECT_CALL(m_dataProtocolMock, parseParameters).WillOnce(Return(nullptr));
+    EXPECT_CALL(*m_dataProtocolMock, parseParameters).WillOnce(Return(ByMove(nullptr)));
     EXPECT_CALL(m_dataProviderMock, receiveParameterData).Times(0);
     ASSERT_NO_FATAL_FAILURE(service->receiveMessages(GenerateMessages(1)));
 }
@@ -344,8 +346,9 @@ TEST_F(ExternalDataServiceTests, ReceiveParametersMessage)
     // Set up the service call, and await the callback call
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getMessageType).WillOnce(Return(MessageType::PARAMETER_SYNC));
     EXPECT_CALL(m_gatewaySubdeviceProtocolMock, getDeviceKey).WillOnce(Return(GATEWAY_KEY));
-    EXPECT_CALL(m_dataProtocolMock, parseParameters)
-      .WillOnce(Return(std::make_shared<ParametersUpdateMessage>(std::vector<Parameter>{GenerateParameter()})));
+    EXPECT_CALL(*m_dataProtocolMock, parseParameters)
+      .WillOnce(Return(ByMove(std::unique_ptr<ParametersUpdateMessage>{
+        new ParametersUpdateMessage{std::vector<Parameter>{GenerateParameter()}}})));
     ASSERT_NO_FATAL_FAILURE(service->receiveMessages(GenerateMessages(1)));
     if (!called)
     {

@@ -70,7 +70,8 @@ void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
         {
         case MessageType::FEED_VALUES:
         {
-            const auto feedValuesMessage = m_dataProtocol.parseFeedValues(sharedMessage);
+            const auto feedValuesMessage =
+              std::shared_ptr<FeedValuesMessage>{m_dataProtocol.parseFeedValues(sharedMessage)};
             if (feedValuesMessage == nullptr)
             {
                 LOG(ERROR) << TAG << "Received 'FeedValues' message but failed to parse it.";
@@ -83,7 +84,8 @@ void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
         }
         case MessageType::PARAMETER_SYNC:
         {
-            const auto parametersMessage = m_dataProtocol.parseParameters(sharedMessage);
+            const auto parametersMessage =
+              std::shared_ptr<ParametersUpdateMessage>{m_dataProtocol.parseParameters(sharedMessage)};
             if (parametersMessage == nullptr)
             {
                 LOG(ERROR) << TAG << "Received 'Parameters' message but failed to parse it.";

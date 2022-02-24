@@ -27,8 +27,8 @@ class DataProviderMock : public DataProvider
 {
 public:
     MOCK_METHOD(void, setDataHandler, (DataHandler*, const std::string&));
-    MOCK_METHOD(void, receiveReadingData, (const std::string&, (std::map<std::uint64_t, std::vector<Reading>>)));
-    MOCK_METHOD(void, receiveParameterData, (const std::string&, std::vector<Parameter>));
+    MOCK_METHOD(void, onReadingData, (const std::string&, (std::map<std::uint64_t, std::vector<Reading>>)));
+    MOCK_METHOD(void, onParameterData, (const std::string&, std::vector<Parameter>));
 };
 
 #endif    // WOLKGATEWAY_DATAPROVIDERMOCK_H

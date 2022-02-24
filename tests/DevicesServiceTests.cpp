@@ -115,24 +115,6 @@ TEST_F(DevicesServiceTests, DeviceExistsRepository)
     EXPECT_TRUE(service->deviceExists(DEVICE_KEY));
 }
 
-TEST_F(DevicesServiceTests, HandleChildrenSynchronizationResponseWithConditionVariable)
-{
-    // Create a callback that will be invoked
-    auto sharedConditionVariable = std::make_shared<std::condition_variable>();
-    service->m_childSyncRequests.push(
-      std::make_shared<ChildrenSynchronizationRequestCallback>(sharedConditionVariable));
-
-    // Set up the repositories to be invoked
-    EXPECT_CALL(*deviceRepositoryMock, save).Times(1);
-    EXPECT_CALL(*existingDevicesRepositoryMock, getDeviceKeys).WillOnce(Return(std::vector<std::string>{"Child1"}));
-    EXPECT_CALL(*existingDevicesRepositoryMock, addDeviceKey).Times(1);
-
-    // Invoke the method
-    ASSERT_NO_FATAL_FAILURE(
-      service->handleChildrenSynchronizationResponse(std::unique_ptr<ChildrenSynchronizationResponseMessage>{
-        new ChildrenSynchronizationResponseMessage{{"Child1", "Child2"}}}));
-}
-
 TEST_F(DevicesServiceTests, HandleChildrenSynchronizationResponseWithCallback)
 {
     // Create a callback that will be invoked
@@ -160,24 +142,6 @@ TEST_F(DevicesServiceTests, HandleChildrenSynchronizationResponseWithCallback)
         conditionVariable.wait_for(lock, std::chrono::milliseconds{100});
     }
     EXPECT_TRUE(called);
-}
-
-TEST_F(DevicesServiceTests, HandlerRegisteredDevicesResponseWithConditionVariable)
-{
-    // Create a callback that will be invoked
-    auto responseMessage = std::unique_ptr<RegisteredDevicesResponseMessage>{new RegisteredDevicesResponseMessage{
-      std::chrono::milliseconds{1234567890}, "Type1", {}, {{"Device1", "Id1", "Type1"}, {"Device2", "Id2", "Type1"}}}};
-    auto sharedConditionVariable = std::make_shared<std::condition_variable>();
-    service->m_registeredDevicesRequests.emplace(
-      RegisteredDevicesRequestParameters{responseMessage->getTimestampFrom(), responseMessage->getDeviceType(),
-                                         responseMessage->getExternalId()},
-      std::make_shared<RegisteredDevicesRequestCallback>(sharedConditionVariable));
-
-    // Set up the device repository to be invoked
-    EXPECT_CALL(*deviceRepositoryMock, save).Times(1);
-
-    // Invoke the method
-    ASSERT_NO_FATAL_FAILURE(service->handleRegisteredDevicesResponse(std::move(responseMessage)));
 }
 
 TEST_F(DevicesServiceTests, HandlerRegisteredDevicesResponseWithCallback)
@@ -347,20 +311,6 @@ TEST_F(DevicesServiceTests, SendOutChildrenSynchronizationRequestFailsToParse)
     ASSERT_FALSE(service->sendOutChildrenSynchronizationRequest({}));
 }
 
-TEST_F(DevicesServiceTests, SendOutChildrenSynchronizationRequestRetryCallbackCalledConditionVariable)
-{
-    EXPECT_CALL(*registrationProtocolMock, makeOutboundMessage(_, A<const ChildrenSynchronizationRequestMessage&>()))
-      .WillOnce(Return(ByMove(std::unique_ptr<wolkabout::Message>{new wolkabout::Message{"", ""}})));
-    EXPECT_CALL(*registrationProtocolMock,
-                getResponseChannelForMessage(MessageType::CHILDREN_SYNCHRONIZATION_REQUEST, _))
-      .Times(1);
-    EXPECT_CALL(*platformOutboundRetryMessageHandlerMock, addMessage)
-      .WillOnce([&](const RetryMessageStruct& retryMessageStruct) { retryMessageStruct.onFail(nullptr); });
-    auto sharedConditionVariable = std::make_shared<std::condition_variable>();
-    ASSERT_TRUE(service->sendOutChildrenSynchronizationRequest(std::make_shared<ChildrenSynchronizationRequestCallback>(
-      sharedConditionVariable, std::vector<std::string>{"Device 1", "Device 2"})));
-}
-
 TEST_F(DevicesServiceTests, SendOutChildrenSynchronizationRequestRetryCallbackCalledLambda)
 {
     EXPECT_CALL(*registrationProtocolMock, makeOutboundMessage(_, A<const ChildrenSynchronizationRequestMessage&>()))
@@ -396,22 +346,6 @@ TEST_F(DevicesServiceTests, SendOutRegisteredDevicesRequestRetryCallback)
     EXPECT_TRUE(service->m_registeredDevicesRequests.empty());
     ASSERT_TRUE(service->sendOutRegisteredDevicesRequest(
       RegisteredDevicesRequestParameters{std::chrono::milliseconds{1234567890}}, {}));
-    EXPECT_FALSE(service->m_registeredDevicesRequests.empty());
-}
-
-TEST_F(DevicesServiceTests, SendOutRegisteredDevicesRequestRetryCallbackWithConditionVariable)
-{
-    EXPECT_CALL(*registrationProtocolMock, makeOutboundMessage(_, A<const RegisteredDevicesRequestMessage&>()))
-      .WillOnce(Return(ByMove(std::unique_ptr<wolkabout::Message>{new wolkabout::Message{"", ""}})));
-    EXPECT_CALL(*registrationProtocolMock, getResponseChannelForMessage(MessageType::REGISTERED_DEVICES_REQUEST, _))
-      .Times(1);
-    EXPECT_CALL(*platformOutboundRetryMessageHandlerMock, addMessage)
-      .WillOnce([&](const RetryMessageStruct& retryMessageStruct) { retryMessageStruct.onFail({}); });
-    EXPECT_TRUE(service->m_registeredDevicesRequests.empty());
-    auto sharedConditionVariable = std::make_shared<std::condition_variable>();
-    ASSERT_TRUE(service->sendOutRegisteredDevicesRequest(
-      RegisteredDevicesRequestParameters{std::chrono::milliseconds{1234567890}},
-      std::make_shared<RegisteredDevicesRequestCallback>(sharedConditionVariable)));
     EXPECT_FALSE(service->m_registeredDevicesRequests.empty());
 }
 

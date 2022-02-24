@@ -118,7 +118,7 @@ public:
      *
      * @return The value `connectService::WolkInterfaceType::Gateway`.
      */
-    connect::WolkInterfaceType getType() override;
+    connect::WolkInterfaceType getType() const override;
 
 protected:
     explicit WolkGateway(Device device);

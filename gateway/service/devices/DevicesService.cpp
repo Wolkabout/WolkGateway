@@ -85,12 +85,6 @@ RegisteredDevicesRequestCallback::RegisteredDevicesRequestCallback(
 {
 }
 
-RegisteredDevicesRequestCallback::RegisteredDevicesRequestCallback(
-  std::weak_ptr<std::condition_variable> conditionVariable)
-: m_conditionVariable{std::move(conditionVariable)}
-{
-}
-
 const std::chrono::milliseconds& RegisteredDevicesRequestCallback::getSentTime() const
 {
     return m_sentTime;
@@ -102,21 +96,10 @@ RegisteredDevicesRequestCallback::getLambda() const
     return m_lambda;
 }
 
-const std::weak_ptr<std::condition_variable>& RegisteredDevicesRequestCallback::getConditionVariable() const
-{
-    return m_conditionVariable;
-}
-
 ChildrenSynchronizationRequestCallback::ChildrenSynchronizationRequestCallback(
   std::function<void(std::shared_ptr<ChildrenSynchronizationResponseMessage>)> lambda,
   std::vector<std::string> registeringDevices)
 : m_registeringDevices{std::move(registeringDevices)}, m_lambda{std::move(lambda)}
-{
-}
-
-ChildrenSynchronizationRequestCallback::ChildrenSynchronizationRequestCallback(
-  std::weak_ptr<std::condition_variable> conditionVariable, std::vector<std::string> registeringDevices)
-: m_registeringDevices{std::move(registeringDevices)}, m_conditionVariable{std::move(conditionVariable)}
 {
 }
 
@@ -129,10 +112,6 @@ const std::function<void(std::shared_ptr<ChildrenSynchronizationResponseMessage>
 ChildrenSynchronizationRequestCallback::getLambda() const
 {
     return m_lambda;
-}
-const std::weak_ptr<std::condition_variable>& ChildrenSynchronizationRequestCallback::getConditionVariable() const
-{
-    return m_conditionVariable;
 }
 
 DevicesService::DevicesService(std::string gatewayKey, RegistrationProtocol& platformRegistrationProtocol,
@@ -315,8 +294,6 @@ bool DevicesService::sendOutChildrenSynchronizationRequest(
                   for (const auto& device : callback->getRegisteringDevices())
                       LOG(ERROR) << "\t" << device;
               }
-              if (auto cv = callback->getConditionVariable().lock())
-                  cv->notify_one();
               if (callback->getLambda())
                   callback->getLambda()(nullptr);
           }
@@ -358,8 +335,6 @@ bool DevicesService::sendOutRegisteredDevicesRequest(RegisteredDevicesRequestPar
           LOG(ERROR) << TAG << "Failed to receive response for 'RegisteredDevicesRequest' - no response from platform.";
           if (callback != nullptr)
           {
-              if (auto cv = callback->getConditionVariable().lock())
-                  cv->notify_one();
               if (callback->getLambda())
                   callback->getLambda()(nullptr);
           }
@@ -463,7 +438,7 @@ void DevicesService::messageReceived(std::shared_ptr<Message> message)
         if (m_localProtocol != nullptr && m_outboundLocalMessageHandler != nullptr)
         {
             callback = std::make_shared<RegisteredDevicesRequestCallback>(
-              [this, deviceKey](std::shared_ptr<RegisteredDevicesResponseMessage> response) {
+              [this, deviceKey](const std::shared_ptr<RegisteredDevicesResponseMessage>& response) {
                   // Check if the response is not null
                   if (response == nullptr)
                   {
@@ -540,7 +515,7 @@ void DevicesService::receiveMessages(const std::vector<GatewaySubdeviceMessage>&
     }
 }
 
-std::vector<MessageType> DevicesService::getMessageTypes()
+std::vector<MessageType> DevicesService::getMessageTypes() const
 {
     return {MessageType::CHILDREN_SYNCHRONIZATION_RESPONSE, MessageType::REGISTERED_DEVICES_RESPONSE};
 }
@@ -587,11 +562,7 @@ void DevicesService::handleChildrenSynchronizationResponse(
     // Handle the callback
     if (callback != nullptr)
     {
-        if (auto cv = callback->getConditionVariable().lock())
-        {
-            cv->notify_one();
-        }
-        else if (callback->getLambda())
+        if (callback->getLambda())
         {
             auto sharedMessage = std::shared_ptr<ChildrenSynchronizationResponseMessage>{response.release()};
             m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(
@@ -635,11 +606,7 @@ void DevicesService::handleRegisteredDevicesResponse(std::unique_ptr<RegisteredD
     // Handle the callback
     if (callback != nullptr)
     {
-        if (auto cv = callback->getConditionVariable().lock())
-        {
-            cv->notify_one();
-        }
-        else if (callback->getLambda())
+        if (callback->getLambda())
         {
             auto sharedMessage = std::shared_ptr<RegisteredDevicesResponseMessage>{response.release()};
             m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(

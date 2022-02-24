@@ -66,8 +66,7 @@ public:
         }
     }
 
-    void receiveReadingData(const std::string& deviceKey,
-                            std::map<std::uint64_t, std::vector<Reading>> readings) override
+    void onReadingData(const std::string& deviceKey, std::map<std::uint64_t, std::vector<Reading>> readings) override
     {
         LOG(DEBUG) << "Received reading data for device '" << deviceKey << "'.";
         for (const auto& timestamp : readings)
@@ -76,7 +75,7 @@ public:
                            << " | Timestamp: " << std::to_string(timestamp.first);
     }
 
-    void receiveParameterData(const std::string& deviceKey, std::vector<Parameter> parameters) override
+    void onParameterData(const std::string& deviceKey, std::vector<Parameter> parameters) override
     {
         LOG(DEBUG) << "Received parameter data for device '" << deviceKey << "'.";
         for (const auto& parameter : parameters)

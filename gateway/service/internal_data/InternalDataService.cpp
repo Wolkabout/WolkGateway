@@ -67,7 +67,7 @@ void InternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
         m_localOutboundHandler.addMessage(std::make_shared<Message>(message.getMessage()));
 }
 
-std::vector<MessageType> InternalDataService::getMessageTypes()
+std::vector<MessageType> InternalDataService::getMessageTypes() const
 {
     return {MessageType::FEED_VALUES,
             MessageType::PARAMETER_SYNC,

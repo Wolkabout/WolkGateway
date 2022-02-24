@@ -39,7 +39,7 @@ ExternalDataService::ExternalDataService(std::string gatewayKey, GatewaySubdevic
 {
 }
 
-std::vector<MessageType> ExternalDataService::getMessageTypes()
+std::vector<MessageType> ExternalDataService::getMessageTypes() const
 {
     return {MessageType::FEED_VALUES, MessageType::PARAMETER_SYNC};
 }
@@ -78,7 +78,7 @@ void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
                 return;
             }
             m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>([this, deviceKey, feedValuesMessage] {
-                m_dataProvider.receiveReadingData(deviceKey, feedValuesMessage->getReadings());
+                m_dataProvider.onReadingData(deviceKey, feedValuesMessage->getReadings());
             }));
             return;
         }
@@ -92,7 +92,7 @@ void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
                 return;
             }
             m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>([this, deviceKey, parametersMessage] {
-                m_dataProvider.receiveParameterData(deviceKey, parametersMessage->getParameters());
+                m_dataProvider.onParameterData(deviceKey, parametersMessage->getParameters());
             }));
             return;
         }

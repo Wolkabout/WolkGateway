@@ -27,7 +27,7 @@ using namespace wolkabout::gateway;
 class GatewayMessageListenerMock : public GatewayMessageListener
 {
 public:
-    MOCK_METHOD(std::vector<MessageType>, getMessageTypes, ());
+    MOCK_METHOD(std::vector<MessageType>, getMessageTypes, (), (const));
     MOCK_METHOD(void, receiveMessages, (const std::vector<GatewaySubdeviceMessage>&));
 };
 

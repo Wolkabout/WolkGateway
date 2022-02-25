@@ -152,7 +152,9 @@ int main(int argc, char** argv)
                                .withFileTransfer("./files")
                                .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
                                .platformHost(gatewayConfiguration.getPlatformMqttUri())
-                               .withInternalDataService(gatewayConfiguration.getLocalMqttUri()));
+                               .withInternalDataService(gatewayConfiguration.getLocalMqttUri())
+                               .withPlatformRegistration()
+                               .withLocalRegistration());
     if (!gatewayConfiguration.getPlatformTrustStore().empty())
     {
         builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore());

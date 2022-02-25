@@ -58,7 +58,7 @@ WolkGatewayBuilder::WolkGatewayBuilder(Device device)
 , m_existingDeviceRepository{new JsonFileExistingDevicesRepository}
 , m_dataProtocol{new WolkaboutDataProtocol}
 , m_errorProtocol{new WolkaboutErrorProtocol}
-, m_errorRetainTime{std::chrono::seconds{1}}
+, m_errorRetainTime{1}
 , m_platformSubdeviceProtocol{new WolkaboutGatewaySubdeviceProtocol}
 , m_localSubdeviceProtocol{new WolkaboutGatewaySubdeviceProtocol(false)}
 , m_platformRegistrationProtocol{new WolkaboutRegistrationProtocol}
@@ -271,9 +271,14 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
 
     // Move the repository objects
     if (m_deviceStoragePolicy == DeviceStoragePolicy::PERSISTENT || m_deviceStoragePolicy == DeviceStoragePolicy::FULL)
+    {
         wolk->m_persistentDeviceRepository = std::make_shared<SQLiteDeviceRepository>();
+        wolk->m_existingDevicesRepository = std::make_shared<JsonFileExistingDevicesRepository>();
+    }
     if (m_deviceStoragePolicy == DeviceStoragePolicy::CACHED || m_deviceStoragePolicy == DeviceStoragePolicy::FULL)
+    {
         wolk->m_cacheDeviceRepository = std::make_shared<InMemoryDeviceRepository>(wolk->m_persistentDeviceRepository);
+    }
     wolk->m_existingDevicesRepository = std::move(m_existingDeviceRepository);
 
     // Create the platform connection
@@ -309,12 +314,22 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     wolk->m_parameterLambda = m_parameterHandlerLambda;
     wolk->m_parameterHandler = m_parameterHandler;
     wolk->m_dataService = std::make_shared<connect::DataService>(
-      *wolk->m_dataProtocol, *wolk->m_persistence, *wolk->m_connectivityService,
+      *wolk->m_dataProtocol, *wolk->m_persistence, *wolk->m_connectivityService, *wolk->m_outboundRetryMessageHandler,
       [wolkRaw](const std::string& deviceKey, const std::map<std::uint64_t, std::vector<Reading>>& readings) {
           wolkRaw->handleFeedUpdateCommand(deviceKey, readings);
       },
       [wolkRaw](const std::string& deviceKey, const std::vector<Parameter>& parameters) {
           wolkRaw->handleParameterCommand(deviceKey, parameters);
+      },
+      [](const std::string& deviceKey, const std::vector<std::string>& feeds,
+         const std::vector<std::string>& attributes) {
+          LOG(DEBUG) << "Received details for device '" << deviceKey << "':";
+          LOG(DEBUG) << "Feeds: ";
+          for (const auto& feed : feeds)
+              LOG(DEBUG) << "\t" << feed;
+          LOG(DEBUG) << "Attributes: ";
+          for (const auto& attribute : attributes)
+              LOG(DEBUG) << "\t" << attribute;
       });
     wolk->m_errorService = std::make_shared<connect::ErrorService>(*wolk->m_errorProtocol, m_errorRetainTime);
     wolk->m_inboundMessageHandler->addListener(wolk->m_dataService);
@@ -418,8 +433,8 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
         wolk->m_subdeviceManagementService = std::make_shared<DevicesService>(
           m_device.getKey(), *wolk->m_platformRegistrationProtocol, *wolk->m_outboundMessageHandler,
           *wolk->m_outboundRetryMessageHandler, wolk->m_localRegistrationProtocol, wolk->m_localOutboundMessageHandler,
-          wolk->m_cacheDeviceRepository != nullptr ? wolk->m_cacheDeviceRepository :
-                                                     wolk->m_persistentDeviceRepository);
+          wolk->m_cacheDeviceRepository != nullptr ? wolk->m_cacheDeviceRepository : wolk->m_persistentDeviceRepository,
+          wolk->m_existingDevicesRepository);
         wolk->m_gatewayMessageRouter->addListener("SubdeviceManagement", wolk->m_subdeviceManagementService);
         if (wolk->m_localConnectivityService != nullptr && wolk->m_localRegistrationProtocol != nullptr)
             wolk->m_localInboundMessageHandler->addListener(wolk->m_subdeviceManagementService);

@@ -18,20 +18,25 @@
 #define SUBDEVICEREGISTRATIONSERVICE_H
 
 #include "core/MessageListener.h"
+#include "core/utilities/CommandBuffer.h"
 #include "gateway/GatewayMessageListener.h"
+#include "gateway/repository/DeviceFilter.h"
 
 #include <condition_variable>
 #include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace wolkabout
 {
+class ChildrenSynchronizationResponseMessage;
 class ConnectivityService;
+class DeviceRegistrationData;
 class GatewayRegistrationProtocol;
 class OutboundMessageHandler;
 class OutboundRetryMessageHandler;
@@ -72,6 +77,7 @@ private:
  */
 struct RegisteredDevicesRequestParametersHash
 {
+public:
     std::uint64_t operator()(const RegisteredDevicesRequestParameters& params) const;
 };
 
@@ -81,14 +87,15 @@ struct RegisteredDevicesRequestParametersHash
  */
 struct RegisteredDevicesRequestCallback
 {
+public:
     RegisteredDevicesRequestCallback() = default;
 
     explicit RegisteredDevicesRequestCallback(
-      std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)> lambda);
+      std::function<void(std::shared_ptr<RegisteredDevicesResponseMessage>)> lambda);
 
     const std::chrono::milliseconds& getSentTime() const;
 
-    const std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)>& getLambda() const;
+    const std::function<void(std::shared_ptr<RegisteredDevicesResponseMessage>)>& getLambda() const;
 
 private:
     // Timestamp when the request was sent
@@ -96,7 +103,32 @@ private:
       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 
     // Potential lambda expression that needs to be invoked
-    std::function<void(std::unique_ptr<RegisteredDevicesResponseMessage>)> m_lambda;
+    std::function<void(std::shared_ptr<RegisteredDevicesResponseMessage>)> m_lambda;
+};
+
+struct ChildrenSynchronizationRequestCallback
+{
+public:
+    ChildrenSynchronizationRequestCallback() = default;
+
+    explicit ChildrenSynchronizationRequestCallback(
+      std::function<void(std::shared_ptr<ChildrenSynchronizationResponseMessage>)> lambda,
+      std::vector<std::string> registeringDevices = {});
+
+    const std::vector<std::string>& getRegisteringDevices() const;
+
+    const std::function<void(std::shared_ptr<ChildrenSynchronizationResponseMessage>)>& getLambda() const;
+
+private:
+    // Timestamp when the request was sent
+    std::chrono::milliseconds m_sentTime =
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+
+    // The list of devices that have been attempted to be registered
+    std::vector<std::string> m_registeringDevices;
+
+    // Potential lambda expression that needs to be invoked
+    std::function<void(std::shared_ptr<ChildrenSynchronizationResponseMessage>)> m_lambda;
 };
 
 /**
@@ -104,7 +136,7 @@ private:
  * sub-devices to the platform regarding registration, deletion, and also registered devices. This service will also
  * keep a cache of registered devices.
  */
-class DevicesService : public GatewayMessageListener, public MessageListener
+class DevicesService : public GatewayMessageListener, public MessageListener, public DeviceFilter
 {
 public:
     /**
@@ -124,12 +156,32 @@ public:
                    OutboundRetryMessageHandler& outboundPlatformRetryMessageHandler,
                    std::shared_ptr<GatewayRegistrationProtocol> localRegistrationProtocol = nullptr,
                    std::shared_ptr<OutboundMessageHandler> outboundDeviceMessageHandler = nullptr,
-                   std::shared_ptr<DeviceRepository> deviceRepository = nullptr);
+                   std::shared_ptr<DeviceRepository> deviceRepository = nullptr,
+                   std::shared_ptr<ExistingDevicesRepository> existingDevicesRepository = nullptr);
 
     /**
      * Overridden destructor.
      */
     ~DevicesService() override;
+
+    /**
+     * Method that is used to register child devices on the platform.
+     *
+     * @param devices The devices and their information that will be sent out as a request.
+     * @param callback The callback that will be called with devices that are registered, and ones that are not.
+     * @return Whether the registration request has been successfully sent out.
+     */
+    virtual bool registerChildDevices(
+      const std::vector<DeviceRegistrationData>& devices,
+      const std::function<void(const std::vector<std::string>&, const std::vector<std::string>&)>& callback);
+
+    /**
+     * Method that is used to remove child devices on the platform.
+     *
+     * @param deviceKeys The list of device keys the user would like to delete.
+     * @return Whether the removal request has been successfully sent out.
+     */
+    virtual bool removeChildDevices(const std::vector<std::string>& deviceKeys);
 
     /**
      * This is the method that should be run when the service is created and can use the connectivity objects.
@@ -142,13 +194,21 @@ public:
     virtual void updateDeviceCache();
 
     /**
-     * Internal method that is used to send out the request to obtain the list of requested devices.
+     * Method that is used to send out the request to obtain the children of this device.
+     *
+     * @param callback The callback object that defines what will be done once a response has been received.
+     */
+    virtual bool sendOutChildrenSynchronizationRequest(
+      std::shared_ptr<ChildrenSynchronizationRequestCallback> callback);
+
+    /**
+     * Method that is used to send out the request to obtain the list of requested devices.
      *
      * @param parameters The parameter by which the devices will be queried.
      * @param callback The callback object that defines what will be done once a response has been received.
      */
     virtual bool sendOutRegisteredDevicesRequest(RegisteredDevicesRequestParameters parameters,
-                                                 RegisteredDevicesRequestCallback callback);
+                                                 std::shared_ptr<RegisteredDevicesRequestCallback> callback);
 
     /**
      * This method is overridden from the `wolkabout::MessageListener` interface.
@@ -185,7 +245,13 @@ public:
      */
     std::vector<MessageType> getMessageTypes() const override;
 
+    bool deviceExists(const std::string& deviceKey) override;
+
 private:
+    void handleChildrenSynchronizationResponse(std::unique_ptr<ChildrenSynchronizationResponseMessage> response);
+
+    void handleRegisteredDevicesResponse(std::unique_ptr<RegisteredDevicesResponseMessage> response);
+
     // Logging tag
     const std::string TAG = "[DevicesService] -> ";
 
@@ -203,11 +269,16 @@ private:
 
     // Optional device repository
     std::shared_ptr<DeviceRepository> m_deviceRepository;
+    std::shared_ptr<ExistingDevicesRepository> m_existingDeviceRepository;
 
     // Storage for request objects
-    std::unordered_map<RegisteredDevicesRequestParameters, RegisteredDevicesRequestCallback,
+    CommandBuffer m_commandBuffer;
+    std::mutex m_childSyncMutex;
+    std::queue<std::shared_ptr<ChildrenSynchronizationRequestCallback>> m_childSyncRequests;
+    std::mutex m_registeredDevicesMutex;
+    std::unordered_map<RegisteredDevicesRequestParameters, std::shared_ptr<RegisteredDevicesRequestCallback>,
                        RegisteredDevicesRequestParametersHash>
-      m_requests;
+      m_registeredDevicesRequests;
 };
 }    // namespace gateway
 }    // namespace wolkabout

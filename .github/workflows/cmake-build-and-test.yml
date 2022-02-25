@@ -54,4 +54,4 @@ jobs:
       - name: Run Tests
         working-directory: ${{runner.workspace}}/out
         shell: bash
-        run: make test -j$(nproc) && ctest .
+        run: ctest .

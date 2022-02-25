@@ -31,66 +31,79 @@ InMemoryDeviceRepository::InMemoryDeviceRepository(std::shared_ptr<DeviceReposit
 {
 }
 
-void InMemoryDeviceRepository::loadLatestTimestampFromPersistentRepository()
+void InMemoryDeviceRepository::loadInformationFromPersistentRepository()
 {
     LOG(TRACE) << METHOD_INFO;
     std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
 
     if (m_persistentDeviceRepository != nullptr)
     {
-        const auto loadedTimestamp = m_persistentDeviceRepository->latestTimestamp();
+        // Copy all the gateway devices
+        const auto gatewayDevices = m_persistentDeviceRepository->getGatewayDevices();
+        std::copy(gatewayDevices.cbegin(), gatewayDevices.cend(), std::back_inserter(m_devices));
+
+        // Copy the timestamp
+        const auto loadedTimestamp = m_persistentDeviceRepository->latestPlatformTimestamp();
         if (loadedTimestamp > m_timestamp)
             m_timestamp = loadedTimestamp;
     }
 }
 
-bool InMemoryDeviceRepository::save(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device)
+bool InMemoryDeviceRepository::save(const std::vector<StoredDeviceInformation>& devices)
 {
-    LOG(TRACE) << METHOD_INFO;
-    std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
+    // Store the devices info
+    {
+        std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
+        for (const auto& device : devices)
+        {
+            // Save the value to the local vector
+            if (!containsDevice(device.getDeviceKey()))
+                m_devices.emplace_back(device);
 
-    // Save the value to the local vector
-    if (!containsDeviceKey(device.deviceKey))
-        m_devices.emplace_back(device.deviceKey);
-
-    // Update the timestamp
-    if (timestamp > m_timestamp)
-        m_timestamp = timestamp;
+            // Update the timestamp
+            if (device.getTimestamp() > m_timestamp)
+                m_timestamp = device.getTimestamp();
+        }
+    }
 
     // If the persistent repository is present, tell it to save data too
     if (m_persistentDeviceRepository != nullptr && m_commandBuffer != nullptr)
-        m_commandBuffer->pushCommand(std::make_shared<std::function<void()>>(
-          [this, timestamp, device] { m_persistentDeviceRepository->save(timestamp, device); }));
+        m_commandBuffer->pushCommand(
+          std::make_shared<std::function<void()>>([this, devices] { m_persistentDeviceRepository->save(devices); }));
     return true;
 }
 
-bool InMemoryDeviceRepository::remove(const std::string& deviceKey)
+bool InMemoryDeviceRepository::remove(const std::vector<std::string>& deviceKeys)
 {
-    LOG(TRACE) << METHOD_INFO;
-    std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
-
     // Empty the local vector
-    const auto deviceKeyIt = std::find(m_devices.cbegin(), m_devices.cend(), deviceKey);
-    if (deviceKeyIt != m_devices.cend())
-        m_devices.erase(deviceKeyIt);
+    {
+        std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
+        for (const auto& deviceKey : deviceKeys)
+        {
+            const auto it = std::find_if(
+              m_devices.begin(), m_devices.end(),
+              [&](const StoredDeviceInformation& information) { return information.getDeviceKey() == deviceKey; });
+            if (it != m_devices.cend())
+                m_devices.erase(it);
+        }
+    }
 
     // If we have access to more permanent persistence, delete it too
     if (m_persistentDeviceRepository != nullptr && m_commandBuffer != nullptr)
     {
-        auto deviceKeyCopy = std::string{deviceKey};
         m_commandBuffer->pushCommand(std::make_shared<std::function<void()>>(
-          [this, deviceKeyCopy] { m_persistentDeviceRepository->remove(deviceKeyCopy); }));
+          [this, deviceKeys] { m_persistentDeviceRepository->remove(deviceKeys); }));
     }
     return true;
 }
 
 bool InMemoryDeviceRepository::removeAll()
 {
-    LOG(TRACE) << METHOD_INFO;
-    std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
-
     // Empty the local vector
-    m_devices.clear();
+    {
+        std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
+        m_devices.clear();
+    }
 
     // If we have access to more permanent persistence, delete it too
     if (m_persistentDeviceRepository != nullptr && m_commandBuffer != nullptr)
@@ -99,27 +112,70 @@ bool InMemoryDeviceRepository::removeAll()
     return true;
 }
 
-bool InMemoryDeviceRepository::containsDeviceKey(const std::string& deviceKey)
+bool InMemoryDeviceRepository::containsDevice(const std::string& deviceKey)
 {
-    LOG(TRACE) << METHOD_INFO;
-    std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
+    bool found;
 
-    // Check if it is in the vector
-    const auto deviceKeyIt = std::find(m_devices.cbegin(), m_devices.cend(), deviceKey);
-    if (deviceKeyIt != m_devices.cend())
-        return true;
+    // Check in local memory
+    {
+        std::lock_guard<std::recursive_mutex> lock{m_mutex};
+        const auto it = std::find_if(
+          m_devices.begin(), m_devices.end(),
+          [&](const StoredDeviceInformation& information) { return information.getDeviceKey() == deviceKey; });
+        found = it != m_devices.cend();
+    }
 
-    // Check if we can try to see if it is in permanent persistence
-    if (m_persistentDeviceRepository == nullptr)
-        return false;
-    const auto permanentPersistenceContains = m_persistentDeviceRepository->containsDeviceKey(deviceKey);
-    // Save it in our local persistence if it is contained in there
-    if (permanentPersistenceContains)
-        m_devices.emplace_back(deviceKey);
-    return permanentPersistenceContains;
+    // If not found, check in persistent storage
+    if (!found && m_persistentDeviceRepository != nullptr)
+    {
+        auto returningInformation = m_persistentDeviceRepository->get(deviceKey);
+        if (!returningInformation.getDeviceKey().empty())
+        {
+            m_devices.emplace_back(returningInformation);
+            found = true;
+        }
+    }
+    return found;
 }
 
-std::chrono::milliseconds InMemoryDeviceRepository::latestTimestamp()
+StoredDeviceInformation InMemoryDeviceRepository::get(const std::string& deviceKey)
+{
+    auto returningInformation = StoredDeviceInformation{};
+
+    // Check in local memory
+    {
+        std::lock_guard<std::recursive_mutex> lock{m_mutex};
+        const auto it = std::find_if(
+          m_devices.begin(), m_devices.end(),
+          [&](const StoredDeviceInformation& information) { return information.getDeviceKey() == deviceKey; });
+        if (it != m_devices.cend())
+            returningInformation = StoredDeviceInformation{*it};
+    }
+
+    // If not found, check in persistent storage
+    if (returningInformation.getDeviceKey().empty() && m_persistentDeviceRepository != nullptr)
+    {
+        returningInformation = m_persistentDeviceRepository->get(deviceKey);
+        if (!returningInformation.getDeviceKey().empty())
+            m_devices.emplace_back(returningInformation);
+    }
+    return returningInformation;
+}
+
+std::vector<StoredDeviceInformation> InMemoryDeviceRepository::getGatewayDevices()
+{
+    auto gatewayDevices = std::vector<StoredDeviceInformation>{};
+    {
+        std::lock_guard<std::recursive_mutex> lock{m_mutex};
+        std::copy_if(m_devices.cbegin(), m_devices.cend(), std::back_inserter(gatewayDevices),
+                     [&](const StoredDeviceInformation& information) {
+                         return information.getDeviceBelongsTo() == DeviceOwnership::Gateway;
+                     });
+    }
+    return gatewayDevices;
+}
+
+std::chrono::milliseconds InMemoryDeviceRepository::latestPlatformTimestamp()
 {
     std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
     return m_timestamp;

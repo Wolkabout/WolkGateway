@@ -27,11 +27,13 @@ using namespace wolkabout::gateway;
 class DeviceRepositoryMock : public DeviceRepository
 {
 public:
-    MOCK_METHOD(bool, save, (std::chrono::milliseconds, const RegisteredDeviceInformation&));
-    MOCK_METHOD(bool, remove, (const std::string&));
+    MOCK_METHOD(bool, save, (const std::vector<StoredDeviceInformation>&));
+    MOCK_METHOD(bool, remove, (const std::vector<std::string>&));
     MOCK_METHOD(bool, removeAll, ());
-    MOCK_METHOD(bool, containsDeviceKey, (const std::string&));
-    MOCK_METHOD(std::chrono::milliseconds, latestTimestamp, ());
+    MOCK_METHOD(bool, containsDevice, (const std::string&));
+    MOCK_METHOD(StoredDeviceInformation, get, (const std::string&));
+    MOCK_METHOD(std::vector<StoredDeviceInformation>, getGatewayDevices, ());
+    MOCK_METHOD(std::chrono::milliseconds, latestPlatformTimestamp, ());
 };
 
 #endif    // WOLKGATEWAY_DEVICEREPOSITORYMOCK_H

@@ -41,18 +41,24 @@ public:
 
     ~SQLiteDeviceRepository() override;
 
-    bool save(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& deviceKey) override;
+    bool save(const std::vector<StoredDeviceInformation>& devices) override;
 
-    bool remove(const std::string& deviceKey) override;
+    bool remove(const std::vector<std::string>& deviceKeys) override;
 
     bool removeAll() override;
 
-    bool containsDeviceKey(const std::string& deviceKey) override;
+    bool containsDevice(const std::string& deviceKey) override;
 
-    std::chrono::milliseconds latestTimestamp() override;
+    StoredDeviceInformation get(const std::string& deviceKey) override;
+
+    std::vector<StoredDeviceInformation> getGatewayDevices() override;
+
+    std::chrono::milliseconds latestPlatformTimestamp() override;
 
 private:
-    bool update(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device);
+    bool update(const std::vector<StoredDeviceInformation>& devices);
+
+    StoredDeviceInformation loadDeviceInformationFromRow(ColumnResult& result, std::uint64_t row);
 
     std::string executeSQLStatement(const std::string& sqlStatement, ColumnResult* result = nullptr);
 

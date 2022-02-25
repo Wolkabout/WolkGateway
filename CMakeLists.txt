@@ -78,6 +78,7 @@ find_package(Threads REQUIRED)
 # Bring in WolkSDK-Cpp
 if (NOT TARGET WolkAboutCore)
     set(BUILD_CONNECTIVITY ON CACHE BOOL "Build the library with Paho MQTT and allow MQTT connection to the platform.")
+    set(BUILD_EXAMPLES OFF CACHE BOOL "Build the examples/runtimes for testing")
     set(BUILD_POCO OFF CACHE BOOL "Build the library with Poco.")
     set(BUILD_GTEST ${BUILD_TESTS} CACHE BOOL "Build the library with GTest.")
     set(BUILD_AWS_LOG_UPLOADER OFF CACHE BOOL "Build the library with AwsLogUploader.")
@@ -99,6 +100,7 @@ endif ()
 
 # WolkGateway library
 set(LIB_SOURCE_FILES gateway/connectivity/GatewayMessageRouter.cpp
+        gateway/repository/DeviceOwnership.cpp
         gateway/repository/existing_device/JsonFileExistingDevicesRepository.cpp
         gateway/repository/device/InMemoryDeviceRepository.cpp
         gateway/repository/device/SQLiteDeviceRepository.cpp
@@ -111,6 +113,8 @@ set(LIB_SOURCE_FILES gateway/connectivity/GatewayMessageRouter.cpp
 set(LIB_HEADER_FILES gateway/api/DataHandler.h
         gateway/api/DataProvider.h
         gateway/connectivity/GatewayMessageRouter.h
+        gateway/repository/DeviceFilter.h
+        gateway/repository/DeviceOwnership.h
         gateway/repository/device/DeviceRepository.h
         gateway/repository/existing_device/ExistingDevicesRepository.h
         gateway/repository/existing_device/JsonFileExistingDevicesRepository.h
@@ -134,7 +138,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${WOLKGATEWAY_VERSION_STRING} SOVERSION ${WOLKGATEWAY_VERSION_MAJOR}.${WOLKGATEWAY_VERSION_MINOR}.${WOLKGATEWAY_VERSION_PATCH})
 
 # Create the install rule
-install(DIRECTORY ${CMAKE_LIBRARY_INCLUDE_DIRECTORY} DESTINATION ${CMAKE_INSTALL_PREFIX}/include PATTERN *.h)
+install(DIRECTORY ${CMAKE_LIBRARY_INCLUDE_DIRECTORY} DESTINATION ${CMAKE_INSTALL_PREFIX} PATTERN *.h)
 install(DIRECTORY ${CMAKE_PREFIX_PATH}/include DESTINATION ${CMAKE_INSTALL_PREFIX} PATTERN *.h)
 install(DIRECTORY ${CMAKE_PREFIX_PATH}/lib/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

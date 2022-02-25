@@ -162,4 +162,5 @@ TEST_F(WolkGatewayBuilderTests, FullExample)
     ASSERT_NO_FATAL_FAILURE(wolk->m_connectivityService->m_onConnectionLost());
     ASSERT_NO_FATAL_FAILURE(wolk->m_dataService->m_feedUpdateHandler("", {}));
     ASSERT_NO_FATAL_FAILURE(wolk->m_dataService->m_parameterSyncHandler("", {}));
+    ASSERT_NO_FATAL_FAILURE(wolk->m_dataService->m_detailsSyncHandler("", {"F1"}, {"A1"}));
 }

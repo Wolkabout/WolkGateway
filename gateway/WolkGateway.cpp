@@ -32,6 +32,7 @@
 #include "core/utilities/Logger.h"
 #include "gateway/connectivity/GatewayMessageRouter.h"
 #include "gateway/repository/device/DeviceRepository.h"
+#include "gateway/repository/device/InMemoryDeviceRepository.h"
 #include "gateway/repository/existing_device/ExistingDevicesRepository.h"
 #include "gateway/service/devices/DevicesService.h"
 #include "gateway/service/external_data/ExternalDataService.h"
@@ -134,6 +135,8 @@ void WolkGateway::notifyPlatformConnected()
     LOG(INFO) << "Connection to platform established";
 
     WolkSingle::notifyConnected();
+    if (m_cacheDeviceRepository != nullptr)
+        m_cacheDeviceRepository->loadInformationFromPersistentRepository();
     if (m_subdeviceManagementService != nullptr)
         m_subdeviceManagementService->updateDeviceCache();
     if (m_gatewayPlatformStatusService != nullptr)

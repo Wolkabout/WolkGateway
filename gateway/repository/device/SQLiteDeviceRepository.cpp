@@ -20,7 +20,6 @@
 #include "core/utilities/ByteUtils.h"
 #include "core/utilities/Logger.h"
 
-#include <memory>
 #include <mutex>
 #include <openssl/sha.h>
 #include <sqlite3.h>
@@ -31,8 +30,9 @@ namespace wolkabout
 namespace gateway
 {
 // Here are some create table instructions
-const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS Device (ID INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                        "DeviceKey TEXT NOT NULL UNIQUE, ExternalId TEXT, Timestamp INTEGER NOT NULL);";
+const std::string CREATE_DEVICE_TABLE =
+  "CREATE TABLE IF NOT EXISTS Device (ID INTEGER PRIMARY KEY AUTOINCREMENT, DeviceKey TEXT NOT NULL UNIQUE, BelongsTo "
+  "TEXT CHECK( BelongsTo IN ('Platform', 'Gateway')), Timestamp INTEGER NOT NULL);";
 
 SQLiteDeviceRepository::SQLiteDeviceRepository(const std::string& connectionString) : m_db(nullptr)
 {
@@ -65,47 +65,81 @@ SQLiteDeviceRepository::~SQLiteDeviceRepository()
     }
 }
 
-bool SQLiteDeviceRepository::save(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device)
+bool SQLiteDeviceRepository::save(const std::vector<StoredDeviceInformation>& devices)
 {
-    LOG(TRACE) << METHOD_INFO;
-    const auto errorPrefix = "Failed to save a device in the database - ";
+    // Establish the error prefix, and check whether a database session exists
+    const auto errorPrefix = "Failed to save devices in the database - ";
+    if (m_db == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "The database connection is not established.";
+        return false;
+    }
 
     // If the device is already present, go to the update routine
-    std::lock_guard<std::recursive_mutex> lock{m_mutex};
-    if (containsDeviceKey(device.deviceKey))
-        return update(timestamp, device);
+    auto newDevices = std::vector<StoredDeviceInformation>{};
+    auto oldDevices = std::vector<StoredDeviceInformation>{};
+    for (const auto& device : devices)
+    {
+        if (containsDevice(device.getDeviceKey()))
+            oldDevices.emplace_back(device);
+        else
+            newDevices.emplace_back(device);
+    }
+
+    // Update the old devices
+    if (!oldDevices.empty())
+        update(oldDevices);
 
     // Store the information about the device
+    std::lock_guard<std::recursive_mutex> lock{m_mutex};
     auto errorMessage = executeSQLStatement("BEGIN TRANSACTION;");
     if (!errorMessage.empty())
     {
         LOG(ERROR) << errorPrefix << "Failed to start the database transaction - '" << errorMessage << "'.";
         return false;
     }
-
-    // Create the device
-    errorMessage =
-      executeSQLStatement("INSERT INTO Device(DeviceKey, ExternalId, Timestamp) VALUES ('" + device.deviceKey + "', " +
-                          (device.externalId.empty() ? "null" : "'" + device.externalId + "'") + ", " +
-                          std::to_string(timestamp.count()) + ");");
-    if (!errorMessage.empty())
+    for (const auto& device : newDevices)
     {
-        executeSQLStatement("ROLLBACK;");
-        LOG(ERROR) << errorPrefix << "Failed to insert device info into the database - '" << errorMessage << "'.";
-        return false;
+        // Create the device
+        errorMessage = executeSQLStatement("INSERT INTO Device(DeviceKey, BelongsTo, Timestamp) VALUES ('" +
+                                           device.getDeviceKey() + "', '" + toString(device.getDeviceBelongsTo()) +
+                                           "', " + std::to_string(device.getTimestamp().count()) + ");");
+        if (!errorMessage.empty())
+        {
+            executeSQLStatement("ROLLBACK;");
+            LOG(ERROR) << errorPrefix << "Failed to insert device info into the database - '" << errorMessage << "'.";
+            return false;
+        }
     }
-
     executeSQLStatement("COMMIT;");
     return true;
 }
 
-bool SQLiteDeviceRepository::remove(const std::string& deviceKey)
+bool SQLiteDeviceRepository::remove(const std::vector<std::string>& deviceKeys)
 {
-    LOG(TRACE) << METHOD_INFO;
-    const auto errorPrefix = "Failed to remove a device from the database - ";
+    // Establish the error prefix, and check whether a database session exists
+    const auto errorPrefix = "Failed to remove devices from the database - ";
+    if (m_db == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "The database connection is not established.";
+        return false;
+    }
+
+    // Check if the vector is empty
+    if (deviceKeys.empty())
+    {
+        LOG(ERROR) << errorPrefix << "The keys vector is empty.";
+        return false;
+    }
+
+    // Make the string for the array in sql query
+    auto arrayString = std::string{"("};
+    for (auto i = std::uint64_t{0}; i < deviceKeys.size(); ++i)
+        arrayString += "'" + deviceKeys[i] + "'" + (i < deviceKeys.size() - 1 ? ", " : "");
+    arrayString += ")";
 
     std::lock_guard<std::recursive_mutex> lock{m_mutex};
-    auto errorMessage = executeSQLStatement("DELETE FROM Device WHERE Device.DeviceKey = '" + deviceKey + "';");
+    auto errorMessage = executeSQLStatement("DELETE FROM Device WHERE Device.DeviceKey IN " + arrayString + ";");
     if (!errorMessage.empty())
     {
         LOG(ERROR) << errorPrefix << "Failed to execute the query - '" << errorMessage << "'.";
@@ -116,8 +150,13 @@ bool SQLiteDeviceRepository::remove(const std::string& deviceKey)
 
 bool SQLiteDeviceRepository::removeAll()
 {
-    LOG(TRACE) << METHOD_INFO;
+    // Establish the error prefix, and check whether a database session exists
     const auto errorPrefix = "Failed to remove all devices from the database - ";
+    if (m_db == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "The database connection is not established.";
+        return false;
+    }
 
     std::lock_guard<std::recursive_mutex> lock{m_mutex};
     auto errorMessage = executeSQLStatement("DELETE FROM Device;");
@@ -129,27 +168,101 @@ bool SQLiteDeviceRepository::removeAll()
     return true;
 }
 
-bool SQLiteDeviceRepository::containsDeviceKey(const std::string& deviceKey)
+bool SQLiteDeviceRepository::containsDevice(const std::string& deviceKey)
 {
-    LOG(TRACE) << METHOD_INFO;
-    const auto errorPrefix = "Failed to obtain information whether device info is stored - ";
-
-    std::lock_guard<std::recursive_mutex> lock{m_mutex};
-    auto result = ColumnResult{};
-    auto errorMessage =
-      executeSQLStatement("SELECT DeviceKey FROM Device WHERE Device.DeviceKey = '" + deviceKey + "';", &result);
-    if (!errorMessage.empty())
+    // Establish the error prefix, and check whether a database session exists
+    const auto errorPrefix = "Failed to obtain information whether information about device exists - ";
+    if (m_db == nullptr)
     {
-        LOG(ERROR) << errorPrefix << "Failed to execute the query - '" << errorMessage << "'.";
+        LOG(ERROR) << errorPrefix << "The database connection is not established.";
         return false;
+    }
+
+    auto result = ColumnResult{};
+    {
+        std::lock_guard<std::recursive_mutex> lock{m_mutex};
+        auto errorMessage =
+          executeSQLStatement("SELECT DeviceKey FROM Device WHERE Device.DeviceKey = '" + deviceKey + "';", &result);
+        if (!errorMessage.empty())
+        {
+            LOG(ERROR) << errorPrefix << "Failed to execute the query - '" << errorMessage << "'.";
+            return false;
+        }
     }
     return result.size() >= 2 && result[1].front() == deviceKey;
 }
 
-std::chrono::milliseconds SQLiteDeviceRepository::latestTimestamp()
+StoredDeviceInformation SQLiteDeviceRepository::get(const std::string& deviceKey)
 {
-    LOG(TRACE) << METHOD_INFO;
+    // Establish the error prefix, and check whether a database session exists
+    const auto errorPrefix = "Failed to obtain information about a device - ";
+    if (m_db == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "The database connection is not established.";
+        return {};
+    }
+
+    auto result = ColumnResult{};
+    {
+        std::lock_guard<std::recursive_mutex> lock{m_mutex};
+        auto errorMessage = executeSQLStatement(
+          "SELECT DeviceKey, BelongsTo, Timestamp FROM Device WHERE Device.DeviceKey = '" + deviceKey + "';", &result);
+        if (!errorMessage.empty())
+        {
+            LOG(ERROR) << errorPrefix << "Failed to execute the query - '" << errorMessage << "'.";
+            return {};
+        }
+    }
+    if (result.size() < 2)
+    {
+        LOG(DEBUG) << errorPrefix << "Device not found in the database.";
+        return {};
+    }
+    return loadDeviceInformationFromRow(result, 1);
+}
+
+std::vector<StoredDeviceInformation> SQLiteDeviceRepository::getGatewayDevices()
+{
+    // Establish the error prefix, and check whether a database session exists
+    const auto errorPrefix = "Failed to obtain information about a device - ";
+    if (m_db == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "The database connection is not established.";
+        return {};
+    }
+
+    auto result = ColumnResult{};
+    {
+        std::lock_guard<std::recursive_mutex> lock{m_mutex};
+        auto errorMessage = executeSQLStatement(
+          "SELECT DeviceKey, BelongsTo, Timestamp FROM Device WHERE Device.BelongsTo = 'Gateway';", &result);
+        if (!errorMessage.empty())
+        {
+            LOG(ERROR) << errorPrefix << "Failed to execute the query - '" << errorMessage << "'.";
+            return {};
+        }
+    }
+
+    auto devices = std::vector<StoredDeviceInformation>{};
+    for (auto i = std::uint64_t{1}; i < result.size(); ++i)
+    {
+        auto device = loadDeviceInformationFromRow(result, i);
+        if (device.getDeviceKey().empty())
+            return {};
+        devices.emplace_back(std::move(device));
+    }
+    return devices;
+}
+
+std::chrono::milliseconds SQLiteDeviceRepository::latestPlatformTimestamp()
+{
+    // Establish the error prefix, and check whether a database session exists
     const auto errorPrefix = "Failed to obtain the latest timestamp value - ";
+    if (m_db == nullptr)
+    {
+        LOG(ERROR) << errorPrefix << "The database connection is not established.";
+        return {};
+    }
 
     std::lock_guard<std::recursive_mutex> lock{m_mutex};
     auto result = ColumnResult{};
@@ -175,18 +288,61 @@ std::chrono::milliseconds SQLiteDeviceRepository::latestTimestamp()
     return millis;
 }
 
-bool SQLiteDeviceRepository::update(std::chrono::milliseconds timestamp, const RegisteredDeviceInformation& device)
+bool SQLiteDeviceRepository::update(const std::vector<StoredDeviceInformation>& devices)
 {
-    if (remove(device.deviceKey))
-        return save(timestamp, device);
-    else
+    // Establish the error prefix, and check whether a database session exists
+    const auto errorPrefix = "Failed to update device information - ";
+
+    // Store the information about the device
+    std::lock_guard<std::recursive_mutex> lock{m_mutex};
+    auto errorMessage = executeSQLStatement("BEGIN TRANSACTION;");
+    if (!errorMessage.empty())
+    {
+        LOG(ERROR) << errorPrefix << "Failed to start the database transaction - '" << errorMessage << "'.";
         return false;
+    }
+    for (const auto& device : devices)
+    {
+        // Create the device
+        errorMessage = executeSQLStatement("UPDATE Device SET BelongsTo = '" + toString(device.getDeviceBelongsTo()) +
+                                           "', Timestamp = " + std::to_string(device.getTimestamp().count()) +
+                                           " WHERE DeviceKey = '" + device.getDeviceKey() + "' LIMIT 1;");
+        if (!errorMessage.empty())
+        {
+            executeSQLStatement("ROLLBACK;");
+            LOG(ERROR) << errorPrefix << "Failed to update device info in the database - '" << errorMessage << "'.";
+            return false;
+        }
+    }
+    executeSQLStatement("COMMIT;");
+    return true;
+}
+
+StoredDeviceInformation SQLiteDeviceRepository::loadDeviceInformationFromRow(ColumnResult& result, std::uint64_t row)
+{
+    const auto errorPrefix = "Failed to load device information - ";
+
+    const auto belongsTo = deviceOwnershipFromString(result[row][1]);
+    if (belongsTo == DeviceOwnership::None)
+    {
+        LOG(ERROR) << errorPrefix << "Device contains invalid 'BelongsTo' value.";
+        return {};
+    }
+    auto timestamp = std::chrono::milliseconds{};
+    try
+    {
+        timestamp = std::chrono::milliseconds{std::stoull(result[row][2])};
+    }
+    catch (const std::exception&)
+    {
+        LOG(ERROR) << errorPrefix << "Device 'Timestamp' value could not be parsed.";
+        return {};
+    }
+    return {result[row][0], belongsTo, timestamp};
 }
 
 std::string SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, ColumnResult* result)
 {
-    // This would spam too much
-    //    LOG(TRACE) << METHOD_INFO;
     const auto errorPrefix = "Failed to execute query - ";
 
     // Check if the database session is established

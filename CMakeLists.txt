@@ -78,6 +78,7 @@ find_package(Threads REQUIRED)
 # Bring in WolkSDK-Cpp
 if (NOT TARGET WolkAboutCore)
     set(BUILD_CONNECTIVITY ON CACHE BOOL "Build the library with Paho MQTT and allow MQTT connection to the platform.")
+    set(BUILD_EXAMPLES OFF CACHE BOOL "Build the examples/runtimes for testing")
     set(BUILD_POCO OFF CACHE BOOL "Build the library with Poco.")
     set(BUILD_GTEST ${BUILD_TESTS} CACHE BOOL "Build the library with GTest.")
     set(BUILD_AWS_LOG_UPLOADER OFF CACHE BOOL "Build the library with AwsLogUploader.")

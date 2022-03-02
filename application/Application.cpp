@@ -140,6 +140,7 @@ int main(int argc, char** argv)
         return std::unique_ptr<DebianPackageInstaller>{
           new DebianPackageInstaller{"wolkgateway", std::move(aptInstaller), std::move(systemdManager)}};
     }();
+    installer->start();
 
     auto builder = std::move(WolkGateway::newBuilder(gateway)
                                .withFileTransfer("./files")

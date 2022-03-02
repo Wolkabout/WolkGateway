@@ -357,9 +357,8 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
     }
 
     // Set the parameters about the FirmwareUpdate
-    wolk->m_dataService->updateParameter(
-      m_device.getKey(),
-      {ParameterName::FIRMWARE_UPDATE_ENABLED, wolk->m_firmwareUpdateProtocol != nullptr ? "true" : "false"});
+    wolk->m_dataService->updateParameter(m_device.getKey(), {ParameterName::FIRMWARE_UPDATE_ENABLED,
+                                                             m_firmwareUpdateProtocol != nullptr ? "true" : "false"});
     auto firmwareVersion = std::string{};
     if (m_firmwareInstaller != nullptr)
         firmwareVersion = m_firmwareInstaller->getFirmwareVersion(m_device.getKey());

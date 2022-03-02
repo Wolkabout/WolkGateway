@@ -141,6 +141,7 @@ void WolkGateway::notifyPlatformConnected()
         m_subdeviceManagementService->updateDeviceCache();
     if (m_gatewayPlatformStatusService != nullptr)
         m_gatewayPlatformStatusService->sendPlatformConnectionStatusMessage(true);
+    publish();
 }
 
 void WolkGateway::notifyPlatformDisconnected()

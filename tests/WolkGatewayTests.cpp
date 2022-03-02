@@ -116,9 +116,9 @@ TEST_F(WolkGatewayTests, NothingExplodesIfBothAreNull)
 TEST_F(WolkGatewayTests, RepeatMechanisms)
 {
     // Set up the services
-    EXPECT_CALL(*dataServiceMock, publishReadings()).Times(1);
-    EXPECT_CALL(*dataServiceMock, publishAttributes()).Times(1);
-    EXPECT_CALL(*dataServiceMock, publishParameters()).Times(1);
+    EXPECT_CALL(*dataServiceMock, publishReadings()).Times(2);
+    EXPECT_CALL(*dataServiceMock, publishAttributes()).Times(2);
+    EXPECT_CALL(*dataServiceMock, publishParameters()).Times(2);
     service->m_dataService = std::move(dataServiceMock);
 
     // Set up the connectivity service mocks
@@ -172,9 +172,9 @@ TEST_F(WolkGatewayTests, ConnectHappyFlow)
     service->m_localConnectivityService = std::move(localConnectivityService);
 
     // Set up the services
-    EXPECT_CALL(*dataServiceMock, publishReadings()).Times(1);
-    EXPECT_CALL(*dataServiceMock, publishAttributes()).Times(1);
-    EXPECT_CALL(*dataServiceMock, publishParameters()).Times(1);
+    EXPECT_CALL(*dataServiceMock, publishReadings()).Times(2);
+    EXPECT_CALL(*dataServiceMock, publishAttributes()).Times(2);
+    EXPECT_CALL(*dataServiceMock, publishParameters()).Times(2);
     EXPECT_CALL(*devicesServiceMock, updateDeviceCache).Times(1);
     EXPECT_CALL(*gatewayPlatformStatusServiceMock, sendPlatformConnectionStatusMessage).Times(2);
     service->m_dataService = std::move(dataServiceMock);

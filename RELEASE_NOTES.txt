@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 5.0.1-prerelease**
+	- [IMPROVEMENT] - Added the APT/SystemD firmware update mechanism.
+
 **Version 5.0.0-prerelease**
     - [REWORK] - Updated the WolkGateway to be ready for Wolkabout IoT Platform 22.GA - The Digital Twin Update
     - [IMPROVEMENT] - Fixed the CMakeLists.txt file for private header file finding to use project files in private

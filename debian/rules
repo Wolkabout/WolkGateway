@@ -4,7 +4,7 @@ DH_VERBOSE = 1
 %:
 	dh $@ --builddirectory=out
 override_dh_auto_configure:
-	dh_auto_configure -- -DBUILD_GTEST=OFF -DBUILD_TESTS=OFF -DBUILD_POCO_HTTP_DOWNLOADER=OFF -DBUILD_POCO_HTTP_DOWNLOADER=ON -DBUILD_EXAMPLES=OFF
+	dh_auto_configure -- -DBUILD_GTEST=OFF -DBUILD_TESTS=OFF -DBUILD_POCO_HTTP_DOWNLOADER=OFF -DBUILD_APT_SYSTEMD_FIRMWARE_UPDATER=ON -DBUILD_EXAMPLES=OFF
 override_dh_auto_clean:
 override_dh_auto_test:
 override_dh_shlibdeps:

@@ -5,7 +5,7 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
-**Version 5.0.1-prerelease**
+**Version 5.1.0-prerelease**
 	- [IMPROVEMENT] - Added the APT/SystemD firmware update mechanism.
 
 **Version 5.0.0-prerelease**

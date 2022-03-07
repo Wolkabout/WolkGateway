@@ -90,8 +90,8 @@ endif ()
 
 # Define the version of the library
 set(WOLKGATEWAY_VERSION_MAJOR 5)
-set(WOLKGATEWAY_VERSION_MINOR 0)
-set(WOLKGATEWAY_VERSION_PATCH 1)
+set(WOLKGATEWAY_VERSION_MINOR 1)
+set(WOLKGATEWAY_VERSION_PATCH 0)
 set(WOLKGATEWAY_VERSION_SUFFIX prerelease)
 
 set(WOLKGATEWAY_VERSION_STRING "${WOLKGATEWAY_VERSION_MAJOR}.${WOLKGATEWAY_VERSION_MINOR}.${WOLKGATEWAY_VERSION_PATCH}")
@@ -181,10 +181,7 @@ if (${BUILD_EXECUTABLE})
     add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES} ${BIN_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}App WolkGateway)
     set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
-
-    if (${BUILD_APT_SYSTEMD_FIRMWARE_UPDATER})
-        install(FILES out/manage-units.pkla DESTINATION /etc/polkit-1/localauthority/50-local.d)
-    endif ()
+    
     install(TARGETS ${PROJECT_NAME}App DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
     install(FILES out/ca.crt DESTINATION /etc/wolkGateway
             PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)

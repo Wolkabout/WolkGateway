@@ -1,5 +1,5 @@
-wolkgateway (5.0.1-prerelease) stable; urgency=medium
+wolkgateway (5.1.0-prerelease) stable; urgency=medium
 
     * Added the APT/SystemD firmware update mechanism.
   
- -- Wolkabout ELab <elab@wolkabout.com>  Wed, 2 Mar 2022 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Mon, 7 Mar 2022 00:00:00 +0100

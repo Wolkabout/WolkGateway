@@ -8,5 +8,5 @@
     "platformMqttKeepAliveSeconds": 60,
     "localMqttUri": "tcp://localhost:1883",
 
-    "platformTrustStore": "./ca.crt"
+    "platformTrustStore": "/etc/wolkGateway/ca.crt"
 }

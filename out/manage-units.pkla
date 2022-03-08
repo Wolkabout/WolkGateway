@@ -1,0 +1,9 @@
+[Allow sudo users to install files using apt]
+Identity=unix-group:sudo
+Action=org.debian.apt.install-file
+ResultActive=yes
+
+[Allow sudo users to manage units]
+Identity=unix-group:sudo
+Action=org.freedesktop.systemd1.manage-units
+ResultActive=yes

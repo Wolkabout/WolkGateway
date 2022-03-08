@@ -54,4 +54,4 @@ jobs:
       - name: Run Tests
         working-directory: ${{runner.workspace}}/out
         shell: bash
-        run: ctest .
+        run: ctest --rerun-failed --output-on-failure .

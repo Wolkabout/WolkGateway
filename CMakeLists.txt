@@ -22,6 +22,7 @@ if (NOT ${BUILD_EXECUTABLE})
     message(STATUS "Skipping build of ${PROJECT_NAME} application")
 endif ()
 option(BUILD_TESTS "Build the library with GTest." ON)
+option(BUILD_APT_SYSTEMD_FIRMWARE_UPDATER "Build the optional apt/systemd firmware updaters" ON)
 
 # Configure the paths for output
 if (NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
@@ -89,7 +90,7 @@ endif ()
 
 # Define the version of the library
 set(WOLKGATEWAY_VERSION_MAJOR 5)
-set(WOLKGATEWAY_VERSION_MINOR 0)
+set(WOLKGATEWAY_VERSION_MINOR 1)
 set(WOLKGATEWAY_VERSION_PATCH 0)
 set(WOLKGATEWAY_VERSION_SUFFIX prerelease)
 
@@ -180,7 +181,7 @@ if (${BUILD_EXECUTABLE})
     add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES} ${BIN_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}App WolkGateway)
     set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
-
+    
     install(TARGETS ${PROJECT_NAME}App DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
     install(FILES out/ca.crt DESTINATION /etc/wolkGateway
             PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)

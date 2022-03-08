@@ -18,6 +18,7 @@
 #include "core/utilities/Logger.h"
 #include "core/utilities/StringUtils.h"
 #include "gateway/WolkGateway.h"
+#include "wolk/service/firmware_update/debian/DebianPackageInstaller.h"
 
 #include <chrono>
 #include <random>
@@ -26,26 +27,11 @@
 #include <thread>
 
 using namespace wolkabout;
+using namespace wolkabout::connect;
 using namespace wolkabout::gateway;
 
 namespace
 {
-/**
- * This is a function that will generate a random Temperature value for us.
- *
- * @return A new Temperature value, in the range of -20 to 80.
- */
-std::int16_t generateRandomValue()
-{
-    // Here we will create the random engine and distribution
-    static auto engine =
-      std::mt19937(static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()));
-    static auto distribution = std::uniform_real_distribution<>(-20, 80);
-
-    // And generate a random value
-    return static_cast<std::int16_t>(distribution(engine));
-}
-
 class DefaultDataProvider : public DataProvider
 {
 public:
@@ -148,8 +134,17 @@ int main(int argc, char** argv)
                                      wolkabout::OutboundDataMode::PUSH);
     auto dataProvider = std::unique_ptr<DefaultDataProvider>{new DefaultDataProvider};
 
+    auto installer = [&] {
+        auto aptInstaller = std::unique_ptr<APTPackageInstaller>{new APTPackageInstaller};
+        auto systemdManager = std::unique_ptr<SystemdServiceInterface>{new SystemdServiceInterface};
+        return std::unique_ptr<DebianPackageInstaller>{
+          new DebianPackageInstaller{"wolkgateway", std::move(aptInstaller), std::move(systemdManager)}};
+    }();
+    installer->start();
+
     auto builder = std::move(WolkGateway::newBuilder(gateway)
                                .withFileTransfer("./files")
+                               .withFirmwareUpdate(std::move(installer))
                                .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
                                .platformHost(gatewayConfiguration.getPlatformMqttUri())
                                .withInternalDataService(gatewayConfiguration.getLocalMqttUri())
@@ -167,10 +162,6 @@ int main(int argc, char** argv)
     });
 
     wolk->connect();
-
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    wolk->addReading("TF", generateRandomValue());
-    wolk->publish();
 
     while (true)
         std::this_thread::sleep_for(std::chrono::seconds(1));

@@ -1,4 +1,4 @@
-FROM armv7l/debian:buster
+FROM arm32v7/debian:buster
 
 WORKDIR /root
 

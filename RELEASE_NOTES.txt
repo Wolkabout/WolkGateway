@@ -5,6 +5,17 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 5.1.0-prerelease**
+	- [IMPROVEMENT] - Added the APT/SystemD firmware update mechanism.
+	- [IMPROVEMENT] - Added the docker images to be built when running the `tools/make_release.sh` script.
+
+**Version 5.0.0-prerelease**
+    - [REWORK] - Updated the WolkGateway to be ready for Wolkabout IoT Platform 22.GA - The Digital Twin Update
+    - [IMPROVEMENT] - Fixed the CMakeLists.txt file for private header file finding to use project files in private
+
+**Version 4.4.0**
+    - [IMPROVEMENT] - Completely removed `libpoco` as a dependency, and now rely on `sqlite` for SQLiteDeviceRepository.
+
 **Version 4.3.2**
     - [BUGFIX] - Fixed how the gateway sends out `subdevice_status` messages that used to confuse the platform.
 

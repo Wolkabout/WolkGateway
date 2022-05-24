@@ -42,3 +42,8 @@ rm ./make_deb.sh
 rm ./*.zip
 
 chown "$USER:$USER" *.deb
+
+cp *.deb ./image
+docker build -t wvana/wolkgateway:armv7l ./image/
+docker push wvana/wolkgateway:armv7l
+rm ./image/*.deb

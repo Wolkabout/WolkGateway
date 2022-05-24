@@ -1,5 +1,6 @@
-wolkgateway (4.3.2) stable; urgency=medium
+wolkgateway (5.1.0-prerelease) stable; urgency=medium
 
-  * Fixed how the gateway sends out `subdevice_status` messages that used to confuse the platform.
+    * Added the APT/SystemD firmware update mechanism.
+    * Added the docker images to be built when running the `tools/make_release.sh` script.
   
- -- Wolkabout ELab <elab@wolkabout.com>  Tue, 14 Dec 2021 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Mon, 7 Mar 2022 00:00:00 +0100

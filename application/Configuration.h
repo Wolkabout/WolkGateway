@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#include "core/model/WolkOptional.h"
-#include "model/SubdeviceManagement.h"
-
 #include <string>
 
 namespace wolkabout
@@ -26,8 +23,7 @@ class GatewayConfiguration
 public:
     GatewayConfiguration() = default;
 
-    GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri, std::string localMqttUri,
-                         SubdeviceManagement management);
+    GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri, std::string localMqttUri);
 
     const std::string& getKey() const;
     const std::string& getPassword() const;
@@ -35,10 +31,8 @@ public:
     const std::string& getPlatformMqttUri() const;
     const std::string& getLocalMqttUri() const;
 
-    SubdeviceManagement getSubdeviceManagement() const;
-
     void setPlatformTrustStore(const std::string& value);
-    const WolkOptional<std::string>& getPlatformTrustStore() const;
+    const std::string& getPlatformTrustStore() const;
 
     std::uint16_t getKeepAliveSec() const;
     void setKeepAliveSec(std::uint16_t keepAlive);
@@ -52,9 +46,7 @@ private:
     std::string m_platformMqttUri;
     std::string m_localMqttUri;
 
-    SubdeviceManagement m_subdeviceManagement;
-
-    WolkOptional<std::string> m_platformTrustStore;
+    std::string m_platformTrustStore;
 
     std::uint16_t m_keepAliveSec;
 

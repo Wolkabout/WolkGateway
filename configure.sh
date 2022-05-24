@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2018 WolkAbout Technology s.r.o.
+# Copyright 2022 WolkAbout Technology s.r.o.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,5 +18,5 @@ cp tools/git/pre-commit .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 
 pushd out
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_GTEST=OFF -DBUILD_TESTS=OFF -DBUILD_POCO_HTTP_DOWNLOADER=OFF -DBUILD_EXAMPLES=OFF ..
 popd

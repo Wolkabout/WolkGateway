@@ -32,16 +32,14 @@ const std::string GatewayConfiguration::PASSWORD = "password";
 const std::string GatewayConfiguration::PLATFORM_URI = "platformMqttUri";
 const std::string GatewayConfiguration::PLATFORM_TRUST_STORE = "platformTrustStore";
 const std::string GatewayConfiguration::LOCAL_URI = "localMqttUri";
-const std::string GatewayConfiguration::SUBDEVICE_MANAGEMENT = "subdeviceManagement";
 const std::string GatewayConfiguration::KEEP_ALIVE = "platformMqttKeepAliveSeconds";
 
 GatewayConfiguration::GatewayConfiguration(std::string key, std::string password, std::string platformMqttUri,
-                                           std::string localMqttUri, SubdeviceManagement management)
+                                           std::string localMqttUri)
 : m_key(std::move(key))
 , m_password(std::move(password))
 , m_platformMqttUri(std::move(platformMqttUri))
 , m_localMqttUri(std::move(localMqttUri))
-, m_subdeviceManagement(management)
 , m_keepAliveSec(60)
 {
 }
@@ -66,17 +64,12 @@ const std::string& GatewayConfiguration::getPlatformMqttUri() const
     return m_platformMqttUri;
 }
 
-SubdeviceManagement GatewayConfiguration::getSubdeviceManagement() const
-{
-    return m_subdeviceManagement;
-}
-
 void GatewayConfiguration::setPlatformTrustStore(const std::string& value)
 {
     m_platformTrustStore = value;
 }
 
-const WolkOptional<std::string>& GatewayConfiguration::getPlatformTrustStore() const
+const std::string& GatewayConfiguration::getPlatformTrustStore() const
 {
     return m_platformTrustStore;
 }
@@ -109,26 +102,8 @@ wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string
     const auto password = j.at(PASSWORD).get<std::string>();
     const auto platformMqttUri = j.at(PLATFORM_URI).get<std::string>();
     const auto localMqttUri = j.at(LOCAL_URI).get<std::string>();
-    auto subdeviceManagement = j.at(SUBDEVICE_MANAGEMENT).get<std::string>();
 
-    std::transform(subdeviceManagement.begin(), subdeviceManagement.end(), subdeviceManagement.begin(), ::toupper);
-
-    SubdeviceManagement management;
-
-    if (subdeviceManagement == "PLATFORM")
-    {
-        management = SubdeviceManagement::PLATFORM;
-    }
-    else if (subdeviceManagement == "GATEWAY")
-    {
-        management = SubdeviceManagement::GATEWAY;
-    }
-    else
-    {
-        throw std::logic_error("Invalid value for subdevice management.");
-    }
-
-    GatewayConfiguration configuration(key, password, platformMqttUri, localMqttUri, management);
+    GatewayConfiguration configuration(key, password, platformMqttUri, localMqttUri);
 
     if (j.find(PLATFORM_TRUST_STORE) != j.end())
     {

@@ -15,22 +15,63 @@
  */
 
 #include "Configuration.h"
-#include "Wolk.h"
 #include "core/utilities/Logger.h"
 #include "core/utilities/StringUtils.h"
-#include "protocol/json/JsonGatewayDataProtocol.h"
+#include "gateway/WolkGateway.h"
+#include "wolk/service/firmware_update/debian/DebianPackageInstaller.h"
 
 #include <chrono>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <thread>
 
+using namespace wolkabout;
+using namespace wolkabout::connect;
+using namespace wolkabout::gateway;
+
 namespace
 {
-void setupLogger()
+class DefaultDataProvider : public DataProvider
 {
-    wolkabout::Logger::init(wolkabout::LogLevel::INFO, wolkabout::Logger::Type::CONSOLE);
-}
+public:
+    void setDataHandler(DataHandler* handler, const std::string& gatewayKey) override
+    {
+        LOG(DEBUG) << "Received DataHandler for gateway '" << gatewayKey << "'.";
+
+        m_handler = handler;
+        m_gatewayKey = gatewayKey;
+    }
+
+    void onConnected()
+    {
+        if (m_handler != nullptr)
+        {
+            m_handler->pullFeedValues("AD1");
+            m_handler->addReading("AD1", Reading{"T", std::uint64_t{25}});
+        }
+    }
+
+    void onReadingData(const std::string& deviceKey, std::map<std::uint64_t, std::vector<Reading>> readings) override
+    {
+        LOG(DEBUG) << "Received reading data for device '" << deviceKey << "'.";
+        for (const auto& timestamp : readings)
+            for (const auto& reading : timestamp.second)
+                LOG(DEBUG) << "\tReference: " << reading.getReference() << " | Value: " << reading.getStringValue()
+                           << " | Timestamp: " << std::to_string(timestamp.first);
+    }
+
+    void onParameterData(const std::string& deviceKey, std::vector<Parameter> parameters) override
+    {
+        LOG(DEBUG) << "Received parameter data for device '" << deviceKey << "'.";
+        for (const auto& parameter : parameters)
+            LOG(DEBUG) << "\tParameter: " << toString(parameter.first) << " | Value: " << parameter.second;
+    }
+
+private:
+    std::string m_gatewayKey;
+    DataHandler* m_handler = nullptr;
+};
 
 wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
 {
@@ -56,7 +97,7 @@ wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
 
 int main(int argc, char** argv)
 {
-    setupLogger();
+    wolkabout::Logger::init(wolkabout::LogLevel::INFO, wolkabout::Logger::Type::CONSOLE);
 
     if (argc < 2)
     {
@@ -89,25 +130,41 @@ int main(int argc, char** argv)
         }
     }
 
-    wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
-                                    gatewayConfiguration.getSubdeviceManagement());
-    auto builder = std::move(wolkabout::Wolk::newBuilder(device)
-                               .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
-                               .gatewayHost(gatewayConfiguration.getLocalMqttUri())
-                               .platformHost(gatewayConfiguration.getPlatformMqttUri()));
+    auto gateway = wolkabout::Device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
+                                     wolkabout::OutboundDataMode::PUSH);
+    auto dataProvider = std::unique_ptr<DefaultDataProvider>{new DefaultDataProvider};
 
-    if (gatewayConfiguration.getPlatformTrustStore())
+    auto installer = [&] {
+        auto aptInstaller = std::unique_ptr<APTPackageInstaller>{new APTPackageInstaller};
+        auto systemdManager = std::unique_ptr<SystemdServiceInterface>{new SystemdServiceInterface};
+        return std::unique_ptr<DebianPackageInstaller>{
+          new DebianPackageInstaller{"wolkgateway", std::move(aptInstaller), std::move(systemdManager)}};
+    }();
+    installer->start();
+
+    auto builder = std::move(WolkGateway::newBuilder(gateway)
+                               .withFileTransfer("./files")
+                               .withFirmwareUpdate(std::move(installer))
+                               .setMqttKeepAlive(gatewayConfiguration.getKeepAliveSec())
+                               .platformHost(gatewayConfiguration.getPlatformMqttUri())
+                               .withInternalDataService(gatewayConfiguration.getLocalMqttUri())
+                               .withPlatformRegistration()
+                               .withLocalRegistration());
+    if (!gatewayConfiguration.getPlatformTrustStore().empty())
     {
-        builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore().value());
+        builder.platformTrustStore(gatewayConfiguration.getPlatformTrustStore());
     }
 
-    std::unique_ptr<wolkabout::Wolk> wolk = builder.build();
+    auto wolk = builder.build();
+    wolk->setConnectionStatusListener([&](bool connected) {
+        if (connected)
+            dataProvider->onConnected();
+    });
 
     wolk->connect();
+
     while (true)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
     return 0;
 }

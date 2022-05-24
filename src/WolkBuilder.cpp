@@ -480,7 +480,7 @@ wolkabout::WolkBuilder::operator std::unique_ptr<Wolk>()
 }
 
 WolkBuilder::WolkBuilder(GatewayDevice device)
-: m_platformHost{WOLK_DEMO_HOST}
+: m_platformHost{WOLK_HOST}
 , m_gatewayHost{MESSAGE_BUS_HOST}
 , m_device{std::move(device)}
 , m_mqttKeepAliveSec(60)

@@ -5,8 +5,10 @@
     "password": "",
 
     "platformMqttUri": "ssl://insert_host:insert_port",
-    "platformMqttKeepAliveSeconds": 60,
+    "platformMqttKeepAliveSeconds": 10,
     "localMqttUri": "tcp://localhost:1883",
 
-    "platformTrustStore": "/PATH/TO/YOUR/CA.CRT/FILE"
+    "platformTrustStore": "/PATH/TO/YOUR/CA.CRT/FILE",
+
+    "subdeviceManagement": "gateway"
 }

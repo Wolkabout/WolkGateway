@@ -180,9 +180,17 @@ if (${BUILD_EXECUTABLE})
 
     add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES} ${BIN_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}App WolkGateway)
-    set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
-    
-    install(TARGETS ${PROJECT_NAME}App DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+    set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+
+    # Install target
+    install(DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} DESTINATION /usr
+            FILES_MATCHING
+            PATTERN "*so*")
+
+    # Place the executable file in /usr/bin
+    install(TARGETS ${PROJECT_NAME}App DESTINATION /usr/bin)
+
+    # Place the config files and service unit file.
     install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
             PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
 endif ()

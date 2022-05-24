@@ -110,10 +110,6 @@ if (${BUILD_APP})
     # Place the executable file in /usr/bin
     install(TARGETS ${PROJECT_NAME}App DESTINATION /usr/bin)
 
-    # Place the ca.crt file in /usr/bin
-    install(FILES out/ca.crt DESTINATION /etc/wolkGateway
-            PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
-
     # Place the config files and service unit file.
     install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
             PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)

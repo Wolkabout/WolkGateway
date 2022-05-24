@@ -4,9 +4,9 @@
     "key": "",
     "password": "",
 
-    "platformMqttUri": "ssl://demo.wolkabout.com:8883",
+    "platformMqttUri": "ssl://insert_host:insert_port",
     "platformMqttKeepAliveSeconds": 60,
     "localMqttUri": "tcp://localhost:1883",
 
-    "platformTrustStore": "/etc/wolkGateway/ca.crt"
+    "platformTrustStore": "/PATH/TO/YOUR/CA.CRT/FILE"
 }

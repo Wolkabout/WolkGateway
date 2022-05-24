@@ -50,7 +50,7 @@ namespace gateway
 {
 WolkGatewayBuilder::WolkGatewayBuilder(Device device)
 : m_device{std::move(device)}
-, m_platformHost{WOLK_DEMO_HOST}
+, m_platformHost{WOLK_HOST}
 , m_platformMqttKeepAliveSec{60}
 , m_persistence{new InMemoryPersistence}
 , m_messagePersistence{new InMemoryMessagePersistence}

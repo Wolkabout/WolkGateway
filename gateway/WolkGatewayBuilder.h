@@ -334,9 +334,9 @@ private:
     DataProvider* m_dataProvider;
 
     // These are the default values that are going to be used for the connection parameters
-    static const constexpr char* WOLK_DEMO_HOST = "ssl://api-demo.wolkabout.com:8883";
+    static const constexpr char* WOLK_HOST = "ssl://insert_host:insert_port";
     static const constexpr char* MESSAGE_BUS_HOST = "tcp://localhost:1883";
-    static const constexpr char* TRUST_STORE = "ca.crt";
+    static const constexpr char* TRUST_STORE = "/PATH/TO/YOUR/CA.CRT/FILE";
     static const constexpr std::uint64_t MAX_PACKET_SIZE = 268434;
     static const constexpr char* DATABASE = "deviceRepository.db";
 };

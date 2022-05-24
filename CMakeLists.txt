@@ -183,8 +183,6 @@ if (${BUILD_EXECUTABLE})
     set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
     
     install(TARGETS ${PROJECT_NAME}App DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-    install(FILES out/ca.crt DESTINATION /etc/wolkGateway
-            PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
     install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway
             PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ WORLD_READ)
 endif ()

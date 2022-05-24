@@ -25,14 +25,14 @@ cd ./deb-amd64 || exit
 mv *.deb ../"$filename"/
 cd ..
 
-#cd ./deb-armv7l || exit
-#./run-armv7l.sh
-#mv *.deb ../"$filename"/
-#cd ..
-#
-#cd ./deb-arm64 || exit
-#./run-arm64.sh
-#mv *.deb ../"$filename"/
-#cd ..
+cd ./deb-armv7l || exit
+./run-armv7l.sh
+mv *.deb ../"$filename"/
+cd ..
+
+cd ./deb-arm64 || exit
+./run-arm64.sh
+mv *.deb ../"$filename"/
+cd ..
 
 mv *.zip "$filename"

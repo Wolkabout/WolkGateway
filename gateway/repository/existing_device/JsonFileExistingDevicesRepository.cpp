@@ -17,12 +17,11 @@
 #include "gateway/repository/existing_device/JsonFileExistingDevicesRepository.h"
 
 #include "core/utilities/FileSystemUtils.h"
-#include "core/utilities/json.hpp"
+#include "core/utilities/nlohmann/json.hpp"
 
 #include <fstream>
 #include <iomanip>
 #include <mutex>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>

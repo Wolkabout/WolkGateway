@@ -17,9 +17,8 @@
 #include "Configuration.h"
 
 #include "core/utilities/FileSystemUtils.h"
-#include "core/utilities/json.hpp"
+#include "core/utilities/nlohmann/json.hpp"
 
-#include <algorithm>
 #include <stdexcept>
 #include <utility>
 

@@ -5,6 +5,10 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 5.1.1**
+	- [BUGFIX] - Added the missing Platform Status service.
+	- [IMPROVEMENT] - Made the systemd service work after mosquitto starts.
+
 **Version 5.1.0**
 	- [IMPROVEMENT] - Added the APT/SystemD firmware update mechanism.
 	- [IMPROVEMENT] - Added the docker images to be built when running the `tools/make_release.sh` script.

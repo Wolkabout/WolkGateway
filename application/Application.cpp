@@ -149,6 +149,7 @@ int main(int argc, char** argv)
                                .platformHost(gatewayConfiguration.getPlatformMqttUri())
                                .withInternalDataService(gatewayConfiguration.getLocalMqttUri())
                                .withPlatformRegistration()
+                               .withPlatformStatusService()
                                .withLocalRegistration());
     if (!gatewayConfiguration.getPlatformTrustStore().empty())
     {

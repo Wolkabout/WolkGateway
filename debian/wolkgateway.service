@@ -16,7 +16,7 @@
 
 [Unit]
  Description=Gateway for connecting non-IP enabled devices to WolkAbout IoT Platform
- After=multi-user.target
+ After=multi-user.target mosquitto.service
 
 [Service]
  Type=idle

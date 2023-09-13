@@ -1,5 +1,5 @@
 wolkgateway (5.1.2) stable; urgency=medium
 
-	* Fixed loading existing devices json
+    * Fixed loading existing devices json
   
  -- Wolkabout ELab <elab@wolkabout.com>  Wed, 13 Sep 2023 00:00:00 +0100

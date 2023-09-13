@@ -17,6 +17,7 @@
 #include "gateway/repository/existing_device/JsonFileExistingDevicesRepository.h"
 
 #include "core/utilities/FileSystemUtils.h"
+#include "core/utilities/Logger.h"
 #include "core/utilities/nlohmann/json.hpp"
 
 #include <fstream>
@@ -38,6 +39,8 @@ JsonFileExistingDevicesRepository::JsonFileExistingDevicesRepository(const std::
 
 void JsonFileExistingDevicesRepository::addDeviceKey(const std::string& deviceKey)
 {
+    LOG(DEBUG) << METHOD_INFO << " " << deviceKey;
+
     if (std::find(m_deviceKeys.begin(), m_deviceKeys.end(), deviceKey) != m_deviceKeys.end())
     {
         return;
@@ -54,39 +57,65 @@ std::vector<std::string> JsonFileExistingDevicesRepository::getDeviceKeys()
 
 void JsonFileExistingDevicesRepository::createFileIfNotPresent()
 {
+    LOG(DEBUG) << METHOD_INFO;
+
     if (!FileSystemUtils::isFilePresent(m_file))
     {
         std::lock_guard<decltype(m_fileMutex)> l(m_fileMutex);
 
         nlohmann::json json;
         json["deviceKeys"] = m_deviceKeys;
-        FileSystemUtils::createFileWithContent(m_file, json.dump());
+
+        if (!FileSystemUtils::createFileWithContent(m_file, json.dump()))
+        {
+            LOG(ERROR) << "Failed to create " << m_file;
+        }
+
         return;
     }
 }
 
 void JsonFileExistingDevicesRepository::readFromFile()
 {
+    LOG(DEBUG) << METHOD_INFO;
+
     std::lock_guard<decltype(m_fileMutex)> l(m_fileMutex);
 
-    std::ifstream inputFileStream(m_file);
-    nlohmann::json json = nlohmann::json::parse(inputFileStream);
-
-    if (json.find("deviceKeys") != json.end())
+    try
     {
-        m_deviceKeys = json.at("deviceKeys").get<std::vector<std::string>>();
+        std::string content;
+        if (!FileSystemUtils::readFileContent(m_file, content))
+        {
+            LOG(ERROR) << "Failed to read " << m_file;
+            return;
+        }
+
+        nlohmann::json json = nlohmann::json::parse(content);
+
+        if (json.find("deviceKeys") != json.end())
+        {
+            m_deviceKeys = json.at("deviceKeys").get<std::vector<std::string>>();
+        }
+    }
+    catch (...)
+    {
+        LOG(ERROR) << "Failed to parse " << m_file;
     }
 }
 
 void JsonFileExistingDevicesRepository::saveToFile()
 {
+    LOG(DEBUG) << METHOD_INFO;
+
     std::lock_guard<decltype(m_fileMutex)> l(m_fileMutex);
 
     nlohmann::json json;
     json["deviceKeys"] = m_deviceKeys;
 
-    std::ofstream outputFileStream(m_file);
-    outputFileStream << std::setw(4) << json << std::endl;
+    if (!FileSystemUtils::createFileWithContent(m_file, json.dump()))
+    {
+        LOG(ERROR) << "Failed to save " << m_file;
+    }
 }
 }    // namespace gateway
 }    // namespace wolkabout

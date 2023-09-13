@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 5.1.2**
+	- [BUGFIX] - Fixed loading existing devices json.
+
 **Version 5.1.1**
 	- [BUGFIX] - Added the missing Platform Status service.
 	- [IMPROVEMENT] - Made the systemd service work after mosquitto starts.

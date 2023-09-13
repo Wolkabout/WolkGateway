@@ -1,6 +1,5 @@
-wolkgateway (5.1.1) stable; urgency=medium
+wolkgateway (5.1.2) stable; urgency=medium
 
-	* Added the missing Platform Status service.
-	* Made the systemd service work after mosquitto starts.
+	* Fixed loading existing devices json
   
- -- Wolkabout ELab <elab@wolkabout.com>  Mon, 4 Jul 2022 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Wed, 13 Sep 2023 00:00:00 +0100

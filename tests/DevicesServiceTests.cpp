@@ -23,7 +23,7 @@
 #undef private
 #undef protected
 
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 #include "tests/mocks/DeviceRepositoryMock.h"
 #include "tests/mocks/ExistingDeviceRepositoryMock.h"
 #include "tests/mocks/GatewayRegistrationProtocolMock.h"

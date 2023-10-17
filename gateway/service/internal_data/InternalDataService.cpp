@@ -19,14 +19,14 @@
 #include "core/model/Device.h"
 #include "core/model/Message.h"
 #include "core/protocol/DataProtocol.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 
 #include <cassert>
 #include <utility>
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 InternalDataService::InternalDataService(std::string gatewayKey, OutboundMessageHandler& platformOutboundHandler,
                                          OutboundMessageHandler& localOutboundHandler,
@@ -83,5 +83,4 @@ std::vector<MessageType> InternalDataService::getMessageTypes() const
             MessageType::FIRMWARE_UPDATE_INSTALL,
             MessageType::FIRMWARE_UPDATE_ABORT};
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

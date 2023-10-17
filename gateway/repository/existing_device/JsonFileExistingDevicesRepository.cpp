@@ -16,20 +16,18 @@
 
 #include "gateway/repository/existing_device/JsonFileExistingDevicesRepository.h"
 
-#include "core/utilities/FileSystemUtils.h"
-#include "core/utilities/Logger.h"
-#include "core/utilities/nlohmann/json.hpp"
+#include "core/utility/FileSystemUtils.h"
+#include "core/utility/Logger.h"
+#include <nlohmann/json.hpp>
 
-#include <fstream>
-#include <iomanip>
 #include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 JsonFileExistingDevicesRepository::JsonFileExistingDevicesRepository(const std::string& file) : m_file(std::move(file))
 {
@@ -117,5 +115,4 @@ void JsonFileExistingDevicesRepository::saveToFile()
         LOG(ERROR) << "Failed to save " << m_file;
     }
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

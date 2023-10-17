@@ -19,9 +19,7 @@
 
 #include <string>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 /**
  * This interface defines an object that is capable of filtering through devices that actually exist and can have data
@@ -43,7 +41,6 @@ public:
      */
     virtual bool deviceExists(const std::string& deviceKey) = 0;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // WOLKGATEWAY_DEVICEFILTER_H

@@ -27,9 +27,7 @@
 // Forward declare the context structure for sqlite.
 struct sqlite3;
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 // This is the map in which results from an SQL query will be returned
 using ColumnResult = std::map<std::uint64_t, std::vector<std::string>>;
@@ -65,7 +63,6 @@ private:
     std::recursive_mutex m_mutex;
     sqlite3* m_db;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // DEVICEREPOSITORYIMPL_H

@@ -16,8 +16,8 @@
 
 #include "Configuration.h"
 
-#include "core/utilities/FileSystemUtils.h"
-#include "core/utilities/nlohmann/json.hpp"
+#include "core/utility/FileSystemUtils.h"
+#include <nlohmann/json.hpp>
 
 #include <stdexcept>
 #include <utility>
@@ -85,13 +85,13 @@ void GatewayConfiguration::setKeepAliveSec(std::uint16_t keepAlive)
 
 wolkabout::GatewayConfiguration GatewayConfiguration::fromJson(const std::string& gatewayConfigurationFile)
 {
-    if (!FileSystemUtils::isFilePresent(gatewayConfigurationFile))
+    if (!legacy::FileSystemUtils::isFilePresent(gatewayConfigurationFile))
     {
         throw std::logic_error("Given gateway configuration file does not exist.");
     }
 
     std::string gatewayConfigurationJson;
-    if (!FileSystemUtils::readFileContent(gatewayConfigurationFile, gatewayConfigurationJson))
+    if (!legacy::FileSystemUtils::readFileContent(gatewayConfigurationFile, gatewayConfigurationJson))
     {
         throw std::logic_error("Unable to read gateway configuration file.");
     }

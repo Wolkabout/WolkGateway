@@ -19,11 +19,11 @@
 #include "core/connectivity/ConnectivityService.h"
 #include "core/model/Message.h"
 #include "core/protocol/GatewayPlatformStatusProtocol.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 GatewayPlatformStatusService::GatewayPlatformStatusService(ConnectivityService& connectivityService,
                                                            GatewayPlatformStatusProtocol& protocol,
@@ -50,5 +50,4 @@ void GatewayPlatformStatusService::sendPlatformConnectionStatusMessage(bool conn
     if (!m_connectivityService.publish(message))
         LOG(ERROR) << errorPrefix << " -> Failed to send the message.";
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

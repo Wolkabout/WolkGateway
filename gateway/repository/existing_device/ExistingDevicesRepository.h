@@ -20,9 +20,7 @@
 #include <string>
 #include <vector>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 class ExistingDevicesRepository
 {
@@ -33,7 +31,6 @@ public:
 
     virtual std::vector<std::string> getDeviceKeys() = 0;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif

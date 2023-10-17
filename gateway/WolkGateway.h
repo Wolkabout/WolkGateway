@@ -18,7 +18,7 @@
 #define WOLK_H
 
 #include "core/model/Device.h"
-#include "core/utilities/StringUtils.h"
+#include "core/utility/StringUtils.h"
 #include "gateway/WolkGatewayBuilder.h"
 #include "wolk/WolkSingle.h"
 

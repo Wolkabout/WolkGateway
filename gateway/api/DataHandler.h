@@ -24,9 +24,7 @@
 #include <string>
 #include <vector>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 class DataHandler
 {
@@ -49,7 +47,6 @@ public:
 
     virtual void updateParameter(const std::string& deviceKey, Parameter parameter) = 0;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // WOLKABOUT_DATAHANDLER_H

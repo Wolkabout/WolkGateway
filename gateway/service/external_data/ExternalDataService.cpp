@@ -20,13 +20,13 @@
 #include "core/model/Message.h"
 #include "core/protocol/DataProtocol.h"
 #include "core/protocol/GatewaySubdeviceProtocol.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 
 #include <algorithm>
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 ExternalDataService::ExternalDataService(std::string gatewayKey, GatewaySubdeviceProtocol& gatewaySubdeviceProtocol,
                                          DataProtocol& dataProtocol, OutboundMessageHandler& outboundMessageHandler,
@@ -77,9 +77,9 @@ void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
                 LOG(ERROR) << TAG << "Received 'FeedValues' message but failed to parse it.";
                 return;
             }
-            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>([this, deviceKey, feedValuesMessage] {
-                m_dataProvider.onReadingData(deviceKey, feedValuesMessage->getReadings());
-            }));
+            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(
+              [this, deviceKey, feedValuesMessage]
+              { m_dataProvider.onReadingData(deviceKey, feedValuesMessage->getReadings()); }));
             return;
         }
         case MessageType::PARAMETER_SYNC:
@@ -91,9 +91,9 @@ void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
                 LOG(ERROR) << TAG << "Received 'Parameters' message but failed to parse it.";
                 return;
             }
-            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>([this, deviceKey, parametersMessage] {
-                m_dataProvider.onParameterData(deviceKey, parametersMessage->getParameters());
-            }));
+            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(
+              [this, deviceKey, parametersMessage]
+              { m_dataProvider.onParameterData(deviceKey, parametersMessage->getParameters()); }));
             return;
         }
         default:
@@ -236,5 +236,4 @@ void ExternalDataService::packMessageWithGatewayAndSend(const Message& message)
     // Hand it to the outbound message handler
     m_outboundMessageHandler.addMessage(gatewayMessage);
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

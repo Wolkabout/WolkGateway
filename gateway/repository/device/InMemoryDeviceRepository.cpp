@@ -16,18 +16,18 @@
 
 #include "gateway/repository/device/InMemoryDeviceRepository.h"
 
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 
 #include <algorithm>
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 InMemoryDeviceRepository::InMemoryDeviceRepository(std::shared_ptr<DeviceRepository> persistentDeviceRepository)
 : m_timestamp{0}
 , m_persistentDeviceRepository{std::move(persistentDeviceRepository)}
-, m_commandBuffer{m_persistentDeviceRepository != nullptr ? new CommandBuffer : nullptr}
+, m_commandBuffer{m_persistentDeviceRepository != nullptr ? new legacy::CommandBuffer : nullptr}
 {
 }
 
@@ -80,9 +80,9 @@ bool InMemoryDeviceRepository::remove(const std::vector<std::string>& deviceKeys
         std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
         for (const auto& deviceKey : deviceKeys)
         {
-            const auto it = std::find_if(
-              m_devices.begin(), m_devices.end(),
-              [&](const StoredDeviceInformation& information) { return information.getDeviceKey() == deviceKey; });
+            const auto it = std::find_if(m_devices.begin(), m_devices.end(),
+                                         [&](const StoredDeviceInformation& information)
+                                         { return information.getDeviceKey() == deviceKey; });
             if (it != m_devices.cend())
                 m_devices.erase(it);
         }
@@ -119,9 +119,9 @@ bool InMemoryDeviceRepository::containsDevice(const std::string& deviceKey)
     // Check in local memory
     {
         std::lock_guard<std::recursive_mutex> lock{m_mutex};
-        const auto it = std::find_if(
-          m_devices.begin(), m_devices.end(),
-          [&](const StoredDeviceInformation& information) { return information.getDeviceKey() == deviceKey; });
+        const auto it = std::find_if(m_devices.begin(), m_devices.end(),
+                                     [&](const StoredDeviceInformation& information)
+                                     { return information.getDeviceKey() == deviceKey; });
         found = it != m_devices.cend();
     }
 
@@ -145,9 +145,9 @@ StoredDeviceInformation InMemoryDeviceRepository::get(const std::string& deviceK
     // Check in local memory
     {
         std::lock_guard<std::recursive_mutex> lock{m_mutex};
-        const auto it = std::find_if(
-          m_devices.begin(), m_devices.end(),
-          [&](const StoredDeviceInformation& information) { return information.getDeviceKey() == deviceKey; });
+        const auto it = std::find_if(m_devices.begin(), m_devices.end(),
+                                     [&](const StoredDeviceInformation& information)
+                                     { return information.getDeviceKey() == deviceKey; });
         if (it != m_devices.cend())
             returningInformation = StoredDeviceInformation{*it};
     }
@@ -168,9 +168,8 @@ std::vector<StoredDeviceInformation> InMemoryDeviceRepository::getGatewayDevices
     {
         std::lock_guard<std::recursive_mutex> lock{m_mutex};
         std::copy_if(m_devices.cbegin(), m_devices.cend(), std::back_inserter(gatewayDevices),
-                     [&](const StoredDeviceInformation& information) {
-                         return information.getDeviceBelongsTo() == DeviceOwnership::Gateway;
-                     });
+                     [&](const StoredDeviceInformation& information)
+                     { return information.getDeviceBelongsTo() == DeviceOwnership::Gateway; });
     }
     return gatewayDevices;
 }
@@ -180,5 +179,5 @@ std::chrono::milliseconds InMemoryDeviceRepository::latestPlatformTimestamp()
     std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
     return m_timestamp;
 }
-}    // namespace gateway
-}    // namespace wolkabout
+} // namespace wolkabout::gateway
+

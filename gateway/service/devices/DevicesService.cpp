@@ -23,7 +23,7 @@
 #include "core/model/messages/RegisteredDevicesResponseMessage.h"
 #include "core/protocol/GatewayRegistrationProtocol.h"
 #include "core/protocol/RegistrationProtocol.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 #include "gateway/repository/device/DeviceRepository.h"
 #include "gateway/repository/existing_device/ExistingDevicesRepository.h"
 
@@ -34,15 +34,15 @@
 #include <utility>
 #include <vector>
 
+using namespace wolkabout::legacy;
+
 namespace
 {
 const std::uint16_t RETRY_COUNT = 3;
 const std::chrono::milliseconds RETRY_TIMEOUT{5000};
 }    // namespace
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 RegisteredDevicesRequestParameters::RegisteredDevicesRequestParameters(const std::chrono::milliseconds& timestampFrom,
                                                                        std::string deviceType, std::string externalId)
@@ -172,7 +172,8 @@ bool DevicesService::registerChildDevices(
 
     // Now that that's publish, we want to verify that with the ChildrenSynchronizationMessage
     sendOutChildrenSynchronizationRequest(std::make_shared<ChildrenSynchronizationRequestCallback>(
-      [=](const std::shared_ptr<ChildrenSynchronizationResponseMessage>& response) {
+      [=](const std::shared_ptr<ChildrenSynchronizationResponseMessage>& response)
+      {
           // Contains all devices
           auto succeeded = std::vector<std::string>{};
           auto failed = std::vector<std::string>{};
@@ -281,7 +282,8 @@ bool DevicesService::sendOutChildrenSynchronizationRequest(
     m_outboundPlatformRetryMessageHandler.addMessage(RetryMessageStruct{
       parsedMessage,
       m_platformProtocol.getResponseChannelForMessage(MessageType::CHILDREN_SYNCHRONIZATION_REQUEST, m_gatewayKey),
-      [=](const std::shared_ptr<Message>&) {
+      [=](const std::shared_ptr<Message>&)
+      {
           LOG(ERROR)
             << TAG
             << "Failed to receive response for 'ChildrenSynchronizationRequestMessage' - no response from platform.";
@@ -331,7 +333,8 @@ bool DevicesService::sendOutRegisteredDevicesRequest(RegisteredDevicesRequestPar
     m_outboundPlatformRetryMessageHandler.addMessage(RetryMessageStruct{
       parsedMessage,
       m_platformProtocol.getResponseChannelForMessage(MessageType::REGISTERED_DEVICES_REQUEST, m_gatewayKey),
-      [=](const std::shared_ptr<Message>&) {
+      [=](const std::shared_ptr<Message>&)
+      {
           LOG(ERROR) << TAG << "Failed to receive response for 'RegisteredDevicesRequest' - no response from platform.";
           if (callback != nullptr)
           {
@@ -380,14 +383,16 @@ void DevicesService::messageReceived(std::shared_ptr<Message> message)
         }
 
         // Send the message
-        registerChildDevices(parsedMessage->getDevices(), [=](const std::vector<std::string>& registeredDevices,
-                                                              const std::vector<std::string>& unregisteredDevices) {
-            auto responseMessage = std::shared_ptr<Message>{m_localProtocol->makeOutboundMessage(
-              deviceKey, DeviceRegistrationResponseMessage{registeredDevices, unregisteredDevices})};
-            if (responseMessage == nullptr)
-                return;
-            m_outboundLocalMessageHandler->addMessage(responseMessage);
-        });
+        registerChildDevices(
+          parsedMessage->getDevices(),
+          [=](const std::vector<std::string>& registeredDevices, const std::vector<std::string>& unregisteredDevices)
+          {
+              auto responseMessage = std::shared_ptr<Message>{m_localProtocol->makeOutboundMessage(
+                deviceKey, DeviceRegistrationResponseMessage{registeredDevices, unregisteredDevices})};
+              if (responseMessage == nullptr)
+                  return;
+              m_outboundLocalMessageHandler->addMessage(responseMessage);
+          });
         break;
     }
     case MessageType::DEVICE_REMOVAL:
@@ -438,7 +443,8 @@ void DevicesService::messageReceived(std::shared_ptr<Message> message)
         if (m_localProtocol != nullptr && m_outboundLocalMessageHandler != nullptr)
         {
             callback = std::make_shared<RegisteredDevicesRequestCallback>(
-              [this, deviceKey](const std::shared_ptr<RegisteredDevicesResponseMessage>& response) {
+              [this, deviceKey](const std::shared_ptr<RegisteredDevicesResponseMessage>& response)
+              {
                   // Check if the response is not null
                   if (response == nullptr)
                   {
@@ -614,5 +620,4 @@ void DevicesService::handleRegisteredDevicesResponse(std::unique_ptr<RegisteredD
         }
     }
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

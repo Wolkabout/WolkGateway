@@ -25,9 +25,7 @@
 #include <utility>
 #include <vector>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 // This enum represents the data that is stored about a device.
 struct StoredDeviceInformation
@@ -124,7 +122,6 @@ public:
      */
     virtual std::chrono::milliseconds latestPlatformTimestamp() = 0;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // DEVICEREPOSITORY_H

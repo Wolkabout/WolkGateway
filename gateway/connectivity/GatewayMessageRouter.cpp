@@ -17,11 +17,11 @@
 #include "gateway/connectivity/GatewayMessageRouter.h"
 
 #include "core/protocol/GatewaySubdeviceProtocol.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 GatewayMessageRouter::GatewayMessageRouter(wolkabout::GatewaySubdeviceProtocol& protocol) : m_protocol(protocol) {}
 
@@ -92,5 +92,5 @@ void GatewayMessageRouter::addListener(const std::string& name, const std::share
         LOG(DEBUG) << TAG << "Added listener '" << name << "' for type '" << toString(messageType) << "'.";
     }
 }
-}    // namespace gateway
-}    // namespace wolkabout
+} // namespace wolkabout::gateway
+

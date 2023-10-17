@@ -46,9 +46,7 @@
 #include <memory>
 #include <string>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 class WolkGateway;
 
@@ -340,7 +338,6 @@ private:
     static const constexpr std::uint64_t MAX_PACKET_SIZE = 268434;
     static const constexpr char* DATABASE = "deviceRepository.db";
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif

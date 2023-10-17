@@ -19,9 +19,7 @@
 
 #include <string>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 // This enum value describes who the device belongs to.
 enum class DeviceOwnership
@@ -46,7 +44,6 @@ std::string toString(DeviceOwnership deviceOwnership);
  * @return A DeviceOwnership value. If the value could not be parsed, will always be `DeviceOwnership::None`.
  */
 DeviceOwnership deviceOwnershipFromString(const std::string& value);
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // WOLKGATEWAY_DEVICEOWNERSHIP_H

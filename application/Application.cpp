@@ -15,8 +15,8 @@
  */
 
 #include "Configuration.h"
-#include "core/utilities/Logger.h"
-#include "core/utilities/StringUtils.h"
+#include "core/utility/Logger.h"
+#include "core/utility/StringUtils.h"
 #include "gateway/WolkGateway.h"
 #include "wolk/service/firmware_update/debian/DebianPackageInstaller.h"
 
@@ -25,10 +25,12 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <iostream>
 
 using namespace wolkabout;
 using namespace wolkabout::connect;
 using namespace wolkabout::gateway;
+using namespace wolkabout::legacy;
 
 namespace
 {
@@ -73,20 +75,21 @@ private:
     DataHandler* m_handler = nullptr;
 };
 
-wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
+wolkabout::legacy::LogLevel parseLogLevel(const std::string& levelStr)
 {
-    const std::string str = wolkabout::StringUtils::toUpperCase(levelStr);
-    const auto logLevel = [&]() -> wolkabout::LogLevel {
+    const std::string str = wolkabout::legacy::StringUtils::toUpperCase(levelStr);
+    const auto logLevel = [&]() -> wolkabout::legacy::LogLevel
+    {
         if (str == "TRACE")
-            return wolkabout::LogLevel::TRACE;
+            return wolkabout::legacy::LogLevel::TRACE;
         else if (str == "DEBUG")
-            return wolkabout::LogLevel::DEBUG;
+            return wolkabout::legacy::LogLevel::DEBUG;
         else if (str == "INFO")
-            return wolkabout::LogLevel::INFO;
+            return wolkabout::legacy::LogLevel::INFO;
         else if (str == "WARN")
-            return wolkabout::LogLevel::WARN;
+            return wolkabout::legacy::LogLevel::WARN;
         else if (str == "ERROR")
-            return wolkabout::LogLevel::ERROR;
+            return wolkabout::legacy::LogLevel::ERROR;
 
         throw std::logic_error("Unable to parse log level.");
     }();
@@ -97,13 +100,29 @@ wolkabout::LogLevel parseLogLevel(const std::string& levelStr)
 
 int main(int argc, char** argv)
 {
-    wolkabout::Logger::init(wolkabout::LogLevel::INFO, wolkabout::Logger::Type::CONSOLE);
-
     if (argc < 2)
     {
-        LOG(ERROR) << "WolkGateway Application: Usage -  " << argv[0] << " [gatewayConfigurationFilePath] [logLevel]";
+        std::cerr << "WolkGateway Application: Usage -  " << argv[0] << " [gatewayConfigurationFilePath] [logLevel]";
         return -1;
     }
+
+    const auto level = [&]
+    {
+        if (argc > 2)
+        {
+            const std::string logLevelStr{argv[2]};
+            try
+            {
+                return parseLogLevel(logLevelStr);
+            }
+            catch (std::logic_error& e)
+            {
+                return wolkabout::legacy::LogLevel::INFO;
+            }
+        }
+        return wolkabout::legacy::LogLevel::INFO;
+    }();
+    wolkabout::legacy::Logger::init(level, wolkabout::legacy::Logger::Type::CONSOLE);
 
     wolkabout::GatewayConfiguration gatewayConfiguration;
     try
@@ -116,25 +135,12 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    if (argc > 2)
-    {
-        const std::string logLevelStr{argv[2]};
-        try
-        {
-            wolkabout::LogLevel level = parseLogLevel(logLevelStr);
-            wolkabout::Logger::getInstance().setLevel(level);
-        }
-        catch (std::logic_error& e)
-        {
-            LOG(ERROR) << "WolkGateway Application: " << e.what();
-        }
-    }
-
     auto gateway = wolkabout::Device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
                                      wolkabout::OutboundDataMode::PUSH);
     auto dataProvider = std::unique_ptr<DefaultDataProvider>{new DefaultDataProvider};
 
-    auto installer = [&] {
+    auto installer = [&]
+    {
         auto aptInstaller = std::unique_ptr<APTPackageInstaller>{new APTPackageInstaller};
         auto systemdManager = std::unique_ptr<SystemdServiceInterface>{new SystemdServiceInterface};
         return std::unique_ptr<DebianPackageInstaller>{
@@ -157,10 +163,12 @@ int main(int argc, char** argv)
     }
 
     auto wolk = builder.build();
-    wolk->setConnectionStatusListener([&](bool connected) {
-        if (connected)
-            dataProvider->onConnected();
-    });
+    wolk->setConnectionStatusListener(
+      [&](bool connected)
+      {
+          if (connected)
+              dataProvider->onConnected();
+      });
 
     wolk->connect();
 

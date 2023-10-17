@@ -1,4 +1,4 @@
-FROM arm64v8/debian:buster
+FROM arm64v8/ubuntu:focal
 
 WORKDIR /build
 
@@ -9,13 +9,11 @@ RUN apt update
 RUN apt install -y git gcc g++ pkg-config automake autotools-dev autoconf m4 zlib1g-dev \
  libtool libssl-dev devscripts debhelper libsqlite3-dev libglib2.0-dev
 
-RUN apt install -y software-properties-common
-RUN curl https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
-
-RUN apt-add-repository 'deb https://apt.kitware.com/ubuntu/ buster main'
+RUN curl https://apt.kitware.com/kitware-archive.sh > kitware-archive.sh
+RUN chmod +x kitware-archive.sh
+RUN ./kitware-archive.sh
 
 RUN apt update && apt install -y cmake
-RUN cmake --version
 
 COPY make_deb.sh /build
 COPY *.zip /build

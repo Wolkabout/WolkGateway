@@ -1,4 +1,4 @@
-FROM arm32v7/debian:buster
+FROM arm32v7/ubuntu:focal
 
 WORKDIR /root
 

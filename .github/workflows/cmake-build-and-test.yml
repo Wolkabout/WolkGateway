@@ -40,10 +40,10 @@ jobs:
         # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
         run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
-      - name: Code Format
-        shell: bash
-        working-directory: ${{runner.workspace}}/out
-        run: make format
+      - name: Check Format
+        uses: jidicula/clang-format-action@v3.5.2
+        with:
+          clang-format-version: 10
 
       - name: Build
         working-directory: ${{runner.workspace}}/out

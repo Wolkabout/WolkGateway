@@ -78,8 +78,7 @@ private:
 wolkabout::legacy::LogLevel parseLogLevel(const std::string& levelStr)
 {
     const std::string str = wolkabout::legacy::StringUtils::toUpperCase(levelStr);
-    const auto logLevel = [&]() -> wolkabout::legacy::LogLevel
-    {
+    const auto logLevel = [&]() -> wolkabout::legacy::LogLevel {
         if (str == "TRACE")
             return wolkabout::legacy::LogLevel::TRACE;
         else if (str == "DEBUG")
@@ -106,8 +105,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    const auto level = [&]
-    {
+    const auto level = [&] {
         if (argc > 2)
         {
             const std::string logLevelStr{argv[2]};
@@ -139,8 +137,7 @@ int main(int argc, char** argv)
                                      wolkabout::OutboundDataMode::PUSH);
     auto dataProvider = std::unique_ptr<DefaultDataProvider>{new DefaultDataProvider};
 
-    auto installer = [&]
-    {
+    auto installer = [&] {
         auto aptInstaller = std::unique_ptr<APTPackageInstaller>{new APTPackageInstaller};
         auto systemdManager = std::unique_ptr<SystemdServiceInterface>{new SystemdServiceInterface};
         return std::unique_ptr<DebianPackageInstaller>{
@@ -163,12 +160,10 @@ int main(int argc, char** argv)
     }
 
     auto wolk = builder.build();
-    wolk->setConnectionStatusListener(
-      [&](bool connected)
-      {
-          if (connected)
-              dataProvider->onConnected();
-      });
+    wolk->setConnectionStatusListener([&](bool connected) {
+        if (connected)
+            dataProvider->onConnected();
+    });
 
     wolk->connect();
 

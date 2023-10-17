@@ -92,5 +92,4 @@ void GatewayMessageRouter::addListener(const std::string& name, const std::share
         LOG(DEBUG) << TAG << "Added listener '" << name << "' for type '" << toString(messageType) << "'.";
     }
 }
-} // namespace wolkabout::gateway
-
+}    // namespace wolkabout::gateway

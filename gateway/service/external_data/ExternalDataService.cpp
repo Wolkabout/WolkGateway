@@ -77,9 +77,9 @@ void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
                 LOG(ERROR) << TAG << "Received 'FeedValues' message but failed to parse it.";
                 return;
             }
-            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(
-              [this, deviceKey, feedValuesMessage]
-              { m_dataProvider.onReadingData(deviceKey, feedValuesMessage->getReadings()); }));
+            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>([this, deviceKey, feedValuesMessage] {
+                m_dataProvider.onReadingData(deviceKey, feedValuesMessage->getReadings());
+            }));
             return;
         }
         case MessageType::PARAMETER_SYNC:
@@ -91,9 +91,9 @@ void ExternalDataService::receiveMessages(const std::vector<GatewaySubdeviceMess
                 LOG(ERROR) << TAG << "Received 'Parameters' message but failed to parse it.";
                 return;
             }
-            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>(
-              [this, deviceKey, parametersMessage]
-              { m_dataProvider.onParameterData(deviceKey, parametersMessage->getParameters()); }));
+            m_commandBuffer.pushCommand(std::make_shared<std::function<void()>>([this, deviceKey, parametersMessage] {
+                m_dataProvider.onParameterData(deviceKey, parametersMessage->getParameters());
+            }));
             return;
         }
         default:

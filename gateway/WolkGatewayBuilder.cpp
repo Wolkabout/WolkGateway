@@ -449,5 +449,4 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
 
     return wolk;
 }
-} // namespace wolkabout::gateway
-
+}    // namespace wolkabout::gateway

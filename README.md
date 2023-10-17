@@ -1,11 +1,11 @@
 ```
 ██╗    ██╗ ██████╗ ██╗     ██╗  ██╗ ██████╗  █████╗ ████████╗███████╗██╗    ██╗ █████╗ ██╗   ██╗
 ██║    ██║██╔═══██╗██║     ██║ ██╔╝██╔════╝ ██╔══██╗╚══██╔══╝██╔════╝██║    ██║██╔══██╗╚██╗ ██╔╝
-██║ █╗ ██║██║   ██║██║     █████╔╝ ██║  ███╗███████║   ██║   █████╗  ██║ █╗ ██║███████║ ╚████╔╝ 
-██║███╗██║██║   ██║██║     ██╔═██╗ ██║   ██║██╔══██║   ██║   ██╔══╝  ██║███╗██║██╔══██║  ╚██╔╝  
-╚███╔███╔╝╚██████╔╝███████╗██║  ██╗╚██████╔╝██║  ██║   ██║   ███████╗╚███╔███╔╝██║  ██║   ██║   
- ╚══╝╚══╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝   
-                                                                                                  
+██║ █╗ ██║██║   ██║██║     █████╔╝ ██║  ███╗███████║   ██║   █████╗  ██║ █╗ ██║███████║ ╚████╔╝
+██║███╗██║██║   ██║██║     ██╔═██╗ ██║   ██║██╔══██║   ██║   ██╔══╝  ██║███╗██║██╔══██║  ╚██╔╝
+╚███╔███╔╝╚██████╔╝███████╗██║  ██╗╚██████╔╝██║  ██║   ██║   ███████╗╚███╔███╔╝██║  ██║   ██║
+ ╚══╝╚══╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝
+
 ```
 ----
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
@@ -61,7 +61,7 @@ Before proceeding with steps from this section complete steps listed in 'Buildin
 3. Make sure mosquitto is running by invoking `systemctl start mosquitto`
 4. Run gateway by invoking `./WolkGatewayApp gatewayConfiguration.json`
 
-**Note:** Running additional instances of WolkGateway on the same network requires having an additional mosquitto broker per gateway. Start a mosquitto daemon from the terminal with `mosquitto -p <port> -d`. The port entered here should also be entered into `gatewayConfiguration.json` for the matching gateway and into the configuration file of all of the gateway's modules. 
+**Note:** Running additional instances of WolkGateway on the same network requires having an additional mosquitto broker per gateway. Start a mosquitto daemon from the terminal with `mosquitto -p <port> -d`. The port entered here should also be entered into `gatewayConfiguration.json` for the matching gateway and into the configuration file of all of the gateway's modules.
 
 Connecting devices
 ------
@@ -243,7 +243,7 @@ public:
 
 auto installer = std::make_shared<CustomFirmwareInstaller>();
 
-wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(), 
+wolkabout::GatewayDevice device(gatewayConfiguration.getKey(), gatewayConfiguration.getPassword(),
                                 wolkabout::SubdeviceManagement::GATEWAY, true, true);
 
 auto builder = wolkabout::Wolk::newBuilder(device)

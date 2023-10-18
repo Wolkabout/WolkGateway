@@ -16,51 +16,28 @@
 
 #include "gateway/WolkGateway.h"
 
-#include "core/connectivity/ConnectivityService.h"
-#include "core/connectivity/InboundPlatformMessageHandler.h"
 #include "core/connectivity/OutboundMessageHandler.h"
 #include "core/connectivity/OutboundRetryMessageHandler.h"
-#include "core/persistence/Persistence.h"
-#include "core/protocol/DataProtocol.h"
-#include "core/protocol/ErrorProtocol.h"
-#include "core/protocol/FileManagementProtocol.h"
-#include "core/protocol/GatewayPlatformStatusProtocol.h"
-#include "core/protocol/GatewayRegistrationProtocol.h"
-#include "core/protocol/GatewaySubdeviceProtocol.h"
-#include "core/protocol/RegistrationProtocol.h"
-#include "core/utilities/CommandBuffer.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 #include "gateway/connectivity/GatewayMessageRouter.h"
-#include "gateway/repository/device/DeviceRepository.h"
 #include "gateway/repository/device/InMemoryDeviceRepository.h"
-#include "gateway/repository/existing_device/ExistingDevicesRepository.h"
 #include "gateway/service/devices/DevicesService.h"
 #include "gateway/service/external_data/ExternalDataService.h"
 #include "gateway/service/internal_data/InternalDataService.h"
 #include "gateway/service/platform_status/GatewayPlatformStatusService.h"
-#include "wolk/api/FeedUpdateHandler.h"
-#include "wolk/api/ParameterHandler.h"
-#include "wolk/service/data/DataService.h"
-#include "wolk/service/error/ErrorService.h"
-#include "wolk/service/file_management/FileManagementService.h"
-#include "wolk/service/firmware_update/FirmwareUpdateService.h"
-#include "wolk/service/platform_status/PlatformStatusService.h"
-#include "wolk/service/registration_service/RegistrationService.h"
 
 #include <memory>
-#include <sstream>
-#include <string>
 #include <thread>
 #include <utility>
+
+using namespace wolkabout::legacy;
 
 namespace
 {
 const unsigned RECONNECT_DELAY_MSEC = 2000;
 }
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 WolkGateway::~WolkGateway() = default;
 
@@ -113,7 +90,6 @@ WolkGateway::WolkGateway(Device device)
 , m_localOutboundMessageHandler{nullptr}
 , m_outboundMessageHandler{nullptr}
 {
-    m_commandBuffer = std::unique_ptr<CommandBuffer>(new CommandBuffer());
 }
 
 std::uint64_t WolkGateway::currentRtc()
@@ -200,5 +176,4 @@ void WolkGateway::connectLocal(bool firstTime)
         }
     });
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

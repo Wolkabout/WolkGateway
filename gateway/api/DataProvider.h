@@ -21,9 +21,7 @@
 
 #include <map>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 class DataProvider
 {
@@ -37,7 +35,6 @@ public:
 
     virtual void onParameterData(const std::string& deviceKey, std::vector<Parameter> parameters) = 0;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // WOLKABOUT_DATAPROVIDER_H

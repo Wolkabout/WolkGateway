@@ -17,7 +17,6 @@
 #include "gateway/WolkGatewayBuilder.h"
 
 #include "core/connectivity/InboundPlatformMessageHandler.h"
-#include "core/connectivity/OutboundMessageHandler.h"
 #include "core/connectivity/OutboundRetryMessageHandler.h"
 #include "core/connectivity/mqtt/MqttConnectivityService.h"
 #include "core/connectivity/mqtt/PahoMqttClient.h"
@@ -44,9 +43,9 @@
 #include <memory>
 #include <stdexcept>
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 WolkGatewayBuilder::WolkGatewayBuilder(Device device)
 : m_device{std::move(device)}
@@ -450,5 +449,4 @@ std::unique_ptr<WolkGateway> WolkGatewayBuilder::build()
 
     return wolk;
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

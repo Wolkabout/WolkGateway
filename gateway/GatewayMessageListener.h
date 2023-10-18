@@ -22,9 +22,7 @@
 
 #include <memory>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 /**
  * This interface is meant to represent an object that is capable of listening to incoming
@@ -53,7 +51,6 @@ public:
      */
     virtual void receiveMessages(const std::vector<GatewaySubdeviceMessage>& messages) = 0;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // WOLKGATEWAY_GATEWAYMESSAGELISTENER_H

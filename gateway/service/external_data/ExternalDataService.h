@@ -17,7 +17,7 @@
 #ifndef WOLKABOUT_EXTERNALDATASERVICE_H
 #define WOLKABOUT_EXTERNALDATASERVICE_H
 
-#include "core/utilities/CommandBuffer.h"
+#include "core/utility/CommandBuffer.h"
 #include "gateway/GatewayMessageListener.h"
 #include "gateway/api/DataHandler.h"
 #include "gateway/api/DataProvider.h"
@@ -81,7 +81,7 @@ private:
     DataProvider& m_dataProvider;
 
     // The command buffer for asynchronous execution
-    CommandBuffer m_commandBuffer;
+    legacy::CommandBuffer m_commandBuffer;
 };
 }    // namespace gateway
 }    // namespace wolkabout

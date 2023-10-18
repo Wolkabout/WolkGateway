@@ -16,18 +16,18 @@
 
 #include "gateway/repository/device/InMemoryDeviceRepository.h"
 
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 
 #include <algorithm>
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 InMemoryDeviceRepository::InMemoryDeviceRepository(std::shared_ptr<DeviceRepository> persistentDeviceRepository)
 : m_timestamp{0}
 , m_persistentDeviceRepository{std::move(persistentDeviceRepository)}
-, m_commandBuffer{m_persistentDeviceRepository != nullptr ? new CommandBuffer : nullptr}
+, m_commandBuffer{m_persistentDeviceRepository != nullptr ? new legacy::CommandBuffer : nullptr}
 {
 }
 
@@ -180,5 +180,4 @@ std::chrono::milliseconds InMemoryDeviceRepository::latestPlatformTimestamp()
     std::lock_guard<std::recursive_mutex> lockGuard{m_mutex};
     return m_timestamp;
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

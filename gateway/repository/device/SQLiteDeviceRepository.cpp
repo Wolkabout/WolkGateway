@@ -17,17 +17,16 @@
 #include "gateway/repository/device/SQLiteDeviceRepository.h"
 
 #include "core/model/Device.h"
-#include "core/utilities/ByteUtils.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/ByteUtils.h"
+#include "core/utility/Logger.h"
 
 #include <mutex>
-#include <openssl/sha.h>
 #include <sqlite3.h>
 #include <string>
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 // Here are some create table instructions
 const std::string CREATE_DEVICE_TABLE =
@@ -420,5 +419,4 @@ std::string SQLiteDeviceRepository::executeSQLStatement(const std::string& sql, 
     sqlite3_finalize(statement);
     return errorMessage;
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

@@ -16,9 +16,7 @@
 
 #include "gateway/repository/DeviceOwnership.h"
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 std::string toString(DeviceOwnership deviceOwnership)
 {
@@ -41,5 +39,4 @@ DeviceOwnership deviceOwnershipFromString(const std::string& value)
         return DeviceOwnership::Gateway;
     return DeviceOwnership::None;
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

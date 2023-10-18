@@ -20,13 +20,13 @@
 #include "core/model/Message.h"
 #include "core/protocol/DataProtocol.h"
 #include "core/protocol/GatewaySubdeviceProtocol.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 
 #include <algorithm>
 
-namespace wolkabout
-{
-namespace gateway
+using namespace wolkabout::legacy;
+
+namespace wolkabout::gateway
 {
 ExternalDataService::ExternalDataService(std::string gatewayKey, GatewaySubdeviceProtocol& gatewaySubdeviceProtocol,
                                          DataProtocol& dataProtocol, OutboundMessageHandler& outboundMessageHandler,
@@ -236,5 +236,4 @@ void ExternalDataService::packMessageWithGatewayAndSend(const Message& message)
     // Hand it to the outbound message handler
     m_outboundMessageHandler.addMessage(gatewayMessage);
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

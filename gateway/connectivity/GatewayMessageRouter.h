@@ -19,16 +19,14 @@
 
 #include "core/MessageListener.h"
 #include "core/protocol/GatewaySubdeviceProtocol.h"
-#include "core/utilities/CommandBuffer.h"
+#include "core/utility/CommandBuffer.h"
 #include "gateway/GatewayMessageListener.h"
 
 #include <functional>
 #include <map>
 #include <memory>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 class GatewayMessageRouter : public MessageListener
 {
@@ -54,9 +52,8 @@ private:
     std::map<MessageType, std::weak_ptr<GatewayMessageListener>> m_listenersPerType;
 
     // Command buffer
-    CommandBuffer m_commandBuffer;
+    legacy::CommandBuffer m_commandBuffer;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // WOLKGATEWAY_GATEWAYMESSAGEROUTER_H

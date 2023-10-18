@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 5.1.3**
+    - [BUGFIX] - Fixed parsing of the 'RegisteredDevicesResponse' message.
+
 **Version 5.1.2**
 	- [BUGFIX] - Fixed loading existing devices json.
 

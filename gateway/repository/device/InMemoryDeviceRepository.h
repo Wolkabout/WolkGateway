@@ -16,14 +16,12 @@
 #ifndef WOLKGATEWAY_INMEMORYDEVICEREPOSITORY_H
 #define WOLKGATEWAY_INMEMORYDEVICEREPOSITORY_H
 
-#include "core/utilities/CommandBuffer.h"
+#include "core/utility/CommandBuffer.h"
 #include "gateway/repository/device/DeviceRepository.h"
 
 #include <unordered_map>
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 class InMemoryDeviceRepository : public DeviceRepository
 {
@@ -114,9 +112,8 @@ private:
 
     // And optional pointer for a more persistence DeviceRepository
     std::shared_ptr<DeviceRepository> m_persistentDeviceRepository;
-    std::unique_ptr<CommandBuffer> m_commandBuffer;
+    std::unique_ptr<legacy::CommandBuffer> m_commandBuffer;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // WOLKGATEWAY_INMEMORYDEVICEREPOSITORY_H

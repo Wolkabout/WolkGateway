@@ -22,9 +22,7 @@
 #include "core/protocol/GatewaySubdeviceProtocol.h"
 #include "gateway/GatewayMessageListener.h"
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 class InternalDataService : public GatewayMessageListener, public MessageListener
 {
@@ -50,7 +48,6 @@ private:
     // The protocol
     GatewaySubdeviceProtocol& m_protocol;
 };
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway
 
 #endif    // WOLKABOUT_INTERNALDATASERVICE_H

@@ -23,7 +23,7 @@
 #include "core/model/messages/RegisteredDevicesResponseMessage.h"
 #include "core/protocol/GatewayRegistrationProtocol.h"
 #include "core/protocol/RegistrationProtocol.h"
-#include "core/utilities/Logger.h"
+#include "core/utility/Logger.h"
 #include "gateway/repository/device/DeviceRepository.h"
 #include "gateway/repository/existing_device/ExistingDevicesRepository.h"
 
@@ -34,15 +34,15 @@
 #include <utility>
 #include <vector>
 
+using namespace wolkabout::legacy;
+
 namespace
 {
 const std::uint16_t RETRY_COUNT = 3;
 const std::chrono::milliseconds RETRY_TIMEOUT{5000};
 }    // namespace
 
-namespace wolkabout
-{
-namespace gateway
+namespace wolkabout::gateway
 {
 RegisteredDevicesRequestParameters::RegisteredDevicesRequestParameters(const std::chrono::milliseconds& timestampFrom,
                                                                        std::string deviceType, std::string externalId)
@@ -614,5 +614,4 @@ void DevicesService::handleRegisteredDevicesResponse(std::unique_ptr<RegisteredD
         }
     }
 }
-}    // namespace gateway
-}    // namespace wolkabout
+}    // namespace wolkabout::gateway

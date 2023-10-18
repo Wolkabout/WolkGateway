@@ -18,7 +18,7 @@
 #define SUBDEVICEREGISTRATIONSERVICE_H
 
 #include "core/MessageListener.h"
-#include "core/utilities/CommandBuffer.h"
+#include "core/utility/CommandBuffer.h"
 #include "gateway/GatewayMessageListener.h"
 #include "gateway/repository/DeviceFilter.h"
 
@@ -272,7 +272,7 @@ private:
     std::shared_ptr<ExistingDevicesRepository> m_existingDeviceRepository;
 
     // Storage for request objects
-    CommandBuffer m_commandBuffer;
+    legacy::CommandBuffer m_commandBuffer;
     std::mutex m_childSyncMutex;
     std::queue<std::shared_ptr<ChildrenSynchronizationRequestCallback>> m_childSyncRequests;
     std::mutex m_registeredDevicesMutex;

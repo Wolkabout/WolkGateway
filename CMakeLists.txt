@@ -42,7 +42,7 @@ if (NOT DEFINED CMAKE_PREFIX_PATH)
 endif ()
 
 # Setting the compiler flags
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}     -Wall -Wextra -pedantic                                                    \
                                             -pedantic-errors -Wcast-align                                              \
                                             -Wcast-qual -Wconversion                                                   \
@@ -91,7 +91,7 @@ endif ()
 # Define the version of the library
 set(WOLKGATEWAY_VERSION_MAJOR 5)
 set(WOLKGATEWAY_VERSION_MINOR 1)
-set(WOLKGATEWAY_VERSION_PATCH 2)
+set(WOLKGATEWAY_VERSION_PATCH 3)
 set(WOLKGATEWAY_VERSION_SUFFIX)
 
 set(WOLKGATEWAY_VERSION_STRING "${WOLKGATEWAY_VERSION_MAJOR}.${WOLKGATEWAY_VERSION_MINOR}.${WOLKGATEWAY_VERSION_PATCH}")
@@ -167,7 +167,6 @@ if (${BUILD_TESTS})
     target_include_directories(${PROJECT_NAME}Tests PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/WolkConnect-Cpp ${PROJECT_SOURCE_DIR}/WolkConnect-Cpp/WolkSDK-Cpp)
     target_include_directories(${PROJECT_NAME}Tests PUBLIC ${CMAKE_LIBRARY_INCLUDE_DIRECTORY})
     set_target_properties(${PROJECT_NAME}Tests PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
-    add_dependencies(${PROJECT_NAME}Tests libgtest)
 
     add_test(NAME "WolkGateway_Tests" COMMAND ${PROJECT_NAME}Tests)
 endif ()

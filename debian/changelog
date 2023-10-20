@@ -1,5 +1,5 @@
-wolkgateway (5.1.3) stable; urgency=medium
+wolkgateway (5.1.4) stable; urgency=medium
 
-    * Fixed parsing of the 'RegisteredDevicesResponse' message.
+    * Store the application/library files in separated folder from the rest of the software.
 
- -- Wolkabout ELab <elab@wolkabout.com>  Tue, 17 Oct 2023 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Fri, 20 Oct 2023 00:00:00 +0100

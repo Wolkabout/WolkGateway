@@ -20,8 +20,8 @@
 
 [Service]
  Type=idle
- WorkingDirectory=/usr/bin/
- ExecStart=/usr/bin/WolkGatewayApp /etc/wolkGateway/gatewayConfiguration.json
+ WorkingDirectory=/opt/wolkabout/gateway/
+ ExecStart=/opt/wolkabout/gateway/WolkGatewayApp /etc/wolkGateway/gatewayConfiguration.json
  Restart=always
 
 [Install]

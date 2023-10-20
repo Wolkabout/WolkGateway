@@ -20,7 +20,7 @@
 
 [Service]
  Type=idle
- WorkingDirectory=/opt/wolkabout/gateway/
+ WorkingDirectory=/opt/wolkabout/gateway/bin
  ExecStart=/opt/wolkabout/gateway/bin/WolkGatewayApp /etc/wolkGateway/gatewayConfiguration.json
  Restart=always
 

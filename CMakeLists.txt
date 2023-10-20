@@ -91,7 +91,7 @@ endif ()
 # Define the version of the library
 set(WOLKGATEWAY_VERSION_MAJOR 5)
 set(WOLKGATEWAY_VERSION_MINOR 1)
-set(WOLKGATEWAY_VERSION_PATCH 3)
+set(WOLKGATEWAY_VERSION_PATCH 4)
 set(WOLKGATEWAY_VERSION_SUFFIX)
 
 set(WOLKGATEWAY_VERSION_STRING "${WOLKGATEWAY_VERSION_MAJOR}.${WOLKGATEWAY_VERSION_MINOR}.${WOLKGATEWAY_VERSION_PATCH}")
@@ -179,15 +179,15 @@ if (${BUILD_EXECUTABLE})
 
     add_executable(${PROJECT_NAME}App ${BIN_SOURCE_FILES} ${BIN_HEADER_FILES})
     target_link_libraries(${PROJECT_NAME}App WolkGateway)
-    set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+    set_target_properties(${PROJECT_NAME}App PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
 
     # Install target
-    install(DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} DESTINATION /usr
+    install(DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} DESTINATION ${CMAKE_INSTALL_PREFIX}
             FILES_MATCHING
             PATTERN "*so*")
 
     # Place the executable file in /usr/bin
-    install(TARGETS ${PROJECT_NAME}App DESTINATION /usr/bin)
+    install(TARGETS ${PROJECT_NAME}App DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
     # Place the config files and service unit file.
     install(FILES out/gatewayConfiguration.json DESTINATION /etc/wolkGateway

@@ -1,5 +1,5 @@
-wolkgateway (5.1.4) stable; urgency=medium
+wolkgateway (5.1.5) stable; urgency=medium
 
-    * Store the application/library files in separated folder from the rest of the software.
+    * Logging output to file at location '/var/log/wolkGateway'
 
- -- Wolkabout ELab <elab@wolkabout.com>  Fri, 20 Oct 2023 00:00:00 +0100
+ -- Wolkabout ELab <elab@wolkabout.com>  Wedn, 01 Nov 2023 00:00:00 +0100

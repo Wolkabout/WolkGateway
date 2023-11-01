@@ -2,6 +2,7 @@
 
 if [ "$1" = "purge" ] ; then
 	rm -rf /etc/wolkGateway
+	rm -rf /var/log/wolkGateway
 fi
 
 #DEBHELPER#

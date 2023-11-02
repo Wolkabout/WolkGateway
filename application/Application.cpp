@@ -21,11 +21,11 @@
 #include "wolk/service/firmware_update/debian/DebianPackageInstaller.h"
 
 #include <chrono>
+#include <iostream>
 #include <random>
 #include <stdexcept>
 #include <string>
 #include <thread>
-#include <iostream>
 
 using namespace wolkabout;
 using namespace wolkabout::connect;
@@ -34,6 +34,8 @@ using namespace wolkabout::legacy;
 
 namespace
 {
+const auto LOG_FILE = "/var/log/wolkGateway/wolkgateway.log";
+
 class DefaultDataProvider : public DataProvider
 {
 public:
@@ -120,7 +122,8 @@ int main(int argc, char** argv)
         }
         return wolkabout::legacy::LogLevel::INFO;
     }();
-    wolkabout::legacy::Logger::init(level, wolkabout::legacy::Logger::Type::CONSOLE);
+    wolkabout::legacy::Logger::init(
+      level, wolkabout::legacy::Logger::Type::CONSOLE | wolkabout::legacy::Logger::Type::FILE, LOG_FILE);
 
     wolkabout::GatewayConfiguration gatewayConfiguration;
     try

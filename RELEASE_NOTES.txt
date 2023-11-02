@@ -5,6 +5,9 @@
 
 WolkGateway bridges communication between WolkAbout IoT platform and multiple devices connected to it.
 
+**Version 5.1.5**
+    - [IMPROVEMENT] - Logging output to file at location '/var/log/wolkGateway'
+
 **Version 5.1.4**
     - [IMPROVEMENT] - Store the application/library files in separated folder from the rest of the software.
 
